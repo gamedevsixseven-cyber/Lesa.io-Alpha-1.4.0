@@ -106,9 +106,15 @@ class CloudSaveService {
                 localStorage.setItem('lesaio_google_email', this.currentUser.email);
                 localStorage.setItem('lesaio_google_name', this.currentUser.displayName || this.currentUser.email.split('@')[0]);
                 
+                // Synchronize existing cloud save data if present
+                let syncResult = null;
+                if (typeof AccountSyncManager !== 'undefined') {
+                    syncResult = await AccountSyncManager.syncDownCloudSave(this.currentUser, this.db);
+                }
+
                 // Attach real-time listener immediately
                 this.startRealtimeListener(this.currentUser);
-                return { success: true, user: this.currentUser };
+                return { success: true, user: this.currentUser, syncResult };
             }
         } catch (error) {
             console.error('Google Sign-In Error:', error);

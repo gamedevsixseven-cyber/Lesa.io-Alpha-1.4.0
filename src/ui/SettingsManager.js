@@ -152,8 +152,16 @@ class SettingsManager {
             const res = await window.cloudSave.signInWithGoogle();
             if (res && res.success) {
                 window.soundEngine.playPickup('star');
-                alert(`🎉 Successfully signed in with Google!\n\nWelcome ${res.user.displayName || res.user.email}!\nYour game progress is synced with the cloud.`);
-                this.updateCloudUI();
+                const userDisplayName = res.user.displayName || res.user.email?.split('@')[0] || 'Player';
+
+                if (res.syncResult && res.syncResult.hasCloudData) {
+                    const d = res.syncResult.details;
+                    alert(`🎉 Cloud Account Connected!\n\nWelcome back, ${d.name || userDisplayName}!\n• Level: ${d.accountLevel}\n• Coins: 🪙 ${d.coins.toLocaleString()}\n• Gems: 💎 ${d.gems.toLocaleString()}\n• Heroes: ${d.heroesCount} unlocked\n• Gear: ${d.gearCount} items\n\nReloading game with your cloud save...`);
+                } else {
+                    alert(`🎉 Google Account Linked!\n\nWelcome, ${userDisplayName}!\nYour current progress has been secured to your Google Account.\n\nReloading session...`);
+                }
+
+                window.location.reload();
                 return;
             } else if (res && !res.fallback) {
                 return;
@@ -240,21 +248,31 @@ class SettingsManager {
     }
 
     async unlinkGoogleAccount() {
-        if (!confirm('Are you sure you want to disconnect your Google Account? Local progress will be kept on this device.')) {
-            return;
-        }
+        const confirmDisconnect = confirm(
+            '⚠️ Disconnect Google Account?\n\n' +
+            '• Your cloud progress will remain safely saved in Google Cloud.\n' +
+            '• This device will reload and reset to a fresh Guest account.\n\n' +
+            'Do you want to continue?'
+        );
+        if (!confirmDisconnect) return;
 
         if (window.cloudSave) {
             await window.cloudSave.signOut();
         }
 
-        localStorage.removeItem('lesaio_google_linked');
-        localStorage.removeItem('lesaio_google_email');
-        localStorage.removeItem('lesaio_google_name');
-        localStorage.removeItem('lesaio_last_cloud_sync');
+        if (typeof AccountSyncManager !== 'undefined') {
+            AccountSyncManager.resetToGuestAccount();
+        } else {
+            localStorage.removeItem('lesaio_save_v2');
+            localStorage.removeItem('lesaio_player_uid');
+            localStorage.removeItem('lesaio_google_linked');
+            localStorage.removeItem('lesaio_google_uid');
+            localStorage.removeItem('lesaio_google_email');
+            localStorage.removeItem('lesaio_google_name');
+            localStorage.removeItem('lesaio_last_cloud_sync');
+        }
 
-        this.updateCloudUI();
-        window.soundEngine.playGoBack();
+        window.location.reload();
     }
 
     updateCloudUI() {
