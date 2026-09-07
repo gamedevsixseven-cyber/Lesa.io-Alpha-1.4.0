@@ -1,0 +1,380 @@
+/* ===================================================
+   LESA.IO - ACTIVE SKILLS & ABILITIES MODAL STYLES
+   =================================================== */
+
+.skills-modal-panel {
+    max-width: 960px;
+    width: 94%;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+.skills-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 16px;
+    margin-top: 14px;
+    margin-bottom: 8px;
+}
+
+.skill-card {
+    position: relative;
+    background: #ffffff;
+    border: 4px solid var(--dark-outline);
+    border-radius: 22px;
+    padding: 18px 16px;
+    box-shadow: var(--shadow-solid);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.2s ease;
+    cursor: pointer;
+    overflow: hidden;
+}
+
+.skill-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-solid-lg);
+}
+
+.skill-card.equipped {
+    border-color: #2ed573;
+    background: #f0fff4;
+    box-shadow: 0 0 0 3px #2ed573, var(--shadow-solid);
+}
+
+.skill-card.locked {
+    background: #f1f2f6;
+    border-color: #747d8c;
+    opacity: 0.85;
+}
+
+.skill-card.locked:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-solid);
+}
+
+/* Rarity Tier Styles */
+.skill-card.rarity-common {
+    border-color: #7f8c8d;
+}
+
+.skill-card.rarity-uncommon {
+    border-color: #27ae60;
+}
+
+.skill-card.rarity-rare {
+    border-color: #2980b9;
+}
+
+.skill-card.rarity-epic {
+    border-color: #8e44ad;
+}
+
+.skill-card.rarity-legendary {
+    border-color: #d35400;
+    background: linear-gradient(180deg, #ffffff 0%, #fffbf0 100%);
+}
+
+.skill-card.mastered-card {
+    border-color: #00cec9;
+    box-shadow: 0 0 16px rgba(0, 206, 201, 0.45), var(--shadow-solid);
+}
+
+/* Header & Icon */
+.skill-icon-circle {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    background: #f8f9fa;
+    border: 3.5px solid var(--dark-outline);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.2rem;
+    margin-top: 14px;
+    margin-bottom: 10px;
+    box-shadow: 2px 2px 0 var(--dark-outline);
+    position: relative;
+    transition: transform 0.2s ease;
+}
+
+.skill-card:hover .skill-icon-circle {
+    transform: scale(1.08) rotate(5deg);
+}
+
+.skill-card.equipped .skill-icon-circle {
+    background: #eaffea;
+    border-color: #2ed573;
+}
+
+.skill-card.nerobalonaki .skill-icon-circle {
+    background: linear-gradient(135deg, #e0f7fa, #b2ebf2);
+    border-color: #00d2d3;
+}
+
+.skill-icon-img {
+    width: 52px;
+    height: 52px;
+    object-fit: contain;
+    border-radius: 10px;
+    display: block;
+}
+
+.hud-skill-thumb {
+    width: 20px;
+    height: 20px;
+    object-fit: contain;
+    vertical-align: middle;
+    margin-right: 6px;
+    border-radius: 4px;
+}
+
+.skill-tag {
+    font-family: 'Luckiest Guy', cursive;
+    font-size: 0.75rem;
+    padding: 2px 10px;
+    border-radius: 12px;
+    border: 2px solid var(--dark-outline);
+    margin-bottom: 6px;
+    text-transform: uppercase;
+}
+
+.skill-tag-slash {
+    background: #fed330;
+    color: var(--dark-outline);
+}
+
+.skill-tag-water {
+    background: #00d2d3;
+    color: #ffffff;
+    text-shadow: 1px 1px 0 var(--dark-outline);
+}
+
+.skill-tag-quake {
+    background: #3498db;
+    color: #ffffff;
+    text-shadow: 1px 1px 0 var(--dark-outline);
+}
+
+.skill-tag-yaya {
+    background: #9b59b6;
+    color: #ffffff;
+    text-shadow: 1px 1px 0 var(--dark-outline);
+}
+
+.skill-tag-frappes {
+    background: #f39c12;
+    color: #ffffff;
+    text-shadow: 1px 1px 0 var(--dark-outline);
+}
+
+.skill-tag-locked {
+    background: #747d8c;
+    color: #ffffff;
+}
+
+.skill-name {
+    font-family: 'Luckiest Guy', cursive;
+    font-size: 1.35rem;
+    color: var(--dark-outline);
+    margin-bottom: 6px;
+    line-height: 1.2;
+}
+
+.skill-desc {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: #57606f;
+    line-height: 1.35;
+    margin-bottom: 12px;
+    min-height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Stats Pill Container */
+.skill-stats-grid {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    margin-bottom: 14px;
+}
+
+.skill-stat-pill {
+    background: #f1f2f6;
+    border: 2px solid var(--dark-outline);
+    border-radius: 10px;
+    padding: 4px 6px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.skill-stat-label {
+    font-size: 0.65rem;
+    font-weight: 900;
+    color: #747d8c;
+    text-transform: uppercase;
+}
+
+.skill-stat-value {
+    font-family: 'Luckiest Guy', cursive;
+    font-size: 0.88rem;
+    color: var(--dark-outline);
+}
+
+.skill-stat-highlight {
+    color: #00d2d3;
+    text-shadow: 0.5px 0.5px 0 var(--dark-outline);
+}
+
+/* Equip / Unlock Buttons */
+.skill-btn {
+    width: 100%;
+    margin-top: auto;
+}
+
+.skill-card.equipped .skill-btn {
+    background: #2ed573;
+    border-color: var(--dark-outline);
+    color: #ffffff;
+    cursor: default;
+}
+
+/* Lock Ribbon */
+.skill-lock-badge {
+    position: absolute;
+    top: 36px;
+    right: 12px;
+    background: #ff4757;
+    color: #ffffff;
+    font-family: 'Luckiest Guy', cursive;
+    font-size: 0.72rem;
+    padding: 2px 7px;
+    border-radius: 8px;
+    border: 2px solid var(--dark-outline);
+    box-shadow: 1.5px 1.5px 0 var(--dark-outline);
+}
+
+/* Rarity Badge (Top Right) */
+.skill-rarity-badge {
+    position: absolute;
+    top: 10px;
+    right: 12px;
+    font-family: 'Luckiest Guy', cursive;
+    font-size: 0.68rem;
+    padding: 2px 8px;
+    border-radius: 8px;
+    border: 2px solid var(--dark-outline);
+    box-shadow: 1.5px 1.5px 0 var(--dark-outline);
+    text-transform: uppercase;
+}
+
+/* Skill Level Badge & Pips */
+.skill-level-badge {
+    position: absolute;
+    top: 10px;
+    left: 12px;
+    background: #fed330;
+    color: var(--dark-outline);
+    font-family: 'Luckiest Guy', cursive;
+    font-size: 0.74rem;
+    padding: 3px 8px;
+    border-radius: 8px;
+    border: 2px solid var(--dark-outline);
+    box-shadow: 1.5px 1.5px 0 var(--dark-outline);
+}
+
+.skill-level-badge.max-level {
+    background: #2ed573;
+    color: #ffffff;
+    box-shadow: 1.5px 1.5px 0 var(--dark-outline);
+}
+
+.skill-level-badge.mastery-level-badge {
+    background: linear-gradient(135deg, #00cec9, #0984e3);
+    color: #ffffff;
+    box-shadow: 0 0 8px rgba(0, 206, 201, 0.6), 1.5px 1.5px 0 var(--dark-outline);
+}
+
+.skill-level-pips {
+    display: flex;
+    gap: 5px;
+    margin-bottom: 12px;
+    justify-content: center;
+}
+
+.skill-pip {
+    width: 20px;
+    height: 8px;
+    border-radius: 4px;
+    background: #dcdde1;
+    border: 1.5px solid var(--dark-outline);
+    transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.skill-pip.filled {
+    background: #fed330;
+}
+
+.skill-pip.max {
+    background: #2ed573;
+}
+
+.skill-pip.mastery {
+    background: #00cec9;
+    box-shadow: 0 0 6px #00cec9;
+}
+
+.mastery-sub {
+    font-size: 0.82rem;
+    color: #00cec9;
+    text-shadow: 1px 1px 0 var(--dark-outline);
+    margin-left: 4px;
+}
+
+/* Action Button Layout */
+.skill-actions-group {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: auto;
+}
+
+.skill-upgrade-btn {
+    width: 100%;
+    background: #fed330;
+    color: var(--dark-outline);
+    font-size: 0.84rem;
+    padding: 7px 10px;
+}
+
+.skill-upgrade-btn:hover:not(:disabled) {
+    background: #f1c40f;
+}
+
+.skill-upgrade-btn.max-btn {
+    background: #2ed573;
+    color: #ffffff;
+    cursor: default;
+    opacity: 0.95;
+}
+
+.skill-upgrade-btn.mastery-btn {
+    background: linear-gradient(135deg, #00cec9, #0984e3);
+    color: #ffffff;
+    cursor: default;
+    box-shadow: 0 0 8px rgba(0, 206, 201, 0.5);
+}
+
+.skill-upgrade-btn.mastery-unlock-btn {
+    background: linear-gradient(135deg, #f39c12, #00cec9);
+    color: #1e272e;
+    font-weight: 900;
+}

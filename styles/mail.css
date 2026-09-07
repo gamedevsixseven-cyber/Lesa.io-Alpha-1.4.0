@@ -1,0 +1,139 @@
+/* ===================================================
+   LESA.IO - DEVELOPER MAIL & NEWS MODAL STYLING
+   =================================================== */
+
+.mail-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    max-height: 420px;
+    overflow-y: auto;
+    padding-right: 6px;
+    text-align: left;
+}
+
+.mail-card {
+    background: #ffffff;
+    border: 3.5px solid var(--dark-outline);
+    border-radius: 18px;
+    padding: 14px 16px;
+    box-shadow: var(--shadow-solid-sm);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.mail-card.mail-featured {
+    border-color: var(--comic-blue-dark);
+    background: #f8faff;
+}
+
+.mail-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.mail-title-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.mail-badge-tag {
+    background: var(--comic-red);
+    color: #ffffff;
+    font-family: 'Luckiest Guy', cursive;
+    font-size: 0.75rem;
+    padding: 2px 8px;
+    border-radius: 8px;
+    border: 1.5px solid var(--dark-outline);
+}
+
+.mail-subject {
+    font-family: 'Luckiest Guy', cursive;
+    font-size: 1.15rem;
+    color: var(--dark-outline);
+}
+
+.mail-date {
+    font-size: 0.75rem;
+    font-weight: 800;
+    color: #a4b0be;
+}
+
+.mail-sender {
+    font-size: 0.8rem;
+    color: #57606f;
+}
+
+.mail-body-text {
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: #2f3542;
+    line-height: 1.35;
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 8px 10px;
+    border: 2px solid #e4e7eb;
+}
+
+.mail-attachment-box {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #fff9e6;
+    border: 2.5px dashed #f39c12;
+    border-radius: 12px;
+    padding: 8px 12px;
+    margin-top: 4px;
+}
+
+.attachment-rewards {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: 'Luckiest Guy', cursive;
+    font-size: 0.9rem;
+    color: var(--dark-outline);
+}
+
+.att-title {
+    color: #d35400;
+}
+
+/* Mail Gear Icons & Highlight Badges */
+.mail-gear-title-icon {
+    width: 26px;
+    height: 26px;
+    object-fit: contain;
+    vertical-align: middle;
+    margin-right: 4px;
+    filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.2));
+}
+
+.mail-gear-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: #ffffff;
+    border: 1.8px solid var(--dark-outline, #1e272e);
+    border-radius: 8px;
+    padding: 1px 7px;
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--dark-outline, #1e272e);
+    vertical-align: middle;
+    margin: 2px 2px;
+    box-shadow: 1.5px 1.5px 0 var(--dark-outline, #1e272e);
+}
+
+.mail-gear-icon {
+    width: 18px;
+    height: 18px;
+    object-fit: contain;
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.15));
+    display: inline-block;
+    vertical-align: middle;
+}
+

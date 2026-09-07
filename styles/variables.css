@@ -1,0 +1,135 @@
+/* ===================================================
+   LESA.IO - CORE DESIGN TOKENS, BASE & BUTTONS
+   =================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700;900&family=Luckiest+Guy&display=swap');
+
+:root {
+    --bg-color: #ff9f1a;
+    --dark-outline: #1e272e;
+    --comic-yellow: #fed330;
+    --comic-yellow-dark: #f7b731;
+    --comic-red: #ff4757;
+    --comic-red-dark: #eb4d4b;
+    --comic-green: #2ed573;
+    --comic-green-dark: #20bf6b;
+    --comic-blue: #70a1ff;
+    --comic-blue-dark: #3867d6;
+    --comic-orange: #fa8231;
+    --comic-purple: #af52de;
+    --comic-white: #ffffff;
+    --comic-panel-bg: #fff9e6;
+    --shadow-solid-sm: 2px 2px 0px var(--dark-outline);
+    --shadow-solid: 4px 4px 0px var(--dark-outline);
+    --shadow-solid-lg: 5px 5px 0px var(--dark-outline);
+    --shadow-solid-xl: 7px 7px 0px var(--dark-outline);
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+body, html {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background-color: var(--dark-outline);
+    font-family: 'Fredoka', cursive, sans-serif;
+    color: var(--dark-outline);
+}
+
+#game-container {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+}
+
+#game-canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+    background-color: #78e08f;
+    cursor: crosshair;
+}
+
+/* ================= UTILITIES & BUTTONS ================= */
+
+.hidden {
+    display: none !important;
+}
+
+.comic-btn {
+    font-family: 'Luckiest Guy', cursive;
+    font-size: 1.25rem;
+    letter-spacing: 1px;
+    padding: 12px 28px;
+    border-radius: 50px;
+    border: 3.5px solid var(--dark-outline);
+    background: var(--comic-yellow);
+    color: var(--dark-outline);
+    box-shadow: var(--shadow-solid-lg);
+    cursor: pointer;
+    transition: transform 0.1s ease, box-shadow 0.1s ease, background 0.2s ease;
+    text-shadow: 1px 1px 0 rgba(255, 255, 255, 0.6);
+    outline: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.comic-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 6px 8px 0px var(--dark-outline);
+    background: #ffeaa7;
+}
+
+.comic-btn:active {
+    transform: translateY(3px);
+    box-shadow: 2px 2px 0px var(--dark-outline);
+}
+
+.comic-btn-primary {
+    font-size: 1.6rem;
+    padding: 14px 40px;
+    background: var(--comic-green);
+    color: #ffffff;
+    text-shadow: 2px 2px 0 var(--dark-outline);
+}
+
+.comic-btn-primary:hover {
+    background: #55efc4;
+}
+
+.comic-btn-danger {
+    background: var(--comic-red);
+    color: #ffffff;
+    text-shadow: 2px 2px 0 var(--dark-outline);
+}
+
+.comic-btn-danger:hover {
+    background: #ff6b81;
+}
+
+.comic-btn-sm {
+    font-size: 0.95rem;
+    padding: 7px 16px;
+    box-shadow: var(--shadow-solid-sm);
+}
+
+.toggle-on {
+    background: var(--comic-green);
+    color: #ffffff;
+    text-shadow: 1px 1px 0 var(--dark-outline);
+}
+
+.toggle-off {
+    background: #a4b0be;
+    color: #2f3542;
+    text-shadow: none;
+}

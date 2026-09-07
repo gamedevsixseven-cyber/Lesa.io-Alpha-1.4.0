@@ -1,0 +1,503 @@
+/* ===================================================
+   LESA.IO - MODALS, OVERLAYS & POPUP CARDS
+   =================================================== */
+
+.modal-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(30, 39, 46, 0.75);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 200;
+    cursor: pointer;
+}
+
+.modal-panel {
+    position: relative;
+    cursor: default;
+    background: var(--comic-panel-bg);
+    border: 5px solid var(--dark-outline);
+    border-radius: 36px;
+    box-shadow: var(--shadow-solid-xl);
+    padding: 30px 36px;
+    text-align: center;
+    max-width: 580px;
+    width: 90%;
+    animation: modalPopIn 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+/* Comic Red "X" Close Button (Top-Right of Modals) */
+.modal-close-x-btn {
+    position: absolute;
+    top: 10px;
+    right: 12px;
+    width: 50px;
+    height: 50px;
+    background: url('../assets/icons/XcloseButton.png') center/contain no-repeat !important;
+    background-color: transparent !important;
+    border: none !important;
+    border-radius: 50% !important;
+    color: transparent !important;
+    font-size: 0 !important;
+    text-indent: -9999px !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: none !important;
+    filter: drop-shadow(2px 2.5px 0 var(--dark-outline));
+    transition: transform 0.12s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    z-index: 120;
+    user-select: none;
+    line-height: 1;
+}
+
+.modal-close-x-btn:hover {
+    transform: scale(1.12) rotate(6deg);
+    filter: drop-shadow(3px 3.5px 0 var(--dark-outline));
+}
+
+.modal-close-x-btn:active {
+    transform: scale(0.92);
+    filter: drop-shadow(1px 1px 0 var(--dark-outline));
+}
+
+.modal-title {
+    font-family: 'Luckiest Guy', cursive;
+    font-size: 2.8rem;
+    color: var(--comic-yellow);
+    -webkit-text-stroke: 3px var(--dark-outline);
+    text-shadow: 4px 4px 0 var(--dark-outline);
+    margin-bottom: 6px;
+}
+
+.modal-subtitle {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #57606f;
+    margin-bottom: 24px;
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+}
+
+/* Modal Timer Header */
+.modal-timer-header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-size: 1rem;
+    font-weight: 800;
+    color: #57606f;
+    margin-bottom: 16px;
+}
+
+.timer-badge {
+    background: #2f3542;
+    color: var(--comic-yellow);
+    border: 2px solid var(--dark-outline);
+    border-radius: 10px;
+    padding: 3px 10px;
+    font-family: 'Luckiest Guy', cursive;
+    font-size: 1.05rem;
+    box-shadow: 1px 1px 0 var(--dark-outline);
+}
+
+/* Challenges Modal List */
+.challenges-modal-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-height: 380px;
+    overflow-y: auto;
+    padding-right: 6px;
+}
+
+.challenges-modal-list::-webkit-scrollbar {
+    width: 8px;
+}
+.challenges-modal-list::-webkit-scrollbar-thumb {
+    background: var(--comic-yellow);
+    border-radius: 8px;
+    border: 2px solid var(--dark-outline);
+}
+
+.challenge-card {
+    background: #ffffff;
+    border: 3.5px solid var(--dark-outline);
+    border-radius: 18px;
+    box-shadow: var(--shadow-solid-sm);
+    padding: 10px 14px;
+    display: grid;
+    grid-template-columns: 46px 1fr 150px;
+    align-items: center;
+    gap: 12px;
+    text-align: left;
+    transition: transform 0.12s ease;
+}
+
+.challenge-card:hover {
+    transform: translateX(4px);
+}
+
+.challenge-card.challenge-ready {
+    border-color: #2ed573;
+    background: #f0fff4;
+}
+
+.challenge-card.challenge-claimed {
+    opacity: 0.75;
+    background: #f1f2f6;
+}
+
+.challenge-icon-col {
+    font-size: 2rem;
+    text-align: center;
+}
+
+.challenge-info-col {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.challenge-title-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.challenge-title {
+    font-family: 'Luckiest Guy', cursive;
+    font-size: 1.15rem;
+    color: var(--dark-outline);
+}
+
+.challenge-progress-num {
+    font-family: 'Luckiest Guy', cursive;
+    font-size: 0.9rem;
+    color: var(--comic-blue-dark);
+}
+
+.challenge-desc {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: #747d8c;
+    margin-bottom: 4px;
+}
+
+.challenge-bar-container {
+    height: 10px;
+    background: #dcdde1;
+    border: 2px solid var(--dark-outline);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.challenge-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #2ed573, #20bf6b);
+    transition: width 0.3s ease;
+}
+
+.challenge-reward-col {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 6px;
+}
+
+.challenge-rewards-badge {
+    display: flex;
+    gap: 8px;
+    font-family: 'Luckiest Guy', cursive;
+    font-size: 0.85rem;
+    color: var(--dark-outline);
+}
+
+.quest-btn-claim {
+    width: 100%;
+    font-size: 0.9rem;
+    padding: 6px 12px;
+    animation: claimPulse 1.2s infinite alternate;
+}
+
+.quest-btn-claimed {
+    width: 100%;
+    font-size: 0.85rem;
+    padding: 6px 10px;
+    background: #a4b0be;
+    color: #2f3542;
+    cursor: default;
+    box-shadow: none;
+}
+
+.quest-btn-progress {
+    width: 100%;
+    font-size: 0.85rem;
+    padding: 6px 10px;
+    background: #dcdde1;
+    color: #57606f;
+    cursor: default;
+    box-shadow: none;
+}
+
+/* ================= UPGRADE CARDS MODAL ================= */
+
+.upgrade-cards-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.upgrade-card {
+    background: #ffffff;
+    border: 4px solid var(--dark-outline);
+    border-radius: 24px;
+    box-shadow: var(--shadow-solid-lg);
+    padding: 18px 14px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    cursor: pointer;
+}
+
+.upgrade-card:hover {
+    transform: translateY(-8px) scale(1.02);
+    box-shadow: var(--shadow-solid-xl);
+}
+
+.card-header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+}
+
+.card-icon {
+    font-size: 3rem;
+    filter: drop-shadow(2px 2px 0 var(--dark-outline));
+}
+
+.card-rarity {
+    font-family: 'Luckiest Guy', cursive;
+    font-size: 0.75rem;
+    letter-spacing: 1px;
+    padding: 2px 10px;
+    border-radius: 10px;
+    border: 1.5px solid var(--dark-outline);
+    text-transform: uppercase;
+}
+
+.rarity-common {
+    background: #a4b0be;
+    color: #ffffff;
+}
+
+.rarity-rare {
+    background: var(--comic-blue);
+    color: #ffffff;
+}
+
+.rarity-epic {
+    background: var(--comic-purple);
+    color: #ffffff;
+}
+
+.rarity-legendary {
+    background: var(--comic-yellow);
+    color: var(--dark-outline);
+}
+
+.card-title {
+    font-family: 'Luckiest Guy', cursive;
+    font-size: 1.3rem;
+    color: var(--dark-outline);
+    line-height: 1.1;
+}
+
+.card-desc {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #57606f;
+    flex-grow: 1;
+}
+
+.card-select-btn {
+    width: 100%;
+}
+
+/* ================= SETTINGS MODAL ================= */
+
+.settings-controls-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.setting-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #ffffff;
+    border: 3px solid var(--dark-outline);
+    border-radius: 18px;
+    padding: 10px 18px;
+    box-shadow: var(--shadow-solid-sm);
+    font-weight: 800;
+    font-size: 1.05rem;
+}
+
+.slider-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.comic-slider {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 130px;
+    height: 12px;
+    border-radius: 10px;
+    background: #dcdde1;
+    border: 2px solid var(--dark-outline);
+    outline: none;
+}
+
+.comic-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: var(--comic-yellow);
+    border: 2.5px solid var(--dark-outline);
+    cursor: pointer;
+    box-shadow: 1px 1px 0 var(--dark-outline);
+}
+
+.slider-val-badge {
+    background: #2f3542;
+    color: #fed330;
+    border: 2px solid var(--dark-outline);
+    border-radius: 8px;
+    font-family: 'Luckiest Guy', cursive;
+    font-size: 0.95rem;
+    padding: 2px 8px;
+    min-width: 46px;
+    text-align: center;
+    box-shadow: 1px 1px 0 var(--dark-outline);
+}
+
+/* ================= GAME OVER STATS ================= */
+
+.stats-grid, .game-over-stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    margin-bottom: 16px;
+}
+
+.stat-box.stat-reward-box {
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.stat-box {
+    background: #ffffff;
+    border: 3px solid var(--dark-outline);
+    border-radius: 16px;
+    padding: 10px;
+    box-shadow: var(--shadow-solid-sm);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-weight: 800;
+    font-size: 0.9rem;
+    color: #57606f;
+}
+
+.stat-value {
+    font-family: 'Luckiest Guy', cursive;
+    font-size: 1.6rem;
+    color: var(--comic-red);
+}
+
+/* ================= MODAL GAMEPLAY TIPS ================= */
+.modal-tip-box {
+    background: rgba(18, 22, 36, 0.92);
+    border: 3px solid var(--dark-outline, #000000);
+    border-radius: 18px;
+    padding: 12px 18px;
+    margin: 14px 0 20px 0;
+    text-align: center;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35), inset 0 1px 2px rgba(255, 255, 255, 0.2);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    animation: modalTipPop 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.modal-tip-box.game-over-tip {
+    border-color: #2f3542;
+    background: rgba(26, 26, 46, 0.94);
+}
+
+.modal-tip-box.pause-tip {
+    border-color: #2f3542;
+    background: rgba(18, 22, 36, 0.94);
+}
+
+.modal-tip-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--comic-yellow, #ffe653);
+    color: #111422;
+    font-family: 'Luckiest Guy', 'Bangers', cursive, sans-serif;
+    font-size: 0.85rem;
+    font-weight: 900;
+    padding: 3px 12px;
+    border-radius: 12px;
+    border: 2px solid #000000;
+    box-shadow: 1px 1px 0 #000000;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+}
+
+.modal-tip-content {
+    font-family: 'Fredoka', 'Outfit', sans-serif;
+    font-size: 0.94rem;
+    font-weight: 600;
+    color: #f1f2f6;
+    line-height: 1.45;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.85);
+}
+
+.modal-tip-content .loading-tip-highlight {
+    color: #ffbe0b;
+    font-weight: 800;
+}
+
+@keyframes modalTipPop {
+    0% { transform: scale(0.96); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+}
+

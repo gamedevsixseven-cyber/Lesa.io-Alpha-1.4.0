@@ -1,0 +1,300 @@
+/* ===================================================
+   LESA.IO - IN-GAME HUD & OVERLAY STYLES
+   =================================================== */
+
+#game-hud {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 50;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    transition: opacity 0.35s ease, transform 0.35s ease;
+}
+
+#game-hud.cutscene-hidden {
+    opacity: 0 !important;
+    pointer-events: none !important;
+    transform: translateY(-8px);
+}
+
+.hud-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    width: 100%;
+}
+
+.player-status-card {
+    background: var(--comic-panel-bg);
+    border: 4px solid var(--dark-outline);
+    border-radius: 24px;
+    box-shadow: var(--shadow-solid-lg);
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    pointer-events: auto;
+}
+
+.player-avatar-hud,
+.hud-avatar-box {
+    position: relative;
+    width: 54px;
+    height: 54px;
+    border-radius: 50%;
+    border: 3.5px solid var(--dark-outline);
+    background: var(--comic-yellow);
+    overflow: hidden;
+    box-shadow: var(--shadow-solid-sm);
+    flex-shrink: 0;
+}
+
+.player-avatar-hud img,
+.hud-avatar-box img,
+#hud-avatar-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center center;
+    transform: scale(1.08);
+    display: block;
+}
+
+.player-bars,
+.status-bars {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.bar-wrapper,
+.bar-container {
+    position: relative;
+    width: 180px;
+    height: 18px;
+    border-radius: 20px;
+    border: 2.5px solid var(--dark-outline);
+    background: #2d3436;
+    overflow: hidden;
+}
+
+.hp-bar {
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.4);
+}
+
+.xp-bar {
+    height: 14px;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.4);
+}
+
+.bar-fill {
+    height: 100%;
+    border-radius: 20px;
+    transition: width 0.15s ease-out;
+}
+
+.hp-fill,
+#hp-fill {
+    background: linear-gradient(180deg, #ff6b81 0%, #ff4757 100%);
+}
+
+.xp-fill,
+#xp-fill {
+    background: linear-gradient(180deg, #70a1ff 0%, #1e90ff 100%);
+}
+
+.bar-text {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Fredoka', sans-serif;
+    font-size: 0.75rem;
+    font-weight: 900;
+    color: #ffffff;
+    text-shadow: 1px 1px 0 var(--dark-outline);
+    line-height: 1;
+    pointer-events: none !important;
+}
+
+.hud-center-score,
+.hud-center-status {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    pointer-events: auto;
+}
+
+.wave-title,
+.wave-pill {
+    background: var(--comic-yellow);
+    border: 3.5px solid var(--dark-outline);
+    border-radius: 18px;
+    box-shadow: var(--shadow-solid-sm);
+    padding: 4px 20px;
+    font-family: 'Luckiest Guy', cursive;
+    font-size: 1.4rem;
+    color: var(--dark-outline);
+    letter-spacing: 1px;
+}
+
+.wave-enemy-subtext,
+.enemy-count-pill {
+    background: #ffffff;
+    border: 2px solid var(--dark-outline);
+    border-radius: 12px;
+    box-shadow: var(--shadow-solid-sm);
+    padding: 2px 12px;
+    font-family: 'Luckiest Guy', cursive;
+    font-size: 0.85rem;
+    color: var(--comic-red);
+}
+
+.score-title,
+.score-pill {
+    font-family: 'Luckiest Guy', cursive;
+    font-size: 2.2rem;
+    color: #ffffff;
+    text-shadow: 2.5px 2.5px 0 var(--dark-outline), -1px -1px 0 var(--dark-outline), 1px -1px 0 var(--dark-outline), -1px 1px 0 var(--dark-outline);
+    letter-spacing: 1.5px;
+    line-height: 1;
+    margin-top: 2px;
+}
+
+.hud-right,
+.hud-top-right {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    pointer-events: auto;
+}
+
+.hud-top-buttons {
+    display: flex;
+    gap: 8px;
+}
+
+.comic-btn-sm {
+    font-size: 0.95rem;
+    padding: 8px 16px;
+    border-radius: 20px;
+}
+
+.minimap-panel,
+.minimap-container {
+    background: var(--comic-panel-bg);
+    border: 3.5px solid var(--dark-outline);
+    border-radius: 18px;
+    box-shadow: var(--shadow-solid-lg);
+    padding: 6px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.minimap-header {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    font-family: 'Luckiest Guy', cursive;
+    font-size: 0.8rem;
+    color: #57606f;
+    padding: 0 4px;
+}
+
+#minimap-canvas {
+    width: 110px;
+    height: 110px;
+    border: 2.5px solid var(--dark-outline);
+    border-radius: 14px;
+    background: #a8e6cf;
+}
+
+#pause-btn,
+.hud-pause-btn {
+    min-width: 48px;
+    height: 42px;
+    border-radius: 16px;
+    padding: 6px 14px;
+    font-size: 1rem;
+    background: var(--comic-yellow);
+    pointer-events: auto !important;
+    cursor: pointer;
+}
+
+.hud-bottom-center {
+    align-self: center;
+    display: flex;
+    gap: 16px;
+    pointer-events: auto;
+}
+
+.weapon-badge, .dash-badge, .skill-badge {
+    background: var(--comic-panel-bg);
+    border: 3.5px solid var(--dark-outline);
+    border-radius: 20px;
+    box-shadow: var(--shadow-solid);
+    padding: 8px 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: 'Luckiest Guy', cursive;
+    font-size: 1.1rem;
+    cursor: pointer;
+}
+
+.dash-badge, .skill-badge {
+    position: relative;
+    overflow: hidden;
+}
+
+.dash-cooldown-bar {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    height: 4px;
+    background: var(--comic-orange);
+    width: 100%;
+    transition: width 0.1s linear;
+}
+
+.skill-cooldown-bar {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    height: 4px;
+    background: #00cec9;
+    box-shadow: 0 0 6px rgba(0, 206, 201, 0.6);
+    width: 100%;
+    transition: width 0.1s linear;
+}
+
+.dash-badge.on-cooldown, .skill-badge.on-cooldown {
+    opacity: 0.6;
+}
+
+.skill-badge.is-active {
+    opacity: 1 !important;
+    border-color: #00cec9;
+    box-shadow: 0 0 10px rgba(0, 206, 201, 0.75), var(--shadow-solid);
+}
+
+.dash-badge-img {
+    width: 22px;
+    height: 22px;
+    object-fit: contain;
+    vertical-align: middle;
+    margin-right: 4px;
+    filter: drop-shadow(1px 1px 0 rgba(0, 0, 0, 0.5));
+}

@@ -1,0 +1,518 @@
+/* ==========================================================================
+   Lesa.io - 4-Slot Chest System Styles
+   Matches Comic UI Aesthetic with 4 Persistent Bottom-Center Chest Slots
+   ========================================================================== */
+
+/* --- 4-SLOT CONTAINER (LOWER-CENTER MENU) --- */
+.menu-chest-container {
+    position: relative;
+    z-index: 15;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 14px;
+    margin: 14px auto 8px auto;
+    width: 100%;
+    max-width: 640px;
+}
+
+/* --- INDIVIDUAL CHEST SLOT CARD --- */
+.chest-slot-card {
+    position: relative;
+    width: 130px;
+    height: 168px;
+    background: #ffffff;
+    border: 3.5px solid var(--dark-outline, #1e272e);
+    border-radius: 18px;
+    box-shadow: 0 6px 0 var(--dark-outline, #1e272e);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 6px;
+    cursor: pointer;
+    user-select: none;
+    transition: transform 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.15s ease;
+    overflow: hidden;
+}
+
+.chest-slot-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 10px 0 var(--dark-outline, #1e272e);
+}
+
+.chest-slot-card:active {
+    transform: translateY(2px);
+    box-shadow: 0 4px 0 var(--dark-outline, #1e272e);
+}
+
+/* --- 1. EMPTY SLOT STATE --- */
+.chest-slot-card.slot-empty {
+    background: rgba(255, 255, 255, 0.45);
+    border: 3px dashed #747d8c;
+    box-shadow: 0 4px 0 rgba(0, 0, 0, 0.15);
+    cursor: default;
+}
+
+.chest-slot-card.slot-empty:hover {
+    transform: none;
+    box-shadow: 0 4px 0 rgba(0, 0, 0, 0.15);
+}
+
+.slot-empty-icon {
+    font-size: 2.2rem;
+    opacity: 0.35;
+    margin-top: 24px;
+}
+
+.slot-empty-title {
+    font-family: 'Luckiest Guy', cursive, sans-serif;
+    font-size: 0.85rem;
+    color: #57606f;
+    letter-spacing: 0.5px;
+}
+
+.slot-empty-hint {
+    font-size: 0.66rem;
+    font-weight: 800;
+    color: #747d8c;
+    text-align: center;
+    padding: 0 4px 8px 4px;
+    line-height: 1.15;
+}
+
+/* --- 2. FILLED CHEST SLOT HEADER --- */
+.chest-card-header {
+    width: 100%;
+    padding: 3px 4px;
+    border-radius: 8px;
+    text-align: center;
+    font-family: 'Luckiest Guy', cursive, sans-serif;
+    font-size: 0.72rem;
+    color: #ffffff;
+    letter-spacing: 0.4px;
+    border: 2px solid var(--dark-outline, #1e272e);
+    text-transform: uppercase;
+    box-shadow: 0 2px 0 rgba(0, 0, 0, 0.2);
+}
+
+/* Rarity specific headers */
+.chest-slot-card.tier-common .chest-card-header { background: #20bf6b; }
+.chest-slot-card.tier-uncommon .chest-card-header { background: #05c46b; }
+.chest-slot-card.tier-rare .chest-card-header { background: #0984e3; }
+.chest-slot-card.tier-epic .chest-card-header { background: #8e44ad; }
+.chest-slot-card.tier-legendary .chest-card-header { background: #e67e22; }
+.chest-slot-card.tier-mythic .chest-card-header { background: #be2edd; }
+
+/* Rarity specific card borders / accents */
+.chest-slot-card.tier-common { background: #eefbf4; }
+.chest-slot-card.tier-uncommon { background: #e8f9f0; }
+.chest-slot-card.tier-rare { background: #eef6ff; }
+.chest-slot-card.tier-epic { background: #f8effc; }
+.chest-slot-card.tier-legendary { background: #fff8ee; }
+.chest-slot-card.tier-mythic { background: #faefff; }
+
+/* --- CHEST ARTWORK --- */
+.chest-card-img-wrap {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px 0;
+}
+
+.chest-card-img {
+    width: 82px;
+    height: 72px;
+    object-fit: contain;
+    filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.3));
+    transition: transform 0.2s ease;
+}
+
+.chest-slot-card:hover .chest-card-img {
+    transform: scale(1.08);
+}
+
+/* --- 3. STATUS FOOTER PILL --- */
+.chest-card-footer {
+    width: 100%;
+    padding: 5px 2px;
+    border-radius: 10px;
+    text-align: center;
+    font-size: 0.68rem;
+    font-weight: 900;
+    border: 2px solid var(--dark-outline, #1e272e);
+    box-shadow: 0 2px 0 rgba(0, 0, 0, 0.15);
+}
+
+/* Locked: Tap to Unlock */
+.status-locked {
+    background: #fed330;
+    color: #1e272e;
+    font-family: 'Luckiest Guy', cursive, sans-serif;
+    letter-spacing: 0.3px;
+}
+
+/* Unlocking: Timer Countdown */
+.status-unlocking {
+    background: #0984e3;
+    color: #ffffff;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1px;
+    padding: 3px 2px;
+}
+
+.status-unlocking-lbl {
+    font-size: 0.58rem;
+    opacity: 0.9;
+    letter-spacing: 0.2px;
+}
+
+.status-unlocking-time {
+    font-family: 'Luckiest Guy', monospace, sans-serif;
+    font-size: 0.76rem;
+    letter-spacing: 0.5px;
+}
+
+/* Ready to Open: Bouncing golden glow */
+.status-ready {
+    background: #2ed573;
+    color: #ffffff;
+    font-family: 'Luckiest Guy', cursive, sans-serif;
+    letter-spacing: 0.4px;
+    animation: chestBounce 1.4s infinite ease-in-out;
+}
+
+/* Daily Free Skip Ready */
+.chest-card-footer.status-free-skip-ready {
+    background: #20bf6b;
+    border-color: #1e272e;
+    animation: chestBounce 1.2s infinite ease-in-out;
+}
+
+.btn-daily-free-skip {
+    background: #20bf6b !important;
+    color: #ffffff !important;
+    border-color: #1e272e !important;
+    box-shadow: 0 4px 0 #1e272e !important;
+    animation: chestBounce 1.4s infinite ease-in-out;
+}
+
+@keyframes chestBounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-3px); }
+}
+
+.chest-slot-card.slot-ready {
+    box-shadow: 0 0 16px rgba(46, 213, 115, 0.7), 0 6px 0 var(--dark-outline, #1e272e);
+}
+
+/* --- CHEST INSPECT & OPENING MODALS --- */
+#chest-action-modal .modal-content {
+    max-width: 440px;
+    text-align: center;
+}
+
+.chest-modal-preview {
+    width: 140px;
+    height: 125px;
+    object-fit: contain;
+    margin: 10px auto;
+    filter: drop-shadow(0 8px 12px rgba(0, 0, 0, 0.35));
+    animation: chestHover 2s infinite ease-in-out;
+}
+
+@keyframes chestHover {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-6px); }
+}
+
+.chest-contents-summary {
+    background: #f1f2f6;
+    border: 2px solid #dcdde1;
+    border-radius: 14px;
+    padding: 10px 14px;
+    margin: 12px 0;
+    display: flex;
+    justify-content: space-around;
+}
+
+.chest-summary-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.chest-summary-icon { font-size: 1.4rem; }
+.chest-summary-text { font-size: 0.8rem; font-weight: 900; color: #2f3542; margin-top: 2px; }
+
+/* Loot reveal card layout */
+.chest-loot-cards {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin: 16px 0;
+}
+
+.loot-card-item {
+    width: 90px;
+    background: #ffffff;
+    border: 3px solid var(--dark-outline);
+    border-radius: 12px;
+    padding: 8px 4px;
+    text-align: center;
+    animation: lootFlip 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes lootFlip {
+    0% { transform: scale(0.4) rotate(-15deg); opacity: 0; }
+    100% { transform: scale(1.0) rotate(0deg); opacity: 1; }
+}
+
+.loot-card-icon {
+    width: 48px;
+    height: 48px;
+    object-fit: contain;
+    margin: 0 auto 4px auto;
+}
+
+.loot-card-name {
+    font-size: 0.65rem;
+    font-weight: 900;
+    color: #2f3542;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* ==========================================================================
+   CLASH ROYALE STYLE TAP-TO-REVEAL LOOT STAGE
+   ========================================================================== */
+
+.cr-loot-stage {
+    min-height: 290px;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    border-radius: 20px;
+    padding: 16px 12px;
+    margin: 6px 0 10px 0;
+    background: radial-gradient(circle at center, #2f3542 0%, #1e272e 100%);
+    border: 3.5px solid var(--dark-outline, #1e272e);
+    box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.6);
+    user-select: none;
+    cursor: pointer;
+}
+
+.cr-sunburst {
+    position: absolute;
+    width: 360px;
+    height: 360px;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    background: repeating-conic-gradient(rgba(254, 211, 48, 0.22) 0deg 15deg, transparent 15deg 30deg);
+    animation: crRotateSunburst 18s linear infinite;
+    pointer-events: none;
+    z-index: 1;
+}
+
+@keyframes crRotateSunburst {
+    0% { transform: translate(-50%, -50%) rotate(0deg); }
+    100% { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+.cr-remaining-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #fed330;
+    color: #1e272e;
+    font-family: 'Luckiest Guy', cursive;
+    font-size: 0.88rem;
+    padding: 4px 14px;
+    border-radius: 14px;
+    border: 2.5px solid #1e272e;
+    box-shadow: 2px 3px 0 #1e272e;
+    margin-bottom: 12px;
+    position: relative;
+    z-index: 2;
+    animation: crBadgeBounce 0.35s ease;
+}
+
+@keyframes crBadgeBounce {
+    0% { transform: scale(0.6); }
+    70% { transform: scale(1.15); }
+    100% { transform: scale(1); }
+}
+
+.cr-card-slam {
+    position: relative;
+    z-index: 2;
+    animation: crCardSlam 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+@keyframes crCardSlam {
+    0% { transform: scale(0.2) rotate(-18deg); opacity: 0; }
+    70% { transform: scale(1.12) rotate(3deg); opacity: 1; }
+    100% { transform: scale(1.0) rotate(0deg); opacity: 1; }
+}
+
+.cr-item-card {
+    width: 175px;
+    min-height: 205px;
+    background: #ffffff;
+    border: 4px solid var(--dark-outline, #1e272e);
+    border-radius: 20px;
+    padding: 12px 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 8px 0 var(--dark-outline, #1e272e);
+    text-align: center;
+}
+
+.cr-item-card.tier-common { border-color: #747d8c; }
+.cr-item-card.tier-uncommon { border-color: #2ed573; }
+.cr-item-card.tier-rare { border-color: #1e90ff; }
+.cr-item-card.tier-epic { border-color: #9b59b6; }
+.cr-item-card.tier-legendary { border-color: #f39c12; }
+.cr-item-card.tier-mythic { border-color: #e056fd; }
+
+.cr-card-rarity-ribbon {
+    font-family: 'Luckiest Guy', cursive;
+    font-size: 0.7rem;
+    color: #ffffff;
+    padding: 2px 10px;
+    border-radius: 10px;
+    border: 2px solid var(--dark-outline, #1e272e);
+    margin-bottom: 6px;
+    text-transform: uppercase;
+}
+
+.tier-common .cr-card-rarity-ribbon { background: #747d8c; }
+.tier-uncommon .cr-card-rarity-ribbon { background: #2ed573; }
+.tier-rare .cr-card-rarity-ribbon { background: #1e90ff; }
+.tier-epic .cr-card-rarity-ribbon { background: #9b59b6; }
+.tier-legendary .cr-card-rarity-ribbon { background: #f39c12; }
+.tier-mythic .cr-card-rarity-ribbon { background: #e056fd; }
+
+.cr-item-img {
+    width: 72px;
+    height: 72px;
+    object-fit: contain;
+    margin: 4px 0 8px 0;
+    filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.3));
+}
+
+.cr-item-emoji {
+    font-size: 3.5rem;
+    margin: 4px 0 8px 0;
+    filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.3));
+}
+
+.cr-item-name {
+    font-family: 'Luckiest Guy', cursive;
+    font-size: 1rem;
+    color: var(--dark-outline, #1e272e);
+    margin-bottom: 2px;
+    line-height: 1.1;
+}
+
+.cr-item-qty {
+    font-size: 0.8rem;
+    font-weight: 900;
+    color: #2ed573;
+    text-shadow: 1px 1px 0 #1e272e;
+}
+
+.cr-tap-hint {
+    margin-top: 14px;
+    font-family: 'Luckiest Guy', cursive;
+    font-size: 0.95rem;
+    color: #fed330;
+    text-shadow: 1.5px 1.5px 0 #1e272e;
+    animation: crTapPulse 1.2s infinite ease-in-out;
+    cursor: pointer;
+    user-select: none;
+    z-index: 2;
+}
+
+@keyframes crTapPulse {
+    0%, 100% { transform: translateY(0) scale(1); opacity: 0.9; }
+    50% { transform: translateY(-3px) scale(1.05); opacity: 1; }
+}
+
+.cr-chest-intro-img {
+    width: 125px;
+    height: 110px;
+    object-fit: contain;
+    filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.45));
+    animation: crChestRumble 0.9s infinite ease-in-out;
+    cursor: pointer;
+    transition: transform 0.15s ease;
+}
+
+.cr-chest-intro-img:hover {
+    transform: scale(1.08);
+}
+
+.cr-chest-intro-img:active {
+    transform: scale(0.95);
+}
+
+@keyframes crChestRumble {
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    20% { transform: translateY(-4px) rotate(-3deg); }
+    40% { transform: translateY(-1px) rotate(3deg); }
+    60% { transform: translateY(-3px) rotate(-2deg); }
+    80% { transform: translateY(0) rotate(2deg); }
+}
+
+/* --- MOBILE RESPONSIVE SCALING --- */
+@media (max-width: 768px) {
+    .menu-chest-container {
+        gap: 6px;
+        margin: 6px auto;
+        max-width: 98%;
+    }
+
+    .chest-slot-card {
+        width: 78px;
+        height: 116px;
+        border-width: 2.5px;
+        border-radius: 12px;
+        box-shadow: 0 4px 0 var(--dark-outline, #1e272e);
+        padding: 4px 2px;
+    }
+
+    .chest-card-header {
+        font-size: 0.52rem;
+        padding: 2px 1px;
+    }
+
+    .chest-card-img {
+        width: 52px;
+        height: 46px;
+    }
+
+    .chest-card-footer {
+        font-size: 0.52rem;
+        padding: 3px 1px;
+    }
+
+    .status-unlocking-lbl { display: none; }
+    .status-unlocking-time { font-size: 0.56rem; }
+
+    .slot-empty-icon { font-size: 1.4rem; margin-top: 10px; }
+    .slot-empty-title { font-size: 0.55rem; }
+    .slot-empty-hint { display: none; }
+}

@@ -1,0 +1,452 @@
+/* ==========================================================================
+   Lesa.io - Battle Perks Loadout & Vault Styles
+   Includes 3-slot loadout, advanced live search, category filter pills, and tags
+   ========================================================================== */
+
+/* --- 1. 3-SLOT ACTIVE LOADOUT --- */
+.perks-loadout-slots {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+    margin: 14px 0 12px 0;
+}
+
+.perk-slot-card {
+    background: #ffffff;
+    border: 3.5px solid var(--dark-outline);
+    border-radius: 18px;
+    padding: 14px 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    box-shadow: var(--shadow-solid-sm);
+    position: relative;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.perk-slot-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-solid-md);
+}
+
+.perk-slot-badge {
+    font-family: 'Luckiest Guy', cursive;
+    font-size: 0.78rem;
+    letter-spacing: 0.5px;
+    padding: 3px 10px;
+    border-radius: 12px;
+    border: 2px solid var(--dark-outline);
+    margin-bottom: 10px;
+    color: #ffffff;
+    text-shadow: 1px 1px 0 #000;
+}
+
+.perk-slot-1 .perk-slot-badge { background: #3498db; }
+.perk-slot-2 .perk-slot-badge { background: #e74c3c; }
+.perk-slot-3 .perk-slot-badge { background: #f1c40f; color: #2c3e50; text-shadow: none; }
+
+.perk-empty-frame {
+    width: 68px;
+    height: 68px;
+    border-radius: 16px;
+    border: 3px dashed #b2bec3;
+    background: #f1f2f6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 10px;
+    transition: border-color 0.2s ease;
+}
+
+.perk-slot-card:hover .perk-empty-frame {
+    border-color: #636e72;
+    background: #dfe4ea;
+}
+
+.perk-empty-icon {
+    font-size: 2rem;
+    color: #95a5a6;
+    opacity: 0.65;
+}
+
+.perk-slot-title {
+    font-family: 'Luckiest Guy', cursive;
+    font-size: 0.98rem;
+    color: var(--dark-outline);
+    margin-bottom: 4px;
+}
+
+.perk-slot-status {
+    font-size: 0.74rem;
+    font-weight: 900;
+    color: #a4b0be;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.perk-slot-card.active-slot-focus {
+    border-color: #2ed573;
+    box-shadow: 0 0 0 3.5px rgba(46, 213, 115, 0.4), var(--shadow-solid-sm);
+}
+
+.perk-icon-frame {
+    width: 68px;
+    height: 68px;
+    border-radius: 16px;
+    border: 3px solid #b2bec3;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 10px;
+}
+
+.perk-active-icon {
+    font-size: 2rem;
+}
+
+.perk-slot-unequip-btn {
+    font-family: 'Luckiest Guy', cursive;
+    font-size: 0.64rem;
+    padding: 3px 8px;
+    background: #ff4757;
+    color: #fff;
+    border: 2px solid var(--dark-outline);
+    border-radius: 8px;
+    cursor: pointer;
+    margin-top: 4px;
+    box-shadow: 1px 1px 0 #000;
+    letter-spacing: 0.2px;
+    white-space: nowrap;
+}
+
+.perk-slot-unequip-btn:hover {
+    background: #ff6b81;
+}
+
+/* --- 2. ADVANCED SEARCH & FILTER BAR --- */
+.perks-search-wrap {
+    margin: 10px 0 8px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.perks-search-input-box {
+    position: relative;
+    display: flex;
+    align-items: center;
+    background: #ffffff;
+    border: 3px solid var(--dark-outline);
+    border-radius: 14px;
+    padding: 0 12px;
+    box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.15);
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.perks-search-input-box:focus-within {
+    border-color: #3498db;
+    box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.25), 2px 2px 0 rgba(0, 0, 0, 0.15);
+}
+
+.perks-search-icon {
+    font-size: 1.1rem;
+    margin-right: 8px;
+    user-select: none;
+}
+
+.perks-search-input {
+    flex: 1;
+    border: none;
+    outline: none;
+    font-family: 'Fredoka', sans-serif;
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: #2f3542;
+    padding: 8px 0;
+    background: transparent;
+}
+
+.perks-search-input::placeholder {
+    color: #a4b0be;
+    font-weight: 600;
+}
+
+.perks-search-clear-btn {
+    background: #dfe4ea;
+    border: 1.5px solid var(--dark-outline);
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    font-size: 0.72rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: #57606f;
+    font-weight: 900;
+    padding: 0;
+    margin-left: 6px;
+    transition: background 0.1s ease;
+}
+
+.perks-search-clear-btn:hover {
+    background: #ff4757;
+    color: #ffffff;
+}
+
+/* Category Filter Chips */
+.perks-filter-chips {
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    padding-bottom: 2px;
+    scrollbar-width: none;
+}
+
+.perks-filter-chips::-webkit-scrollbar {
+    display: none;
+}
+
+.perk-filter-chip {
+    font-family: 'Luckiest Guy', cursive;
+    font-size: 0.74rem;
+    letter-spacing: 0.3px;
+    padding: 4px 11px;
+    background: #ffffff;
+    color: #57606f;
+    border: 2px solid var(--dark-outline);
+    border-radius: 12px;
+    cursor: pointer;
+    box-shadow: 1.5px 1.5px 0 var(--dark-outline);
+    white-space: nowrap;
+    transition: transform 0.1s ease, background 0.1s ease, color 0.1s ease;
+}
+
+.perk-filter-chip:hover {
+    transform: translateY(-1px);
+    background: #f1f2f6;
+}
+
+.perk-filter-chip.active {
+    background: #2ed573;
+    color: #ffffff;
+    border-color: var(--dark-outline);
+    box-shadow: 2px 2px 0 var(--dark-outline);
+    text-shadow: 1px 1px 0 #000;
+}
+
+/* --- 3. PERKS VAULT SECTION --- */
+.perks-vault-section {
+    background: #f8f9fa;
+    border: 2.5px solid #ced6e0;
+    border-radius: 16px;
+    padding: 12px 14px;
+    text-align: left;
+    max-height: 270px;
+    overflow-y: auto;
+}
+
+.perks-vault-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-family: 'Luckiest Guy', cursive;
+    font-size: 0.92rem;
+    color: #2f3542;
+    margin-bottom: 8px;
+    padding-bottom: 5px;
+    border-bottom: 2px solid #e4e7eb;
+}
+
+.perks-vault-wallet {
+    color: #f39c12;
+    font-size: 0.9rem;
+    text-shadow: 1px 1px 0 #000;
+}
+
+.perks-vault-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.perk-vault-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: #ffffff;
+    border: 2.5px solid var(--dark-outline);
+    border-radius: 14px;
+    padding: 10px 12px;
+    box-shadow: 2px 2px 0 rgba(0,0,0,0.12);
+    transition: transform 0.15s ease, border-color 0.15s ease;
+}
+
+.perk-vault-item:hover {
+    transform: translateY(-1px);
+}
+
+.perk-vault-item.locked {
+    opacity: 0.94;
+}
+
+.perk-vault-item.is-equipped {
+    border-color: #2ed573;
+    background: #f6fffa;
+}
+
+.perk-vault-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    border: 2px solid var(--dark-outline);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    flex-shrink: 0;
+}
+
+.perk-vault-info-col {
+    flex: 1;
+    min-width: 0;
+}
+
+.perk-vault-title-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 3px;
+}
+
+.perk-vault-name {
+    font-family: 'Luckiest Guy', cursive;
+    font-size: 0.96rem;
+    color: #2f3542;
+    margin: 0;
+}
+
+.perk-vault-category {
+    font-family: 'Luckiest Guy', cursive;
+    font-size: 0.64rem;
+    color: #fff;
+    padding: 2px 7px;
+    border-radius: 8px;
+    border: 1.5px solid var(--dark-outline);
+    text-shadow: 1px 1px 0 #000;
+}
+
+/* Tag Badge */
+.perk-vault-tag {
+    font-family: 'Fredoka', sans-serif;
+    font-size: 0.62rem;
+    font-weight: 900;
+    color: #2d3436;
+    background: #dfe6e9;
+    padding: 2px 6px;
+    border-radius: 6px;
+    border: 1px solid #b2bec3;
+    letter-spacing: 0.4px;
+}
+
+.perk-vault-tag.tag-exclusive {
+    background: #ffeaa7;
+    color: #d35400;
+    border-color: #f39c12;
+}
+
+.perk-vault-tag.tag-starter {
+    background: #55efc4;
+    color: #00b894;
+    border-color: #00b894;
+}
+
+.perk-vault-desc {
+    font-size: 0.77rem;
+    font-weight: 700;
+    color: #57606f;
+    line-height: 1.3;
+    margin: 0;
+}
+
+.perk-vault-action-col {
+    flex-shrink: 0;
+}
+
+.perk-buy-btn {
+    font-family: 'Luckiest Guy', cursive;
+    font-size: 0.82rem;
+    padding: 6px 12px;
+    background: #f1c40f;
+    color: #2c3e50;
+    border: 2.5px solid var(--dark-outline);
+    border-radius: 10px;
+    cursor: pointer;
+    box-shadow: 2px 2px 0 #000;
+}
+
+.perk-buy-btn.cannot-buy {
+    opacity: 0.55;
+    cursor: not-allowed;
+    background: #dfe4ea;
+    color: #747d8c;
+}
+
+.perk-buy-btn:hover.can-buy {
+    transform: scale(1.04);
+    background: #f39c12;
+    color: #fff;
+    text-shadow: 1px 1px 0 #000;
+}
+
+.perk-equip-action-btn {
+    font-family: 'Luckiest Guy', cursive;
+    font-size: 0.8rem;
+    padding: 6px 12px;
+    background: #2ed573;
+    color: #fff;
+    border: 2.5px solid var(--dark-outline);
+    border-radius: 10px;
+    cursor: pointer;
+    box-shadow: 2px 2px 0 #000;
+    text-shadow: 1px 1px 0 #000;
+}
+
+.perk-equip-action-btn:hover {
+    transform: scale(1.04);
+    background: #26af5f;
+}
+
+.perk-equipped-tag {
+    font-family: 'Luckiest Guy', cursive;
+    font-size: 0.76rem;
+    padding: 5px 10px;
+    background: #747d8c;
+    color: #fff;
+    border: 2px solid var(--dark-outline);
+    border-radius: 10px;
+    cursor: pointer;
+    text-shadow: 1px 1px 0 #000;
+}
+
+.perk-equipped-tag:hover {
+    background: #ff4757;
+}
+
+/* Empty search result */
+.perks-vault-empty-search {
+    text-align: center;
+    padding: 24px 10px;
+    color: #747d8c;
+    font-family: 'Fredoka', sans-serif;
+    font-weight: 700;
+    font-size: 0.9rem;
+}
+
+.perks-vault-empty-search-icon {
+    font-size: 2rem;
+    margin-bottom: 6px;
+    display: block;
+}

@@ -1,0 +1,549 @@
+/* ===================================================
+   LESA.IO - MOBILE RESPONSIVE & TOUCH CONTROLS
+   =================================================== */
+
+/* Prevent pinch-zoom, pull-to-refresh, and unwanted gestures */
+html, body {
+    touch-action: none;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+    overscroll-behavior: none;
+}
+
+/* Force Landscape via CSS Rotation ONLY if mobile phone is held in Portrait */
+@media screen and (orientation: portrait) and (pointer: coarse) and (max-width: 900px) {
+    html {
+        width: 100vh !important;
+        height: 100vw !important;
+        transform: rotate(90deg);
+        transform-origin: top left;
+        position: absolute;
+        top: 0;
+        left: 100vw;
+        overflow: hidden;
+    }
+
+    body {
+        width: 100vh !important;
+        height: 100vw !important;
+        position: absolute;
+        top: 0;
+        left: 0;
+    }
+}
+
+/* Mobile Controls Layer & Fullscreen - STRICTLY HIDDEN ON PC / DESKTOP */
+#mobile-controls-container,
+#menu-fullscreen-btn,
+.fullscreen-pill-btn,
+.setting-mobile-only,
+#setting-row-autofire {
+    display: none !important;
+}
+
+/* ONLY display on mobile devices / mobile landscape viewports */
+@media (pointer: coarse), screen and (max-height: 580px) and (orientation: landscape) {
+    #mobile-controls-container:not(.hidden) {
+        display: block !important;
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        z-index: 150;
+        overflow: hidden;
+        transition: opacity 0.35s ease;
+    }
+
+    #mobile-controls-container.cutscene-hidden {
+        opacity: 0 !important;
+        pointer-events: none !important;
+    }
+
+    /* Show Fullscreen Toggle strictly on mobile */
+    #menu-fullscreen-btn,
+    .fullscreen-pill-btn {
+        display: flex !important;
+        padding: 4px 10px !important;
+        background: #0984e3 !important;
+        border-color: #0c2461 !important;
+        cursor: pointer !important;
+    }
+
+    /* Show Mobile-Only Settings strictly on touch devices */
+    .setting-mobile-only,
+    #setting-row-autofire {
+        display: flex !important;
+    }
+
+    /* STRICT: Completely hide desktop HUD bottom badges and keyboard controls on mobile */
+    .hud-bottom,
+    .hud-bottom-center,
+    #dash-badge,
+    #skill-badge,
+    .dash-badge,
+    .skill-badge,
+    .controls-panel {
+        display: none !important;
+    }
+}
+
+/* Joystick Zone (Left Half - Below Top HUD) */
+#mobile-joystick-zone {
+    position: absolute;
+    top: 56px;
+    left: 0;
+    width: 50%;
+    height: calc(100% - 56px);
+    pointer-events: auto;
+    touch-action: none;
+}
+
+/* Floating Joystick Base (Compact & Agile) */
+.mobile-joystick-base {
+    position: absolute;
+    width: 106px;
+    height: 106px;
+    margin-left: -53px;
+    margin-top: -53px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(20, 24, 33, 0.7) 0%, rgba(10, 12, 18, 0.85) 100%);
+    border: 3px solid rgba(254, 211, 48, 0.85);
+    box-shadow: 0 0 14px rgba(254, 211, 48, 0.4), inset 0 0 10px rgba(0, 0, 0, 0.6);
+    pointer-events: none;
+    opacity: 0;
+    transform: scale(0.85);
+    transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.mobile-joystick-base.active {
+    opacity: 1;
+    transform: scale(1);
+}
+
+/* Floating Joystick Knob (Compact) */
+.mobile-joystick-knob {
+    position: absolute;
+    width: 44px;
+    height: 44px;
+    left: 31px;
+    top: 31px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #feca57 0%, #ff9f43 100%);
+    border: 3px solid #ffffff;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5), 0 0 8px rgba(254, 202, 87, 0.8);
+    pointer-events: none;
+    will-change: transform;
+}
+
+/* Aim & Shoot Joystick Zone (Right Half - Below Top HUD) */
+#mobile-aim-zone {
+    position: absolute;
+    top: 56px;
+    right: 0;
+    width: 50%;
+    height: calc(100% - 56px);
+    pointer-events: auto;
+    touch-action: none;
+    z-index: 105;
+}
+
+/* Floating Aim/Shoot Joystick Base */
+.mobile-aim-base {
+    position: absolute;
+    width: 106px;
+    height: 106px;
+    margin-left: -53px;
+    margin-top: -53px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(45, 15, 15, 0.75) 0%, rgba(20, 8, 8, 0.9) 100%);
+    border: 3px solid rgba(255, 71, 87, 0.85);
+    box-shadow: 0 0 14px rgba(255, 71, 87, 0.4), inset 0 0 10px rgba(0, 0, 0, 0.6);
+    pointer-events: none;
+    opacity: 0;
+    transform: scale(0.85);
+    transition: opacity 0.15s ease, transform 0.15s ease;
+    z-index: 110;
+}
+
+.mobile-aim-base.active {
+    opacity: 1;
+    transform: scale(1);
+}
+
+/* Floating Aim/Shoot Knob */
+.mobile-aim-knob {
+    position: absolute;
+    width: 44px;
+    height: 44px;
+    left: 31px;
+    top: 31px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #ff6b81 0%, #ff4757 100%);
+    border: 3px solid #ffffff;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5), 0 0 8px rgba(255, 71, 87, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    pointer-events: none;
+    will-change: transform;
+}
+
+/* Right Action Buttons Cluster (Ergonomic Thumb Arc) */
+#mobile-actions-zone {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    width: 220px;
+    height: 180px;
+    pointer-events: none;
+    z-index: 120;
+}
+
+/* Mobile Action Button Base */
+.mobile-action-btn {
+    position: absolute;
+    border-radius: 50%;
+    border: 3px solid #2d3436;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    user-select: none;
+    touch-action: none;
+    font-family: 'Luckiest Guy', 'Bangers', cursive, sans-serif;
+    color: #ffffff;
+    box-shadow: 0 4px 0 #1e272e, 0 6px 14px rgba(0, 0, 0, 0.45);
+    transition: transform 0.08s ease, filter 0.08s ease;
+    overflow: visible;
+    z-index: 130;
+    pointer-events: auto;
+}
+
+.mobile-action-btn:active,
+.mobile-action-btn.pressed {
+    transform: translateY(3px) scale(0.95);
+    box-shadow: 0 1px 0 #1e272e, 0 3px 8px rgba(0, 0, 0, 0.5);
+    filter: brightness(1.2);
+}
+
+/* Circular Cooldown Ring Around Buttons */
+.btn-cooldown-ring {
+    position: absolute;
+    top: -5px;
+    left: -5px;
+    width: calc(100% + 10px);
+    height: calc(100% + 10px);
+    pointer-events: none;
+    z-index: 5;
+}
+.btn-cooldown-ring circle {
+    fill: none !important;
+}
+.btn-cooldown-ring .ring-bg {
+    fill: none !important;
+    stroke: rgba(10, 15, 25, 0.6);
+    stroke-width: 4;
+}
+.btn-cooldown-ring .ring-progress {
+    fill: none !important;
+    stroke-width: 4.5;
+    stroke-linecap: round;
+    transform: rotate(-90deg);
+    transform-origin: 50% 50%;
+    stroke-dasharray: 226.2;
+    stroke-dashoffset: 0;
+    transition: stroke-dashoffset 0.06s linear;
+}
+.btn-cooldown-ring .dash-ring { stroke: #ff9f43; filter: drop-shadow(0 0 4px #ff9f43); }
+.btn-cooldown-ring .skill-ring { stroke: #00cec9; filter: drop-shadow(0 0 4px #00cec9); }
+.mobile-action-btn.is-ready .dash-ring { stroke: #feca57; filter: drop-shadow(0 0 6px #feca57); }
+.mobile-action-btn.is-ready .skill-ring { stroke: #55efc4; filter: drop-shadow(0 0 6px #55efc4); }
+
+/* DASH Button (Left of Shoot Joystick, Compact) */
+#mobile-dash-btn {
+    bottom: 24px;
+    right: 125px;
+    width: 60px;
+    height: 60px;
+    background: linear-gradient(135deg, #0984e3 0%, #74b9ff 100%);
+    border-color: #0c2461;
+}
+#mobile-dash-btn .btn-dash-img-icon {
+    width: 26px;
+    height: 26px;
+    object-fit: contain;
+    pointer-events: none;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.4));
+}
+#mobile-dash-btn .btn-label { font-size: 8.5px; letter-spacing: 0.5px; margin-top: 1px; }
+
+/* SKILL Button (Above-Left of Shoot Joystick, Compact) */
+#mobile-skill-btn {
+    bottom: 96px;
+    right: 90px;
+    width: 54px;
+    height: 54px;
+    background: linear-gradient(135deg, #e67e22 0%, #f39c12 100%);
+    border-color: #d35400;
+}
+#mobile-skill-btn .btn-icon { font-size: 20px; line-height: 1; }
+#mobile-skill-btn .btn-label { font-size: 8px; letter-spacing: 0.5px; }
+
+/* BIG BUBBLE CHARGE BUTTON (Upper thumb arc, Bubble Gun exclusive) */
+#mobile-bubble-charge-btn {
+    bottom: 96px;
+    right: 156px;
+    width: 54px;
+    height: 54px;
+    background: linear-gradient(135deg, #00cec9 0%, #70a1ff 50%, #fd79a8 100%);
+    border-color: #0984e3;
+}
+#mobile-bubble-charge-btn .btn-bubble-img-icon {
+    width: 24px;
+    height: 24px;
+    object-fit: contain;
+    pointer-events: none;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.4));
+}
+#mobile-bubble-charge-btn .btn-label { font-size: 7px; letter-spacing: 0.3px; margin-top: 1px; }
+.btn-cooldown-ring .bubble-charge-ring { stroke: #00cec9; filter: drop-shadow(0 0 4px #00cec9); }
+#mobile-bubble-charge-btn.is-ready .bubble-charge-ring { stroke: #fd79a8; filter: drop-shadow(0 0 6px #fd79a8); }
+
+/* Cooldown Radial Overlay: Disabled in favor of circular exterior ring */
+.mobile-btn-cooldown {
+    display: none !important;
+}
+
+.mobile-action-btn.on-cooldown {
+    filter: brightness(0.9);
+}
+
+.mobile-action-btn.is-active {
+    filter: drop-shadow(0 0 8px #00cec9) brightness(1.1);
+}
+
+/* ===================================================
+   MOBILE RESPONSIVE UI FITTING (LANDSCAPE <= 520px / TOUCH)
+   =================================================== */
+@media screen and (max-height: 520px), screen and (pointer: coarse) and (max-height: 700px) {
+    /* 1. Prevent mobile viewport bouncing & overflow */
+    html, body {
+        overflow: hidden !important;
+        position: fixed !important;
+        width: 100vw !important;
+        height: 100vh !important;
+    }
+
+    /* 2. Compact In-Game HUD */
+    #game-hud {
+        padding: 4px 10px;
+        padding-left: max(10px, env(safe-area-inset-left, 10px));
+        padding-right: max(10px, env(safe-area-inset-right, 10px));
+        z-index: 160 !important;
+    }
+    .player-status-card { padding: 2px 6px; border-radius: 12px; border-width: 2px; gap: 5px; }
+    .player-avatar-hud, .hud-avatar-box { width: 30px; height: 30px; border-width: 2px; }
+    .level-badge { font-size: 7.5px; padding: 1px 3px; bottom: -2px; }
+    .bar-wrapper, .bar-container { width: 85px; height: 9px; border-width: 1.5px; }
+    .bar-text { font-size: 7.5px; line-height: 9px; }
+    .hud-center-score { gap: 1px; }
+    .wave-title { font-size: 15px; letter-spacing: 0.5px; }
+    .wave-enemy-subtext { font-size: 8.5px; }
+    .score-title { font-size: 16px; }
+    .hud-badges-row { gap: 4px; }
+    .coin-badge, .gem-badge { font-size: 10px; padding: 2px 5px; border-width: 1.5px; }
+    /* Clean, Unified Minimap on Mobile (Single Seamless Box, No Overflow) */
+    .hud-right, .hud-top-right { display: flex !important; gap: 6px !important; align-items: center !important; }
+    .minimap-panel {
+        width: 58px !important; height: 58px !important;
+        padding: 0 !important; border: 2.5px solid var(--dark-outline) !important;
+        border-radius: 12px !important; overflow: hidden !important;
+        box-shadow: 2px 2px 0 var(--dark-outline) !important; background: #a8e6cf !important;
+        display: flex !important; align-items: center !important; justify-content: center !important;
+    }
+    #minimap-canvas {
+        width: 100% !important; height: 100% !important;
+        border: none !important; border-radius: 0 !important; display: block !important;
+    }
+    #pause-btn {
+        padding: 2px 8px !important; font-size: 0.72rem !important;
+        height: 28px !important; border-radius: 10px !important;
+        pointer-events: auto !important; z-index: 200 !important; cursor: pointer !important;
+    }
+    /* STRICT: Hide PC bottom right badges on mobile (touch buttons exist) */
+    .hud-bottom-right { display: none !important; }
+
+    /* 3. Main Menu Screen Responsive Layout */
+    #menu-screen:not(.hidden) {
+        padding: 6px 14px !important;
+        padding-left: max(14px, env(safe-area-inset-left, 14px)) !important;
+        padding-right: max(14px, env(safe-area-inset-right, 14px)) !important;
+        display: flex !important;
+        flex-direction: column !important;
+        justify-content: space-between !important;
+        overflow: hidden !important;
+    }
+    #menu-screen.hidden {
+        display: none !important;
+    }
+    .menu-top-bar { margin-bottom: 2px !important; }
+    .menu-player-profile { padding: 2px 10px 2px 4px !important; border-width: 2px !important; gap: 6px !important; }
+    .player-avatar-frame-menu { width: 32px !important; height: 32px !important; border-width: 2px !important; }
+    .player-name-text { font-size: 0.82rem !important; }
+    .player-xp-bar-container { width: 75px !important; height: 8px !important; }
+    .resource-pill { padding: 2px 8px !important; font-size: 0.85rem !important; border-width: 2px !important; gap: 4px !important; }
+
+    /* 4. Menu Main Layout Grid -> Flex Fit */
+    .menu-main-layout {
+        display: flex !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+        flex-grow: 1 !important;
+        margin: 2px 0 !important;
+        gap: 8px !important;
+    }
+    /* Left Column: 2x3 Compact Icon Grid */
+    .menu-left-column {
+        display: grid !important;
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 5px !important;
+        width: auto !important;
+        max-width: 160px !important;
+    }
+    .menu-pill-btn {
+        padding: 5px 8px !important;
+        height: 32px !important;
+        border-radius: 12px !important;
+        border-width: 2px !important;
+        gap: 5px !important;
+        box-shadow: 2px 2px 0 #1e272e !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: flex-start !important;
+    }
+    .pill-btn-icon-img { width: 18px !important; height: 18px !important; object-fit: contain !important; }
+    .pill-btn-text { font-size: 0.72rem !important; letter-spacing: 0.3px !important; }
+
+    /* Center: Title & Play Button */
+    .menu-center-column {
+        flex: 1 !important;
+        max-width: 260px !important;
+        margin: 0 auto !important;
+    }
+    .game-title {
+        font-size: 2.2rem !important;
+        -webkit-text-stroke: 3px var(--dark-outline) !important;
+        text-shadow: 3px 3px 0 var(--dark-outline) !important;
+        margin-bottom: 0px !important;
+    }
+    .game-subtitle {
+        font-size: 0.72rem !important;
+        padding: 2px 10px !important;
+        margin-bottom: 6px !important;
+    }
+    /* STRICT: Hide desktop keyboard controls box on mobile */
+    .controls-panel { display: none !important; }
+    .menu-actions { display: flex !important; gap: 6px !important; justify-content: center !important; }
+    #start-btn {
+        padding: 8px 24px !important;
+        font-size: 1.15rem !important;
+        border-width: 3px !important;
+        box-shadow: 0 4px 0 #1e272e !important;
+    }
+    #menu-settings-btn { padding: 8px 12px !important; font-size: 0.85rem !important; border-width: 2px !important; }
+
+    /* Right Column: Compact Challenges Card Only */
+    .menu-right-column {
+        display: flex !important;
+        flex-direction: column !important;
+        width: 140px !important;
+        gap: 4px !important;
+    }
+    .side-card.daily-quests-card { padding: 6px 8px !important; border-width: 2px !important; }
+    .daily-quests-card .side-card-header { font-size: 0.72rem !important; margin-bottom: 4px !important; }
+    .quest-list { display: none !important; }
+    .card-bottom-btn { padding: 4px 6px !important; font-size: 0.72rem !important; border-width: 2px !important; }
+    /* Hide bulky Battle Pass & Starter Pack banner in mobile lobby to save space */
+    .battle-pass-card, .starter-pack-banner-card { display: none !important; }
+
+    /* 5. Bottom Navigation Bar */
+    .menu-bottom-row {
+        height: 38px !important;
+        gap: 6px !important;
+        position: relative !important;
+        bottom: 0 !important;
+    }
+    .bottom-square-btn {
+        width: 44px !important;
+        height: 36px !important;
+        padding: 2px !important;
+        border-width: 2px !important;
+    }
+    .bot-btn-icon { font-size: 14px !important; }
+    .bot-btn-text { font-size: 7.5px !important; }
+
+    .menu-game-version {
+        bottom: 8px !important;
+        right: 12px !important;
+        font-size: 0.65rem !important;
+        opacity: 0.85 !important;
+    }
+
+    /* 6. Responsive Modal Windows */
+    .modal-panel {
+        max-height: 88vh !important;
+        max-width: min(94vw, 760px) !important;
+        padding: 14px 18px !important;
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch;
+    }
+    .modal-title { font-size: 22px !important; margin-bottom: 2px !important; }
+    .modal-subtitle { font-size: 11px !important; margin-bottom: 8px !important; }
+    .heroes-grid { grid-template-columns: repeat(3, 1fr) !important; gap: 8px !important; }
+    .hero-select-card { padding: 6px !important; }
+    .hero-select-avatar { width: 52px !important; height: 52px !important; }
+
+    /* 7. K.O. Game Over Modal - Zero Scroll, 100% Mobile Fit */
+    #game-over-modal .modal-panel {
+        max-height: 94vh !important;
+        padding: 8px 16px !important;
+        max-width: min(92vw, 540px) !important;
+        overflow: hidden !important;
+    }
+    #game-over-modal .modal-title { font-size: 1.5rem !important; margin-bottom: 0px !important; }
+    #game-over-modal .modal-subtitle { font-size: 0.72rem !important; margin-bottom: 4px !important; }
+    #game-over-modal .game-over-stats {
+        display: grid !important;
+        grid-template-columns: repeat(4, 1fr) !important;
+        gap: 4px !important;
+        margin-bottom: 4px !important;
+    }
+    #game-over-modal .stat-box {
+        padding: 3px 6px !important;
+        border-radius: 10px !important;
+        border-width: 2px !important;
+        gap: 1px !important;
+        font-size: 0.65rem !important;
+    }
+    #game-over-modal .stat-box.stat-reward-box {
+        grid-column: span 2 !important;
+        flex-direction: row !important;
+        justify-content: center !important;
+        align-items: center !important;
+        gap: 6px !important;
+    }
+    #game-over-modal .stat-value { font-size: 1rem !important; }
+    #game-over-modal .modal-tip-box { display: none !important; }
+    #game-over-modal .modal-actions { gap: 8px !important; margin-top: 4px !important; }
+    #game-over-modal .modal-actions .comic-btn {
+        padding: 6px 16px !important;
+        font-size: 0.92rem !important;
+        border-width: 2.5px !important;
+    }
+}
+

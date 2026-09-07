@@ -1,0 +1,554 @@
+/* ===================================================
+   LESA.IO - HEROES ROSTER, PROFILE, CLOUD & MAIL
+   =================================================== */
+
+/* ================= CLOUD & SAVE ACCOUNT SECTION ================= */
+
+.settings-cloud-section {
+    margin-top: 20px;
+    background: #f1f2f6;
+    border: 3.5px solid var(--dark-outline);
+    border-radius: 20px;
+    padding: 16px;
+    box-shadow: var(--shadow-solid-sm);
+}
+
+.cloud-section-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.cloud-icon {
+    font-size: 1.8rem;
+}
+
+.cloud-status-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #ffffff;
+    border: 2px solid var(--dark-outline);
+    border-radius: 12px;
+    padding: 8px 12px;
+    margin-bottom: 12px;
+}
+
+.cloud-badge {
+    background: #fed330;
+    color: var(--dark-outline);
+    font-family: 'Luckiest Guy', cursive;
+    font-size: 0.8rem;
+    padding: 2px 8px;
+    border-radius: 8px;
+    border: 1.5px solid var(--dark-outline);
+}
+
+.cloud-badge.cloud-synced {
+    background: #2ed573;
+    color: #ffffff;
+}
+
+.cloud-text {
+    font-size: 0.85rem;
+    font-weight: 800;
+    color: #57606f;
+}
+
+.cloud-user-details {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: #ffffff;
+    border: 2px solid var(--dark-outline);
+    border-radius: 14px;
+    padding: 8px 12px;
+    margin-bottom: 12px;
+}
+
+.cloud-user-avatar {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: var(--comic-blue);
+    border: 2px solid var(--dark-outline);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Luckiest Guy', cursive;
+    font-size: 1.1rem;
+    color: #ffffff;
+}
+
+.cloud-user-meta {
+    display: flex;
+    flex-direction: column;
+    text-align: left;
+    gap: 2px;
+}
+
+.cloud-user-name {
+    font-family: 'Luckiest Guy', cursive;
+    font-size: 0.95rem;
+    color: var(--dark-outline);
+}
+
+.cloud-user-email {
+    font-size: 0.75rem;
+    color: #747d8c;
+    font-weight: 700;
+}
+
+.cloud-actions-row {
+    display: flex;
+    gap: 10px;
+}
+
+.cloud-actions-row button {
+    flex: 1;
+}
+
+/* --- PLAYER PROFILE & STATS MODAL STYLING --- */
+
+.profile-clickable {
+    cursor: pointer;
+    transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+.profile-clickable:hover {
+    transform: scale(1.03);
+    box-shadow: 6px 6px 0px var(--dark-outline);
+}
+
+.profile-header-card {
+    background: #ffffff;
+    border: 3.5px solid var(--dark-outline);
+    border-radius: 20px;
+    padding: 14px 18px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    box-shadow: var(--shadow-solid-sm);
+    margin-bottom: 16px;
+    text-align: left;
+}
+
+.prof-avatar-wrap {
+    position: relative;
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    border: 3.5px solid var(--dark-outline);
+    background: var(--comic-yellow);
+    box-shadow: var(--shadow-solid-sm);
+    flex-shrink: 0;
+}
+
+.prof-avatar-wrap img {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+    object-position: center center;
+    transform: scale(1.06);
+}
+
+.prof-crown-badge {
+    position: absolute;
+    top: -12px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 1.25rem;
+    filter: drop-shadow(1.5px 1.5px 0 var(--dark-outline));
+}
+
+.prof-identity-col,
+.prof-meta-col {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    flex-grow: 1;
+}
+
+.prof-name-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.prof-name-text,
+.prof-name-title {
+    font-family: 'Luckiest Guy', cursive;
+    font-size: 1.5rem;
+    color: var(--dark-outline);
+}
+
+.player-level-badge {
+    background: var(--comic-yellow);
+    border: 2px solid var(--dark-outline);
+    border-radius: 12px;
+    padding: 2px 8px;
+    font-family: 'Luckiest Guy', cursive;
+    font-size: 0.85rem;
+    color: var(--dark-outline);
+}
+
+.prof-rename-btn,
+.prof-edit-btn {
+    background: var(--comic-yellow);
+    border: 2px solid var(--dark-outline);
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    font-weight: 800;
+    padding: 3px 8px;
+    box-shadow: 1px 1px 0 var(--dark-outline);
+    transition: transform 0.1s ease;
+}
+
+.prof-rename-btn:hover,
+.prof-edit-btn:hover {
+    transform: scale(1.06);
+}
+
+.prof-xp-bar-wrap {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.prof-xp-bar,
+.prof-xp-bar-box {
+    position: relative;
+    width: 200px;
+    height: 16px;
+    background: #1e272e;
+    border-radius: 12px;
+    border: 2px solid var(--dark-outline);
+    overflow: hidden;
+}
+
+.prof-xp-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #2ed573, #20bf6b);
+    transition: width 0.3s ease;
+}
+
+.prof-xp-text {
+    font-size: 0.8rem;
+    font-weight: 800;
+    color: #747d8c;
+}
+
+.prof-section-title {
+    font-family: 'Luckiest Guy', cursive;
+    font-size: 1.15rem;
+    color: var(--dark-outline);
+    text-align: left;
+    margin: 12px 0 8px 0;
+}
+
+/* Career Stats Grid in Profile Modal */
+.profile-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.prof-stat-box {
+    background: #ffffff;
+    border: 3px solid var(--dark-outline);
+    border-radius: 16px;
+    padding: 10px 14px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    box-shadow: 2.5px 2.5px 0 var(--dark-outline);
+    text-align: left;
+    min-width: 0;
+    overflow: hidden;
+}
+
+.stat-icon {
+    font-size: 1.6rem;
+    flex-shrink: 0;
+}
+
+.stat-data {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+    flex: 1;
+    overflow: hidden;
+}
+
+.stat-lbl {
+    font-size: 0.75rem;
+    font-weight: 800;
+    color: #747d8c;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.stat-val {
+    font-family: 'Luckiest Guy', cursive;
+    font-size: 1.25rem;
+    color: var(--dark-outline);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Hero Usage Breakdown */
+.hero-usage-breakdown {
+    background: #ffffff;
+    border: 3.5px solid var(--dark-outline);
+    border-radius: 20px;
+    padding: 12px 16px;
+    margin-bottom: 16px;
+    text-align: left;
+}
+
+.usage-bars-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.usage-bar-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: 'Luckiest Guy', cursive;
+    font-size: 0.85rem;
+}
+
+.usage-hero-name {
+    width: 65px;
+    color: var(--dark-outline);
+}
+
+.usage-track {
+    flex-grow: 1;
+    height: 12px;
+    background: #dcdde1;
+    border-radius: 8px;
+    border: 2px solid var(--dark-outline);
+    overflow: hidden;
+}
+
+.usage-fill {
+    height: 100%;
+    background: var(--comic-yellow);
+}
+
+/* First Time Name & Rename Dialogs */
+.first-time-welcome-card {
+    background: #ffffff;
+    border: 3.5px solid var(--dark-outline);
+    border-radius: 20px;
+    padding: 18px;
+    margin-bottom: 20px;
+}
+
+.comic-input {
+    width: 100%;
+    padding: 12px 16px;
+    border: 3.5px solid var(--dark-outline);
+    border-radius: 16px;
+    font-family: 'Luckiest Guy', cursive;
+    font-size: 1.3rem;
+    color: var(--dark-outline);
+    background: #f8faff;
+    outline: none;
+    box-shadow: var(--shadow-solid-sm);
+    text-align: center;
+}
+
+.comic-input:focus {
+    border-color: var(--comic-blue);
+    background: #ffffff;
+}
+
+.first-time-rules {
+    font-size: 0.78rem;
+    font-weight: 800;
+    color: #747d8c;
+    margin-top: 6px;
+    text-align: center;
+}
+
+.rename-cost-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #2f3542;
+    color: #ffffff;
+    padding: 4px 12px;
+    border-radius: 16px;
+    border: 2px solid var(--dark-outline);
+    font-family: 'Luckiest Guy', cursive;
+    font-size: 0.95rem;
+    margin-bottom: 12px;
+}
+
+.rename-balance {
+    font-size: 0.85rem;
+    font-weight: 800;
+    color: #57606f;
+    margin-bottom: 12px;
+}
+
+.rename-error {
+    color: var(--comic-red);
+    font-size: 0.95rem;
+    font-weight: 900;
+    margin-top: 8px;
+}
+
+/* ================= HEROES ROSTER OVERHAUL ================= */
+
+.heroes-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 12px;
+    margin-top: 8px;
+}
+
+.hero-select-card {
+    position: relative;
+    background: #ffffff;
+    border: 4px solid var(--dark-outline);
+    border-radius: 22px;
+    padding: 16px 14px;
+    box-shadow: var(--shadow-solid);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    cursor: pointer;
+}
+
+.hero-select-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-solid-lg);
+}
+
+.hero-select-card.active {
+    border-color: #2ed573;
+    background: #f0fff4;
+    box-shadow: 0 0 0 3px #2ed573, var(--shadow-solid);
+}
+
+.hero-card-badge {
+    position: absolute;
+    top: -12px;
+    background: var(--comic-blue);
+    border: 2px solid var(--dark-outline);
+    border-radius: 10px;
+    color: #ffffff;
+    font-family: 'Luckiest Guy', cursive;
+    font-size: 0.75rem;
+    padding: 2px 10px;
+    text-shadow: 1px 1px 0 var(--dark-outline);
+}
+
+.hero-select-avatar {
+    width: 95px;
+    height: 95px;
+    border-radius: 50%;
+    border: 3.5px solid var(--dark-outline);
+    background: var(--comic-yellow);
+    overflow: hidden;
+    margin-top: 6px;
+    margin-bottom: 8px;
+    box-shadow: var(--shadow-solid-sm);
+}
+
+.hero-select-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center center;
+    transform: scale(1.06);
+}
+
+.hero-select-name {
+    font-family: 'Luckiest Guy', cursive;
+    font-size: 1.45rem;
+    color: var(--dark-outline);
+    margin-bottom: 6px;
+}
+
+.hero-stat-row {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.85rem;
+    font-weight: 800;
+    margin-bottom: 2px;
+    color: #57606f;
+}
+
+.hero-perk {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #e67e22;
+    margin: 6px 0 12px 0;
+    text-align: center;
+}
+
+.hero-equip-btn {
+    width: 100%;
+}
+
+/* Coming Soon Hero Teaser Card */
+.hero-card-coming-soon {
+    background: #f8f9fa;
+    border-color: #a4b0be;
+    opacity: 0.9;
+}
+
+.hero-card-coming-soon:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-solid-sm);
+    border-color: #747d8c;
+}
+
+.hero-badge-coming-soon {
+    background: #57606f !important;
+    color: #f1f2f6 !important;
+}
+
+.hero-avatar-mystery {
+    background: linear-gradient(135deg, #2f3640, #1e272e) !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-color: #718093 !important;
+}
+
+.mystery-avatar-icon {
+    font-size: 2.8rem;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.4));
+    user-select: none;
+}
+
+.hero-coming-soon-btn {
+    background: #747d8c !important;
+    color: #f1f2f6 !important;
+    border-color: var(--dark-outline) !important;
+    cursor: not-allowed;
+    opacity: 0.95;
+}
+
+/* (Developer Mail & News Modal styles modularized to styles/mail.css) */
+

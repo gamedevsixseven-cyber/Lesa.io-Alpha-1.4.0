@@ -1,0 +1,257 @@
+/* ==========================================================================
+   Lesa.io - Comic Loading Screen & Asset Preloader Styles
+   ========================================================================== */
+
+.loading-screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 99999;
+    background-color: #0b0f19;
+    background-image: url('../assets/UpdatedLoadingLesa.io.png');
+    background-repeat: no-repeat;
+    background-position: center center;
+    background-size: cover;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    padding-bottom: 5vh;
+    user-select: none;
+    -webkit-user-select: none;
+    transition: opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1), transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    transform: scale(1);
+    opacity: 1;
+    overflow: hidden;
+}
+
+.loading-screen.fade-out {
+    opacity: 0;
+    transform: scale(1.03);
+    pointer-events: none;
+}
+
+.loading-screen.hidden {
+    display: none !important;
+}
+
+/* Vignette edge overlay for cinematic depth */
+.loading-vignette {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(circle at center, transparent 60%, rgba(5, 5, 10, 0.45) 100%);
+    pointer-events: none;
+    z-index: 1;
+}
+
+/* Container directly positioning live progress over the graphic */
+.loading-content {
+    position: relative;
+    z-index: 2;
+    width: min(650px, 82vw);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 2.2vh;
+}
+
+/* Animated Comic LOADING... Title */
+.loading-title {
+    font-family: 'Bangers', 'Luckiest Guy', cursive, sans-serif;
+    font-size: 1.85rem;
+    color: #ffffff;
+    letter-spacing: 2px;
+    text-shadow: 
+        -2px -2px 0 #000000,
+         2px -2px 0 #000000,
+        -2px  2px 0 #000000,
+         2px  2px 0 #000000,
+         0 4px 8px rgba(0, 0, 0, 0.85);
+    margin-bottom: 8px;
+    animation: loadingTitlePulse 1.8s infinite ease-in-out;
+}
+
+@keyframes loadingTitlePulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.04); }
+}
+
+/* Real-time Progress Bar Outer Track */
+.loading-bar-track {
+    position: relative;
+    width: 100%;
+    height: 40px;
+    background: #111422;
+    border: 4px solid #000000;
+    border-radius: 24px;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.7), inset 0 3px 8px rgba(0, 0, 0, 0.7);
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+}
+
+/* Inner Progress Bar Fill */
+.loading-bar-fill {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(180deg, #ffe653 0%, #ffab10 50%, #f77f00 100%);
+    border-radius: 20px;
+    box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.7), 0 0 14px rgba(255, 171, 16, 0.5);
+    transition: width 0.18s cubic-bezier(0.2, 0.8, 0.4, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+/* Animated light shimmer across the fill */
+.loading-bar-fill::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.45) 50%, transparent 100%);
+    animation: loadingBarSheen 1.8s infinite linear;
+}
+
+@keyframes loadingBarSheen {
+    0% { left: -100%; }
+    100% { left: 200%; }
+}
+
+/* Bold Comic Percentage Counter */
+.loading-percentage-text {
+    position: absolute;
+    right: 18px;
+    font-family: 'Bangers', 'Luckiest Guy', cursive, sans-serif;
+    font-size: 1.55rem;
+    font-weight: 900;
+    color: #ffffff;
+    text-shadow: 
+        -2px -2px 0 #000000,
+         2px -2px 0 #000000,
+        -2px  2px 0 #000000,
+         2px  2px 0 #000000,
+         0 3px 6px rgba(0, 0, 0, 0.9);
+    letter-spacing: 1px;
+    z-index: 3;
+    pointer-events: none;
+}
+
+/* Dynamic Live Status Subtext */
+.loading-status-text {
+    margin-top: 10px;
+    font-family: 'Fredoka', 'Outfit', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #ffe653;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    text-shadow: 
+        -1px -1px 0 #000000,
+         1px -1px 0 #000000,
+        -1px  1px 0 #000000,
+         1px  1px 0 #000000,
+         0 2px 4px rgba(0, 0, 0, 0.8);
+    transition: opacity 0.2s ease;
+}
+
+/* Rotating Gameplay Tips */
+.loading-tip-text {
+    margin-top: 4px;
+    font-family: 'Fredoka', 'Outfit', sans-serif;
+    font-size: 0.86rem;
+    font-weight: 600;
+    color: #ffffff;
+    letter-spacing: 0.5px;
+    text-shadow: 
+        -1px -1px 0 #000000,
+         1px -1px 0 #000000,
+        -1px  1px 0 #000000,
+         1px  1px 0 #000000,
+         0 2px 4px rgba(0, 0, 0, 0.7);
+    opacity: 0.95;
+    text-align: center;
+}
+
+.loading-tip-highlight {
+    color: #ffbe0b;
+    font-weight: 800;
+    text-shadow: 0 0 8px rgba(255, 190, 11, 0.4), -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;
+}
+
+/* ==========================================================================
+   Rockstar Games-Style Dev Team Opening Intro (Psanas Games)
+   ========================================================================== */
+
+.dev-intro-screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 100000;
+    background-color: #000000;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    user-select: none;
+    -webkit-user-select: none;
+    overflow: hidden;
+    cursor: default;
+    transition: opacity 0.38s ease-out;
+}
+
+.dev-intro-screen.fade-out {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.dev-intro-screen.hidden {
+    display: none !important;
+}
+
+.dev-intro-logo-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: rockstarLogoIntro 2.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.dev-intro-logo-img {
+    max-width: min(280px, 60vw);
+    max-height: min(280px, 60vh);
+    width: auto;
+    height: auto;
+    object-fit: contain;
+    filter: drop-shadow(0 0 35px rgba(254, 180, 0, 0.28));
+}
+
+@keyframes rockstarLogoIntro {
+    0% {
+        opacity: 0;
+        transform: scale(0.9);
+        filter: drop-shadow(0 0 15px rgba(254, 180, 0, 0.1)) brightness(0.6);
+    }
+    18% {
+        opacity: 1;
+        transform: scale(1.0);
+        filter: drop-shadow(0 0 35px rgba(254, 180, 0, 0.28)) brightness(1.0);
+    }
+    72% {
+        opacity: 1;
+        transform: scale(1.025);
+        filter: drop-shadow(0 0 35px rgba(254, 180, 0, 0.28)) brightness(1.0);
+    }
+    100% {
+        opacity: 0;
+        transform: scale(1.06);
+        filter: drop-shadow(0 0 20px rgba(254, 180, 0, 0.15)) brightness(0.75);
+    }
+}

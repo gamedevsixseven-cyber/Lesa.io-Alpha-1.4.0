@@ -1,0 +1,320 @@
+/* =========================================================
+   LESA.IO - CO-OP MULTIPLAYER PLAYTEST STYLES
+   Comic arcade aesthetics, room codes, lobby cards & HUD
+   ========================================================= */
+
+#coop-modal.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(10, 15, 25, 0.88);
+    backdrop-filter: blur(8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    user-select: none;
+    transition: opacity 0.25s ease;
+}
+
+#coop-modal.hidden {
+    display: none !important;
+}
+
+.coop-panel {
+    background: linear-gradient(135deg, #1e272e 0%, #151b22 100%);
+    border: 4px solid #ffa502;
+    border-radius: 20px;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.7), 0 0 24px rgba(255, 165, 2, 0.35);
+    width: 90%;
+    max-width: 540px;
+    padding: 24px;
+    color: #ffffff;
+    font-family: 'Fredoka', 'Outfit', sans-serif;
+    position: relative;
+    box-sizing: border-box;
+}
+
+.coop-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 18px;
+    border-bottom: 2px dashed rgba(255, 255, 255, 0.15);
+    padding-bottom: 12px;
+}
+
+.coop-title-wrap {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.coop-title {
+    margin: 0;
+    font-size: 24px;
+    font-weight: 900;
+    color: #ffa502;
+    text-shadow: 2px 2px 0 #000;
+    letter-spacing: 0.5px;
+}
+
+.coop-badge {
+    background: #ff4757;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 800;
+    padding: 3px 8px;
+    border-radius: 12px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+
+.coop-close-btn {
+    background: #ff4757;
+    border: 2px solid #000;
+    color: #fff;
+    font-size: 16px;
+    font-weight: 900;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.15s ease, background 0.15s ease;
+}
+
+.coop-close-btn:hover {
+    transform: scale(1.1);
+    background: #ff6b81;
+}
+
+/* Tabs */
+.coop-tabs {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.coop-tab-btn {
+    flex: 1;
+    background: #2f3542;
+    border: 2px solid #57606f;
+    border-radius: 12px;
+    color: #ced6e0;
+    padding: 10px 14px;
+    font-size: 15px;
+    font-weight: 800;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: center;
+}
+
+.coop-tab-btn.active {
+    background: #ffa502;
+    border-color: #000;
+    color: #1e272e;
+    box-shadow: 0 4px 12px rgba(255, 165, 2, 0.4);
+    transform: translateY(-2px);
+}
+
+/* Tab Content Areas */
+.coop-tab-content {
+    display: none;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.coop-tab-content.active {
+    display: flex;
+}
+
+/* Code Display Box */
+.coop-code-box {
+    background: #000000;
+    border: 3px solid #00d2d3;
+    border-radius: 14px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    box-shadow: inset 0 2px 10px rgba(0, 210, 211, 0.2);
+}
+
+.coop-code-label {
+    font-size: 12px;
+    font-weight: 700;
+    color: #a4b0be;
+    text-transform: uppercase;
+}
+
+.coop-code-digits {
+    font-size: 38px;
+    font-weight: 900;
+    color: #00d2d3;
+    letter-spacing: 6px;
+    text-shadow: 0 0 12px rgba(0, 210, 211, 0.6);
+}
+
+.coop-copy-btn {
+    background: #2f3542;
+    border: 2px solid #747d8c;
+    border-radius: 8px;
+    color: #ffffff;
+    font-size: 12px;
+    font-weight: 800;
+    padding: 6px 14px;
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+
+.coop-copy-btn:hover {
+    background: #57606f;
+}
+
+/* Mode Selection Inside Co-op */
+.coop-mode-picker {
+    display: flex;
+    gap: 10px;
+}
+
+.coop-mode-btn {
+    flex: 1;
+    background: #2f3542;
+    border: 2px solid #57606f;
+    border-radius: 10px;
+    color: #fff;
+    padding: 10px;
+    font-size: 13px;
+    font-weight: 800;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.coop-mode-btn.selected {
+    background: #2ed573;
+    border-color: #000;
+    color: #000;
+    box-shadow: 0 4px 10px rgba(46, 213, 115, 0.4);
+}
+
+/* Join Input */
+.coop-input-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.coop-code-input {
+    background: #000;
+    border: 3px solid #ffa502;
+    border-radius: 12px;
+    color: #ffa502;
+    font-size: 28px;
+    font-weight: 900;
+    text-align: center;
+    letter-spacing: 4px;
+    padding: 12px;
+    outline: none;
+    text-transform: uppercase;
+}
+
+.coop-code-input::placeholder {
+    color: #57606f;
+    font-size: 20px;
+}
+
+/* Status Indicator */
+.coop-status-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(0, 0, 0, 0.4);
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.coop-status-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #ffa502;
+    animation: coop-pulse 1.4s infinite;
+}
+
+.coop-status-dot.connected {
+    background: #2ed573;
+    animation: none;
+    box-shadow: 0 0 8px #2ed573;
+}
+
+@keyframes coop-pulse {
+    0%, 100% { opacity: 0.4; transform: scale(0.9); }
+    50% { opacity: 1; transform: scale(1.15); }
+}
+
+/* Main Action Button */
+.coop-launch-btn {
+    background: linear-gradient(180deg, #2ed573 0%, #26af5f 100%);
+    border: 3px solid #000000;
+    border-radius: 14px;
+    color: #000000;
+    font-size: 18px;
+    font-weight: 900;
+    padding: 14px;
+    cursor: pointer;
+    box-shadow: 0 6px 0 #1b7a42, 0 10px 16px rgba(0, 0, 0, 0.4);
+    transition: transform 0.1s ease, box-shadow 0.1s ease;
+    text-transform: uppercase;
+}
+
+.coop-launch-btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 0 #1b7a42, 0 12px 20px rgba(46, 213, 115, 0.35);
+}
+
+.coop-launch-btn:active:not(:disabled) {
+    transform: translateY(4px);
+    box-shadow: 0 2px 0 #1b7a42;
+}
+
+.coop-launch-btn:disabled {
+    background: #57606f;
+    border-color: #2f3542;
+    color: #a4b0be;
+    box-shadow: none;
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+/* Game Mode Screen Button Entry */
+.mode-coop-trigger-btn {
+    margin-top: 14px;
+    background: linear-gradient(135deg, #00d2d3 0%, #54a0ff 100%);
+    border: 3px solid #000000;
+    border-radius: 12px;
+    color: #000000;
+    font-size: 15px;
+    font-weight: 900;
+    padding: 10px 18px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    box-shadow: 0 4px 0 #1e272e, 0 8px 16px rgba(0, 210, 211, 0.4);
+    transition: transform 0.15s ease;
+    text-transform: uppercase;
+}
+
+.mode-coop-trigger-btn:hover {
+    transform: scale(1.04);
+}

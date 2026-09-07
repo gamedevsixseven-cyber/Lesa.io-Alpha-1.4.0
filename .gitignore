@@ -1,0 +1,21 @@
+# Backups and temporary artifacts
+_backups/
+scratch/
+*.zip
+*.bak
+
+# OS generated files
+desktop.ini
+Thumbs.db
+.DS_Store
+
+# IDE and Editor configurations
+.vscode/
+.idea/
+
+# Accidental / obsolete files
+*.old.exe
+=
+
+# Logs
+*.log

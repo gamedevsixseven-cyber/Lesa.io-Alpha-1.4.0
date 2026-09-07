@@ -1,0 +1,1786 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Lesa.io</title>
+    <meta name="description" content="Lesa.io - Action-packed PC shooter game featuring Psanas, Psogas, Petros vs Skatmir and Casillas!">
+    <link rel="icon" type="image/png" href="assets/Lesa.ioGAMELOGOICON.png">
+    <link rel="shortcut icon" href="favicon.ico">
+    <link rel="apple-touch-icon" href="assets/Lesa.ioGAMELOGOICON.png">
+    <link rel="stylesheet" href="styles/variables.css">
+    <link rel="stylesheet" href="styles/animations.css">
+    <link rel="stylesheet" href="styles/menu.css">
+    <link rel="stylesheet" href="styles/cards.css">
+    <link rel="stylesheet" href="styles/hud.css">
+    <link rel="stylesheet" href="styles/modals.css">
+    <link rel="stylesheet" href="styles/roster.css">
+    <link rel="stylesheet" href="styles/skills.css">
+    <link rel="stylesheet" href="styles/mail.css">
+    <link rel="stylesheet" href="styles/tabmodals.css">
+    <link rel="stylesheet" href="styles/gear.css?v=1.2.7">
+    <link rel="stylesheet" href="styles/perks.css">
+    <link rel="stylesheet" href="styles/chests.css?v=1.3.3">
+    <link rel="stylesheet" href="styles/inventory.css?v=1.3.3">
+    <link rel="stylesheet" href="styles/loading.css">
+    <link rel="stylesheet" href="styles/mobile.css">
+    <link rel="stylesheet" href="styles/mobile-modals.css">
+    <link rel="stylesheet" href="src/admin/admin.css?v=1.2.1">
+    <link rel="stylesheet" href="styles/credits.css?v=1.4.0">
+    <link rel="stylesheet" href="styles/gamemode.css?v=1.4.3">
+    <link rel="stylesheet" href="styles/coop.css?v=1.4.4">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700;900&family=Luckiest+Guy&display=swap" rel="stylesheet">
+    <script>
+        // Disable default right-click context menu everywhere in the app
+        window.addEventListener('contextmenu', (e) => e.preventDefault(), true);
+        document.addEventListener('contextmenu', (e) => e.preventDefault(), true);
+    </script>
+</head>
+<body>
+    <div id="game-container">
+        <!-- Main Game Canvas -->
+        <canvas id="game-canvas"></canvas>
+
+        <!-- ================= ROCKSTAR-STYLE DEV TEAM INTRO SCREEN ================= -->
+        <div id="dev-intro-screen" class="dev-intro-screen">
+            <div class="dev-intro-logo-wrap">
+                <img src="DevTeamLOGO/PsanasGamesLOGO.png" alt="Psanas Games" class="dev-intro-logo-img">
+            </div>
+        </div>
+
+        <!-- ================= COMIC LOADING SCREEN & PRELOADER ================= -->
+        <div id="loading-screen" class="loading-screen">
+            <div class="loading-vignette"></div>
+            <div class="loading-content">
+                <div class="loading-title">LOADING...</div>
+                <div class="loading-bar-track">
+                    <div id="loading-bar-fill" class="loading-bar-fill"></div>
+                    <span id="loading-percentage" class="loading-percentage-text">0%</span>
+                </div>
+                <div id="loading-status" class="loading-status-text">Warming up game engine...</div>
+                <div id="loading-tip" class="loading-tip-text">TIP: Upgrade your hero and weapons to become stronger!</div>
+            </div>
+        </div>
+
+        <!-- ================= MAIN MENU SCREEN (EXACT LAYOUT) ================= -->
+        <div id="menu-screen" class="hidden">
+            <div class="menu-background-pattern"></div>
+
+            <!-- TOP BAR -->
+            <div class="menu-top-bar">
+                <!-- Top Left: Player Profile Pill (Clickable) -->
+                <div id="menu-player-profile" class="menu-player-profile profile-clickable" title="Click to view stats & profile">
+                    <div class="player-avatar-frame-menu">
+                        <span class="avatar-crown">👑</span>
+                        <img id="menu-avatar-img" src="assets/HeroesIcons/PsanasAvatar.png" alt="Player Avatar">
+                    </div>
+                    <div class="player-profile-info">
+                        <div class="player-name-row">
+                            <span id="player-profile-name" class="player-name-text">Player123</span>
+                            <span id="player-profile-level" class="player-level-badge">1</span>
+                        </div>
+                        <div class="player-xp-bar-container">
+                            <div id="player-profile-xp-fill" class="player-xp-fill" style="width: 0%;"></div>
+                            <span id="player-profile-xp-text" class="player-xp-text">0 / 100</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Top Right: Currency Resources -->
+                <div class="menu-resources-bar">
+                    <!-- Fullscreen Toggle Button -->
+                    <button id="menu-fullscreen-btn" class="resource-pill fullscreen-pill-btn" title="Toggle Fullscreen (⛶)" aria-label="Toggle Fullscreen">
+                        <span class="res-icon" style="font-size: 1.1rem;">⛶</span>
+                    </button>
+                    <!-- Coins -->
+                    <div class="resource-pill coin-pill">
+                        <span class="res-icon">🪙</span>
+                        <span id="menu-coin-text" class="res-value">1,500</span>
+                    </div>
+                    <!-- Gems -->
+                    <div class="resource-pill gem-pill">
+                        <span class="res-icon">💎</span>
+                        <span id="menu-gem-text" class="res-value">50</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MAIN BODY GRID (LEFT MENU, CENTER ACTIONS, RIGHT PANELS) -->
+            <div class="menu-main-layout">
+                <!-- LEFT MENU PILL BUTTONS -->
+                <div class="menu-left-column">
+                    <button id="menu-heroes-btn" class="menu-pill-btn">
+                        <img src="assets/icons/icon_heroes.png" class="pill-btn-icon-img" alt="Heroes">
+                        <span class="pill-btn-text">HEROES</span>
+                    </button>
+                    <button id="menu-weapons-btn" class="menu-pill-btn" aria-label="Gear">
+                        <img src="assets/icons/icon_gear.png" class="pill-btn-icon-img" alt="Gear">
+                        <span class="pill-btn-text">GEAR</span>
+                    </button>
+                    <button id="menu-skills-btn" class="menu-pill-btn">
+                        <img src="assets/icons/icon_skills.png" class="pill-btn-icon-img" alt="Skills">
+                        <span class="pill-btn-text">SKILLS</span>
+                    </button>
+                    <button id="menu-upgrades-btn" class="menu-pill-btn">
+                        <img src="assets/icons/icon_upgrades.png" class="pill-btn-icon-img" alt="Upgrades">
+                        <span class="pill-btn-text">UPGRADES</span>
+                    </button>
+                    <button id="menu-inventory-btn" class="menu-pill-btn">
+                        <img src="assets/icons/icon_inventory.png" class="pill-btn-icon-img" alt="Inventory">
+                        <span class="pill-btn-text">INVENTORY</span>
+                    </button>
+                    <button id="menu-talents-btn" class="menu-pill-btn" aria-label="Perks">
+                        <img src="assets/icons/icon_talents.png" class="pill-btn-icon-img" alt="Perks">
+                        <span class="pill-btn-text">PERKS</span>
+                    </button>
+                </div>
+
+                <!-- CENTER: LOGO, PLAY & SETTINGS BUTTONS -->
+                <div class="menu-center-column">
+                    <h1 class="game-title">LESA.IO</h1>
+                    <div class="game-subtitle">CARTOON BATTLE ARENA</div>
+
+                    <!-- Actions -->
+                    <div class="menu-actions">
+                        <button id="start-btn" class="comic-btn comic-btn-primary">
+                            <span>▶ PLAY NOW</span>
+                        </button>
+                        <button id="menu-settings-btn" class="comic-btn">
+                            <span>⚙️ SETTINGS</span>
+                        </button>
+                    </div>
+
+                    <!-- 4 Persistent Chest Slots -->
+                    <div id="menu-chest-slots" class="menu-chest-container"></div>
+                </div>
+
+                <!-- RIGHT COLUMN: DAILY QUESTS, BATTLE PASS, STARTER PACK -->
+                <div class="menu-right-column">
+                    <!-- Daily Quests Card -->
+                    <div class="side-card daily-quests-card">
+                        <div class="side-card-header">
+                            <span class="card-header-title">DAILY CHALLENGES</span>
+                            <span id="menu-quests-timer" class="card-header-timer">⏱ --:--:--</span>
+                        </div>
+                        <div id="menu-quest-list" class="quest-list">
+                            <!-- Injected dynamically by QuestManager -->
+                        </div>
+                        <button id="view-quests-btn" class="card-bottom-btn">
+                            <span>VIEW ALL (5)</span>
+                            <span id="quests-claim-badge" class="badge-notify hidden">!</span>
+                        </button>
+                    </div>
+
+                    <!-- Season 1 / Battle Pass Card -->
+                    <div class="side-card battle-pass-card">
+                        <div class="side-card-header">
+                            <span class="card-header-title">SEASON 1</span>
+                            <span class="card-header-info">ℹ️</span>
+                        </div>
+                        <div class="battle-pass-body">
+                            <div class="bp-avatar-badge">
+                                <img src="assets/HeroesIcons/PsanasAvatar.png" alt="BP Icon">
+                                <span class="bp-tier-num">1</span>
+                            </div>
+                            <div class="bp-progress-col">
+                                <div class="bp-title-row">
+                                    <span class="bp-title-text">BATTLE PASS</span>
+                                    <span class="bp-reward-icon">🎁</span>
+                                </div>
+                                <div class="bp-bar"><div class="bp-fill" style="width: 15%;"></div></div>
+                            </div>
+                        </div>
+                        <button id="view-battle-pass-btn" class="card-bottom-btn">BATTLE PASS</button>
+                    </div>
+
+                    <!-- Starter Pack Limited Banner -->
+                    <div id="starter-pack-card" class="starter-pack-banner-card" title="Click to view Starter Pack bundle">
+                        <img src="assets/icons/StarterPackBannerIcon.png" class="sp-banner-background-img" alt="Starter Pack Banner">
+                        <div class="sp-ribbon-title">STARTER PACK</div>
+                        <div class="sp-plate-content">
+                            <div class="sp-chest-slot">
+                                <img src="assets/icons/StarterPackChestIcon.png" class="sp-chest-img" alt="Chest">
+                            </div>
+                            <div class="sp-rewards-slot">
+                                <div class="sp-timer-row">⏱ <span id="starter-pack-timer">23h 59m 59s</span></div>
+                                <div class="sp-reward-item">🪙 +5,000</div>
+                                <div class="sp-reward-item">💎 +300</div>
+                                <div class="sp-price-row">
+                                    <span class="sp-old-price">€4.99</span>
+                                    <span class="sp-new-price">€0.99</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- BOTTOM LEFT ACTION ROW -->
+            <div class="menu-bottom-row">
+                <button id="btn-leaderboard" class="bottom-square-btn">
+                    <span class="bot-btn-icon">🏆</span>
+                    <span class="bot-btn-text">LEADERBOARD</span>
+                </button>
+                <button id="btn-friends" class="bottom-square-btn">
+                    <span class="bot-btn-icon">👥</span>
+                    <span class="bot-btn-text">FRIENDS</span>
+                </button>
+                <button id="btn-clans" class="bottom-square-btn">
+                    <span class="bot-btn-icon">🛡️</span>
+                    <span class="bot-btn-text">CLANS</span>
+                </button>
+                <button id="btn-mail" class="bottom-square-btn">
+                    <span class="bot-btn-icon">✉️</span>
+                    <span class="bot-btn-text">MAIL</span>
+                    <span id="mail-badge" class="badge-notify hidden">!</span>
+                </button>
+                <button id="btn-events" class="bottom-square-btn">
+                    <span class="bot-btn-icon">📅</span>
+                    <span class="bot-btn-text">EVENTS</span>
+                </button>
+            </div>
+
+            <!-- GAME VERSION (BOTTOM RIGHT) -->
+            <div id="menu-game-version" class="menu-game-version">Alpha 1.3.0</div>
+        </div>
+
+        <!-- ================= IN-GAME CARTOON HUD ================= -->
+        <div id="game-hud" class="hidden">
+            <!-- Top Row -->
+            <div class="hud-top">
+                <!-- Player Status Card -->
+                <div class="player-status-card">
+                    <div class="player-avatar-hud">
+                        <img id="hud-avatar-img" src="assets/HeroesIcons/PsanasAvatar.png" alt="Hero Avatar">
+                        <div id="level-badge-text" class="level-badge">LVL 1</div>
+                    </div>
+                    <div class="status-bars">
+                        <!-- Health Bar -->
+                        <div class="bar-wrapper hp-bar">
+                            <div id="hp-fill" class="bar-fill" style="width: 100%;"></div>
+                            <div id="hp-text" class="bar-text">100 / 100</div>
+                        </div>
+                        <!-- XP Bar -->
+                        <div class="bar-wrapper xp-bar">
+                            <div id="xp-fill" class="bar-fill" style="width: 0%;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Wave & Score Panel -->
+                <div class="hud-center-score">
+                    <div id="wave-text" class="wave-title">WAVE 1</div>
+                    <div id="wave-enemy-count" class="wave-enemy-subtext">Enemies: 0 / 0</div>
+                    <div id="score-text" class="score-title">0</div>
+                </div>
+
+                <!-- Pause & Minimap -->
+                <div class="hud-right">
+                    <div class="hud-top-buttons">
+                        <button id="pause-btn" class="comic-btn comic-btn-sm">⏸ PAUSE</button>
+                    </div>
+
+                    <!-- Mini-map Radar -->
+                    <div class="minimap-panel">
+                        <canvas id="minimap-canvas" width="110" height="110"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bottom Row -->
+            <div class="hud-bottom">
+                <!-- Dash & Skill HUD -->
+                <div class="hud-bottom-center">
+                    <div id="dash-badge" class="dash-badge">
+                        <span><img src="assets/SkillsIcons/DashIcon.png" class="dash-badge-img" alt="Dash"> DASH (SPACE)</span>
+                        <div id="dash-cooldown-fill" class="dash-cooldown-bar"></div>
+                    </div>
+                    <div id="skill-badge" class="skill-badge" title="Press E to use Blade Rush">
+                        <span>🗡️ BLADE RUSH (E)</span>
+                        <div id="skill-cooldown-fill" class="skill-cooldown-bar"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= MOBILE TOUCH CONTROLS (TWIN-STICK SHOOTER) ================= -->
+        <div id="mobile-controls-container" class="hidden">
+            <!-- 1. Left Movement Touch Zone -->
+            <div id="mobile-joystick-zone"></div>
+            <div class="mobile-joystick-base">
+                <div class="mobile-joystick-knob"></div>
+            </div>
+
+            <!-- 2. Right Aim & Shoot Touch Zone -->
+            <div id="mobile-aim-zone"></div>
+            <div class="mobile-aim-base">
+                <div class="mobile-aim-knob">🎯</div>
+            </div>
+
+            <!-- 3. Ergonomic Action Buttons Cluster (Right Thumb Arc) -->
+            <div id="mobile-actions-zone">
+                <!-- Big Bubble Charge Button (Bubble Gun Exclusive Secondary) -->
+                <button id="mobile-bubble-charge-btn" class="mobile-action-btn mobile-bubble-btn hidden" aria-label="Charge Big Bubble">
+                    <svg class="btn-cooldown-ring" viewBox="0 0 80 80">
+                        <circle class="ring-bg" cx="40" cy="40" r="36" fill="none" />
+                        <circle class="ring-progress bubble-charge-ring" cx="40" cy="40" r="36" fill="none" />
+                    </svg>
+                    <img class="btn-bubble-img-icon" src="assets/WeaponIcons/BubbleGun.png" alt="Big Bubble">
+                    <span class="btn-label">BIG BUBBLE</span>
+                    <div class="mobile-btn-cooldown"></div>
+                </button>
+
+                <!-- Equipped Skill Button (E) -->
+                <button id="mobile-skill-btn" class="mobile-action-btn mobile-skill-btn" aria-label="Use Skill">
+                    <svg class="btn-cooldown-ring" viewBox="0 0 80 80">
+                        <circle class="ring-bg" cx="40" cy="40" r="36" fill="none" />
+                        <circle class="ring-progress skill-ring" cx="40" cy="40" r="36" fill="none" />
+                    </svg>
+                    <img id="mobile-skill-img" class="btn-skill-img-icon" src="assets/SkillsIcons/BladeRushSkill.png" alt="Skill">
+                    <span class="btn-label">SKILL</span>
+                    <div class="mobile-btn-cooldown"></div>
+                </button>
+
+                <!-- Dash Button (Space) -->
+                <button id="mobile-dash-btn" class="mobile-action-btn mobile-dash-btn" aria-label="Dash">
+                    <svg class="btn-cooldown-ring" viewBox="0 0 80 80">
+                        <circle class="ring-bg" cx="40" cy="40" r="36" fill="none" />
+                        <circle class="ring-progress dash-ring" cx="40" cy="40" r="36" fill="none" />
+                    </svg>
+                    <img class="btn-dash-img-icon" src="assets/SkillsIcons/DashIcon.png" alt="Dash">
+                    <span class="btn-label">DASH</span>
+                    <div class="mobile-btn-cooldown"></div>
+                </button>
+            </div>
+        </div>
+
+        <!-- ================= HEROES SELECTION MODAL ================= -->
+        <div id="heroes-modal" class="modal-overlay hidden">
+            <div class="modal-panel" style="max-width: 960px;">
+                <button class="modal-close-x-btn" title="Close (Esc)" aria-label="Close">✕</button>
+                <h2 class="modal-title">🪖 HERO ROSTER</h2>
+                <p class="modal-subtitle">Choose your active champion or unlock new heroes for the arena:</p>
+
+                <div class="heroes-grid">
+                    <!-- Hero 1: Psanas (Unlocked Starting Hero) -->
+                    <div class="hero-select-card active" data-hero="psanas">
+                        <div class="hero-select-avatar">
+                            <img src="assets/HeroesIcons/PsanasAvatar.png" alt="Psanas">
+                        </div>
+                        <h3 class="hero-select-name">Psanas</h3>
+                        <div class="hero-stat-row"><span>HP:</span> <strong>100</strong></div>
+                        <div class="hero-stat-row"><span>Speed:</span> <strong>Fast (5.2)</strong></div>
+                        <div class="hero-stat-row"><span>Weapon:</span> <strong>Pea Slingshot</strong></div>
+                        <div class="hero-perk">Scarf Dash & High Precision</div>
+                        <button class="comic-btn comic-btn-sm hero-equip-btn comic-btn-primary">SELECTED ✅</button>
+                    </div>
+
+                    <!-- Hero 2: Psogas (Locked) -->
+                    <div class="hero-select-card hero-locked" data-hero="psogas">
+                        <div class="hero-lock-badge">🔒 LOCKED</div>
+                        <div class="hero-select-avatar">
+                            <img src="assets/HeroesIcons/PsogasAvatar.png" alt="Psogas">
+                        </div>
+                        <h3 class="hero-select-name">Psogas</h3>
+                        <div class="hero-stat-row"><span>HP:</span> <strong>90</strong></div>
+                        <div class="hero-stat-row"><span>Speed:</span> <strong>Very Fast (5.6)</strong></div>
+                        <div class="hero-stat-row"><span>Weapon:</span> <strong>Chili Blaster</strong></div>
+                        <div class="hero-perk">Rapid Fire & Flaming Pierce</div>
+                        <button class="comic-btn comic-btn-sm hero-equip-btn hero-unlock-btn" data-cost="2500" data-hero="psogas">UNLOCK (🪙 2,500)</button>
+                    </div>
+
+                    <!-- Hero 3: Petros (Locked) -->
+                    <div class="hero-select-card hero-locked" data-hero="petros">
+                        <div class="hero-lock-badge">🔒 LOCKED</div>
+                        <div class="hero-select-avatar">
+                            <img src="assets/HeroesIcons/PetrosAvatar.png" alt="Petros">
+                        </div>
+                        <h3 class="hero-select-name">Petros</h3>
+                        <div class="hero-stat-row"><span>HP:</span> <strong>140</strong></div>
+                        <div class="hero-stat-row"><span>Speed:</span> <strong>Tanky (4.6)</strong></div>
+                        <div class="hero-stat-row"><span>Weapon:</span> <strong>Melon Cannon</strong></div>
+                        <div class="hero-perk">Heavy Armor & Explosive Splash</div>
+                        <button class="comic-btn comic-btn-sm hero-equip-btn hero-unlock-btn" data-cost="3500" data-hero="petros">UNLOCK (🪙 3,500)</button>
+                    </div>
+
+                    <!-- Hero 4: 50balos (Locked) -->
+                    <div class="hero-select-card hero-locked" data-hero="50balos">
+                        <div class="hero-lock-badge">🔒 LOCKED</div>
+                        <div class="hero-select-avatar">
+                            <img src="assets/HeroesIcons/50balosCrop.png" alt="50balos">
+                        </div>
+                        <h3 class="hero-select-name">50balos</h3>
+                        <div class="hero-stat-row"><span>HP:</span> <strong>110</strong></div>
+                        <div class="hero-stat-row"><span>Speed:</span> <strong>Fast (5.0)</strong></div>
+                        <div class="hero-stat-row"><span>Weapon:</span> <strong>Money Gun</strong></div>
+                        <div class="hero-perk">Cash Hustler & 50€ Banknotes</div>
+                        <button class="comic-btn comic-btn-sm hero-equip-btn hero-unlock-btn" data-cost="4500" data-hero="50balos">UNLOCK (🪙 4,500)</button>
+                    </div>
+
+                    <!-- Hero 5: Psgiannhs (Coming Soon) -->
+                    <div class="hero-select-card hero-card-coming-soon hero-locked" data-hero="psgiannhs">
+                        <div class="hero-card-badge hero-badge-coming-soon">⏳ COMING SOON</div>
+                        <div class="hero-select-avatar hero-avatar-mystery">
+                            <span class="mystery-avatar-icon">❓</span>
+                        </div>
+                        <h3 class="hero-select-name">Psgiannhs</h3>
+                        <div class="hero-stat-row"><span>HP:</span> <strong>???</strong></div>
+                        <div class="hero-stat-row"><span>Speed:</span> <strong>???</strong></div>
+                        <div class="hero-stat-row"><span>Weapon:</span> <strong>Classified</strong></div>
+                        <div class="hero-perk">Secret Brawler • In Training</div>
+                        <button class="comic-btn comic-btn-sm hero-equip-btn hero-coming-soon-btn">COMING SOON ⏳</button>
+                    </div>
+                </div>
+
+                <div class="modal-actions" style="margin-top: 24px;">
+                    <button id="close-heroes-btn" class="comic-btn comic-btn-primary">DONE</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= SKILLS SELECTION MODAL ================= -->
+        <div id="skills-modal" class="modal-overlay hidden">
+            <div class="modal-panel skills-modal-panel">
+                <button class="modal-close-x-btn" title="Close (Esc)" aria-label="Close">✕</button>
+                <h2 class="modal-title">🗡️ ACTIVE SKILLS</h2>
+                <p class="modal-subtitle">Equip active combat abilities triggered with [E] during battle, or unlock secret masteries:</p>
+
+                <div id="skills-modal-grid" class="skills-grid">
+                    <!-- Dynamic Skill Cards generated by SkillManager.js -->
+                </div>
+
+                <div class="modal-actions" style="margin-top: 20px;">
+                    <button id="close-skills-btn" class="comic-btn comic-btn-primary">DONE</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= DAILY CHALLENGES MODAL (ALL 5 CHALLENGES) ================= -->
+        <div id="daily-quests-modal" class="modal-overlay hidden">
+            <div class="modal-panel" style="max-width: 680px;">
+                <button class="modal-close-x-btn" title="Close (Esc)" aria-label="Close">✕</button>
+                <h2 class="modal-title">📜 DAILY CHALLENGES</h2>
+                <div class="modal-timer-header">
+                    <span>New Challenges in:</span>
+                    <span id="modal-quests-timer" class="timer-badge">--:--:--</span>
+                </div>
+
+                <div id="modal-quests-list" class="challenges-modal-list">
+                    <!-- 5 Daily Challenges Injected Dynamically -->
+                </div>
+
+                <div class="modal-actions" style="margin-top: 20px;">
+                    <button id="close-quests-btn" class="comic-btn comic-btn-primary">DONE</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= FIRST-TIME NAME SETUP MODAL ================= -->
+        <div id="first-time-name-modal" class="modal-overlay hidden">
+            <div class="modal-panel" style="max-width: 480px;">
+                <h2 class="modal-title">👑 WELCOME HERO!</h2>
+                <p class="modal-subtitle">Enter your champion name to begin playing in Lesa.io:</p>
+                <div class="name-input-group">
+                    <input type="text" id="initial-name-input" class="comic-input" maxlength="14" placeholder="Enter your name..." autocomplete="off">
+                </div>
+                <div id="initial-name-error-text" class="rename-error hidden" style="margin-top: 10px;"></div>
+                <div class="modal-actions" style="margin-top: 20px;">
+                    <button id="submit-initial-name-btn" class="comic-btn comic-btn-primary">START PLAYING ▶</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= GAME MODE SELECTION MODAL ================= -->
+        <div id="game-mode-modal" class="modal-overlay hidden">
+            <div class="mode-select-frame">
+                <!-- Base High-Res Frame: Gold Border, Header, Swords, Titles & 3 Cards -->
+                <img src="assets/GameModeIcons/modal_full_frame.png" class="mode-frame-img" alt="Select Game Mode" draggable="false">
+
+                <!-- Interactive Close Button over Red Circle (✕) -->
+                <button id="game-mode-close-btn" class="mode-hitbox-close" title="Close (Esc)" aria-label="Close"></button>
+
+                <!-- Interactive Cards & Buttons Layer -->
+                <div class="mode-hitboxes-container">
+                    <!-- Story Mode Card Slot -->
+                    <div class="mode-card-slot mode-slot-story" title="Play Story Mode">
+                        <img src="assets/GameModeIcons/card_story.png" class="mode-card-hover-art" alt="Story Mode" draggable="false">
+                        <button id="mode-select-story-btn" class="mode-action-hitbox" title="Play Story Mode" aria-label="Play Story Mode"></button>
+                    </div>
+
+                    <!-- Endless Mode Card Slot -->
+                    <div class="mode-card-slot mode-slot-endless" title="Play Endless Mode">
+                        <img src="assets/GameModeIcons/card_endless.png" class="mode-card-hover-art" alt="Endless Mode" draggable="false">
+                        <button id="mode-select-endless-btn" class="mode-action-hitbox" title="Play Endless Mode" aria-label="Play Endless Mode"></button>
+                    </div>
+
+                    <!-- Dungeons Card Slot -->
+                    <div class="mode-card-slot mode-slot-dungeons locked" title="Dungeons (Locked)">
+                        <img src="assets/GameModeIcons/card_dungeons.png" class="mode-card-hover-art" alt="Dungeons Mode" draggable="false">
+                        <button id="mode-select-dungeons-btn" class="mode-action-hitbox" title="Coming Soon" aria-label="Dungeons Locked"></button>
+                    </div>
+                </div>
+
+                <!-- Co-op Playtest Trigger Button -->
+                <div style="position: absolute; bottom: -58px; left: 50%; transform: translateX(-50%); z-index: 10;">
+                    <button id="open-coop-btn" class="mode-coop-trigger-btn" type="button">
+                        <span>🤝</span> CO-OP MULTIPLAYER (PLAYTEST)
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= PLAYER PROFILE & STATS MODAL ================= -->
+        <div id="player-profile-modal" class="modal-overlay hidden">
+            <div class="modal-panel" style="max-width: 650px;">
+                <button class="modal-close-x-btn" title="Close (Esc)" aria-label="Close">✕</button>
+                <h2 class="modal-title">👑 HERO PROFILE</h2>
+
+                <!-- Profile Header Card -->
+                <div class="profile-header-card">
+                    <div class="prof-avatar-wrap">
+                        <img id="prof-modal-avatar" src="assets/HeroesIcons/PsanasAvatar.png" alt="Hero Avatar">
+                        <span class="prof-crown-badge">👑</span>
+                    </div>
+                    <div class="prof-identity-col">
+                        <div class="prof-name-row">
+                            <span id="prof-modal-name" class="prof-name-text">Player123</span>
+                            <span id="prof-modal-level-badge" class="player-level-badge">LVL 1</span>
+                            <button id="open-rename-btn" class="prof-rename-btn" title="Change name (Costs 100 Gems)">✏️ Rename</button>
+                        </div>
+                        <div class="prof-xp-bar-wrap">
+                            <div class="prof-xp-bar"><div id="prof-modal-xp-fill" class="prof-xp-fill" style="width: 0%;"></div></div>
+                            <span id="prof-modal-xp-text" class="prof-xp-text">0 / 100 XP</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="prof-section-title">📊 CAREER STATS</div>
+
+                <!-- Career Stats Grid -->
+                <div class="profile-stats-grid">
+                    <div class="prof-stat-box">
+                        <div class="stat-icon">⚔️</div>
+                        <div class="stat-data">
+                            <span class="stat-lbl">Total Kills</span>
+                            <span id="prof-total-kills" class="stat-val">0</span>
+                        </div>
+                    </div>
+                    <div class="prof-stat-box">
+                        <div class="stat-icon">🌊</div>
+                        <div class="stat-data">
+                            <span class="stat-lbl">Max Wave</span>
+                            <span id="prof-max-wave" class="stat-val">Wave 1</span>
+                        </div>
+                    </div>
+                    <div class="prof-stat-box">
+                        <div class="stat-icon">🏆</div>
+                        <div class="stat-data">
+                            <span class="stat-lbl">High Score</span>
+                            <span id="prof-high-score" class="stat-val">0</span>
+                        </div>
+                    </div>
+                    <div class="prof-stat-box">
+                        <div class="stat-icon">🥊</div>
+                        <div class="stat-data">
+                            <span class="stat-lbl">Skatmirs Bonked</span>
+                            <span id="prof-fatmirs" class="stat-val">0</span>
+                        </div>
+                    </div>
+                    <div class="prof-stat-box">
+                        <div class="stat-icon">⚽</div>
+                        <div class="stat-data">
+                            <span class="stat-lbl">Casillases Outplayed</span>
+                            <span id="prof-casillas" class="stat-val">0</span>
+                        </div>
+                    </div>
+                    <div class="prof-stat-box">
+                        <div class="stat-icon">🎮</div>
+                        <div class="stat-data">
+                            <span class="stat-lbl">Matches Played</span>
+                            <span id="prof-matches" class="stat-val">0</span>
+                        </div>
+                    </div>
+                    <div class="prof-stat-box">
+                        <div class="stat-icon">⏱️</div>
+                        <div class="stat-data">
+                            <span class="stat-lbl">Total Time</span>
+                            <span id="prof-time" class="stat-val">0m 00s</span>
+                        </div>
+                    </div>
+                    <div class="prof-stat-box">
+                        <div class="stat-icon">🪖</div>
+                        <div class="stat-data">
+                            <span class="stat-lbl">Favorite Hero</span>
+                            <span id="prof-fav-hero" class="stat-val">Psanas</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-actions" style="margin-top: 20px;">
+                    <button id="close-profile-btn" class="comic-btn comic-btn-primary">DONE</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= RENAME HERO MODAL (COSTS 100 GEMS) ================= -->
+        <div id="rename-modal" class="modal-overlay hidden">
+            <div class="modal-panel" style="max-width: 480px;">
+                <h2 class="modal-title">✏️ CHANGE NAME</h2>
+                <p class="modal-subtitle">Changing your hero name costs <strong style="color: var(--comic-blue-dark);">100 💎 Gems</strong>:</p>
+
+                <div class="name-input-group">
+                    <input type="text" id="rename-input" class="comic-input" maxlength="14" placeholder="New Hero Name..." autocomplete="off">
+                </div>
+
+                <div id="rename-msg-box" class="rename-msg-box">
+                    <span>Fee: 💎 100 Gems</span>
+                    <span id="rename-current-gems">Your Gems: 💎 50</span>
+                </div>
+
+                <div id="rename-error-text" class="rename-error hidden">Not enough Gems!</div>
+
+                <div class="modal-actions" style="margin-top: 18px;">
+                    <button id="confirm-rename-btn" class="comic-btn comic-btn-primary">CONFIRM (100 💎)</button>
+                    <button id="cancel-rename-btn" class="comic-btn">CANCEL</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= DEVELOPER MAIL & NEWS MODAL ================= -->
+        <div id="mail-modal" class="modal-overlay hidden">
+            <div class="modal-panel" style="max-width: 680px;">
+                <button class="modal-close-x-btn" title="Close (Esc)" aria-label="Close">✕</button>
+                <h2 class="modal-title">✉️ DEVELOPER INBOX & NEWS</h2>
+                <p class="modal-subtitle">Latest announcements, patch updates, and system rewards:</p>
+
+                <div class="mail-list">
+                    <!-- Featured Message: Alpha Founder Exclusive Weapon Reward -->
+                    <div id="mail-card-alpha-bubble" class="mail-card mail-featured" style="border-color: #fd79a8; background: #fff5f8;">
+                        <div class="mail-header-row">
+                            <div class="mail-title-group">
+                                <span class="mail-badge-tag" style="background: linear-gradient(135deg, #fd79a8, #e84393); color: #fff; display: inline-flex; align-items: center; gap: 4px;">
+                                    <img src="assets/WeaponIcons/BubbleGun.png" style="width: 16px; height: 16px; object-fit: contain;" alt="Bubble Gun"> EXCLUSIVE FOUNDER GIFT
+                                </span>
+                                <h3 class="mail-subject">✨ Thank You for Playing in Alpha — Exclusive Bubble Gun!</h3>
+                            </div>
+                            <span class="mail-date">Exclusive</span>
+                        </div>
+                        <div class="mail-sender">From: <strong>Lesa.io Team</strong></div>
+                        <div class="mail-body-text" style="line-height: 1.6;">
+                            <p style="margin-bottom: 8px;"><strong>To our legendary Arena Founders:</strong> Thank you for testing, battling, and supporting Lesa.io during our early <strong>Alpha</strong> version! Your feedback and battle data help shape the future of our game.</p>
+                            <p style="margin-bottom: 8px;">As a permanent token of our gratitude, we are granting you the founder-exclusive weapon: <strong><img src="assets/WeaponIcons/BubbleGun.png" style="width: 20px; height: 20px; object-fit: contain; vertical-align: middle; margin: 0 2px;" alt="Bubble Gun"> Bubble Gun</strong>! It shoots bouncy soapy bubble spheres that ricochet off arena walls and trap foes. This weapon is strictly Exclusive and will never be obtainable once Alpha concludes!</p>
+                        </div>
+                        <div class="mail-attachment-box">
+                            <div class="attachment-rewards">
+                                <span class="att-title">Alpha Founder Reward:</span>
+                                <span class="att-item" style="color: #e84393; font-weight: 800; display: inline-flex; align-items: center; gap: 6px;">
+                                    <img src="assets/WeaponIcons/BubbleGun.png" style="width: 32px; height: 32px; object-fit: contain; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.15));" alt="Bubble Gun"> Bubble Gun (Exclusive Weapon)
+                                </span>
+                            </div>
+                            <button id="claim-alpha-bubble-btn" class="comic-btn comic-btn-sm comic-btn-primary">CLAIM WEAPON 🎁</button>
+                        </div>
+                    </div>
+
+                    <!-- Featured Message: Alpha 1.3 OUR BIGGEST UPDATE YET! -->
+                    <div id="mail-card-alpha13" class="mail-card mail-featured" style="border-color: #2ed573; background: #f0fdf4;">
+                        <div class="mail-header-row">
+                            <div class="mail-title-group">
+                                <span class="mail-badge-tag" style="background: #2ed573;">🔥 OUR BIGGEST UPDATE YET!</span>
+                                <h3 class="mail-subject"><img src="assets/GearUIIcons/Gear&EquipmentIcon.png" class="mail-gear-title-icon" alt="Armory"> Alpha 1.3 — The Armory Awakens!</h3>
+                            </div>
+                            <span class="mail-date">Just Now</span>
+                        </div>
+                        <div class="mail-sender">From: <strong>Lesa.io Team</strong></div>
+                        <div class="mail-body-text" style="line-height: 1.6;">
+                            <p style="margin-bottom: 8px;"><strong>Welcome to Alpha 1.3 — The Armory Awakening!</strong> Our biggest update yet introduces the equippable Gear System, the Call of Duty-style Battle Perks loadout, an expanded 5-Skill arsenal, and destructible arena obstacles:</p>
+                            <ul style="padding-left: 20px; margin-bottom: 12px; display: flex; flex-direction: column; gap: 8px;">
+                                <li><img src="assets/GearUIIcons/Gear&EquipmentIcon.png" class="mail-gear-icon" alt="Armory"> <strong>The Armory & 40 Equippable Gear Items</strong><br>Customize your hero with 5 equipment slots: <span class="mail-gear-badge"><img src="assets/GearUIIcons/HELMET.png" class="mail-gear-icon" alt="Helmets"> Helmets</span>, <span class="mail-gear-badge"><img src="assets/GearUIIcons/ARMOR.png" class="mail-gear-icon" alt="Armor"> Armor</span>, <span class="mail-gear-badge"><img src="assets/GearUIIcons/Belt.png" class="mail-gear-icon" alt="Belts"> Belts</span>, <span class="mail-gear-badge"><img src="assets/GearUIIcons/Gloves.png" class="mail-gear-icon" alt="Gloves"> Gloves</span>, and <span class="mail-gear-badge"><img src="assets/GearUIIcons/BOOTS.png" class="mail-gear-icon" alt="Boots"> Boots</span>! Collect and equip 40 unique pieces across Common, Uncommon, and Rare tiers. Boost your Max HP, Crit Chance, Speed, Fire Rate, and unlock up to 40% Damage Reduction!</li>
+                                <li>🎖️ <strong>Battle Perks Loadout System</strong><br>Equip 3 tactical combat perks in your custom loadout: Hot Foot (dash flame trail), Counter-Blast (damage knockback burst), Second Wind (emergency speed & dash reset), Headhunter (+25% execute damage), and Golden Touch (physical gold pouch loot drops)!</li>
+                                <li>⚡ <strong>5-Skill Arsenal & Sub-Zero Frappés+ Mastery</strong><br>Take command with 5 distinct skills spanning 5 rarity tiers, including the titan ground-shattering Seismic Quake, Yaya Scream, and the Frappés+ Level 5 Mastery with Sub-Zero Ice Aura and extended frenzy duration!</li>
+                                <li>💰 <strong>50balos Hero & The Money Gun</strong><br>Play as 50balos, blasting enemies with piercing 50€ currency bills!</li>
+                                <li>🪑 <strong>Destructible Pagakia (Arena Benches)</strong><br>Smash wooden park benches for cover, ricochets, and tactical arena maneuvering.</li>
+                            </ul>
+                            <p>Thank you for supporting Lesa.io! Claim your Alpha 1.3 celebration gift below:</p>
+                        </div>
+                        <div class="mail-attachment-box">
+                            <div class="attachment-rewards">
+                                <span class="att-title">Alpha 1.3 Gift:</span>
+                                <span class="att-item">🪙 +1,500 Coins</span>
+                                <span class="att-item">💎 +75 Gems</span>
+                            </div>
+                            <button id="claim-alpha13-gift-btn" class="comic-btn comic-btn-sm comic-btn-primary">CLAIM GIFT 🎁</button>
+                        </div>
+                    </div>
+
+                    <!-- Message 2: Alpha 1.2 BIG UPDATE Release -->
+                    <div id="mail-card-alpha12" class="mail-card" style="border-color: #e74c3c; background: #fff5f5;">
+                        <div class="mail-header-row">
+                            <div class="mail-title-group">
+                                <span class="mail-badge-tag" style="background: #e74c3c;">UPDATE 1.2</span>
+                                <h3 class="mail-subject">💥 Alpha 1.2 — Boss Kleanthis & Active Skills Arrival!</h3>
+                            </div>
+                            <span class="mail-date">Earlier</span>
+                        </div>
+                        <div class="mail-sender">From: <strong>Lesa.io Team</strong></div>
+                        <div class="mail-body-text" style="line-height: 1.6;">
+                            <p style="margin-bottom: 8px;"><strong>Welcome to Alpha 1.2!</strong> Our largest release yet brings the epic Wave 10 Boss Encounter, the complete Active Skills combat system, and key community improvements to the arena:</p>
+                            <ul style="padding-left: 20px; margin-bottom: 12px; display: flex; flex-direction: column; gap: 8px;">
+                                <li>👑 <strong>New Boss Encounter: Kleanthis the Rebetis (Wave 10)</strong><br>A red alert heralds the arrival of the arena's first formidable boss! Kleanthis sips his vintage wine to charge his Drunk Meter, unlocking a devastating aerial Karate Kick that stuns heroes on impact. As his health drops, he erupts into a fiery crimson Rage Mode, calling in gang reinforcements and hurling barrages of shattering wine bottles!</li>
+                                <li>⚡ <strong>Brand-New Active Skills System & 3-Tier Upgrades</strong><br>Turn the tide of battle with active abilities! Press <strong>(E)</strong> to cast equipped skills. Unlock and level up both <strong>Blade Rush</strong> (a swift dash cutting through enemy ranks) and <strong>Nerobalonaki</strong> (a tactical water balloon that drenches the arena floor, slowing foes and amplifying damage taken) up to Level 3 in the Skills menu!</li>
+                                <li>🛡️ <strong>Advanced Name Verification & Community Fair Play</strong><br>Added an intelligent multi-stage name filter blocking evasions and offensive text to keep our global leaderboards clean and competitive.</li>
+                                <li>✨ <strong>Quality of Life & System Polish</strong><br>Added universal quick-exit buttons to all game menus, cleaned up lobby cards for claimed starter packs, and fixed several combat loop crashes for silky-smooth performance.</li>
+                            </ul>
+                            <p>Thank you for testing and fighting in Lesa.io! Claim your Alpha 1.2 celebration rewards below:</p>
+                        </div>
+                        <div class="mail-attachment-box">
+                            <div class="attachment-rewards">
+                                <span class="att-title">Alpha 1.2 Gift:</span>
+                                <span class="att-item">🪙 +1,000 Coins</span>
+                                <span class="att-item">💎 +50 Gems</span>
+                            </div>
+                            <button id="claim-alpha12-gift-btn" class="comic-btn comic-btn-sm comic-btn-primary">CLAIM GIFT 🎁</button>
+                        </div>
+                    </div>
+
+                    <!-- Message 2: Alpha 1.1 Release -->
+                    <div id="mail-card-alpha11" class="mail-card" style="border-color: #f39c12;">
+                        <div class="mail-header-row">
+                            <div class="mail-title-group">
+                                <span class="mail-badge-tag" style="background: #e67e22;">UPDATE 1.1</span>
+                                <h3 class="mail-subject">🚀 Alpha 1.1 Patch Notes — New Enemy & Performance Boost!</h3>
+                            </div>
+                            <span class="mail-date">Earlier</span>
+                        </div>
+                        <div class="mail-sender">From: <strong>Lesa.io Team</strong></div>
+                        <div class="mail-body-text" style="line-height: 1.6;">
+                            <p style="margin-bottom: 8px;"><strong>Heroes of the Arena!</strong> Patch Alpha 1.1 is officially live with exciting new content and massive performance optimizations:</p>
+                            <ul style="padding-left: 20px; margin-bottom: 12px; display: flex; flex-direction: column; gap: 6px;">
+                                <li>🦹 <strong>New Enemy: Skarmogyftos (Spawns Wave 6+)</strong> — A tricky rogue who casts curved smoke volleys, creates drowsy sleep clouds that slow heroes, and can smoke-vanish when cornered. Beware of his greedy loot vacuum!</li>
+                                <li>⚡ <strong>Performance & Frame Rate Optimizations</strong> — Major rendering and collision pipeline overhaul for silky-smooth 60+ FPS gameplay with zero stutter during high-intensity waves.</li>
+                                <li>🔊 <strong>Audio & SFX Enhancements</strong> — Added dynamic sound effects when performing combat dashes with full in-game volume slider support.</li>
+                                <li>🛠️ <strong>Stability & Balance Fixes</strong> — Fine-tuned wave progression, enemy pathfinding, and overall arena responsiveness.</li>
+                            </ul>
+                            <p>Thank you for testing and playing Lesa.io! Claim your Alpha 1.1 celebration rewards below:</p>
+                        </div>
+                        <div class="mail-attachment-box">
+                            <div class="attachment-rewards">
+                                <span class="att-title">Alpha 1.1 Gift:</span>
+                                <span class="att-item">🪙 +600 Coins</span>
+                                <span class="att-item">💎 +30 Gems</span>
+                            </div>
+                            <button id="claim-alpha11-gift-btn" class="comic-btn comic-btn-sm comic-btn-primary">CLAIM GIFT 🎁</button>
+                        </div>
+                    </div>
+
+                    <!-- Message 3: Alpha 1.0 Launch -->
+                    <div id="mail-card-alpha10" class="mail-card">
+                        <div class="mail-header-row">
+                            <div class="mail-title-group">
+                                <span class="mail-badge-tag">ALPHA 1.0</span>
+                                <h3 class="mail-subject">🎉 Version Alpha 1.0 is here!</h3>
+                            </div>
+                            <span class="mail-date">Earlier</span>
+                        </div>
+                        <div class="mail-sender">From: <strong>Lead Developer</strong></div>
+                        <div class="mail-body-text">
+                            Lesa.io is finally in Alpha! Battle against Skatmir and Casillas, complete your Daily Challenges, unlock and level up heroes, and dominate the leaderboard!
+                        </div>
+                        <div class="mail-attachment-box">
+                            <div class="attachment-rewards">
+                                <span class="att-title">Alpha Gift:</span>
+                                <span class="att-item">🪙 +500 Coins</span>
+                                <span class="att-item">💎 +25 Gems</span>
+                            </div>
+                            <button id="claim-alpha-gift-btn" class="comic-btn comic-btn-sm comic-btn-primary">CLAIM GIFT 🎁</button>
+                        </div>
+                    </div>
+
+                    <!-- Message 3: System Notice -->
+                    <div class="mail-card">
+                        <div class="mail-header-row">
+                            <div class="mail-title-group">
+                                <span class="mail-badge-tag" style="background: #a4b0be;">SYSTEM</span>
+                                <h3 class="mail-subject">📢 Welcome to the Arena!</h3>
+                            </div>
+                            <span class="mail-date">Notice</span>
+                        </div>
+                        <div class="mail-sender">From: <strong>Lesa.io Team</strong></div>
+                        <div class="mail-body-text">
+                            Thank you for joining the early testing phase of Lesa.io. Stay tuned for new weapons, boss fights, and maps coming soon!
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-actions" style="margin-top: 20px;">
+                    <button id="close-mail-btn" class="comic-btn comic-btn-primary">DONE</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= 1. STARTER PACK REAL CHECKOUT MODAL ================= -->
+        <div id="starter-pack-modal" class="modal-overlay hidden">
+            <div class="modal-panel sp-checkout-modal-panel">
+                <button class="modal-close-x-btn" title="Close (Esc)" aria-label="Close">✕</button>
+                <div class="sp-modal-banner-header">
+                    <img src="assets/icons/StarterPackBannerIcon.png" class="sp-modal-banner-img" alt="Starter Pack">
+                    <div class="sp-modal-ribbon-text">STARTER PACK</div>
+                </div>
+
+                <div class="sp-modal-timer-badge">
+                    <span>⏱ OFFER EXPIRES IN:</span>
+                    <span id="sp-modal-timer-countdown">23h 59m 59s</span>
+                </div>
+
+                <div class="sp-modal-bundle-box">
+                    <div class="sp-modal-chest-box">
+                        <img src="assets/icons/StarterPackChestIcon.png" class="sp-modal-chest-art" alt="Chest">
+                        <div class="sp-modal-discount-pill">-80% OFF</div>
+                    </div>
+                    <div class="sp-modal-perks-list">
+                        <div class="sp-perk-item"><span>🪙</span> <strong>+5,000 Gold Coins</strong> (Unlock heroes & gear!)</div>
+                        <div class="sp-perk-item"><span>💎</span> <strong>+300 Precious Gems</strong> (Premium vault currency!)</div>
+                        <div class="sp-perk-item"><span>🌟</span> <strong>Golden Slingshot Skin</strong> (Limited collector item!)</div>
+                    </div>
+                </div>
+
+                <div class="sp-modal-pay-row">
+                    <div class="sp-modal-price-col">
+                        <span class="sp-modal-was">€4.99</span>
+                        <span class="sp-modal-now">€0.99</span>
+                    </div>
+                    <div class="sp-modal-pay-methods">
+                        <div class="sp-pay-tab active">💳 Card</div>
+                        <div class="sp-pay-tab">🍎 Pay</div>
+                        <div class="sp-pay-tab">🅿️ PayPal</div>
+                    </div>
+                </div>
+
+                <div class="modal-actions" style="flex-direction: column; gap: 8px;">
+                    <button id="sp-buy-now-btn" class="comic-btn comic-btn-primary sp-modal-btn-buy">
+                        <span>🛒 PAY €0.99 NOW</span>
+                    </button>
+                    <button id="sp-cancel-btn" class="comic-btn" style="width: 100%;">MAYBE LATER</button>
+                    <div style="margin-top: 6px; font-size: 0.82rem;">
+                        <a href="#" id="sp-edit-stripe-link" style="color: #6c5ce7; font-weight: 800; text-decoration: underline;">⚙️ Set / Change Stripe Payment Link</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= 2. GEAR & EQUIPMENT (SURVIVOR.IO STYLE) ================= -->
+        <div id="weapons-modal" class="modal-overlay hidden">
+            <div class="modal-panel gear-modal-panel">
+                <button class="modal-close-x-btn gear-modal-close-x" title="Close (Esc)" aria-label="Close"></button>
+                <div class="gear-modal-header-container">
+                    <div class="gear-modal-title-row">
+                        <img src="assets/GearUIIcons/Gear&EquipmentIcon.png" class="gear-title-shield-img" alt="Gear Shield">
+                        <img src="assets/GearUIIcons/GearTitleTextOnly.png" class="gear-title-text-img" alt="GEAR & EQUIPMENT">
+                    </div>
+                    <img src="assets/GearUIIcons/GearSubtitleText.png" class="gear-subtitle-banner-img" alt="Equip and inspect your survivor battle loadout.">
+                </div>
+                
+                <!-- SURVIVOR.IO STYLE EQUIPMENT SHOWCASE -->
+                <div class="gear-doll-showcase">
+                    <!-- Left 3 Slots: Weapon, Armor, Boots -->
+                    <div class="gear-slots-column gear-col-left">
+                        <!-- Slot 1: Weapon -->
+                        <div class="gear-slot-card gear-slot-weapon" id="gear-slot-weapon" title="Equipped Weapon">
+                            <span class="gear-slot-type-tag slot-tag-weapon">WEAPON</span>
+                            <div class="gear-slot-center-content">
+                                <img src="assets/WeaponIcons/PeaSlingshot.png" class="gear-slot-icon-img" id="gear-slot-weapon-img" alt="Equipped Weapon">
+                            </div>
+                            <span class="gear-slot-name" id="gear-equipped-weapon-name">Pea Slingshot</span>
+                        </div>
+
+                        <!-- Slot 2: Armor -->
+                        <div class="gear-slot-card gear-slot-empty" id="gear-slot-armor" title="Armor Slot (Empty)">
+                            <span class="gear-slot-type-tag">ARMOR</span>
+                            <div class="gear-slot-center-content">
+                                <img src="assets/GearUIIcons/ARMOR.png" class="gear-slot-icon-img" alt="Armor">
+                            </div>
+                            <span class="gear-slot-name">No Armor</span>
+                        </div>
+
+                        <!-- Slot 3: Boots -->
+                        <div class="gear-slot-card gear-slot-empty" id="gear-slot-boots" title="Boots Slot (Empty)">
+                            <span class="gear-slot-type-tag">BOOTS</span>
+                            <div class="gear-slot-center-content">
+                                <img src="assets/GearUIIcons/BOOTS.png" class="gear-slot-icon-img" alt="Boots">
+                            </div>
+                            <span class="gear-slot-name">No Boots</span>
+                        </div>
+                    </div>
+
+                    <!-- Center Hero Preview & Stats -->
+                    <div class="gear-hero-center">
+                        <div class="gear-hero-avatar-circle">
+                            <img id="gear-hero-avatar" src="assets/HeroesIcons/PsogasAvatar.png" alt="Hero Avatar">
+                        </div>
+                        <div class="gear-hero-name" id="gear-hero-name">PSOGAS</div>
+                        <div class="gear-stats-pill">
+                            <div class="gear-stat-item">
+                                <img src="assets/GearUIIcons/ATK.png" class="gear-stat-icon-img" alt="ATK">
+                                <span class="stat-lbl">ATK</span>
+                                <strong class="stat-val" id="gear-total-atk">25</strong>
+                            </div>
+                            <div class="gear-stat-item">
+                                <img src="assets/GearUIIcons/HP.png" class="gear-stat-icon-img" alt="HP">
+                                <span class="stat-lbl">HP</span>
+                                <strong class="stat-val" id="gear-total-hp">100</strong>
+                            </div>
+                            <div class="gear-stat-item">
+                                <img src="assets/GearUIIcons/DEF.png" class="gear-stat-icon-img" alt="DEF">
+                                <span class="stat-lbl">DEF</span>
+                                <strong class="stat-val" id="gear-total-def">0</strong>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right 3 Slots: Helmet, Gloves, Belt -->
+                    <div class="gear-slots-column gear-col-right">
+                        <!-- Slot 4: Helmet -->
+                        <div class="gear-slot-card gear-slot-empty" id="gear-slot-helmet" title="Helmet Slot (Empty)">
+                            <span class="gear-slot-type-tag">HELMET</span>
+                            <div class="gear-slot-center-content">
+                                <img src="assets/GearUIIcons/HELMET.png" class="gear-slot-icon-img" alt="Helmet">
+                            </div>
+                            <span class="gear-slot-name">No Helmet</span>
+                        </div>
+
+                        <!-- Slot 5: Gloves -->
+                        <div class="gear-slot-card gear-slot-empty" id="gear-slot-gloves" title="Gloves Slot (Empty)">
+                            <span class="gear-slot-type-tag">GLOVES</span>
+                            <div class="gear-slot-center-content">
+                                <img src="assets/GearUIIcons/Gloves.png" class="gear-slot-icon-img" alt="Gloves">
+                            </div>
+                            <span class="gear-slot-name">No Gloves</span>
+                        </div>
+
+                        <!-- Slot 6: Belt -->
+                        <div class="gear-slot-card gear-slot-empty" id="gear-slot-belt" title="Belt Slot (Empty)">
+                            <span class="gear-slot-type-tag">BELT</span>
+                            <div class="gear-slot-center-content">
+                                <img src="assets/GearUIIcons/Belt.png" class="gear-slot-icon-img" alt="Belt">
+                            </div>
+                            <span class="gear-slot-name">No Belt</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- GEAR INVENTORY (BACKPACK) -->
+                <div class="gear-inventory-section">
+                    <div class="gear-inventory-header">
+                        <div class="gear-inv-title">
+                            <span class="gear-inv-title-icon">🎒</span>
+                            <span id="gear-inv-section-title">GEAR INVENTORY (WEAPONS)</span>
+                        </div>
+                        <span class="gear-inv-badge" id="gear-inv-badge-count">2 WEAPONS AVAILABLE</span>
+                    </div>
+
+                    <!-- Category Sub-Tabs -->
+                    <div class="gear-subtabs">
+                        <button class="gear-tab-btn active" data-tab="weapon">⚔️ Weapons</button>
+                        <button class="gear-tab-btn" data-tab="helmet"><img src="assets/GearUIIcons/HELMET.png" class="tab-gear-icon" alt="Helmets"> Helmets</button>
+                        <button class="gear-tab-btn" data-tab="armor"><img src="assets/GearUIIcons/ARMOR.png" class="tab-gear-icon" alt="Armor"> Armor</button>
+                        <button class="gear-tab-btn" data-tab="belt"><img src="assets/GearUIIcons/Belt.png" class="tab-gear-icon" alt="Belts"> Belts</button>
+                        <button class="gear-tab-btn" data-tab="gloves"><img src="assets/GearUIIcons/Gloves.png" class="tab-gear-icon" alt="Gloves"> Gloves</button>
+                        <button class="gear-tab-btn" data-tab="boots"><img src="assets/GearUIIcons/BOOTS.png" class="tab-gear-icon" alt="Boots"> Boots</button>
+                    </div>
+
+                    <!-- Dynamic Gear Items Grid (Hidden when Weapons tab active) -->
+                    <div class="gear-grid" id="gear-inventory-grid" style="display: none;"></div>
+
+                    <div class="weapons-grid">
+                        <div class="weapon-card active-weapon" data-weapon="pea">
+                            <div class="weapon-card-top">
+                                <div class="weapon-card-left">
+                                    <div class="weapon-icon-wrap">
+                                        <img src="assets/WeaponIcons/PeaSlingshot.png" class="weapon-card-img" alt="Pea Slingshot">
+                                    </div>
+                                    <h3 class="weapon-name">PEA SLINGSHOT</h3>
+                                </div>
+                                <div class="weapon-badge badge-equipped">EQUIPPED</div>
+                            </div>
+                            <div class="weapon-stats-list">
+                                <div class="weapon-stat-row"><span class="stat-key">Damage:</span> <span class="stat-val">25 Kinetic</span></div>
+                                <div class="weapon-stat-row"><span class="stat-key">Fire Delay:</span> <span class="stat-val">Fast (0.6s)</span></div>
+                                <div class="weapon-stat-row"><span class="stat-key">Trait:</span> <span class="stat-val">Precision Pea Burst</span></div>
+                            </div>
+                        </div>
+                        <div class="weapon-card" data-weapon="watermelon">
+                            <div class="weapon-card-top">
+                                <div class="weapon-card-left">
+                                    <div class="weapon-icon-wrap">
+                                        <img src="assets/WeaponIcons/MelonCannon.png" class="weapon-card-img" alt="Melon Cannon">
+                                    </div>
+                                    <h3 class="weapon-name">MELON CANNON</h3>
+                                </div>
+                                <div class="weapon-badge badge-petros">PETROS GEAR</div>
+                            </div>
+                            <div class="weapon-stats-list">
+                                <div class="weapon-stat-row"><span class="stat-key">Damage:</span> <span class="stat-val">65 Explosive</span></div>
+                                <div class="weapon-stat-row"><span class="stat-key">Fire Delay:</span> <span class="stat-val">Heavy (3.0s)</span></div>
+                                <div class="weapon-stat-row"><span class="stat-key">Trait:</span> <span class="stat-val">Area Shockwave</span></div>
+                            </div>
+                        </div>
+                        <div class="weapon-card" data-weapon="pepper">
+                            <div class="weapon-card-top">
+                                <div class="weapon-card-left">
+                                    <div class="weapon-icon-wrap">
+                                        <img src="assets/WeaponIcons/ChilliBlaster.png" class="weapon-card-img" alt="Chili Blaster">
+                                    </div>
+                                    <h3 class="weapon-name">CHILI BLASTER</h3>
+                                </div>
+                                <div class="weapon-badge badge-psogas">PSOGAS GEAR</div>
+                            </div>
+                            <div class="weapon-stats-list">
+                                <div class="weapon-stat-row"><span class="stat-key">Damage:</span> <span class="stat-val">22 Searing</span></div>
+                                <div class="weapon-stat-row"><span class="stat-key">Fire Delay:</span> <span class="stat-val">Rapid (1s)</span></div>
+                                <div class="weapon-stat-row"><span class="stat-key">Trait:</span> <span class="stat-val">Pierces 2 Enemies</span></div>
+                            </div>
+                        </div>
+                        <div class="weapon-card" data-weapon="bubble">
+                            <div class="weapon-card-top">
+                                <div class="weapon-card-left">
+                                    <div class="weapon-icon-wrap">
+                                        <img src="assets/WeaponIcons/BubbleGun.png" class="weapon-card-img" alt="Bubble Gun">
+                                    </div>
+                                    <h3 class="weapon-name">BUBBLE GUN</h3>
+                                </div>
+                                <div class="weapon-badge badge-exclusive">EXCLUSIVE</div>
+                            </div>
+                            <div class="weapon-stats-list">
+                                <div class="weapon-stat-row"><span class="stat-key">Damage:</span> <span class="stat-val">22 Hydro</span></div>
+                                <div class="weapon-stat-row"><span class="stat-key">Fire Delay:</span> <span class="stat-val">Stream (2s)</span></div>
+                                <div class="weapon-stat-row"><span class="stat-key">Trait:</span> <span class="stat-val">Alpha Exclusive • 3 Bounces</span></div>
+                            </div>
+                        </div>
+
+                        <!-- Weapon 5: Money Gun (50balos Signature) -->
+                        <div class="weapon-card" data-weapon="money_gun">
+                            <div class="weapon-card-top">
+                                <div class="weapon-card-left">
+                                    <div class="weapon-icon-wrap">
+                                        <img src="assets/WeaponIcons/MoneyGun.png" class="weapon-card-img" alt="Money Gun">
+                                    </div>
+                                    <h3 class="weapon-name">MONEY GUN</h3>
+                                </div>
+                                <div class="weapon-badge badge-50balos">50BALOS GEAR</div>
+                            </div>
+                            <div class="weapon-stats-list">
+                                <div class="weapon-stat-row"><span class="stat-key">Damage:</span> <span class="stat-val">28 Cash</span></div>
+                                <div class="weapon-stat-row"><span class="stat-key">Fire Delay:</span> <span class="stat-val">Rapid (1.6s)</span></div>
+                                <div class="weapon-stat-row"><span class="stat-key">Trait:</span> <span class="stat-val">50€ Piercing Bills</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-actions" style="margin-top: 14px; display: flex; justify-content: center;">
+                    <button id="close-weapons-btn" class="gear-done-btn">DONE</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= 3. POWER UPGRADES MODAL ================= -->
+        <div id="upgrades-modal" class="modal-overlay hidden">
+            <div class="modal-panel" style="max-width: 680px;">
+                <button class="modal-close-x-btn" title="Close (Esc)" aria-label="Close">✕</button>
+                <h2 class="modal-title">⚡ POWER UPGRADES</h2>
+                <p class="modal-subtitle">Enhance permanent player combat attributes with Gold Coins:</p>
+                <div id="upgrades-grid" class="upgrades-grid">
+                    <!-- Dynamically rendered by UpgradeManager -->
+                </div>
+                <div class="modal-actions">
+                    <button id="close-upgrades-btn" class="comic-btn comic-btn-primary">DONE</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= 4. PLAYER INVENTORY MODAL ================= -->
+        <div id="inventory-modal" class="modal-overlay hidden">
+            <div class="modal-panel">
+                <button class="modal-close-x-btn" title="Close (Esc)" aria-label="Close">✕</button>
+                <h2 class="modal-title">🎒 PLAYER INVENTORY</h2>
+                <p class="modal-subtitle">Open Boss Crates, claim arena spoils, and track your resources:</p>
+                <div id="inventory-content-mount">
+                    <!-- Injected dynamically by InventoryModalUI -->
+                </div>
+                <div class="modal-actions" style="margin-top: 10px;">
+                    <button id="close-inventory-btn" class="comic-btn comic-btn-primary">DONE</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= 4.5 CHEST & CRATE UNBOXING MODAL (CLASH ROYALE STYLE) ================= -->
+        <div id="chest-action-modal" class="modal-overlay hidden" style="z-index: 500;">
+            <div class="modal-panel" style="max-width: 500px; width: 92%; text-align: center;">
+                <button id="chest-modal-close" class="modal-close-x-btn" title="Close (Esc)" aria-label="Close">✕</button>
+                <h2 id="chest-modal-title" class="modal-title">CHEST</h2>
+                <div class="modal-body" id="chest-modal-body" style="padding: 10px 4px;">
+                    <!-- Injected dynamically by ChestModalUI -->
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= 5. PERKS LOADOUT MODAL (CALL OF DUTY STYLE 3 SLOTS) ================= -->
+        <div id="talents-modal" class="modal-overlay hidden">
+            <div class="modal-panel" style="max-width: 680px;">
+                <button class="modal-close-x-btn" title="Close (Esc)" aria-label="Close">✕</button>
+                <h2 class="modal-title">🎖️ PERKS LOADOUT</h2>
+                <p class="modal-subtitle">Equip up to 3 battle perks to customize your arena loadout:</p>
+                
+                <!-- 3 Call of Duty Style Active Perk Slots -->
+                <div class="perks-loadout-slots">
+                    <!-- Perk Slot 1 -->
+                    <div class="perk-slot-card perk-slot-1">
+                        <div class="perk-slot-badge">PERK 1</div>
+                        <div class="perk-empty-frame">
+                            <span class="perk-empty-icon">➕</span>
+                        </div>
+                        <h3 class="perk-slot-title">SLOT 1</h3>
+                        <span class="perk-slot-status">EMPTY SLOT</span>
+                    </div>
+
+                    <!-- Perk Slot 2 -->
+                    <div class="perk-slot-card perk-slot-2">
+                        <div class="perk-slot-badge">PERK 2</div>
+                        <div class="perk-empty-frame">
+                            <span class="perk-empty-icon">➕</span>
+                        </div>
+                        <h3 class="perk-slot-title">SLOT 2</h3>
+                        <span class="perk-slot-status">EMPTY SLOT</span>
+                    </div>
+
+                    <!-- Perk Slot 3 -->
+                    <div class="perk-slot-card perk-slot-3">
+                        <div class="perk-slot-badge">PERK 3</div>
+                        <div class="perk-empty-frame">
+                            <span class="perk-empty-icon">➕</span>
+                        </div>
+                        <h3 class="perk-slot-title">SLOT 3</h3>
+                        <span class="perk-slot-status">EMPTY SLOT</span>
+                    </div>
+                </div>
+
+                <!-- Advanced Search & Category Filters -->
+                <div class="perks-search-wrap">
+                    <div class="perks-search-input-box">
+                        <span class="perks-search-icon">🔍</span>
+                        <input type="text" id="perks-search-input" class="perks-search-input" placeholder="Search perks by name, trigger, or tag..." autocomplete="off" spellcheck="false">
+                        <button id="perks-search-clear-btn" class="perks-search-clear-btn hidden" title="Clear Search">✕</button>
+                    </div>
+                    <div class="perks-filter-chips">
+                        <button class="perk-filter-chip active" data-filter="ALL">ALL</button>
+                        <button class="perk-filter-chip" data-filter="MOBILITY">🔥 MOBILITY</button>
+                        <button class="perk-filter-chip" data-filter="OFFENSE">🎯 OFFENSE</button>
+                        <button class="perk-filter-chip" data-filter="DEFENSE">💥 DEFENSE</button>
+                        <button class="perk-filter-chip" data-filter="CHAOS">💣 CHAOS</button>
+                        <button class="perk-filter-chip" data-filter="SURVIVAL">⚡ SURVIVAL</button>
+                        <button class="perk-filter-chip" data-filter="ECONOMY">🪙 ECONOMY</button>
+                    </div>
+                </div>
+
+                <!-- Perk Vault Empty State -->
+                <div class="perks-vault-section">
+                    <div class="perks-vault-header">📦 PERK VAULT (0 UNLOCKED)</div>
+                    <p class="perks-vault-empty-text">No perks unlocked yet. Level up your account, complete arena challenges, or achieve combat milestones to unlock perks and equip them in your 3 loadout slots!</p>
+                </div>
+
+                <div class="modal-actions" style="margin-top: 18px;">
+                    <button id="close-talents-btn" class="comic-btn comic-btn-primary">DONE</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= GENERIC PLACEHOLDER MODAL FOR MENU BUTTONS ================= -->
+        <div id="generic-feature-modal" class="modal-overlay hidden">
+            <div class="modal-panel" style="max-width: 520px;">
+                <button class="modal-close-x-btn" title="Close (Esc)" aria-label="Close">✕</button>
+                <h2 id="feature-modal-title" class="modal-title">FEATURE</h2>
+                <p id="feature-modal-desc" class="modal-subtitle">UI panel preview</p>
+                <div id="feature-modal-content" style="font-size: 1.1rem; font-weight: 800; padding: 20px; background: #ffffff; border-radius: 18px; border: 3px solid var(--dark-outline); margin-bottom: 20px; white-space: pre-line; line-height: 1.5;">
+                    Coming soon in the next update!
+                </div>
+                <div class="modal-actions">
+                    <button id="close-feature-modal-btn" class="comic-btn comic-btn-primary">OK</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= PAUSE MODAL ================= -->
+        <div id="pause-modal" class="modal-overlay hidden">
+            <div class="modal-panel">
+                <h2 class="modal-title">GAME PAUSED</h2>
+                <p class="modal-subtitle">Catch your breath!</p>
+
+                <!-- Dynamic Random Gameplay Tip -->
+                <div class="modal-tip-box pause-tip">
+                    <span class="modal-tip-badge">💡 COMBAT TIP</span>
+                    <div id="pause-tip-text" class="modal-tip-content">TIP: Press <span class="loading-tip-highlight">[SPACE] or Right-Click</span> to Dash with invulnerability frames!</div>
+                </div>
+
+                <div class="modal-actions">
+                    <button id="resume-btn" class="comic-btn comic-btn-primary">▶ RESUME</button>
+                    <button id="pause-settings-btn" class="comic-btn">⚙️ SETTINGS</button>
+                    <button id="pause-menu-btn" class="comic-btn comic-btn-danger">MAIN MENU</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= SETTINGS MODAL ================= -->
+        <div id="settings-modal" class="modal-overlay hidden">
+            <div class="modal-panel" style="max-width: 580px;">
+                <button class="modal-close-x-btn" title="Close (Esc)" aria-label="Close">✕</button>
+                <h2 class="modal-title">⚙️ SETTINGS</h2>
+                <p class="modal-subtitle">Customize your cartoon game experience:</p>
+
+                <div class="settings-list">
+                    <!-- Music Volume Slider -->
+                    <div class="setting-row">
+                        <div class="setting-info">
+                            <div class="setting-title">🎵 Music Volume (BGM)</div>
+                            <div class="setting-desc">Adjust main menu soundtrack & arena music</div>
+                        </div>
+                        <div class="slider-control-group">
+                            <input type="range" id="music-volume-slider" min="0" max="100" value="25" class="comic-slider">
+                            <span id="music-volume-text" class="slider-val-badge">25%</span>
+                        </div>
+                    </div>
+
+                    <!-- Game Sounds / SFX Volume Slider -->
+                    <div class="setting-row">
+                        <div class="setting-info">
+                            <div class="setting-title">🔊 Game Sounds (SFX)</div>
+                            <div class="setting-desc">Pew-pews, hits, bonks, dash, and menu clicks</div>
+                        </div>
+                        <div class="slider-control-group">
+                            <input type="range" id="sfx-volume-slider" min="0" max="100" value="50" class="comic-slider">
+                            <span id="sfx-volume-text" class="slider-val-badge">50%</span>
+                        </div>
+                    </div>
+
+                    <!-- Comic Popups Toggle -->
+                    <div class="setting-row">
+                        <div class="setting-info">
+                            <div class="setting-title">Comic Popups ("POW!", "K.O!", "BOING!")</div>
+                            <div class="setting-desc">Show cartoon comic text reactions on hits and events</div>
+                        </div>
+                        <button id="toggle-popups-btn" class="comic-btn comic-btn-sm">ON ✅</button>
+                    </div>
+
+                    <!-- Damage Numbers Toggle -->
+                    <div class="setting-row">
+                        <div class="setting-info">
+                            <div class="setting-title">Damage Numbers</div>
+                            <div class="setting-desc">Display floating damage values on hits</div>
+                        </div>
+                        <button id="toggle-damage-btn" class="comic-btn comic-btn-sm">ON ✅</button>
+                    </div>
+
+                    <!-- Screen Shake Toggle -->
+                    <div class="setting-row">
+                        <div class="setting-info">
+                            <div class="setting-title">Screen Shake</div>
+                            <div class="setting-desc">Impact camera shake on heavy explosions & hits</div>
+                        </div>
+                        <button id="toggle-shake-btn" class="comic-btn comic-btn-sm">ON ✅</button>
+                    </div>
+
+                    <!-- Mobile-Only Auto Fire Toggle -->
+                    <div id="setting-row-autofire" class="setting-row setting-mobile-only">
+                        <div class="setting-info">
+                            <div class="setting-title">🎯 Auto Fire (Mobile)</div>
+                            <div class="setting-desc">Automatically target and fire at nearby enemies</div>
+                        </div>
+                        <button id="toggle-autofire-btn" class="comic-btn comic-btn-sm">OFF ❌</button>
+                    </div>
+                </div>
+
+                <!-- Cloud & Save Account Section -->
+                <div class="settings-cloud-section">
+                    <div class="cloud-section-header">
+                        <div class="cloud-icon">☁️</div>
+                        <div class="cloud-header-text">
+                            <h3 class="cloud-title">Cloud & Save Account</h3>
+                            <p class="cloud-subtitle">Bind your Google Account to secure and sync your game progress across devices.</p>
+                        </div>
+                    </div>
+
+                    <div id="cloud-account-card" class="cloud-account-card">
+                        <div class="cloud-status-row">
+                            <div class="cloud-status-badge" id="cloud-status-badge">
+                                <span class="status-dot"></span>
+                                <span id="cloud-status-text">Guest Account (Local Only)</span>
+                            </div>
+                            <span id="cloud-last-sync" class="cloud-last-sync">Not Synced</span>
+                        </div>
+
+                        <div id="cloud-user-info" class="cloud-user-info hidden">
+                            <div class="cloud-user-details">
+                                <span id="cloud-user-name" class="cloud-user-name">Google User</span>
+                                <span id="cloud-user-email" class="cloud-user-email">user@gmail.com</span>
+                            </div>
+                        </div>
+
+                        <div class="cloud-actions">
+                            <button id="bind-google-btn" class="comic-btn comic-btn-sm google-auth-btn">
+                                <svg class="google-svg-icon" viewBox="0 0 24 24" width="18" height="18">
+                                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                                    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+                                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+                                </svg>
+                                <span>SIGN IN WITH GOOGLE</span>
+                            </button>
+                            <button id="sync-cloud-btn" class="comic-btn comic-btn-sm comic-btn-primary hidden">
+                                <span>🔄 SYNC NOW</span>
+                            </button>
+                            <button id="unlink-google-btn" class="comic-btn comic-btn-sm comic-btn-danger hidden">
+                                <span>UNLINK</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-actions" style="margin-top: 24px;">
+                    <button id="close-settings-btn" class="comic-btn comic-btn-primary">DONE</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= ADMIN & PLAYTESTING PANEL (FIREBASE SECURED) ================= -->
+        <div id="admin-modal" class="modal-overlay hidden">
+            <div class="modal-panel">
+                <button class="modal-close-x-btn" title="Close (Esc / F1)" aria-label="Close">✕</button>
+                
+                <div class="admin-header-row">
+                    <div class="admin-title-badge">
+                        <span>🛠️</span>
+                        <span>ADMIN & PLAYTESTING CONSOLE</span>
+                    </div>
+                    <span id="admin-current-user-email" class="admin-current-user-tag">Verifying Firebase Permissions...</span>
+                </div>
+
+                <!-- Tabs Navigation -->
+                <div class="admin-tabs-nav">
+                    <button class="admin-tab-btn active" data-tab="cheats">🎮 CHEATS</button>
+                    <button class="admin-tab-btn" data-tab="waves">🌊 WAVES & BOSSES</button>
+                    <button class="admin-tab-btn" data-tab="spawner">👾 SPAWNER</button>
+                    <button class="admin-tab-btn" data-tab="economy">💰 ECONOMY & HEROES</button>
+                    <button class="admin-tab-btn" data-tab="telemetry">📊 TELEMETRY</button>
+                    <button class="admin-tab-btn" data-tab="admins">🔐 FIREBASE ADMINS</button>
+                </div>
+
+                <!-- Tab 1: Cheats -->
+                <div id="admin-tab-cheats" class="admin-tab-content">
+                    <div class="admin-section">
+                        <div class="admin-section-title">⚡ Combat Modifiers</div>
+                        <div class="admin-btn-grid">
+                            <button id="admin-toggle-godmode" class="admin-control-btn">GOD MODE: OFF</button>
+                            <button id="admin-toggle-inf-dash" class="admin-control-btn">INF DASH: OFF</button>
+                            <button id="admin-toggle-inf-skill" class="admin-control-btn">0s SKILL CD: OFF</button>
+                            <button id="admin-btn-nuke" class="admin-control-btn btn-danger">💥 NUKE ARENA</button>
+                            <button id="admin-btn-magnet" class="admin-control-btn btn-warning">🧲 MAGNET DROPS</button>
+                        </div>
+                    </div>
+
+                    <div class="admin-section">
+                        <div class="admin-section-title">⏱️ Game Simulation Speed</div>
+                        <div class="admin-speed-group">
+                            <button class="admin-speed-btn" data-speed="0.5">0.5x (Slow-Mo)</button>
+                            <button class="admin-speed-btn active" data-speed="1.0">1.0x (Normal)</button>
+                            <button class="admin-speed-btn" data-speed="2.0">2.0x (Fast)</button>
+                            <button class="admin-speed-btn" data-speed="4.0">4.0x (Hyper)</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab 2: Waves & Bosses -->
+                <div id="admin-tab-waves" class="admin-tab-content hidden">
+                    <div class="admin-section">
+                        <div class="admin-section-title">🌊 Wave Warp Engine</div>
+                        <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 12px; flex-wrap: wrap;">
+                            <label style="font-weight: 700;">Wave Number:</label>
+                            <input type="number" id="admin-input-wave" value="10" min="1" max="100" class="admin-text-input" style="max-width: 90px;">
+                            <button id="admin-btn-warp-wave" class="admin-control-btn btn-success">⚡ WARP TO WAVE</button>
+                            <button id="admin-btn-jump-wave10" class="admin-control-btn btn-danger">👑 INSTANT WAVE 10 BOSS</button>
+                        </div>
+                    </div>
+
+                    <div class="admin-section">
+                        <div class="admin-section-title">🍷 Kleanthis Boss Action Overrides</div>
+                        <p style="font-size: 0.85rem; color: #a4b0be; margin-bottom: 10px;">Requires Kleanthis active in the arena (or click Instant Wave 10 Boss above):</p>
+                        <div class="admin-btn-grid">
+                            <button class="admin-control-btn admin-boss-action-btn" data-action="drink">🍷 Force Wine Sip</button>
+                            <button class="admin-control-btn admin-boss-action-btn" data-action="drunk">🍺 Force Drunk Mode</button>
+                            <button class="admin-control-btn admin-boss-action-btn" data-action="kick">🥋 Force Karate Kick</button>
+                            <button class="admin-control-btn admin-boss-action-btn" data-action="rage">🔥 Force Rage Mode</button>
+                            <button class="admin-control-btn admin-boss-action-btn" data-action="summon">🪕 Force Summon Minions</button>
+                            <button class="admin-control-btn admin-boss-action-btn" data-action="volley">💥 Force Shatter Volley</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab 3: Spawner -->
+                <div id="admin-tab-spawner" class="admin-tab-content hidden">
+                    <div class="admin-section">
+                        <div class="admin-section-title">👾 Enemy Spawner</div>
+                        <div class="admin-btn-grid">
+                            <button class="admin-control-btn admin-spawn-btn" data-type="fatmir" data-count="1">Spawn 1x Skatmir</button>
+                            <button class="admin-control-btn admin-spawn-btn" data-type="fatmir" data-count="5">Spawn 5x Skatmirs</button>
+                            <button class="admin-control-btn admin-spawn-btn" data-type="casillas" data-count="1">Spawn 1x Casillas</button>
+                            <button class="admin-control-btn admin-spawn-btn" data-type="casillas" data-count="5">Spawn 5x Casillas</button>
+                            <button class="admin-control-btn admin-spawn-btn" data-type="skarmogyftos" data-count="1">Spawn 1x Skarmo</button>
+                            <button class="admin-control-btn admin-spawn-btn" data-type="skarmogyftos" data-count="5">Spawn 5x Skarmos</button>
+                            <button class="admin-control-btn admin-spawn-btn btn-danger" data-type="kleanthis" data-count="1">Spawn Kleanthis Boss</button>
+                        </div>
+                    </div>
+
+                    <div class="admin-section">
+                        <div class="admin-section-title">🎁 Drop Spawner</div>
+                        <div class="admin-btn-grid">
+                            <button class="admin-control-btn admin-drop-btn" data-drop="xp">🍪 Spawn 5x XP Cookies</button>
+                            <button class="admin-control-btn admin-drop-btn" data-drop="heart">❤️ Spawn 5x Hearts</button>
+                            <button class="admin-control-btn admin-drop-btn" data-drop="star">⭐ Spawn 5x Stars</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab 4: Economy & Heroes -->
+                <div id="admin-tab-economy" class="admin-tab-content hidden">
+                    <div class="admin-section">
+                        <div class="admin-section-title">🪙 Gold Coins</div>
+                        <div class="admin-btn-grid">
+                            <button class="admin-control-btn admin-add-coins-btn" data-amount="1000">+1,000 Coins</button>
+                            <button class="admin-control-btn admin-add-coins-btn" data-amount="10000">+10,000 Coins</button>
+                            <button class="admin-control-btn admin-add-coins-btn" data-amount="100000">+100,000 Coins</button>
+                        </div>
+                    </div>
+
+                    <div class="admin-section">
+                        <div class="admin-section-title">💎 Precious Gems</div>
+                        <div class="admin-btn-grid">
+                            <button class="admin-control-btn admin-add-gems-btn" data-amount="100">+100 Gems</button>
+                            <button class="admin-control-btn admin-add-gems-btn" data-amount="1000">+1,000 Gems</button>
+                            <button class="admin-control-btn admin-add-gems-btn" data-amount="10000">+10,000 Gems</button>
+                        </div>
+                    </div>
+
+                    <div class="admin-section">
+                        <div class="admin-section-title">⭐ Progression Overrides</div>
+                        <div class="admin-btn-grid">
+                            <button id="admin-btn-max-skills" class="admin-control-btn btn-warning">⭐ Max All Skills (Lvl 3)</button>
+                            <button id="admin-btn-unlock-heroes" class="admin-control-btn btn-success">👑 Unlock All Heroes</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab 5: Telemetry -->
+                <div id="admin-tab-telemetry" class="admin-tab-content hidden">
+                    <div class="admin-section">
+                        <div class="admin-section-title">📈 Real-Time Engine Telemetry</div>
+                        <div class="admin-telem-grid">
+                            <div class="admin-telem-card">
+                                <div class="telem-label">Framerate</div>
+                                <div id="telem-fps" class="telem-val">60 FPS</div>
+                            </div>
+                            <div class="admin-telem-card">
+                                <div class="telem-label">Active Enemies</div>
+                                <div id="telem-enemies" class="telem-val">0</div>
+                            </div>
+                            <div class="admin-telem-card">
+                                <div class="telem-label">Active Bullets</div>
+                                <div id="telem-bullets" class="telem-val">0</div>
+                            </div>
+                            <div class="admin-telem-card">
+                                <div class="telem-label">Active Drops</div>
+                                <div id="telem-drops" class="telem-val">0</div>
+                            </div>
+                        </div>
+                        <div style="margin-top: 14px; font-family: monospace; font-size: 0.9rem; background: rgba(0,0,0,0.5); padding: 10px; border-radius: 8px;">
+                            <div><strong>Current Wave:</strong> <span id="telem-wave">Wave 1</span></div>
+                            <div style="margin-top: 4px;"><strong>Player Status:</strong> <span id="telem-player">HP: 100/100</span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab 6: Firebase Admin Management -->
+                <div id="admin-tab-admins" class="admin-tab-content hidden">
+                    <div class="admin-section">
+                        <div class="admin-section-title">🛡️ Firebase Firestore Access Control</div>
+                        <p style="font-size: 0.9rem; color: #a4b0be; line-height: 1.5; margin-bottom: 14px;">
+                            Only accounts documented in Firebase Firestore (<code style="color: #fed330;">admins/{email}</code>, <code style="color: #fed330;">admins/{uid}</code>, or <code style="color: #fed330;">players/{uid}.isAdmin = true</code>) can access this panel.
+                            As an active admin, you can grant access to another Google account directly below:
+                        </p>
+                        <div class="admin-input-group">
+                            <input type="text" id="admin-input-new-admin" placeholder="Enter target Google Email or UID..." class="admin-text-input">
+                            <button id="admin-btn-add-admin" class="admin-control-btn btn-success">GRANT ADMIN ACCESS 🛡️</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-actions" style="margin-top: 16px;">
+                    <button id="close-admin-btn" class="comic-btn comic-btn-primary">CLOSE (ESC / F1)</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= GAME OVER MODAL ================= -->
+        <div id="game-over-modal" class="modal-overlay hidden">
+            <div class="modal-panel">
+                <h2 class="modal-title" style="color: var(--comic-red);">K.O.! GAME OVER</h2>
+                <p class="modal-subtitle">Skatmir and Casillas got you this time!</p>
+
+                <div class="game-over-stats">
+                    <div class="stat-box">
+                        <span>Final Score:</span>
+                        <span id="final-score" class="stat-value">0</span>
+                    </div>
+                    <div class="stat-box">
+                        <span>Best High Score:</span>
+                        <span id="high-score" class="stat-value">0</span>
+                    </div>
+                    <div class="stat-box">
+                        <span>Wave:</span>
+                        <span id="stat-wave" class="stat-value">Wave 1</span>
+                    </div>
+                    <div class="stat-box">
+                        <span>Enemies Killed:</span>
+                        <span id="stat-kills" class="stat-value">0</span>
+                    </div>
+                    <div class="stat-box" style="grid-column: span 4;">
+                        <span>Survival Time:</span>
+                        <span id="stat-time" class="stat-value">0m 00s</span>
+                    </div>
+                    <div class="stat-box stat-reward-box" style="grid-column: span 2; background: rgba(254, 180, 0, 0.12); border: 2px solid #feb400;">
+                        <span style="color: #feb400; font-weight: 800;">🪙 Coins Earned:</span>
+                        <span id="stat-coins-earned" class="stat-value" style="color: #feb400; font-weight: 900;">+0</span>
+                    </div>
+                    <div class="stat-box stat-reward-box" style="grid-column: span 2; background: rgba(52, 152, 219, 0.12); border: 2px solid #3498db;">
+                        <span style="color: #3498db; font-weight: 800;">⚡ XP Earned:</span>
+                        <span id="stat-xp-earned" class="stat-value" style="color: #3498db; font-weight: 900;">+0 XP</span>
+                    </div>
+                </div>
+
+                <!-- Dynamic Random Gameplay Tip on KO -->
+                <div class="modal-tip-box game-over-tip">
+                    <span class="modal-tip-badge">💡 PRO TIP</span>
+                    <div id="game-over-tip-text" class="modal-tip-content">TIP: Continuous movement is your best defense against projectiles!</div>
+                </div>
+
+                <div class="modal-actions">
+                    <button id="restart-btn" class="comic-btn comic-btn-primary">🔄 PLAY AGAIN</button>
+                    <button id="game-over-menu-btn" class="comic-btn">MAIN MENU</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= STORY MODE VICTORY MODAL ================= -->
+        <div id="story-victory-modal" class="modal-overlay hidden">
+            <div class="modal-panel" style="border-color: #f1c40f; box-shadow: 0 16px 48px rgba(241, 196, 15, 0.45);">
+                <h2 class="modal-title" style="color: #f1c40f;">🏆 STORY MODE CLEARED!</h2>
+                <p class="modal-subtitle">You defeated Rouf and saved the village from the authorities!</p>
+
+                <div class="game-over-stats">
+                    <div class="stat-box" style="grid-column: span 2;">
+                        <span>Chapter:</span>
+                        <span class="stat-value" style="color: #fed330;">Chapter 2 (Complete)</span>
+                    </div>
+                    <div class="stat-box" style="grid-column: span 2;">
+                        <span>Waves Cleared:</span>
+                        <span class="stat-value" style="color: #2ecc71;">20 / 20</span>
+                    </div>
+                    <div class="stat-box">
+                        <span>Final Score:</span>
+                        <span id="victory-score" class="stat-value">0</span>
+                    </div>
+                    <div class="stat-box">
+                        <span>Enemies Defeated:</span>
+                        <span id="victory-kills" class="stat-value">0</span>
+                    </div>
+                    <div class="stat-box" style="grid-column: span 2;">
+                        <span>Completion Time:</span>
+                        <span id="victory-time" class="stat-value">0m 00s</span>
+                    </div>
+                    <div class="stat-box stat-reward-box" style="grid-column: span 2; background: rgba(254, 180, 0, 0.16); border: 2px solid #feb400;">
+                        <span style="color: #feb400; font-weight: 800;">🪙 Story Completion Bonus:</span>
+                        <span id="victory-coins-earned" class="stat-value" style="color: #feb400; font-weight: 900;">+2,500</span>
+                    </div>
+                    <div class="stat-box stat-reward-box" style="grid-column: span 2; background: rgba(52, 152, 219, 0.16); border: 2px solid #3498db;">
+                        <span style="color: #3498db; font-weight: 800;">💎 Diamonds Bonus:</span>
+                        <span id="victory-gems-earned" class="stat-value" style="color: #3498db; font-weight: 900;">+100 💎</span>
+                    </div>
+                </div>
+
+                <div class="modal-actions" style="margin-top: 18px; display: flex; gap: 14px; justify-content: center; flex-wrap: wrap;">
+                    <button id="victory-credits-btn" class="comic-btn" style="font-size: 1.1rem; padding: 12px 28px; background: #2c3e50; border-color: #f1c40f; color: #f1c40f;">📜 VIEW CREDITS</button>
+                    <button id="victory-menu-btn" class="comic-btn comic-btn-primary" style="font-size: 1.15rem; padding: 12px 36px;">🏡 RETURN TO VILLAGE MENU</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= THEATRICAL STORY ENDING CREDITS ================= -->
+        <div id="credits-screen" class="hidden">
+            <div class="credits-top-bar">
+                <button id="credits-speed-btn" class="credits-btn">▶ 1x SPEED</button>
+                <button id="credits-skip-btn" class="credits-btn">SKIP [ESC] ▶▶</button>
+            </div>
+
+            <!-- Phase 1: Intro Spotlight Card -->
+            <div id="credits-intro-card" class="credits-intro-card">
+                <div class="credits-intro-sub">A PSANAS ORIGINAL PRODUCTION</div>
+                <h1 class="credits-intro-title">GAME MADE BY PSANAS</h1>
+                <div class="credits-intro-badge">LESA.IO • CHAPTER 2 FINALE</div>
+            </div>
+
+            <!-- Phase 2: Rolling Credits Crawl -->
+            <div class="credits-crawl-viewport">
+                <div id="credits-crawl-content"></div>
+            </div>
+
+            <!-- Phase 3: Outro "Thanks For Playing" Card -->
+            <div id="credits-outro-card" class="credits-intro-card">
+                <h1 class="credits-intro-title">THANKS FOR PLAYING!</h1>
+                <div class="credits-intro-badge">LESA.IO • GAME MADE BY PSANAS • 2026</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- FIREBASE SDK (GOOGLE AUTH & CLOUD FIRESTORE) -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <script src="src/save/PlayerIdentity.js?v=1.2.4"></script>
+    <script src="src/firebase.js?v=1.2.4"></script>
+
+    <!-- GAME SCRIPTS IN CLEAN DEPENDENCY ORDER -->
+    <!-- 1. DATA DEFINITIONS -->
+    <script src="src/data/rarities.js?v=1.2.4"></script>
+    <script src="src/weapons/WeaponBase.js?v=1.2.4"></script>
+    <script src="src/weapons/HeroBaseWeapons/PeaSlingshot.js?v=1.2.4"></script>
+    <script src="src/weapons/HeroBaseWeapons/MelonCannon.js?v=1.2.4"></script>
+    <script src="src/weapons/HeroBaseWeapons/ChilliBlaster.js?v=1.2.4"></script>
+    <script src="src/weapons/HeroBaseWeapons/MoneyGun.js?v=1.2.4"></script>
+    <script src="src/weapons/Exclusive/BubbleGun.js?v=1.2.4"></script>
+    <script src="src/data/heroes.js?v=1.2.4"></script>
+    <script src="src/data/weapons.js?v=1.2.4"></script>
+    <script src="src/data/skills.js?v=1.2.2"></script>
+    <script src="src/data/quests.js?v=1.2.2"></script>
+    <script src="src/data/tips.js?v=1.2.2"></script>
+    <script src="src/data/upgrades.js?v=1.2.4"></script>
+    <script src="src/data/perks.js?v=1.2.5"></script>
+    <script src="src/data/gear.js?v=1.2.7"></script>
+    <script src="src/data/chests.js?v=1.3.0"></script>
+    <script src="src/data/bossRanks.js?v=1.3.1"></script>
+    <script src="src/data/creditsData.js?v=1.4.1"></script>
+
+    <!-- 2. CORE MESSAGING & CANONICAL STATE -->
+    <script src="src/core/EventBus.js?v=1.2.2"></script>
+    <script src="src/core/GameState.js?v=1.2.4"></script>
+    <script src="src/core/CharacterSprites.js?v=1.2.2"></script>
+    <script src="src/save/SaveSerializer.js?v=1.2.2"></script>
+    <script src="src/save/SaveManager.js?v=1.2.2"></script>
+    <script src="src/gear/GearManager.js?v=1.2.7"></script>
+
+    <!-- 3. AUDIO & SYNTHESIS -->
+    <script src="src/engine/ProceduralSynth.js?v=1.2.2"></script>
+    <script src="src/audio.js?v=1.2.2"></script>
+
+    <!-- 4. ENGINE SUBSYSTEMS -->
+    <script src="src/engine/Input.js?v=1.2.2"></script>
+    <script src="src/engine/Camera.js?v=1.2.2"></script>
+    <script src="src/engine/Arena.js?v=1.4.8"></script>
+    <script src="src/engine/WaveManager.js?v=1.2.2"></script>
+    <script src="src/engine/CollisionSystem.js?v=1.4.9"></script>
+    <script src="src/engine/NameValidator.js?v=1.2.2"></script>
+    <script src="src/engine/PerkSystem.js?v=1.2.5"></script>
+
+    <!-- 5. ENTITIES & HERO RENDERING -->
+    <script src="src/entities/ParticleEffect.js?v=1.2.2"></script>
+    <script src="src/entities/ComicPopupCache.js?v=1.2.2"></script>
+    <script src="src/entities/Effects.js?v=1.5.1"></script>
+    <script src="src/entities/Bullet.js?v=1.2.2"></script>
+    <script src="src/entities/Drop.js?v=1.2.2"></script>
+    <script src="src/entities/Obstacle.js?v=1.2.2"></script>
+    <script src="src/entities/WaterPuddle.js?v=1.2.2"></script>
+    <script src="src/entities/Weapons.js?v=1.2.2"></script>
+    <script src="src/heroes/PsanasHero.js?v=1.2.2"></script>
+    <script src="src/heroes/PetrosHero.js?v=1.2.2"></script>
+    <script src="src/heroes/PsogasHero.js?v=1.2.2"></script>
+    <script src="src/heroes/FiftyBalosHero.js?v=1.2.4"></script>
+    <script src="src/heroes/HeroSkinRenderer.js?v=1.2.4"></script>
+    <script src="src/entities/HeroRenderer.js?v=1.2.2"></script>
+    <script src="src/skills/SeismicQuake.js?v=1.2.6"></script>
+    <script src="src/skills/YayaScream.js?v=1.2.6"></script>
+    <script src="src/skills/Frappes.js?v=1.2.6"></script>
+    <script src="src/entities/PlayerSkills.js?v=1.2.6"></script>
+    <script src="src/entities/Player.js?v=1.5.0"></script>
+    <script src="src/entities/RemotePlayer.js?v=1.4.9"></script>
+
+    <!-- 6. ENEMIES -->
+    <script src="src/enemies/EnemyBase.js?v=1.2.2"></script>
+    <script src="src/enemies/Fatmir.js?v=1.2.2"></script>
+    <script src="src/enemies/Casillas.js?v=1.2.2"></script>
+    <script src="src/enemies/Skarmogyftos.js?v=1.2.2"></script>
+    <script src="src/enemies/Astynomos.js?v=1.4.0"></script>
+
+    <!-- 6.5. BOSSES -->
+    <script src="src/Bosses/KleanthisRenderer.js?v=1.2.2"></script>
+    <script src="src/Bosses/Kleanthis.js?v=1.4.9"></script>
+    <script src="src/Bosses/KiloumpasRenderer.js?v=1.4.0"></script>
+    <script src="src/Bosses/Kiloumpas.js?v=1.4.0"></script>
+    <script src="src/Bosses/RoufRenderer.js?v=1.4.0"></script>
+    <script src="src/Bosses/Rouf.js?v=1.4.0"></script>
+
+    <!-- 7. PROGRESSION & PROFILE -->
+    <script src="src/progression/CurrencyManager.js?v=1.2.2"></script>
+    <script src="src/progression/QuestManager.js?v=1.2.2"></script>
+    <script src="src/profile/StatsManager.js?v=1.2.2"></script>
+
+    <!-- 8. UI SUBSYSTEMS -->
+    <script src="src/ui/DevIntro.js?v=1.2.2"></script>
+    <script src="src/ui/LoadingScreen.js?v=1.2.2"></script>
+    <script src="src/ui/GearModalUI.js?v=1.2.7"></script>
+    <script src="src/ui/ModalManager.js?v=1.2.2"></script>
+    <script src="src/ui/HUDController.js?v=1.2.2"></script>
+    <script src="src/ui/ProfileManager.js?v=1.2.2"></script>
+    <script src="src/ui/HeroRoster.js?v=1.2.2"></script>
+    <script src="src/ui/SkillManager.js?v=1.2.4"></script>
+    <script src="src/ui/UpgradeManager.js?v=1.2.4"></script>
+    <script src="src/ui/PerkManager.js?v=1.2.5"></script>
+    <script src="src/ui/MailManager.js?v=1.2.2"></script>
+    <script src="src/ui/StarterPackModal.js?v=1.2.2"></script>
+    <script src="src/ui/SettingsManager.js?v=1.2.2"></script>
+    <script src="src/ui/MenuController.js?v=1.4.5"></script>
+    <script src="src/ui/BossWarningOverlay.js?v=1.4.9"></script>
+    <script src="src/ui/CinematicCutsceneOverlay.js?v=1.5.2"></script>
+    <script src="src/ui/CreditsScreen.js?v=1.4.0"></script>
+    <script src="src/chests/ChestManager.js?v=1.3.3"></script>
+    <script src="src/ui/ChestModalUI.js?v=1.3.3"></script>
+    <script src="src/progression/InventoryManager.js?v=1.3.3"></script>
+    <script src="src/ui/InventoryModalUI.js?v=1.3.3"></script>
+
+    <!-- 8.5. ADMIN & PLAYTESTING SUBSYSTEM -->
+    <script src="src/admin/AdminAuth.js?v=1.2.2"></script>
+    <script src="src/admin/AdminCheats.js?v=1.2.2"></script>
+    <script src="src/admin/AdminPanel.js?v=1.2.2"></script>
+
+    <!-- 8.7. MOBILE TOUCH SUBSYSTEM -->
+    <script src="src/engine/TouchInput.js?v=1.5.1"></script>
+
+    <!-- 8.8. MULTIPLAYER CO-OP SUBSYSTEM (PLAYTEST) -->
+    <script src="src/libs/peerjs.min.js"></script>
+    <script src="src/network/NetworkManager.js?v=1.5.1"></script>
+    <script src="src/network/CoopHostSession.js?v=1.5.2"></script>
+    <script src="src/network/CoopGuestSession.js?v=1.5.2"></script>
+    <script src="src/network/CoopLobbyModal.js?v=1.4.9"></script>
+
+    <!-- 9. GAME COORDINATOR & BOOTSTRAP -->
+    <script src="src/engine/Game.js?v=1.4.5"></script>
+    <script src="src/main.js?v=1.2.2"></script>
+</body>
+</html>

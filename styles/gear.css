@@ -1,0 +1,367 @@
+/**
+ * Lesa.io - Gear & Armory UI Stylesheet (Phase 1)
+ * Sleek, playful, tactile aesthetics for equipment tabs, gear cards, and slot styling.
+ */
+
+/* Sub-Tabs Row in Weapons / Gear Modal */
+.gear-subtabs {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 10px 0 16px 0;
+    overflow-x: auto;
+    padding-bottom: 4px;
+    scrollbar-width: thin;
+}
+
+.gear-subtabs::-webkit-scrollbar {
+    height: 4px;
+}
+
+.gear-subtabs::-webkit-scrollbar-thumb {
+    background: #dcdde1;
+    border-radius: 4px;
+}
+
+.gear-tab-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #ffffff;
+    border: 2.5px solid var(--dark-outline, #1e272e);
+    border-radius: 14px;
+    padding: 7px 14px;
+    font-family: 'Luckiest Guy', cursive;
+    font-size: 0.85rem;
+    color: #57606f;
+    cursor: pointer;
+    white-space: nowrap;
+    box-shadow: 2px 2px 0 var(--dark-outline, #1e272e);
+    transition: transform 0.1s ease, background 0.15s ease, color 0.15s ease;
+    flex-shrink: 0;
+}
+
+.tab-gear-icon {
+    width: 18px;
+    height: 18px;
+    object-fit: contain;
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.15));
+    display: inline-block;
+    vertical-align: middle;
+}
+
+.gear-tab-btn:hover {
+    transform: translateY(-2px);
+    background: #f1f2f6;
+    color: var(--dark-outline, #1e272e);
+}
+
+.gear-tab-btn:active {
+    transform: translateY(1px);
+    box-shadow: 1px 1px 0 var(--dark-outline, #1e272e);
+}
+
+.gear-tab-btn.active {
+    background: #fed330;
+    color: var(--dark-outline, #1e272e);
+    border-color: var(--dark-outline, #1e272e);
+    box-shadow: 2.5px 2.5px 0 var(--dark-outline, #1e272e);
+}
+
+/* Gear Grid Container - Strictly fit 2 columns within container width without horizontal overflow */
+.gear-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    margin-bottom: 16px;
+    max-height: 380px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    width: 100%;
+    box-sizing: border-box;
+    padding-right: 4px;
+    scrollbar-width: thin;
+}
+
+.gear-grid::-webkit-scrollbar {
+    width: 6px;
+}
+
+.gear-grid::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 6px;
+}
+
+/* Individual Gear Item Card */
+.gear-card {
+    background: #ffffff;
+    border: 3px solid var(--dark-outline, #1e272e);
+    border-radius: 18px;
+    padding: 10px 12px;
+    box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.08);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    transition: transform 0.12s ease, box-shadow 0.12s ease;
+    position: relative;
+    user-select: none;
+    min-width: 0;
+    box-sizing: border-box;
+    overflow: hidden;
+}
+
+.gear-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 3px 3px 0 var(--dark-outline, #1e272e);
+}
+
+.gear-card.is-equipped {
+    border-color: #2ed573;
+    border-width: 3.2px;
+    box-shadow: 3px 3px 0 rgba(46, 213, 115, 0.25);
+    background: linear-gradient(180deg, #ffffff 0%, #f6fdf8 100%);
+}
+
+.gear-card.is-locked {
+    opacity: 0.88;
+    background: #fbfbfb;
+    border-style: dashed;
+}
+
+/* Card Header: Icon, Titles & Rarity Badge */
+.gear-card-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 8px;
+    min-width: 0;
+    box-sizing: border-box;
+}
+
+.gear-card-icon-wrap {
+    width: 44px;
+    height: 44px;
+    background: #f1f2f6;
+    border: 2px solid var(--dark-outline, #1e272e);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    overflow: hidden;
+}
+
+.gear-card-icon-wrap.rarity-common {
+    background: #f5f6fa;
+    border-color: #95a5a6;
+}
+
+.gear-card-icon-wrap.rarity-uncommon {
+    background: #eafaf1;
+    border-color: #2ecc71;
+}
+
+.gear-card-icon-wrap.rarity-rare {
+    background: #ebf5fb;
+    border-color: #3498db;
+}
+
+.gear-card-img {
+    width: 38px;
+    height: 38px;
+    object-fit: contain;
+    filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.15));
+}
+
+.gear-card-emoji {
+    font-size: 1.6rem;
+    line-height: 1;
+}
+
+.gear-card-meta {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    overflow: hidden;
+}
+
+.gear-card-name {
+    font-family: 'Luckiest Guy', cursive;
+    font-size: 0.98rem;
+    color: var(--dark-outline, #1e272e);
+    margin: 0;
+    letter-spacing: 0.3px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
+}
+
+.gear-card-subname {
+    font-family: 'Fredoka', sans-serif;
+    font-size: 0.72rem;
+    color: #747d8c;
+    font-weight: 600;
+    margin-top: 2px;
+    line-height: 1.25;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: normal;
+    word-break: break-word;
+    min-width: 0;
+}
+
+.gear-card-badge {
+    font-family: 'Luckiest Guy', cursive;
+    font-size: 0.65rem;
+    border: 1.8px solid var(--dark-outline, #1e272e);
+    border-radius: 8px;
+    padding: 2px 6px;
+    letter-spacing: 0.3px;
+    white-space: nowrap;
+    flex-shrink: 0;
+    align-self: flex-start;
+}
+
+/* Card Stats List */
+.gear-card-stats {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin: 6px 0 10px 0;
+    min-width: 0;
+}
+
+.gear-stat-badge-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #f1f2f6;
+    border-radius: 8px;
+    padding: 3px 8px;
+    font-family: 'Fredoka', sans-serif;
+    font-size: 0.74rem;
+    font-weight: 600;
+    color: #2f3542;
+    min-width: 0;
+}
+
+.gear-stat-badge-row.primary-stat {
+    background: #edf7ed;
+    color: #1b5e20;
+    font-weight: 700;
+}
+
+.gear-stat-badge-row.secondary-stat {
+    background: #e3f2fd;
+    color: #0d47a1;
+}
+
+.gear-stat-badge-label {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
+}
+
+.gear-stat-badge-val {
+    white-space: nowrap;
+    flex-shrink: 0;
+    margin-left: 6px;
+}
+
+/* Card Footer / Action Button */
+.gear-card-action {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    min-width: 0;
+}
+
+.gear-btn {
+    width: 100%;
+    padding: 6px 10px;
+    border-radius: 12px;
+    font-family: 'Luckiest Guy', cursive;
+    font-size: 0.8rem;
+    letter-spacing: 0.4px;
+    border: 2px solid var(--dark-outline, #1e272e);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    transition: transform 0.08s ease, filter 0.12s ease;
+    box-shadow: 2px 2px 0 var(--dark-outline, #1e272e);
+    box-sizing: border-box;
+    white-space: nowrap;
+}
+
+.gear-btn:hover {
+    filter: brightness(1.05);
+    transform: translateY(-1px);
+}
+
+.gear-btn:active {
+    transform: translateY(1px);
+    box-shadow: 1px 1px 0 var(--dark-outline, #1e272e);
+}
+
+.gear-btn-equip {
+    background: #3498db;
+    color: #ffffff;
+}
+
+.gear-btn-equipped {
+    background: #2ed573;
+    color: #ffffff;
+    cursor: pointer;
+}
+
+.gear-btn-unequip-hover:hover {
+    background: #eb4d4b;
+}
+
+.gear-btn-unlock {
+    background: #fed330;
+    color: var(--dark-outline, #1e272e);
+}
+
+.gear-btn-unlock.disabled {
+    background: #dcdde1;
+    color: #7f8c8d;
+    cursor: not-allowed;
+    border-color: #bdc3c7;
+    box-shadow: none;
+    transform: none;
+}
+
+/* Top Equipment Slots Slot Rarity Highlights */
+.gear-slot-card.gear-slot-common {
+    border-color: #95a5a6 !important;
+}
+
+.gear-slot-card.gear-slot-uncommon {
+    border-color: #2ecc71 !important;
+    box-shadow: 0 0 8px rgba(46, 204, 113, 0.3) !important;
+}
+
+.gear-slot-card.gear-slot-rare {
+    border-color: #3498db !important;
+    box-shadow: 0 0 10px rgba(52, 152, 219, 0.4) !important;
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 680px) {
+    .gear-grid {
+        grid-template-columns: 1fr;
+    }
+}
