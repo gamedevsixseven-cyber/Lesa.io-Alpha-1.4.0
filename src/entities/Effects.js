@@ -28,6 +28,7 @@ const ParticleClass = (typeof Particle !== 'undefined') ? Particle : window.Part
 const ShockwaveClass = (typeof ShockwaveRing !== 'undefined') ? ShockwaveRing : window.ShockwaveRing;
 const SlashWaveClass = (typeof SlashWave !== 'undefined') ? SlashWave : window.SlashWave;
 const GroundCrackClass = (typeof GroundCrack !== 'undefined') ? GroundCrack : window.GroundCrack;
+const LightningBeamClass = (typeof LightningBeam !== 'undefined') ? LightningBeam : window.LightningBeam;
 
 class EffectsManager {
     constructor() {
@@ -38,6 +39,7 @@ class EffectsManager {
         this.shockwaves = [];
         this.slashes = [];
         this.groundCracks = [];
+        this.lightningBeams = [];
 
         // Concurrency budget caps (AAA engine throttling)
         this.MAX_POPUPS = 16;
@@ -228,6 +230,15 @@ class EffectsManager {
         }
     }
 
+    addLightningChain(x1, y1, x2, y2, color = '#00d2d3') {
+        const BeamCtor = (typeof LightningBeam !== 'undefined') ? LightningBeam : (LightningBeamClass || window.LightningBeam);
+        if (BeamCtor) {
+            if (this.lightningBeams.length >= 12) this.lightningBeams.shift();
+            this.lightningBeams.push(new BeamCtor(x1, y1, x2, y2, color));
+        }
+        this.addSparks(x2, y2, color, 4);
+    }
+
     addSlash(x, y, angle, radius = 75, color = '#00d2d3') {
         if (!this.isCameraVisible(x, y, radius)) return;
         if (this.slashes.length >= 6) {
@@ -333,6 +344,16 @@ class EffectsManager {
             }
         }
         this.groundCracks.length = gcWrite;
+
+        let lbWrite = 0;
+        for (let i = 0; i < this.lightningBeams.length; i++) {
+            const beam = this.lightningBeams[i];
+            beam.update(dt);
+            if (beam.life > 0) {
+                this.lightningBeams[lbWrite++] = beam;
+            }
+        }
+        this.lightningBeams.length = lbWrite;
     }
 
     drawGround(ctx) {
@@ -354,10 +375,14 @@ class EffectsManager {
             if (!cam || cam.isVisible(sw.x, sw.y, sw.radius + 20)) sw.draw(ctx);
         }
 
-        // 2. Slashes
+        // 2. Slashes & Lightning Beams
         for (let i = 0; i < this.slashes.length; i++) {
             const slash = this.slashes[i];
             if (!cam || cam.isVisible(slash.x, slash.y, slash.radius + 30)) slash.draw(ctx);
+        }
+        for (let i = 0; i < this.lightningBeams.length; i++) {
+            const beam = this.lightningBeams[i];
+            if (!cam || cam.isVisible(beam.x2, beam.y2, 100)) beam.draw(ctx);
         }
 
         // 3. Particles
@@ -392,6 +417,7 @@ class EffectsManager {
         this.shockwaves.length = 0;
         this.slashes.length = 0;
         this.groundCracks.length = 0;
+        this.lightningBeams.length = 0;
     }
 }
 

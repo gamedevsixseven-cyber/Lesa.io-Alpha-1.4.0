@@ -68,8 +68,11 @@ class Bullet {
         if (this.type === 'bubble') {
             this.scaleX = 1 + Math.sin(this.age * 0.3) * 0.2;
             this.scaleY = 1 + Math.cos(this.age * 0.3) * 0.2;
-        } else if (this.type === 'watermelon' || this.type === 'soccer') {
+        } else if (this.type === 'watermelon' || this.type === 'soccer' || this.type === 'burger') {
             this.rotation += 0.15 * dt;
+        } else if (this.type === 'lightning') {
+            this.scaleX = 1.4 + Math.sin(this.age * 0.8) * 0.25;
+            this.scaleY = 0.7 + Math.cos(this.age * 0.8) * 0.2;
         } else if (this.type === 'money_gun' || this.type === 'euro') {
             this.rotation += Math.sin(this.age * 0.4) * 0.04;
         }
@@ -132,6 +135,15 @@ class Bullet {
             if (window.soundEngine && typeof window.soundEngine.playShoot === 'function') {
                 window.soundEngine.playShoot('bubble');
             }
+        } else if (this.type === 'burger') {
+            effects.addSparks(this.x, this.y, '#e59b52', 6);
+            effects.addSparks(this.x, this.y, '#2ecc71', 5);
+            effects.addSparks(this.x, this.y, '#e74c3c', 5);
+            effects.addComicSplash(this.x, this.y - 15, 'SPLAT!');
+        } else if (this.type === 'lightning') {
+            effects.addShockwave(this.x, this.y, 65, 'rgba(0, 210, 211, 0.7)');
+            effects.addSparks(this.x, this.y, '#00d2d3', 9);
+            effects.addSparks(this.x, this.y, '#ffffff', 6);
         } else {
             effects.addSparks(this.x, this.y, this.isEnemy ? '#ff3b30' : '#7bed9f', 5);
         }
@@ -171,6 +183,10 @@ class Bullet {
             this.drawEuroBill(ctx);
         } else if (this.type === 'soundwave' || this.type === 'dialtone') {
             this.drawSoundwave(ctx);
+        } else if (this.type === 'burger') {
+            this.drawBurger(ctx);
+        } else if (this.type === 'lightning') {
+            this.drawLightning(ctx);
         } else {
             this.drawPea(ctx);
         }
@@ -186,6 +202,8 @@ class Bullet {
         if (this.type === 'smoke') return '#9b59b6';
         if (this.type === 'money_gun' || this.type === 'euro') return '#f39c12';
         if (this.type === 'soundwave' || this.type === 'dialtone') return '#fed330';
+        if (this.type === 'burger') return '#e59b52';
+        if (this.type === 'lightning') return '#00d2d3';
         return this.isEnemy ? '#ff4757' : '#2ed573';
     }
 
@@ -455,5 +473,90 @@ class Bullet {
         ctx.arc(-r * 0.35, 0, r * 0.28, 0, Math.PI * 2);
         ctx.fill();
         ctx.stroke();
+    }
+
+    drawBurger(ctx) {
+        const r = this.radius * 1.25;
+        // Bottom Bun
+        ctx.fillStyle = '#d38b43';
+        ctx.strokeStyle = '#1b120c';
+        ctx.lineWidth = 1.8;
+        ctx.beginPath();
+        ctx.roundRect(-r, r * 0.2, r * 2, r * 0.55, [2, 2, 4, 4]);
+        ctx.fill();
+        ctx.stroke();
+
+        // Patty
+        ctx.fillStyle = '#54321d';
+        ctx.beginPath();
+        ctx.roundRect(-r * 1.05, -r * 0.1, r * 2.1, r * 0.45, 2);
+        ctx.fill();
+        ctx.stroke();
+
+        // Cheese
+        ctx.fillStyle = '#f1c40f';
+        ctx.beginPath();
+        ctx.moveTo(-r * 1.05, -r * 0.1);
+        ctx.lineTo(r * 1.05, -r * 0.1);
+        ctx.lineTo(r * 0.7, r * 0.25);
+        ctx.lineTo(0, 0);
+        ctx.lineTo(-r * 0.6, r * 0.25);
+        ctx.closePath();
+        ctx.fill();
+
+        // Lettuce
+        ctx.fillStyle = '#2ecc71';
+        ctx.fillRect(-r * 1.0, -r * 0.35, r * 2, r * 0.28);
+
+        // Top Bun
+        ctx.fillStyle = '#e59b52';
+        ctx.beginPath();
+        ctx.ellipse(0, -r * 0.4, r * 1.02, r * 0.62, 0, Math.PI, 0);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+        // Sesame Seeds
+        ctx.fillStyle = '#fffdf5';
+        ctx.fillRect(-r * 0.45, -r * 0.65, 1.8, 1.2);
+        ctx.fillRect(0, -r * 0.8, 1.8, 1.2);
+        ctx.fillRect(r * 0.45, -r * 0.65, 1.8, 1.2);
+    }
+
+    drawLightning(ctx) {
+        const r = this.radius * 1.4;
+        ctx.save();
+
+        // Outer electric blue aura
+        ctx.strokeStyle = '#00d2d3';
+        ctx.lineWidth = 4.5;
+        ctx.lineJoin = 'miter';
+        ctx.beginPath();
+        ctx.moveTo(r * 1.2, 0);
+        ctx.lineTo(r * 0.2, -r * 0.65);
+        ctx.lineTo(r * 0.3, -r * 0.15);
+        ctx.lineTo(-r * 1.1, -r * 0.8);
+        ctx.lineTo(-r * 0.2, 0.2);
+        ctx.lineTo(-r * 0.4, 0.7);
+        ctx.closePath();
+        ctx.stroke();
+
+        // High-voltage bright cyan core
+        ctx.fillStyle = '#54a0ff';
+        ctx.fill();
+
+        // Inner white-hot bolt
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.moveTo(r * 0.9, 0);
+        ctx.lineTo(r * 0.1, -r * 0.4);
+        ctx.lineTo(r * 0.2, -r * 0.1);
+        ctx.lineTo(-r * 0.7, -r * 0.5);
+        ctx.lineTo(-r * 0.1, 0.1);
+        ctx.lineTo(-r * 0.25, 0.45);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.restore();
     }
 }

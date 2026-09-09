@@ -10,8 +10,7 @@ class Player {
         this.y = y;
         this.vx = 0;
         this.vy = 0;
-        this.heroType = heroType; // 'psanas', 'psogas', 'petros'
-        this.damageReduction = 0;
+        this.heroType = heroType; // 'psanas', 'psogas', 'petros', etc.
 
         // Apply hero archetype stats
         this.applyHeroArchetype(heroType);
@@ -25,25 +24,30 @@ class Player {
             }
         }
 
-        this.hp = this.maxHp;
         this.level = 1; this.xp = 0; this.xpNeeded = 40; this.score = 0; this.kills = 0;
         this.fatmirKills = 0; this.casillasKills = 0; this.skarmogyftosKills = 0; this.kleanthisKills = 0;
 
-        // Weapon & Shooting Stats
-        this.damageMultiplier = 1.0; this.fireRateMultiplier = 1.0; this.fireCooldown = 0;
-        this.multiShot = 1; this.spreadAngle = 0.15; this.pierce = 1; this.maxBounces = 0;
-        this.bulletSpeed = 14; this.critChance = 0.1; this.critMultiplier = 2.0;
-
         // Permanent Upgrades (Crit Chance, Crit Damage)
         const upgrades = (typeof window !== 'undefined' && window.GameState && window.GameState.player && window.GameState.player.upgrades) || {};
-        this.critChance += (upgrades.critChance || 0) * 0.01;
-        this.critMultiplier += (upgrades.critDamage || 0) * 0.05;
+
+        // Base shooting & utility stats before equipment modifiers
+        this.baseDamageMultiplier = 1.0;
+        this.baseFireRateMultiplier = 1.0;
+        this.baseBulletSpeed = 14;
+        this.baseCritChance = 0.1 + (upgrades.critChance || 0) * 0.01;
+        this.baseCritMultiplier = 2.0 + (upgrades.critDamage || 0) * 0.05;
+        this.baseDamageReduction = 0;
+        this.baseMaxDashCooldown = 180;
+        this.baseMagnetRadius = 140;
+
+        this.fireCooldown = 0;
+        this.multiShot = 1; this.spreadAngle = 0.15; this.pierce = 1; this.maxBounces = 0;
 
         // Bubble Gun Secondary Charge State
         this.bubbleCharge = 0; this.isChargingBubble = false;
 
         // Dash & Abilities
-        this.dashCooldown = 0; this.maxDashCooldown = 180; this.dashTimer = 0;
+        this.dashCooldown = 0; this.dashTimer = 0;
         this.isDashing = false; this.dashDuration = 14; this.dashSpeed = 16; this.invulnerableTimer = 0;
 
         // Active Skill State (Blade Rush / Nerobalonaki / etc.)
@@ -54,7 +58,7 @@ class Player {
         this.isBladeRushing = false; this.bladeRushTimer = 0; this.bladeTimer = 0;
 
         // Upgrades & Physics Buffs
-        this.magnetRadius = 140; this.shieldActive = false; this.frenzyTimer = 0;
+        this.shieldActive = false; this.frenzyTimer = 0;
         this.speedDebuffTimer = 0; this.secondWindSpeedTimer = 0; this.stunTimer = 0;
         this.knockbackVx = 0; this.knockbackVy = 0; this.knockbackTimer = 0;
         this.isGrabbed = false; this.isAirborne = false; this.airZ = 0; this.airVz = 0;
@@ -65,6 +69,11 @@ class Player {
         this.hitFlash = 0; this.dizzyTimer = 0; this.happyTimer = 0;
         this.recoilOffset = 0; this.blinkTimer = 180; this.isBlinking = false;
         this.scarfWave = 0; this.ghostTrails = [];
+
+        // Apply Gear & Equipment Stats cleanly onto baselines
+        this.applyEquipmentStats();
+        this.hp = this.maxHp;
+        this.speed = this.baseSpeed;
     }
 
     applyHeroArchetype(type) {
@@ -73,47 +82,64 @@ class Player {
         if (heroData) {
             this.name = heroData.name;
             this.radius = heroData.radius || 25;
-            this.baseSpeed = (heroData.speed || 5.0) * 1.05;
-            this.maxHp = heroData.hp || 100;
+            this.archetypeSpeed = (heroData.speed || 5.0) * 1.05;
+            this.archetypeMaxHp = heroData.hp || 100;
             this.weaponType = heroData.weaponType || 'pea';
             this.heroColor = heroData.heroColor || '#ff4757';
         } else {
             const defaults = {
                 psogas: { name: 'Psogas', radius: 25, speed: 5.6, hp: 90, weapon: 'pepper', color: '#fa8231' },
                 petros: { name: 'Petros', radius: 26, speed: 4.6, hp: 140, weapon: 'watermelon', color: '#1e70d6' },
+                '50balos': { name: '50balos', radius: 24, speed: 5.0, hp: 110, weapon: 'money_gun', color: '#162c50' },
+                billias: { name: 'Billias', radius: 25, speed: 4.6, hp: 120, weapon: 'burger', color: '#e67e22' },
+                kitsos: { name: 'Kitsos', radius: 24, speed: 5.8, hp: 95, weapon: 'lightning', color: '#00d2d3' },
                 psanas: { name: 'Psanas', radius: 24, speed: 5.2, hp: 100, weapon: 'pea', color: '#ff4757' }
             };
             const d = defaults[type] || defaults.psanas;
-            this.name = d.name; this.radius = d.radius; this.baseSpeed = d.speed;
-            this.maxHp = d.hp; this.weaponType = d.weapon; this.heroColor = d.color;
+            this.name = d.name; this.radius = d.radius; this.archetypeSpeed = d.speed;
+            this.archetypeMaxHp = d.hp; this.weaponType = d.weapon; this.heroColor = d.color;
+        }
+
+        if (type === 'kitsos') {
+            this.archetypeSpeed = 5.8; // Guaranteed fastest hero in the game by +0.2
+        } else if (type === 'billias') {
+            this.archetypeSpeed = 4.6; // Slightly slow as requested
         }
 
         // Apply Permanent Power Upgrades (Max Health)
         const upgrades = (typeof window !== 'undefined' && window.GameState && window.GameState.player && window.GameState.player.upgrades) || {};
         const maxHealthLvl = upgrades.maxHealth || 0;
-        this.maxHp += maxHealthLvl * 6;
+        this.archetypeMaxHp += maxHealthLvl * 6;
 
-        this.applyEquipmentStats();
-
-        this.hp = this.maxHp;
+        this.baseSpeed = this.archetypeSpeed;
         this.speed = this.baseSpeed;
+        this.maxHp = this.archetypeMaxHp;
+        this.hp = this.maxHp;
     }
 
     applyEquipmentStats() {
         if (typeof GearManager === 'undefined') return;
         const s = GearManager.getEquippedTotalStats();
-        if (s.maxHp) this.maxHp += s.maxHp;
-        if (s.speed) this.baseSpeed = Math.min(7.5, this.baseSpeed * (1 + s.speed / 100));
-        if (s.critChance) this.critChance = Math.min(0.45, this.critChance + s.critChance / 100);
-        if (s.critDamage) this.critMultiplier += s.critDamage / 100;
-        if (s.damageReduction) this.damageReduction = Math.min(0.40, (this.damageReduction || 0) + s.damageReduction / 100);
-        if (s.fireRate) this.fireRateMultiplier *= (1 + s.fireRate / 100);
-        if (s.bulletDamage) this.damageMultiplier *= (1 + s.bulletDamage / 100);
-        if (s.bulletSpeed) this.bulletSpeed *= (1 + s.bulletSpeed / 100);
-        if (s.dashCooldown) this.maxDashCooldown = Math.max(72, Math.round(this.maxDashCooldown * (1 - s.dashCooldown / 100)));
-        if (s.magnetRadius) this.magnetRadius += s.magnetRadius;
-        this.hp = this.maxHp;
+
+        const oldMaxHp = this.maxHp || this.archetypeMaxHp || 100;
+        this.maxHp = (this.archetypeMaxHp || 100) + (s.maxHp || 0);
+        if (this.hp === undefined || this.hp >= oldMaxHp) {
+            this.hp = this.maxHp;
+        } else {
+            this.hp = Math.min(this.hp, this.maxHp);
+        }
+
+        this.baseSpeed = Math.min(7.5, (this.archetypeSpeed || 5.0) * (1 + (s.speed || 0) / 100));
         this.speed = this.baseSpeed;
+
+        this.damageMultiplier = (this.baseDamageMultiplier !== undefined ? this.baseDamageMultiplier : 1.0) * (1 + (s.bulletDamage || 0) / 100);
+        this.fireRateMultiplier = (this.baseFireRateMultiplier !== undefined ? this.baseFireRateMultiplier : 1.0) * (1 + (s.fireRate || 0) / 100);
+        this.bulletSpeed = (this.baseBulletSpeed !== undefined ? this.baseBulletSpeed : 14) * (1 + (s.bulletSpeed || 0) / 100);
+        this.critChance = Math.min(0.45, (this.baseCritChance !== undefined ? this.baseCritChance : 0.1) + (s.critChance || 0) / 100);
+        this.critMultiplier = (this.baseCritMultiplier !== undefined ? this.baseCritMultiplier : 2.0) + (s.critDamage || 0) / 100;
+        this.damageReduction = Math.min(0.40, (this.baseDamageReduction || 0) + (s.damageReduction || 0) / 100);
+        this.maxDashCooldown = Math.max(72, Math.round((this.baseMaxDashCooldown || 180) * (1 - (s.dashCooldown || 0) / 100)));
+        this.magnetRadius = (this.baseMagnetRadius || 140) + (s.magnetRadius || 0);
     }
 
     update(dt = 1, input = null, camera = null, effects = null, arena = null) {
@@ -134,6 +160,11 @@ class Player {
             if (Math.random() < 0.3 && effects) {
                 effects.addSparks(this.x, this.y, '#ff4757', 2);
             }
+        }
+
+        // Billias Movement Hunger Eating Mechanic (+20 HP every 1 min)
+        if (this.heroType === 'billias' && typeof BilliasHero !== 'undefined') {
+            BilliasHero.updateHunger(this, dt, effects);
         }
 
         // Bubble Gun Right-Click Charge Mechanic

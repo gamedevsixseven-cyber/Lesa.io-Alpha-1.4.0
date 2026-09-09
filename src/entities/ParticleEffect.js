@@ -284,13 +284,81 @@ class GroundCrack {
     }
 }
 
+class LightningBeam {
+    constructor(x1, y1, x2, y2, color = '#00d2d3') {
+        this.x1 = x1;
+        this.y1 = y1;
+        this.x2 = x2;
+        this.y2 = y2;
+        this.color = color;
+        this.life = 1.0;
+        this.decay = 0.09;
+
+        // Generate realistic jagged lightning path
+        this.segments = [];
+        const dx = x2 - x1;
+        const dy = y2 - y1;
+        const dist = Math.hypot(dx, dy);
+        const steps = Math.max(3, Math.floor(dist / 22));
+        const nx = -dy / (dist || 1);
+        const ny = dx / (dist || 1);
+
+        this.segments.push({ x: x1, y: y1 });
+        for (let i = 1; i < steps; i++) {
+            const t = i / steps;
+            const offset = (Math.random() - 0.5) * 16;
+            this.segments.push({
+                x: x1 + dx * t + nx * offset,
+                y: y1 + dy * t + ny * offset
+            });
+        }
+        this.segments.push({ x: x2, y: y2 });
+    }
+
+    update(dt = 1) {
+        this.life -= this.decay * dt;
+    }
+
+    draw(ctx) {
+        if (this.life <= 0 || this.segments.length < 2) return;
+        ctx.save();
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+
+        // Outer electric glow
+        ctx.strokeStyle = this.color;
+        ctx.lineWidth = 5.5 * this.life;
+        ctx.globalAlpha = Math.min(1.0, this.life * 1.2);
+        ctx.beginPath();
+        ctx.moveTo(this.segments[0].x, this.segments[0].y);
+        for (let i = 1; i < this.segments.length; i++) {
+            ctx.lineTo(this.segments[i].x, this.segments[i].y);
+        }
+        ctx.stroke();
+
+        // Inner white-hot lightning core
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 2.0 * this.life;
+        ctx.globalAlpha = Math.min(1.0, this.life * 1.5);
+        ctx.beginPath();
+        ctx.moveTo(this.segments[0].x, this.segments[0].y);
+        for (let i = 1; i < this.segments.length; i++) {
+            ctx.lineTo(this.segments[i].x, this.segments[i].y);
+        }
+        ctx.stroke();
+
+        ctx.restore();
+    }
+}
+
 if (typeof window !== 'undefined') {
     window.Particle = Particle;
     window.ShockwaveRing = ShockwaveRing;
     window.SlashWave = SlashWave;
     window.GroundCrack = GroundCrack;
+    window.LightningBeam = LightningBeam;
 }
 
 if (typeof module !== 'undefined' && module.exports) {
-    module.exports = { Particle, ShockwaveRing, SlashWave, GroundCrack };
+    module.exports = { Particle, ShockwaveRing, SlashWave, GroundCrack, LightningBeam };
 }

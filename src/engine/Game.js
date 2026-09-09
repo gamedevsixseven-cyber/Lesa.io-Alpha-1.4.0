@@ -41,10 +41,7 @@ class Game {
         // Bind Input Hooks
         this.input.onShootCallback = () => {
             if (this.state === 'PLAYING') {
-                if (this.isCutsceneActive()) {
-                    this.advanceCutscene();
-                    return;
-                }
+                if (this.isCutsceneActive()) return;
                 const newBullets = this.player.shoot(this.effects);
                 if (newBullets) this.bullets.push(...newBullets);
             }
@@ -52,10 +49,7 @@ class Game {
 
         this.input.onDashCallback = () => {
             if (this.state === 'PLAYING') {
-                if (this.isCutsceneActive()) {
-                    this.advanceCutscene();
-                    return;
-                }
+                if (this.isCutsceneActive()) return;
                 this.player.dash(this.effects);
             }
         };

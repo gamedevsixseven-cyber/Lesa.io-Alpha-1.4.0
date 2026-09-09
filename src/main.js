@@ -433,6 +433,11 @@ window.addEventListener('DOMContentLoaded', () => {
                 if (ui && ui.currencyManager) {
                     ui.currencyManager.updateUI(false);
                 }
+                if (typeof TributeManager !== 'undefined') {
+                    if (localStorage.getItem('lesaio_player_name_chosen')) {
+                        TributeManager.checkAndShow();
+                    }
+                }
             });
             ui.loadingScreen = loader;
             window.loadingScreen = loader;

@@ -175,13 +175,52 @@
     transform: scale(0.97);
 }
 
-/* Responsive Scaling on Mobile */
-@media (max-width: 600px) {
-    .mode-select-frame {
-        width: 96vw;
-        border-radius: 18px;
+/* Co-op Trigger Button Container */
+.mode-coop-btn-wrap {
+    position: absolute;
+    bottom: -58px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10;
+}
+
+/* Responsive Scaling on Mobile (Landscape & Portrait) */
+@media screen and (max-height: 540px), screen and (max-width: 768px), screen and (pointer: coarse) and (max-height: 720px) {
+    #game-mode-modal.modal-overlay {
+        padding: 8px 6px 44px 6px;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
     }
+
+    .mode-select-frame {
+        height: min(72vh, calc(100dvh - 66px));
+        width: calc(min(72vh, calc(100dvh - 66px)) * (1504 / 864));
+        max-width: 95vw;
+        max-height: 75vh;
+        border-radius: 16px;
+        box-shadow: 0 12px 30px rgba(0, 0, 0, 0.85), 0 0 20px rgba(212, 160, 55, 0.2);
+    }
+
     .mode-frame-img {
-        border-radius: 18px;
+        border-radius: 16px;
+    }
+
+    .mode-coop-btn-wrap {
+        position: absolute;
+        bottom: -38px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 15;
+    }
+
+    .mode-coop-trigger-btn {
+        font-size: 11px;
+        padding: 5px 14px;
+        margin-top: 0;
+        border-width: 2px;
+        border-radius: 999px;
+        box-shadow: 0 3px 0 #1e272e, 0 4px 10px rgba(0, 210, 211, 0.35);
+        gap: 6px;
+        white-space: nowrap;
     }
 }

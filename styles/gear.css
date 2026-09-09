@@ -167,6 +167,12 @@
     border-color: #3498db;
 }
 
+.gear-card-icon-wrap.rarity-exclusive {
+    background: #fdeef4;
+    border-color: #e84393;
+    box-shadow: 0 0 8px rgba(232, 67, 147, 0.4);
+}
+
 .gear-card-img {
     width: 38px;
     height: 38px;
@@ -357,6 +363,11 @@
 .gear-slot-card.gear-slot-rare {
     border-color: #3498db !important;
     box-shadow: 0 0 10px rgba(52, 152, 219, 0.4) !important;
+}
+
+.gear-slot-card.gear-slot-exclusive {
+    border-color: #e84393 !important;
+    box-shadow: 0 0 12px rgba(232, 67, 147, 0.6) !important;
 }
 
 /* Mobile Responsiveness */

@@ -8,12 +8,11 @@ This file tracks the total lines of code and game architecture state across ever
 
 | Metric | Current Value |
 |---|---|
-| **Active Version** | **Alpha 1.4.4 (2-Player Co-op Playtest: Story & Endless Modes via P2P WebRTC)** |
-| **Milestone Banner** | 🔥 **OVER 32,000 LINES OF MODULAR CODE!** |
-| **Total Source Files** | **131 files** |
-| **Total Lines of Code (LOC)** | **32,150 lines** (excluding backups) |
+| **Active Version** | **Alpha 1.3.9 (Kitsos & Billias Heroes, Mobile Fullscreen & Game Mode UI Optimization)** |
+| **Milestone Banner** | 🔥 **OVER 33,000 LINES OF MODULAR CODE!** |
+| **Total Source Files** | **133 files** |
 | **Max Lines Per File** | Strictly `< 600 lines` across all modules |
-| **Last Calculated** | September 6, 2026 |
+| **Last Calculated** | September 9, 2026 |
 
 ---
 
@@ -21,35 +20,48 @@ This file tracks the total lines of code and game architecture state across ever
 
 | File Type | Description | File Count | Total Lines | Share |
 |---|---|---|---|---|
-| **`.js`** | JavaScript Game Logic & Subsystems | 97 | 25,820 | 72.0% |
-| **`.css`** | UI, HUD, Armory, Co-op & Theatrical Styles | 20 | 6,446 | 17.6% |
-| **`.html`** | Main Application & Canvas Shell | 1 | 1,750 | 4.9% |
-| **`.md`** | Game Design, Gear, Roadmap & Version Specs | 8 | 1,490 | 4.1% |
-| **`.ps1`** | Local Web Server & Automation | 4 | 367 | 1.0% |
+| **`.js`** | JavaScript Game Logic & Subsystems | 99 | 26,450 | 72.5% |
+| **`.css`** | UI, HUD, Armory, Co-op & Theatrical Styles | 20 | 6,580 | 18.0% |
+| **`.html`** | Main Application & Canvas Shell | 1 | 1,843 | 5.0% |
+| **`.md`** | Game Design, Gear, Roadmap & Version Specs | 8 | 1,510 | 4.1% |
+| **`.ps1`** | Local Web Server & Automation | 5 | 390 | 1.1% |
 | **`.cs`** | Desktop C# Game Launcher | 1 | 270 | 0.7% |
-| **TOTAL** | **Entire Codebase** | **131** | **36,143** | **100%** |
-
----
-
-## 📁 Lines by Directory / Subsystem
-
-| Directory / Subsystem | Files | Total Lines | Key Systems |
-|---|---|---|---|
-| `styles/` | 17 | 5,891 | coop, gamemode, gear, mobile, perks, skills, roster, hud, cards |
-| `src/ui/` | 17 | 4,648 | MenuController, GearModalUI, HUDController, ModalManager, Cutscenes |
-| `Root` (`/`) | 14 | 3,560 | `index.html`, `serve.ps1`, `Launcher.cs`, design documents |
-| `src/engine/` | 10 | 3,306 | Game, WaveManager, CollisionSystem, Camera, Arena, Input, TouchInput |
-| `src/entities/` | 12 | 3,433 | RemotePlayer, Player, Bullet, Drop, Obstacle, HeroRenderer |
-| `src/network/` | 4 | 945 | NetworkManager, CoopHostSession, CoopGuestSession, CoopLobbyModal |
-| `src/data/` | 10 | 1,806 | heroes, weapons, skills, quests, tips, upgrades, perks |
-| `src/Bosses/` | 4 | 1,666 | Kleanthis, Kiloumpas, Rouf |
-| `src/heroes/` | 5 | 1,454 | Psanas, Petros, Psogas, FiftyBalos, HeroSkinRenderer |
-| `src/enemies/` | 4 | 1,342 | EnemyBase, Skatmir, Casillas, Skarmogyftos |
-| `src/admin/` | 4 | 1,057 | AdminAuth, AdminCheats, AdminPanel |
 
 ---
 
 ## 📈 Version Progression Log
+
+### **Alpha 1.3.9 - Kitsos & Billias Heroes, Mobile Fullscreen & Game Mode UI Optimization**
+- **Release Date:** September 9, 2026
+- **Total Source Files:** **133 files**
+- **Key Additions & Highlights:**
+  - 🪖 **2 New Playable Heroes: Kitsos & Billias**:
+    - High-definition 256x256 cropped square avatar headshots: `BilliasAvatar.png` & `KitsosAvatar.png`.
+    - **Billias ("The Burger Slugger")**:
+      - 2.5D rigged model matching photo (rounded cheeks, dark neat crop, black oversized script tee, cargo sweatpants).
+      - Burger Toss weapon (`weaponType: 'burger'`): spinning stacked cheeseburger with lettuce, tomato, cheese, patty, sesame seed bun, and impact splat.
+      - Movement Hunger Passive: moving builds hunger; eats 1 burger every 60 seconds of activity to restore **+20 HP** with `🍔 CHOMP! +20 HP` comic effect and heal crunch audio.
+    - **Kitsos ("The Electric Speedster")**:
+      - 2.5D rigged model matching photo (textured curly hair fade on sides with top ringlets, athletic slim build, black speckled Nike swoosh tee, burgundy shorts).
+      - **Fastest hero in the game by +0.2** (base speed `5.8` vs Psogas `5.6`; in `heroes.js` `5.4` vs `5.2`).
+      - Lightning Strike weapon (`weaponType: 'lightning'`): drops high-voltage electric thunderbolts.
+      - **10% 4-Enemy Chain Lightning**: 10% chance on hit to arc electric beams sequentially across up to 4 enemies max with shock damage, jagged beam FX, and `⚡ CHAIN ZAP!`.
+    - Full integration into Hero Roster (unlocked with coins), Menu and HUD avatars, Profile manager, and GameState.
+  - 📱 **Mobile Game Mode Selection & Co-op UI Optimization**:
+    - Responsive compact frame sizing for the Game Mode modal (`#game-mode-modal`).
+    - Positioned the Co-op Playtest trigger button safely below the frame on mobile so it is **100% visible, centered, and easily tappable** on all mobile devices.
+    - Scaled down the Co-op Playtest lobby screen (`#coop-modal`) on mobile with compact room code box, mode picker, tabs, and launch buttons.
+  - 📱 **Mobile Fullscreen, Dialogue Bugfix & Asset Reliability**:
+    - Added automatic fullscreen and horizontal orientation locking for touch devices.
+    - Added iOS PWA standalone Web App Manifest (`manifest.json`) and comic device rotation prompt.
+    - Fixed mobile cutscene dialogue skipping bug where touching once skipped multiple lines.
+    - Fixed Skatmir and Kleanthis overhead health bars and name tag positioning.
+  - 🕊️ **Giorgos Mazonakis Memorial Tribute Hotfix (Sept 9 – Sept 13, 2026)**:
+    - Dedicated full-screen memorial tribute modal (`#mazonakis-tribute-modal`) with Greek tribute message and gold-trimmed styling.
+    - 1-time only claimable reward on join: Exclusive Armor **Sakaki ths Nuxtas** (`+80 Max HP, +3% Move Speed, +8% Damage Reduction`), **+1,000 Coins**, and **+50 Diamonds**.
+    - Automatic expiry guard ensuring the modal only displays until September 13, 2026 23:59:59.
+  - 📐 **Modular Architecture & Quality Assurance**:
+    - All 133 source files strictly `< 600 lines`.
 
 ### **Alpha 1.4.4 - 2-Player Co-op Playtest (Story & Endless Modes)**
 - **Release Date:** September 6, 2026

@@ -31,6 +31,9 @@ class MenuController {
                 if (window.soundEngine && typeof window.soundEngine.playSelect === 'function') {
                     window.soundEngine.playSelect();
                 }
+                if (typeof window.triggerGameFullscreen === 'function') {
+                    window.triggerGameFullscreen();
+                }
                 this.showGameModeModal();
             });
         }
@@ -325,6 +328,9 @@ class MenuController {
 
     startGame(gameMode = 'story') {
         this.hideGameModeModal();
+        if (typeof window.triggerGameFullscreen === 'function') {
+            window.triggerGameFullscreen();
+        }
         if (this.menuScreen) {
             this.menuScreen.classList.add('hidden');
             this.menuScreen.style.setProperty('display', 'none', 'important');
@@ -347,7 +353,9 @@ class MenuController {
             psanas: 'assets/HeroesIcons/PsanasAvatar.png',
             psogas: 'assets/HeroesIcons/PsogasAvatar.png',
             petros: 'assets/HeroesIcons/PetrosAvatar.png',
-            '50balos': 'assets/HeroesIcons/50balosCrop.png'
+            '50balos': 'assets/HeroesIcons/50balosCrop.png',
+            billias: 'assets/HeroesIcons/BilliasAvatar.png',
+            kitsos: 'assets/HeroesIcons/KitsosAvatar.png'
         };
 
         const path = avatarMap[hero] || avatarMap.psanas;

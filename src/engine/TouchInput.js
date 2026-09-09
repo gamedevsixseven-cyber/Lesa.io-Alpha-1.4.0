@@ -101,15 +101,20 @@ class TouchInput {
             });
         }
 
-        // Auto Fullscreen on Play button tap for mobile
-        const startBtn = document.getElementById('start-btn');
-        if (startBtn) {
-            startBtn.addEventListener('click', () => {
-                if (this.isTouchDevice) {
-                    this.requestFullscreen();
-                }
-            });
-        }
+        // Auto Fullscreen on Play / Mode selection for mobile
+        ['start-btn', 'mode-select-story-btn', 'mode-select-endless-btn', 'open-coop-btn'].forEach((id) => {
+            const btn = document.getElementById(id);
+            if (btn) {
+                btn.addEventListener('click', () => {
+                    if (this.isTouchDevice) this.requestFullscreen();
+                });
+            }
+        });
+
+        // Global trigger helper
+        window.triggerGameFullscreen = () => {
+            if (this.isTouchDevice) this.requestFullscreen();
+        };
 
         // Auto-pause if phone is minimized or incoming call occurs
         document.addEventListener('visibilitychange', () => {
@@ -118,14 +123,18 @@ class TouchInput {
             }
         });
 
-        // Attempt Screen Orientation Lock on any touch
+        // Attempt Screen Orientation Lock & viewport scroll on any touch / orientation change
         const tryLockLandscape = () => {
-            if (screen.orientation && typeof screen.orientation.lock === 'function') {
-                screen.orientation.lock('landscape').catch(() => {});
-            }
+            if (this.isTouchDevice) this.lockLandscape();
         };
         window.addEventListener('touchstart', tryLockLandscape, { once: true, passive: true });
         window.addEventListener('pointerdown', tryLockLandscape, { once: true, passive: true });
+        window.addEventListener('orientationchange', () => {
+            setTimeout(() => {
+                window.scrollTo(0, 1);
+                if (this.game && typeof this.game.resize === 'function') this.game.resize();
+            }, 250);
+        });
 
         if (!this.joystickZone) return;
 
@@ -501,29 +510,44 @@ class TouchInput {
         return this.movement;
     }
 
-    requestFullscreen() {
+    lockLandscape() {
         try {
-            const el = document.documentElement;
-            if (el.requestFullscreen) {
-                el.requestFullscreen().catch(() => {});
-            } else if (el.webkitRequestFullscreen) {
-                el.webkitRequestFullscreen();
-            }
             if (screen.orientation && typeof screen.orientation.lock === 'function') {
                 screen.orientation.lock('landscape').catch(() => {});
+            } else if (screen.lockOrientation) {
+                screen.lockOrientation('landscape');
+            } else if (screen.webkitLockOrientation) {
+                screen.webkitLockOrientation('landscape');
+            } else if (screen.mozLockOrientation) {
+                screen.mozLockOrientation('landscape');
+            } else if (screen.msLockOrientation) {
+                screen.msLockOrientation('landscape');
             }
         } catch {}
     }
 
+    requestFullscreen() {
+        try {
+            const el = document.documentElement;
+            const rfs = el.requestFullscreen || el.webkitRequestFullscreen || el.webkitRequestFullScreen || el.mozRequestFullScreen || el.msRequestFullscreen;
+            if (rfs) {
+                const res = rfs.call(el);
+                if (res && typeof res.then === 'function') {
+                    res.then(() => this.lockLandscape()).catch(() => {});
+                }
+            }
+            this.lockLandscape();
+            window.scrollTo(0, 1);
+        } catch {}
+    }
+
     toggleFullscreen() {
-        if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+        const fsDoc = document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement;
+        if (!fsDoc) {
             this.requestFullscreen();
         } else {
-            if (document.exitFullscreen) {
-                document.exitFullscreen().catch(() => {});
-            } else if (document.webkitExitFullscreen) {
-                document.webkitExitFullscreen();
-            }
+            const exit = document.exitFullscreen || document.webkitExitFullscreen || document.mozCancelFullScreen || document.msExitFullscreen;
+            if (exit) exit.call(document).catch(() => {});
         }
     }
 

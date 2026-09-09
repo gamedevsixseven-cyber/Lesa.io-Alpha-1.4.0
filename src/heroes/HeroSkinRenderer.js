@@ -16,6 +16,8 @@ class HeroSkinRenderer {
      */
     static getHeroModule(heroType) {
         if (heroType === '50balos' && typeof FiftyBalosHero !== 'undefined') return FiftyBalosHero;
+        if (heroType === 'billias' && typeof BilliasHero !== 'undefined') return BilliasHero;
+        if (heroType === 'kitsos' && typeof KitsosHero !== 'undefined') return KitsosHero;
         if (heroType === 'petros' && typeof PetrosHero !== 'undefined') return PetrosHero;
         if (heroType === 'psogas' && typeof PsogasHero !== 'undefined') return PsogasHero;
         if (typeof PsanasHero !== 'undefined') return PsanasHero;
@@ -239,6 +241,10 @@ class HeroSkinRenderer {
             HeroSkinRenderer.drawMoneyGun(ctx, flash, recoil);
         } else if (weaponType === 'bubble') {
             HeroSkinRenderer.drawBubbleGun(ctx, flash, recoil, player ? (player.bubbleCharge || 0) : 0);
+        } else if (weaponType === 'burger') {
+            HeroSkinRenderer.drawBurger(ctx, flash, recoil);
+        } else if (weaponType === 'lightning') {
+            HeroSkinRenderer.drawLightningGauntlet(ctx, flash, recoil);
         } else {
             HeroSkinRenderer.drawTacticalSlingshot(ctx, flash, recoil);
         }
@@ -420,6 +426,18 @@ class HeroSkinRenderer {
     static drawBubbleGun(ctx, flash, recoil, charge = 0) {
         if (typeof BubbleGun !== 'undefined' && typeof BubbleGun.drawWeapon === 'function') {
             BubbleGun.drawWeapon(ctx, flash, recoil, charge);
+        }
+    }
+
+    static drawBurger(ctx, flash, recoil) {
+        if (typeof BilliasHero !== 'undefined' && typeof BilliasHero.drawWeapon === 'function') {
+            BilliasHero.drawWeapon(ctx, flash, recoil);
+        }
+    }
+
+    static drawLightningGauntlet(ctx, flash, recoil) {
+        if (typeof KitsosHero !== 'undefined' && typeof KitsosHero.drawWeapon === 'function') {
+            KitsosHero.drawWeapon(ctx, flash, recoil);
         }
     }
 }

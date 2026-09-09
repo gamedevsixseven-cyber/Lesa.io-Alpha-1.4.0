@@ -15,7 +15,7 @@ $itemsToCopy = @(
     'assets', 'Audio', 'src', 'styles', 'favicon.ico', 'favicon.png',
     'index.html', 'Launcher.cs', 'Lesa.io.exe', 'style.css',
     'Versions.md', 'GAME_OVERVIEW.md', 'BUGS_FIXED.md', 'MOBILE_ARCHITECTURE_PLAN.md',
-    'GEAR_OVERVIEW.md', 'ROADMAP.md', 'serve.ps1', 'crop_icons.ps1', 'DevTeamLOGO'
+    'GEAR_OVERVIEW.md', 'ROADMAP.md', 'serve.ps1', 'tcp_bridge.ps1', 'manifest.json', 'crop_icons.ps1', 'DevTeamLOGO'
 )
 
 foreach ($item in $itemsToCopy) {

@@ -318,3 +318,131 @@
 .mode-coop-trigger-btn:hover {
     transform: scale(1.04);
 }
+
+/* ===================================================
+   MOBILE CO-OP PLAYTEST MODAL SCALING
+   Strictly for mobile landscape & compact touch devices
+   =================================================== */
+@media screen and (max-height: 540px), screen and (max-width: 768px), screen and (pointer: coarse) and (max-height: 720px) {
+    #coop-modal.modal-overlay {
+        padding: 6px;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .coop-panel {
+        width: min(94vw, 440px);
+        max-height: 94vh;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        padding: 10px 14px;
+        border-width: 2.5px;
+        border-radius: 14px;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.8), 0 0 16px rgba(255, 165, 2, 0.25);
+    }
+
+    .coop-header {
+        margin-bottom: 6px;
+        padding-bottom: 6px;
+        border-bottom-width: 1.5px;
+    }
+
+    .coop-title {
+        font-size: 16px;
+    }
+
+    .coop-badge {
+        font-size: 9px;
+        padding: 2px 6px;
+        border-radius: 8px;
+    }
+
+    .coop-close-btn {
+        width: 26px;
+        height: 26px;
+        font-size: 13px;
+        border-width: 1.5px;
+    }
+
+    .coop-tabs {
+        gap: 6px;
+        margin-bottom: 8px;
+    }
+
+    .coop-tab-btn {
+        padding: 6px 10px;
+        font-size: 12px;
+        border-radius: 8px;
+        border-width: 1.5px;
+    }
+
+    .coop-tab-content {
+        gap: 8px;
+    }
+
+    .coop-code-box {
+        padding: 8px 12px;
+        gap: 4px;
+        border-width: 2px;
+        border-radius: 10px;
+    }
+
+    .coop-code-label {
+        font-size: 10px;
+        margin-bottom: 2px;
+    }
+
+    .coop-code-digits {
+        font-size: 24px;
+        letter-spacing: 4px;
+    }
+
+    .coop-copy-btn {
+        padding: 3px 10px;
+        font-size: 10px;
+        border-radius: 6px;
+    }
+
+    .coop-mode-picker {
+        gap: 6px;
+    }
+
+    .coop-mode-btn {
+        padding: 6px 8px;
+        font-size: 11px;
+        border-radius: 8px;
+        border-width: 1.5px;
+    }
+
+    .coop-status-row {
+        padding: 6px 10px;
+        font-size: 11px;
+        border-radius: 8px;
+        gap: 6px;
+    }
+
+    .coop-status-dot {
+        width: 8px;
+        height: 8px;
+    }
+
+    .coop-launch-btn {
+        font-size: 13px;
+        padding: 8px 12px;
+        border-radius: 10px;
+        border-width: 2px;
+        box-shadow: 0 3px 0 #1b7a42, 0 6px 10px rgba(0, 0, 0, 0.35);
+    }
+
+    .coop-input-wrap {
+        gap: 4px;
+    }
+
+    .coop-code-input {
+        font-size: 20px;
+        padding: 8px;
+        border-width: 2px;
+        border-radius: 8px;
+        letter-spacing: 3px;
+    }
+}

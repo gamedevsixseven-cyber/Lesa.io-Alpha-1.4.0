@@ -349,5 +349,124 @@
     .perk-vault-name { font-size: 0.82rem !important; }
     .perk-vault-desc { font-size: 0.7rem !important; }
     .perk-buy-btn, .perk-equip-action-btn, .perk-equipped-tag { font-size: 0.7rem !important; padding: 4px 8px !important; }
+
+    /* 12. Game Mode Selection Modal (Mobile Landscape & Portrait) */
+    #game-mode-modal.modal-overlay {
+        padding: 8px 6px 44px 6px !important;
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch;
+    }
+    .mode-select-frame {
+        height: min(72vh, calc(100dvh - 66px)) !important;
+        width: calc(min(72vh, calc(100dvh - 66px)) * (1504 / 864)) !important;
+        max-width: 95vw !important;
+        max-height: 75vh !important;
+        border-radius: 16px !important;
+    }
+    .mode-frame-img {
+        border-radius: 16px !important;
+    }
+    .mode-coop-btn-wrap {
+        position: absolute !important;
+        bottom: -38px !important;
+        left: 50% !important;
+        transform: translateX(-50%) !important;
+        z-index: 15 !important;
+    }
+    .mode-coop-trigger-btn {
+        font-size: 11px !important;
+        padding: 5px 14px !important;
+        margin-top: 0 !important;
+        border-width: 2px !important;
+        border-radius: 999px !important;
+        box-shadow: 0 3px 0 #1e272e, 0 4px 10px rgba(0, 210, 211, 0.35) !important;
+        gap: 6px !important;
+        white-space: nowrap !important;
+    }
+
+    /* 13. Co-op Playtest Modal (Compact Scaling for Mobile) */
+    #coop-modal.modal-overlay {
+        padding: 6px !important;
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch;
+    }
+    .coop-panel {
+        width: min(94vw, 440px) !important;
+        max-height: 94vh !important;
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch;
+        padding: 10px 14px !important;
+        border-width: 2.5px !important;
+        border-radius: 14px !important;
+    }
+    .coop-header {
+        margin-bottom: 6px !important;
+        padding-bottom: 6px !important;
+    }
+    .coop-title {
+        font-size: 16px !important;
+    }
+    .coop-badge {
+        font-size: 9px !important;
+        padding: 2px 6px !important;
+    }
+    .coop-close-btn {
+        width: 26px !important;
+        height: 26px !important;
+        font-size: 13px !important;
+    }
+    .coop-tabs {
+        gap: 6px !important;
+        margin-bottom: 8px !important;
+    }
+    .coop-tab-btn {
+        padding: 6px 10px !important;
+        font-size: 12px !important;
+        border-radius: 8px !important;
+    }
+    .coop-tab-content {
+        gap: 8px !important;
+    }
+    .coop-code-box {
+        padding: 8px 12px !important;
+        gap: 4px !important;
+        border-width: 2px !important;
+        border-radius: 10px !important;
+    }
+    .coop-code-label {
+        font-size: 10px !important;
+        margin-bottom: 2px !important;
+    }
+    .coop-code-digits {
+        font-size: 24px !important;
+        letter-spacing: 4px !important;
+    }
+    .coop-copy-btn {
+        padding: 3px 10px !important;
+        font-size: 10px !important;
+    }
+    .coop-mode-picker {
+        gap: 6px !important;
+    }
+    .coop-mode-btn {
+        padding: 6px 8px !important;
+        font-size: 11px !important;
+        border-radius: 8px !important;
+    }
+    .coop-status-row {
+        padding: 6px 10px !important;
+        font-size: 11px !important;
+        border-radius: 8px !important;
+    }
+    .coop-launch-btn {
+        font-size: 13px !important;
+        padding: 8px 12px !important;
+        border-radius: 10px !important;
+    }
+    .coop-code-input {
+        font-size: 20px !important;
+        padding: 8px !important;
+        border-radius: 8px !important;
+    }
 }
 

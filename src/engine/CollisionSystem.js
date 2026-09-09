@@ -66,6 +66,9 @@ class CollisionSystem {
                             if (b.isPagakiaChilling && typeof e.applyIceSlow === 'function') {
                                 e.applyIceSlow(3.0, 0.50, effects);
                             }
+                            if (b.type === 'lightning' && Math.random() < 0.10) {
+                                CollisionSystem.triggerLightningChain(e, b.damage * dmgMult, enemies, effects, game);
+                            }
                             b.pierce--;
                             if (b.pierce <= 0) {
                                 b.explode(effects);
@@ -396,6 +399,54 @@ class CollisionSystem {
         // Battle Perks On-Kill Hook (Golden Touch coin pouch drops)
         if (typeof window !== 'undefined' && window.perkSystem) {
             window.perkSystem.onEnemyKilled(enemy, game);
+        }
+    }
+
+    /**
+     * Kitsos 10% Chain Lightning Mechanic:
+     * Chains up to 4 enemies max, dealing shock damage and drawing electric chain arcs
+     */
+    static triggerLightningChain(startEnemy, baseDamage, enemies, effects, game) {
+        if (!startEnemy || !enemies || !effects) return;
+
+        const maxChained = 4;
+        const chained = new Set([startEnemy]);
+        let lastX = startEnemy.x;
+        let lastY = startEnemy.y;
+
+        for (let step = 0; step < maxChained; step++) {
+            let closest = null;
+            let closestDistSq = 250 * 250; // max chain jump distance 250px
+
+            for (let i = 0; i < enemies.length; i++) {
+                const cand = enemies[i];
+                if (cand.dead || cand.isDying || chained.has(cand)) continue;
+
+                const dx = cand.x - lastX;
+                const dy = cand.y - lastY;
+                const distSq = dx * dx + dy * dy;
+                if (distSq < closestDistSq) {
+                    closestDistSq = distSq;
+                    closest = cand;
+                }
+            }
+
+            if (!closest) break;
+
+            chained.add(closest);
+            closest.takeDamage(baseDamage * 0.85, effects, false);
+            if (game && game.isCoopGuest) closest.dead = false;
+
+            effects.addLightningChain(lastX, lastY, closest.x, closest.y, '#00d2d3');
+            lastX = closest.x;
+            lastY = closest.y;
+        }
+
+        if (chained.size > 1) {
+            effects.addComicSplash(startEnemy.x, startEnemy.y - 28, '⚡ CHAIN ZAP!');
+            if (window.soundEngine && typeof window.soundEngine.playCrit === 'function') {
+                window.soundEngine.playCrit();
+            }
         }
     }
 }

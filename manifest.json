@@ -1,0 +1,19 @@
+{
+  "name": "Lesa.io",
+  "short_name": "Lesa.io",
+  "description": "Lesa.io - Action-packed Cartoon Arena Shooter",
+  "start_url": "./index.html",
+  "display": "fullscreen",
+  "display_override": ["fullscreen", "standalone"],
+  "orientation": "landscape",
+  "background_color": "#0a0c14",
+  "theme_color": "#0a0c14",
+  "icons": [
+    {
+      "src": "assets/Lesa.ioGAMELOGOICON.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

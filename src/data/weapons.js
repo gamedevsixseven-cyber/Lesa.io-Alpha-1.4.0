@@ -60,6 +60,30 @@ const WEAPONS = {
         maxBounces: 0,
         color: '#e67e22',
         image: 'assets/WeaponIcons/MoneyGun.png'
+    },
+    burger: {
+        id: 'burger',
+        name: 'Burger Toss',
+        icon: '🍔',
+        baseDelay: 18,
+        baseDamage: 45,
+        radius: 12,
+        extraPierce: 1,
+        maxBounces: 0,
+        color: '#e59b52',
+        image: 'assets/WeaponIcons/BurgerToss.png'
+    },
+    lightning: {
+        id: 'lightning',
+        name: 'Lightning Strike',
+        icon: '⚡',
+        baseDelay: 15,
+        baseDamage: 38,
+        radius: 10,
+        extraPierce: 0,
+        maxBounces: 0,
+        color: '#00d2d3',
+        image: 'assets/WeaponIcons/LightningStrike.png'
     }
 };
 

@@ -216,7 +216,8 @@ class EnemyBase {
     }
 
     drawOverheadHUD(ctx) {
-        const hudY = this.y - this.radius - 14;
+        const offset = this.type === 'fatmir' ? 94 : (this.hudOffsetY || (this.radius + 14));
+        const hudY = this.y - offset;
 
         // Name tag & Status Indicator
         ctx.save();

@@ -1,0 +1,262 @@
+/* ===================================================
+   LESA.IO - GIORGOS MAZONAKIS MEMORIAL TRIBUTE MODAL
+   Active September 9 - September 13, 2026
+   =================================================== */
+
+.tribute-modal-panel {
+    background: linear-gradient(160deg, #1e272e 0%, #11171d 100%) !important;
+    border: 4px solid #f1c40f !important;
+    border-radius: 32px !important;
+    box-shadow: 0 0 35px rgba(241, 196, 15, 0.35), 0 15px 40px rgba(0, 0, 0, 0.9) !important;
+    max-width: 550px !important;
+    padding: 26px 28px !important;
+    color: #ffffff;
+    text-align: center;
+    position: relative;
+    animation: modalPopIn 0.28s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.tribute-header-banner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 14px;
+}
+
+.tribute-dove-badge {
+    font-size: 2.3rem;
+    filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.8));
+    animation: pulseSlow 2.2s infinite ease-in-out;
+    margin-bottom: 2px;
+}
+
+.tribute-title {
+    font-family: 'Luckiest Guy', cursive;
+    font-size: 1.85rem;
+    color: #f1c40f;
+    letter-spacing: 1.2px;
+    text-shadow: 2.5px 2.5px 0 #000000;
+    margin: 0;
+}
+
+.tribute-years {
+    font-family: 'Fredoka', sans-serif;
+    font-weight: 700;
+    font-size: 1.05rem;
+    color: #d2dae2;
+    letter-spacing: 2px;
+    margin-top: 4px;
+}
+
+.tribute-quote-box {
+    background: rgba(0, 0, 0, 0.45);
+    border: 1.5px solid rgba(241, 196, 15, 0.35);
+    border-radius: 18px;
+    padding: 16px 20px;
+    text-align: center;
+    margin-bottom: 16px;
+    box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.5);
+}
+
+.tribute-intro {
+    font-style: italic;
+    font-weight: 700;
+    color: #ffd32a;
+    font-size: 1.15rem;
+    margin: 0 0 10px 0;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+.tribute-body {
+    font-family: 'Fredoka', sans-serif;
+    font-size: 0.96rem;
+    line-height: 1.55;
+    color: #f1f2f6;
+    font-weight: 500;
+    margin: 0 0 10px 0;
+}
+
+.tribute-body strong {
+    color: #ffffff;
+    font-weight: 700;
+}
+
+.tribute-body em {
+    color: #ffd32a;
+    font-style: normal;
+    font-weight: 700;
+}
+
+.tribute-closing {
+    font-family: 'Fredoka', sans-serif;
+    font-weight: 700;
+    color: #ffffff;
+    font-size: 1.05rem;
+    margin: 8px 0 0 0;
+    text-shadow: 0 0 10px rgba(241, 196, 15, 0.4);
+}
+
+.tribute-reward-box {
+    background: rgba(241, 196, 15, 0.08);
+    border: 2px dashed rgba(241, 196, 15, 0.55);
+    border-radius: 18px;
+    padding: 12px 16px;
+    margin-bottom: 6px;
+}
+
+.tribute-reward-header {
+    font-family: 'Luckiest Guy', cursive;
+    color: #fed330;
+    font-size: 1.05rem;
+    letter-spacing: 0.6px;
+    margin-bottom: 10px;
+    text-shadow: 1.5px 1.5px 0 #000;
+}
+
+.tribute-reward-items {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.tribute-reward-card {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(30, 39, 46, 0.85);
+    border: 2px solid #00d2d3;
+    border-radius: 14px;
+    padding: 8px 12px;
+    flex: 1;
+    text-align: left;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
+}
+
+.tribute-item-icon-wrap {
+    width: 46px;
+    height: 46px;
+    background: rgba(0, 0, 0, 0.4);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    overflow: hidden;
+}
+
+.tribute-item-icon-img {
+    width: 40px;
+    height: 40px;
+    object-fit: contain;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+}
+
+.tribute-item-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.tribute-item-name {
+    font-family: 'Luckiest Guy', cursive;
+    color: #ffffff;
+    font-size: 0.95rem;
+    letter-spacing: 0.4px;
+    line-height: 1.15;
+}
+
+.tribute-item-tag {
+    font-family: 'Fredoka', sans-serif;
+    color: #00d2d3;
+    font-size: 0.78rem;
+    font-weight: 700;
+    margin-top: 2px;
+}
+
+.tribute-reward-currencies {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
+.tribute-curr-pill {
+    font-family: 'Luckiest Guy', cursive;
+    background: #1e272e;
+    border: 2px solid #fed330;
+    border-radius: 12px;
+    padding: 5px 12px;
+    font-size: 0.88rem;
+    color: #fed330;
+    white-space: nowrap;
+    text-shadow: 1px 1px 0 #000;
+}
+
+.tribute-claim-btn {
+    background: linear-gradient(180deg, #ffd32a 0%, #f39c12 100%) !important;
+    color: #1e272e !important;
+    font-family: 'Luckiest Guy', cursive !important;
+    font-size: 1.25rem !important;
+    letter-spacing: 1px !important;
+    border: 3.5px solid #1e272e !important;
+    border-radius: 20px !important;
+    padding: 12px 34px !important;
+    box-shadow: 0 5px 0 #b7791f, 0 8px 20px rgba(0, 0, 0, 0.6) !important;
+    cursor: pointer;
+    transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+.tribute-claim-btn:hover {
+    transform: translateY(-2px) scale(1.02);
+    box-shadow: 0 7px 0 #b7791f, 0 10px 25px rgba(241, 196, 15, 0.4) !important;
+}
+
+.tribute-claim-btn:active {
+    transform: translateY(3px) scale(0.98);
+    box-shadow: 0 2px 0 #b7791f !important;
+}
+
+/* Mobile Optimizations */
+@media (max-width: 600px) {
+    .tribute-modal-panel {
+        padding: 18px 16px !important;
+        border-radius: 24px !important;
+        max-width: 94% !important;
+    }
+    .tribute-title {
+        font-size: 1.45rem;
+    }
+    .tribute-intro {
+        font-size: 1.02rem;
+    }
+    .tribute-body {
+        font-size: 0.88rem;
+        line-height: 1.45;
+    }
+    .tribute-closing {
+        font-size: 0.95rem;
+    }
+    .tribute-reward-items {
+        flex-direction: column;
+        gap: 8px;
+    }
+    .tribute-reward-card {
+        width: 100%;
+        box-sizing: border-box;
+    }
+    .tribute-reward-currencies {
+        flex-direction: row;
+        width: 100%;
+        justify-content: center;
+    }
+    .tribute-curr-pill {
+        flex: 1;
+        text-align: center;
+        font-size: 0.8rem;
+    }
+    .tribute-claim-btn {
+        width: 100%;
+        font-size: 1.1rem !important;
+        padding: 10px 16px !important;
+    }
+}

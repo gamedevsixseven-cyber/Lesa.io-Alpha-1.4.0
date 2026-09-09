@@ -18,6 +18,10 @@ class WeaponSystem {
                 return { baseDelay: 9, baseDamage: 22, radius: 8, extraPierce: 2, maxBounces: 0 };
             case 'money_gun':
                 return { baseDelay: 10, baseDamage: 28, radius: 10, extraPierce: 1, maxBounces: 0 };
+            case 'burger':
+                return { baseDelay: 18, baseDamage: 45, radius: 12, extraPierce: 1, maxBounces: 0 };
+            case 'lightning':
+                return { baseDelay: 15, baseDamage: 38, radius: 10, extraPierce: 0, maxBounces: 0 };
             case 'pea':
             default:
                 return { baseDelay: 16, baseDamage: 25, radius: 8, extraPierce: 0, maxBounces: 0 };
@@ -54,8 +58,8 @@ class WeaponSystem {
             const muzzleY = player.y + Math.sin(shotAngle) * (player.radius + 14);
 
             const isCrit = Math.random() < player.critChance;
-            let dmg = config.baseDamage * player.damageMultiplier;
-            if (isCrit) dmg *= player.critMultiplier;
+            let dmg = config.baseDamage * (player.damageMultiplier || 1);
+            if (isCrit) dmg *= (player.critMultiplier || 2.0);
 
             const b = new Bullet({
                 x: muzzleX,

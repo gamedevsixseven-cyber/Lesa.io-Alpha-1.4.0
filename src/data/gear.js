@@ -204,6 +204,18 @@ const GEAR_DATA = {
         iconImg: 'assets/Armors/BikerKevlarJacket.png',
         desc: 'Heavy black leather jacket padded with ballistic lining.'
     },
+    gucci_blazer: {
+        id: 'gucci_blazer',
+        name: 'Sakaki ths Nuxtas',
+        slot: 'armor',
+        rarity: 'exclusive',
+        cost: 0,
+        stats: { maxHp: 80, speed: 3, damageReduction: 8 },
+        statSummary: '+80 Max HP, +3% Move Speed, +8% Damage Reduction',
+        icon: '🧥',
+        iconImg: 'assets/Armors/GucciVelvetBlazer.png',
+        desc: '«Με ένα Gucci σακάκι, μες στη νύχτα...» Ειδικό συλλεκτικό σακάκι αφιερωμένο στον άρχοντα της νύχτας Γιώργο Μαζωνάκη. Αθάνατος.'
+    },
 
     // ==========================================
     // 🥋 BELTS (Dash CDR & Mobility)

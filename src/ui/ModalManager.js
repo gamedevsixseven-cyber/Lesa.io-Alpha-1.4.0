@@ -231,7 +231,9 @@ class ModalManager {
             psanas: 'pea',
             psogas: 'pepper',
             petros: 'watermelon',
-            '50balos': 'money_gun'
+            '50balos': 'money_gun',
+            billias: 'burger',
+            kitsos: 'lightning'
         };
 
         const currentHeroWeapon = HERO_DEFAULT_WEAPONS[heroKey] || heroData.weaponType || 'pea';
@@ -270,13 +272,23 @@ class ModalManager {
         if (totalHp) totalHp.textContent = calculatedHp;
         if (totalDef) totalDef.textContent = `${calculatedDef}%`;
 
-        const weaponNames = { pea: 'Pea Slingshot', watermelon: 'Melon Cannon', pepper: 'Chili Blaster', bubble: 'Bubble Gun', money_gun: 'Money Gun' };
+        const weaponNames = {
+            pea: 'Pea Slingshot',
+            watermelon: 'Melon Cannon',
+            pepper: 'Chili Blaster',
+            bubble: 'Bubble Gun',
+            money_gun: 'Money Gun',
+            burger: 'Burger Toss',
+            lightning: 'Lightning Strike'
+        };
         const weaponImages = {
             pea: 'assets/WeaponIcons/PeaSlingshot.png',
             watermelon: 'assets/WeaponIcons/MelonCannon.png',
             pepper: 'assets/WeaponIcons/ChilliBlaster.png',
             bubble: 'assets/WeaponIcons/BubbleGun.png',
-            money_gun: 'assets/WeaponIcons/MoneyGun.png'
+            money_gun: 'assets/WeaponIcons/MoneyGun.png',
+            burger: 'assets/WeaponIcons/BurgerToss.png',
+            lightning: 'assets/WeaponIcons/LightningStrike.png'
         };
 
         const weaponNameEl = document.getElementById('gear-equipped-weapon-name');
@@ -322,6 +334,8 @@ class ModalManager {
                     else if (wt === 'watermelon') { badge.textContent = 'PETROS GEAR'; badge.className = 'weapon-badge badge-petros'; }
                     else if (wt === 'pepper') { badge.textContent = 'PSOGAS GEAR'; badge.className = 'weapon-badge badge-psogas'; }
                     else if (wt === 'money_gun') { badge.textContent = '50BALOS GEAR'; badge.className = 'weapon-badge badge-50balos'; }
+                    else if (wt === 'burger') { badge.textContent = 'BILLIAS GEAR'; badge.className = 'weapon-badge badge-billias'; }
+                    else if (wt === 'lightning') { badge.textContent = 'KITSOS GEAR'; badge.className = 'weapon-badge badge-kitsos'; }
                     else {
                         const wData = (window.WEAPONS && window.WEAPONS[wt]) || {};
                         const rName = wData.rarity || 'Exclusive';

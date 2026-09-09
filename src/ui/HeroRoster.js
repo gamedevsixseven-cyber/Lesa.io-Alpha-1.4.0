@@ -13,7 +13,9 @@ class HeroRoster {
         this.unlockCosts = {
             'psogas': 2500,
             'petros': 3500,
-            '50balos': 4500
+            'billias': 4000,
+            'kitsos': 4500,
+            '50balos': 6000
         };
 
         this.initEvents();
@@ -54,13 +56,19 @@ class HeroRoster {
     }
 
     handleHeroButtonClick(hero) {
-        if (hero === 'psgiannhs') {
+        const comingSoonHeroes = {
+            'psgiannhs': { name: 'Psgiannhs', desc: 'Psgiannhs is currently preparing his battle gear and special weapon. He will be available in an upcoming update!' },
+            'mortigen': { name: 'Mortigen', desc: 'Mortigen is currently preparing his dark abilities and weapon. He will be available in an upcoming update!' }
+        };
+
+        if (comingSoonHeroes[hero]) {
             if (window.soundEngine) window.soundEngine.playHit();
+            const info = comingSoonHeroes[hero];
             if (this.ui && typeof this.ui.showFeatureModal === 'function') {
                 this.ui.showFeatureModal(
                     '⏳ HERO IN TRAINING',
-                    'Psgiannhs is Coming Soon!',
-                    'Psgiannhs is currently preparing his battle gear and special weapon. He will be available in an upcoming update!'
+                    `${info.name} is Coming Soon!`,
+                    info.desc
                 );
             }
             return;
@@ -122,12 +130,12 @@ class HeroRoster {
         const cards = document.querySelectorAll('.hero-select-card');
 
         cards.forEach((card) => {
-            if (card.classList.contains('hero-card-coming-soon') || card.getAttribute('data-hero') === 'psgiannhs') {
+            const hero = card.getAttribute('data-hero');
+            if (card.classList.contains('hero-card-coming-soon') || hero === 'psgiannhs' || hero === 'mortigen') {
                 card.classList.add('hero-locked');
                 return;
             }
 
-            const hero = card.getAttribute('data-hero');
             const equipBtn = card.querySelector('.hero-equip-btn');
             const lockBadge = card.querySelector('.hero-lock-badge');
             const isUnlocked = this.unlockedHeroes.includes(hero);

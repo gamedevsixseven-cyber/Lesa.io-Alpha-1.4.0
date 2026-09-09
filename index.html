@@ -7,7 +7,19 @@
     <meta name="description" content="Lesa.io - Action-packed PC shooter game featuring Psanas, Psogas, Petros vs Skatmir and Casillas!">
     <link rel="icon" type="image/png" href="assets/Lesa.ioGAMELOGOICON.png">
     <link rel="shortcut icon" href="favicon.ico">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Lesa.io">
+    <meta name="mobile-web-app-capable" content="yes">
     <link rel="apple-touch-icon" href="assets/Lesa.ioGAMELOGOICON.png">
+    <script>
+        if (window.location.protocol.startsWith('http')) {
+            const m = document.createElement('link');
+            m.rel = 'manifest';
+            m.href = 'manifest.json';
+            document.head.appendChild(m);
+        }
+    </script>
     <link rel="stylesheet" href="styles/variables.css">
     <link rel="stylesheet" href="styles/animations.css">
     <link rel="stylesheet" href="styles/menu.css">
@@ -29,6 +41,7 @@
     <link rel="stylesheet" href="styles/credits.css?v=1.4.0">
     <link rel="stylesheet" href="styles/gamemode.css?v=1.4.3">
     <link rel="stylesheet" href="styles/coop.css?v=1.4.4">
+    <link rel="stylesheet" href="styles/tribute.css?v=1.3.9">
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -43,6 +56,19 @@
     <div id="game-container">
         <!-- Main Game Canvas -->
         <canvas id="game-canvas"></canvas>
+
+        <!-- Mobile Landscape Rotate Notice (Shown only in portrait on mobile touch devices) -->
+        <div id="mobile-rotate-overlay" class="mobile-rotate-overlay">
+            <div class="rotate-card">
+                <div class="rotate-phone-anim">
+                    <span class="rotate-device-icon">📱</span>
+                    <span class="rotate-arrow-icon">🔄</span>
+                </div>
+                <h2 class="rotate-title">ROTATE DEVICE</h2>
+                <p class="rotate-subtitle">Lesa.io is built for widescreen horizontal action!</p>
+                <div class="rotate-tip">💡 Tip: Turn off Portrait Lock in Control Center</div>
+            </div>
+        </div>
 
         <!-- ================= ROCKSTAR-STYLE DEV TEAM INTRO SCREEN ================= -->
         <div id="dev-intro-screen" class="dev-intro-screen">
@@ -244,7 +270,7 @@
             </div>
 
             <!-- GAME VERSION (BOTTOM RIGHT) -->
-            <div id="menu-game-version" class="menu-game-version">Alpha 1.3.0</div>
+            <div id="menu-game-version" class="menu-game-version">Alpha 1.3.9</div>
         </div>
 
         <!-- ================= IN-GAME CARTOON HUD ================= -->
@@ -417,7 +443,7 @@
                         <div class="hero-stat-row"><span>Speed:</span> <strong>Fast (5.0)</strong></div>
                         <div class="hero-stat-row"><span>Weapon:</span> <strong>Money Gun</strong></div>
                         <div class="hero-perk">Cash Hustler & 50€ Banknotes</div>
-                        <button class="comic-btn comic-btn-sm hero-equip-btn hero-unlock-btn" data-cost="4500" data-hero="50balos">UNLOCK (🪙 4,500)</button>
+                        <button class="comic-btn comic-btn-sm hero-equip-btn hero-unlock-btn" data-cost="6000" data-hero="50balos">UNLOCK (🪙 6,000)</button>
                     </div>
 
                     <!-- Hero 5: Psgiannhs (Coming Soon) -->
@@ -431,6 +457,48 @@
                         <div class="hero-stat-row"><span>Speed:</span> <strong>???</strong></div>
                         <div class="hero-stat-row"><span>Weapon:</span> <strong>Classified</strong></div>
                         <div class="hero-perk">Secret Brawler • In Training</div>
+                        <button class="comic-btn comic-btn-sm hero-equip-btn hero-coming-soon-btn">COMING SOON ⏳</button>
+                    </div>
+
+                    <!-- Hero 6: Kitsos -->
+                    <div class="hero-select-card hero-locked" data-hero="kitsos">
+                        <div class="hero-lock-badge">🔒 LOCKED</div>
+                        <div class="hero-select-avatar">
+                            <img src="assets/HeroesIcons/KitsosAvatar.png" alt="Kitsos">
+                        </div>
+                        <h3 class="hero-select-name">Kitsos</h3>
+                        <div class="hero-stat-row"><span>HP:</span> <strong>95</strong></div>
+                        <div class="hero-stat-row"><span>Speed:</span> <strong>Fastest (5.8)</strong></div>
+                        <div class="hero-stat-row"><span>Weapon:</span> <strong>Lightning Strike</strong></div>
+                        <div class="hero-perk">Drops Lightnings • 10% 4-Enemy Chain</div>
+                        <button class="comic-btn comic-btn-sm hero-equip-btn hero-unlock-btn" data-cost="4500" data-hero="kitsos">UNLOCK (🪙 4,500)</button>
+                    </div>
+
+                    <!-- Hero 7: Billias -->
+                    <div class="hero-select-card hero-locked" data-hero="billias">
+                        <div class="hero-lock-badge">🔒 LOCKED</div>
+                        <div class="hero-select-avatar">
+                            <img src="assets/HeroesIcons/BilliasAvatar.png" alt="Billias">
+                        </div>
+                        <h3 class="hero-select-name">Billias</h3>
+                        <div class="hero-stat-row"><span>HP:</span> <strong>120</strong></div>
+                        <div class="hero-stat-row"><span>Speed:</span> <strong>Slow (4.6)</strong></div>
+                        <div class="hero-stat-row"><span>Weapon:</span> <strong>Burger Toss</strong></div>
+                        <div class="hero-perk">Throws Burgers • Eats Every 1m (+20 HP)</div>
+                        <button class="comic-btn comic-btn-sm hero-equip-btn hero-unlock-btn" data-cost="4000" data-hero="billias">UNLOCK (🪙 4,000)</button>
+                    </div>
+
+                    <!-- Hero 8: Mortigen (Coming Soon) -->
+                    <div class="hero-select-card hero-card-coming-soon hero-locked" data-hero="mortigen">
+                        <div class="hero-card-badge hero-badge-coming-soon">⏳ COMING SOON</div>
+                        <div class="hero-select-avatar hero-avatar-mystery">
+                            <span class="mystery-avatar-icon">❓</span>
+                        </div>
+                        <h3 class="hero-select-name">Mortigen</h3>
+                        <div class="hero-stat-row"><span>HP:</span> <strong>???</strong></div>
+                        <div class="hero-stat-row"><span>Speed:</span> <strong>???</strong></div>
+                        <div class="hero-stat-row"><span>Weapon:</span> <strong>Classified</strong></div>
+                        <div class="hero-perk">Dark Enigma • In Development</div>
                         <button class="comic-btn comic-btn-sm hero-equip-btn hero-coming-soon-btn">COMING SOON ⏳</button>
                     </div>
                 </div>
@@ -524,9 +592,58 @@
                 </div>
 
                 <!-- Co-op Playtest Trigger Button -->
-                <div style="position: absolute; bottom: -58px; left: 50%; transform: translateX(-50%); z-index: 10;">
+                <div id="mode-coop-btn-wrap" class="mode-coop-btn-wrap">
                     <button id="open-coop-btn" class="mode-coop-trigger-btn" type="button">
                         <span>🤝</span> CO-OP MULTIPLAYER (PLAYTEST)
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= GIORGOS MAZONAKIS MEMORIAL TRIBUTE MODAL ================= -->
+        <div id="mazonakis-tribute-modal" class="modal-overlay hidden">
+            <div class="modal-panel tribute-modal-panel">
+                <div class="tribute-header-banner">
+                    <div class="tribute-dove-badge">🕊️</div>
+                    <h2 class="tribute-title">ΑΝΤΙΟ ΓΙΩΡΓΟ ΜΑΖΩΝΑΚΗ</h2>
+                    <div class="tribute-years">1972 – 2026</div>
+                </div>
+
+                <div class="tribute-quote-box">
+                    <p class="tribute-intro">«Ώρες μικρές, μες στη νύχτα...»</p>
+                    <p class="tribute-body">
+                        Σήμερα η Ελλάδα και η ελληνική μουσική αποχαιρετούν έναν αυθεντικό άρχοντα της νύχτας, τον <strong>Γιώργο Μαζωνάκη</strong>.
+                    </p>
+                    <p class="tribute-body">
+                        Η ομαδα του <em>Lesa.io</em> αποτίει φόρο τιμής στον άνθρωπο, τη μοναδική φωνή και το ανεπανάληπτο στυλ που σημάδεψε γενιές ολόκληρες.
+                    </p>
+                    <p class="tribute-closing">
+                        Καλό ταξίδι, Γιώργο. Θα τραγουδάς για πάντα. 🕊️
+                    </p>
+                </div>
+
+                <div class="tribute-reward-box">
+                    <div class="tribute-reward-header">🎁 ΑΝΑΜΝΗΣΤΙΚΟ ΔΩΡΟ / MEMORIAL GIFT</div>
+                    <div class="tribute-reward-items">
+                        <div class="tribute-reward-card">
+                            <div class="tribute-item-icon-wrap">
+                                <img src="assets/Armors/GucciVelvetBlazer.png" class="tribute-item-icon-img" alt="Sakaki ths Nuxtas">
+                            </div>
+                            <div class="tribute-item-info">
+                                <div class="tribute-item-name">Sakaki ths Nuxtas</div>
+                                <div class="tribute-item-tag">Exclusive Armor • +80 HP, +3% SPD, +8% DEF</div>
+                            </div>
+                        </div>
+                        <div class="tribute-reward-currencies">
+                            <div class="tribute-curr-pill">🪙 +1,000 Coins</div>
+                            <div class="tribute-curr-pill">💎 +50 Diamonds</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-actions" style="margin-top: 18px;">
+                    <button id="claim-tribute-btn" class="comic-btn tribute-claim-btn">
+                        <span>🕊️</span> ΣΤΗΝ ΥΓΕΙΑ ΤΟΥ (CLAIM)
                     </button>
                 </div>
             </div>
@@ -1074,6 +1191,42 @@
                                 <div class="weapon-stat-row"><span class="stat-key">Damage:</span> <span class="stat-val">28 Cash</span></div>
                                 <div class="weapon-stat-row"><span class="stat-key">Fire Delay:</span> <span class="stat-val">Rapid (1.6s)</span></div>
                                 <div class="weapon-stat-row"><span class="stat-key">Trait:</span> <span class="stat-val">50€ Piercing Bills</span></div>
+                            </div>
+                        </div>
+
+                        <!-- Weapon 6: Burger Toss (Billias Signature) -->
+                        <div class="weapon-card" data-weapon="burger">
+                            <div class="weapon-card-top">
+                                <div class="weapon-card-left">
+                                    <div class="weapon-icon-wrap">
+                                        <img src="assets/WeaponIcons/BurgerToss.png" class="weapon-card-img" alt="Burger Toss">
+                                    </div>
+                                    <h3 class="weapon-name">BURGER TOSS</h3>
+                                </div>
+                                <div class="weapon-badge badge-billias">BILLIAS GEAR</div>
+                            </div>
+                            <div class="weapon-stats-list">
+                                <div class="weapon-stat-row"><span class="stat-key">Damage:</span> <span class="stat-val">45 Heavy</span></div>
+                                <div class="weapon-stat-row"><span class="stat-key">Fire Delay:</span> <span class="stat-val">Moderate (1.8s)</span></div>
+                                <div class="weapon-stat-row"><span class="stat-key">Trait:</span> <span class="stat-val">Juicy Cheeseburger • Pierces 1</span></div>
+                            </div>
+                        </div>
+
+                        <!-- Weapon 7: Lightning Strike (Kitsos Signature) -->
+                        <div class="weapon-card" data-weapon="lightning">
+                            <div class="weapon-card-top">
+                                <div class="weapon-card-left">
+                                    <div class="weapon-icon-wrap">
+                                        <img src="assets/WeaponIcons/LightningStrike.png" class="weapon-card-img" alt="Lightning Strike">
+                                    </div>
+                                    <h3 class="weapon-name">LIGHTNING STRIKE</h3>
+                                </div>
+                                <div class="weapon-badge badge-kitsos">KITSOS GEAR</div>
+                            </div>
+                            <div class="weapon-stats-list">
+                                <div class="weapon-stat-row"><span class="stat-key">Damage:</span> <span class="stat-val">38 Shock</span></div>
+                                <div class="weapon-stat-row"><span class="stat-key">Fire Delay:</span> <span class="stat-val">Rapid (1.5s)</span></div>
+                                <div class="weapon-stat-row"><span class="stat-key">Trait:</span> <span class="stat-val">High Voltage • 10% Chain Zap</span></div>
                             </div>
                         </div>
                     </div>
@@ -1713,7 +1866,9 @@
     <script src="src/heroes/PetrosHero.js?v=1.2.2"></script>
     <script src="src/heroes/PsogasHero.js?v=1.2.2"></script>
     <script src="src/heroes/FiftyBalosHero.js?v=1.2.4"></script>
-    <script src="src/heroes/HeroSkinRenderer.js?v=1.2.4"></script>
+    <script src="src/heroes/BilliasHero.js?v=1.3.0"></script>
+    <script src="src/heroes/KitsosHero.js?v=1.3.0"></script>
+    <script src="src/heroes/HeroSkinRenderer.js?v=1.3.0"></script>
     <script src="src/entities/HeroRenderer.js?v=1.2.2"></script>
     <script src="src/skills/SeismicQuake.js?v=1.2.6"></script>
     <script src="src/skills/YayaScream.js?v=1.2.6"></script>
@@ -1764,6 +1919,7 @@
     <script src="src/ui/ChestModalUI.js?v=1.3.3"></script>
     <script src="src/progression/InventoryManager.js?v=1.3.3"></script>
     <script src="src/ui/InventoryModalUI.js?v=1.3.3"></script>
+    <script src="src/ui/TributeManager.js?v=1.3.9"></script>
 
     <!-- 8.5. ADMIN & PLAYTESTING SUBSYSTEM -->
     <script src="src/admin/AdminAuth.js?v=1.2.2"></script>

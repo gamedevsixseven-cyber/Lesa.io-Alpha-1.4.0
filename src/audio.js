@@ -111,7 +111,7 @@ class SoundEngine {
     }
 
     loadCritBuffer() {
-        if (!this.ctx || this.critBufferLoading) return;
+        if (!this.ctx || this.critBufferLoading || (typeof window !== 'undefined' && window.location && window.location.protocol === 'file:')) return;
         this.critBufferLoading = true;
         fetch('Audio/CritSoundEffect.mp3?v=3')
             .then(res => res.arrayBuffer())

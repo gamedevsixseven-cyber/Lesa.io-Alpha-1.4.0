@@ -24,7 +24,8 @@ class CinematicCutsceneOverlay {
         this.promptAdvance = false;
         this.onAdvance = null;
         this.onRequestAdvance = null;
-        this.lastAdvanceTime = -9999;
+        this.lastAdvanceTime = 0;
+        this.dialogueStartTime = 0;
 
         // Multi-player Readiness State
         this.readyCount = 0;
@@ -34,6 +35,7 @@ class CinematicCutsceneOverlay {
         // Global input listeners to advance dialogue when prompt is active
         if (typeof window !== 'undefined') {
             window.addEventListener('pointerdown', (e) => {
+                if (e && e.isPrimary === false) return; // Prevent multi-touch double skips
                 // Ignore clicks on game menu / pause modals
                 if (e.target && e.target.closest && (e.target.closest('.modal-overlay') || e.target.closest('#menu-screen'))) {
                     return;
@@ -65,7 +67,8 @@ class CinematicCutsceneOverlay {
         this.promptAdvance = false;
         this.readyCount = 0;
         this.isLocalReady = false;
-        this.lastAdvanceTime = -9999;
+        this.lastAdvanceTime = 0;
+        this.dialogueStartTime = performance.now();
 
         // Smoothly fade and hide in-game HUD and mobile touch controls
         if (typeof document !== 'undefined') {
@@ -92,14 +95,13 @@ class CinematicCutsceneOverlay {
         this.promptAdvance = promptAdvance;
         this.readyCount = 0;
         this.isLocalReady = false;
-        this.lastAdvanceTime = -9999;
+        this.dialogueStartTime = performance.now();
     }
 
     forceAdvance() {
         if (!this.active) return false;
         this.readyCount = 0;
         this.isLocalReady = false;
-        this.lastAdvanceTime = -9999;
         if (typeof this.onAdvance === 'function') {
             this.onAdvance();
             return true;
@@ -110,7 +112,9 @@ class CinematicCutsceneOverlay {
     advance() {
         if (!this.active || !this.promptAdvance) return false;
         const now = performance.now();
-        if (this.lastAdvanceTime > 0 && (now - this.lastAdvanceTime) < 220) return false; // Debounce
+        // Strict Debounce: ignore touches within 320ms of last advance OR 250ms of new dialogue appearing
+        if (this.lastAdvanceTime > 0 && (now - this.lastAdvanceTime) < 320) return false;
+        if (this.dialogueStartTime > 0 && (now - this.dialogueStartTime) < 250) return false;
         this.lastAdvanceTime = now;
 
         // Cooperative multi-player advance coordination

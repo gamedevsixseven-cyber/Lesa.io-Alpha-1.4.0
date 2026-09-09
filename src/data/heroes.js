@@ -48,13 +48,39 @@ const HEROES = {
         name: '50BALOS',
         title: 'The Cash Hustler',
         avatar: 'assets/HeroesIcons/50balosCrop.png',
-        cost: 4500,
+        cost: 6000,
         hp: 110,
         speed: 5.0,
         radius: 24,
         heroColor: '#162c50',
         weaponType: 'money_gun',
         perks: 'Rapid cash shooter with piercing 50€ banknotes'
+    },
+    billias: {
+        id: 'billias',
+        name: 'BILLIAS',
+        title: 'The Burger Slugger',
+        avatar: 'assets/HeroesIcons/BilliasAvatar.png',
+        cost: 4000,
+        hp: 120,
+        speed: 4.6,
+        radius: 25,
+        heroColor: '#e67e22',
+        weaponType: 'burger',
+        perks: 'Throws Burgers • Moving builds hunger; eats 1 burger every 1m (+20 HP)'
+    },
+    kitsos: {
+        id: 'kitsos',
+        name: 'KITSOS',
+        title: 'The Electric Speedster',
+        avatar: 'assets/HeroesIcons/KitsosAvatar.png',
+        cost: 4500,
+        hp: 95,
+        speed: 5.4,
+        radius: 24,
+        heroColor: '#00d2d3',
+        weaponType: 'lightning',
+        perks: 'Fastest Hero (+0.2) • Drops Lightnings with 10% 4-Enemy Chain'
     }
 };
 

@@ -181,6 +181,9 @@ class ProfileManager {
         if (window.soundEngine) window.soundEngine.playLevelUp();
         this.hideFirstTimeNameModal();
         this.updateProfileUI();
+        if (typeof TributeManager !== 'undefined') {
+            TributeManager.checkAndShow();
+        }
     }
 
     handleRenameSubmit() {
@@ -246,7 +249,9 @@ class ProfileManager {
             psanas: 'assets/HeroesIcons/PsanasAvatar.png',
             psogas: 'assets/HeroesIcons/PsogasAvatar.png',
             petros: 'assets/HeroesIcons/PetrosAvatar.png',
-            '50balos': 'assets/HeroesIcons/50balosCrop.png'
+            '50balos': 'assets/HeroesIcons/50balosCrop.png',
+            billias: 'assets/HeroesIcons/BilliasAvatar.png',
+            kitsos: 'assets/HeroesIcons/KitsosAvatar.png'
         };
         if (modalAvatar) modalAvatar.src = avatars[p.selectedHero] || avatars.psanas;
 

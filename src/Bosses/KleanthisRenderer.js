@@ -258,7 +258,7 @@ class KleanthisRenderer {
     }
 
     static drawBossHUD(boss, ctx) {
-        const hudY = boss.y - boss.radius - 28 - (boss.jumpHeight || 0);
+        const hudY = boss.y - 126 - (boss.jumpHeight || 0);
         const barW = 120;
         const barH = 10;
         const halfW = barW / 2;
