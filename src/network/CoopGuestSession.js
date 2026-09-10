@@ -481,6 +481,7 @@ class CoopGuestSession {
         if ((t === 'fatmir' || t === 'skatmir') && typeof Fatmir !== 'undefined') return new Fatmir(x, y);
         if (t === 'casillas' && typeof Casillas !== 'undefined') return new Casillas(x, y);
         if (t === 'skarmogyftos' && typeof Skarmogyftos !== 'undefined') return new Skarmogyftos(x, y);
+        if (t === 'psaltis' && typeof Psaltis !== 'undefined') return new Psaltis(x, y);
         if (t === 'astynomos' && typeof Astynomos !== 'undefined') return new Astynomos(x, y, 1.0, false);
         if (t === 'mat_officer' && typeof Astynomos !== 'undefined') return new Astynomos(x, y, 1.0, true);
         if (t === 'kleanthis' && typeof Kleanthis !== 'undefined') return new Kleanthis(x, y);

@@ -157,6 +157,8 @@ class AdminCheatsService {
                 enemy = new Casillas(ex, ey, waveMult);
             } else if (type === 'skarmogyftos' && typeof Skarmogyftos !== 'undefined') {
                 enemy = new Skarmogyftos(ex, ey, waveMult);
+            } else if (type === 'psaltis' && typeof Psaltis !== 'undefined') {
+                enemy = new Psaltis(ex, ey, waveMult);
             } else if (type === 'kleanthis' && typeof Kleanthis !== 'undefined') {
                 enemy = new Kleanthis(ex, ey, waveMult);
             } else if (type === 'kiloumpas' && typeof Kiloumpas !== 'undefined') {

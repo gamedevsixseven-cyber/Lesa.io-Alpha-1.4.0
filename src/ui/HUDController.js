@@ -185,6 +185,8 @@ class HUDController {
                 ctx.fillStyle = '#eb4d4b'; // Red for heavy Skatmir
             } else if (e.type === 'skarmogyftos') {
                 ctx.fillStyle = '#9b59b6'; // Purple for sneaky Skarmogyftos
+            } else if (e.type === 'psaltis') {
+                ctx.fillStyle = '#fdcb6e'; // Gold for the singing Psaltis
             } else {
                 ctx.fillStyle = '#00b894'; // Green for agile Casillas
             }

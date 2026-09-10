@@ -8,11 +8,11 @@ This file tracks the total lines of code and game architecture state across ever
 
 | Metric | Current Value |
 |---|---|
-| **Active Version** | **Alpha 1.3.9 (Kitsos & Billias Heroes, Mobile Fullscreen & Game Mode UI Optimization)** |
+| **Active Version** | **Alpha 1.4.0 (Story Expansion, Bosses Kiloumpas & Rouf, Co-op Playtest & New Heroes)** |
 | **Milestone Banner** | 🔥 **OVER 33,000 LINES OF MODULAR CODE!** |
 | **Total Source Files** | **133 files** |
 | **Max Lines Per File** | Strictly `< 600 lines` across all modules |
-| **Last Calculated** | September 9, 2026 |
+| **Last Calculated** | September 10, 2026 |
 
 ---
 
@@ -30,6 +30,33 @@ This file tracks the total lines of code and game architecture state across ever
 ---
 
 ## 📈 Version Progression Log
+
+### **Alpha 1.4.0 - Story Expansion & Boss Chapter 2 (Official Release)**
+- **Release Date:** September 10, 2026
+- **Total Source Files:** **133 files**
+- **Key Additions & Highlights:**
+  - 🚨 **Story Mode Chapter 2 & Wave 20 Final Boss: Rouf**:
+    - Complete 20-wave narrative campaign reaching the village center.
+    - 55-year-old neighborhood informant with comb-over, glasses, and knit cardigan vest.
+    - Intro cutscene reporting player to police on 90s brick phone; dial-tone soundwaves and phone smash melee.
+    - Ability summons Greek Police Officers (`Astynomos`); Phase 2 Enrage summons MAT Riot Police with protective riot shields.
+    - Narrative ending cutscene: Greek Police Car (`Peripoliko`) arrives with sirens to arrest Rouf for 47 nuisance calls.
+    - Gold-trimmed **Story Mode Cleared** victory screen with bonus +2,500 Coins & +100 Diamonds.
+  - 👴 **Wave 15 Mini-Boss: Kiloumpas & The Carbine**:
+    - Bare-chested angry villager with interactive 2.35:1 widescreen cutscene (*"Thes na parw thn karampina?" ➔ "Ferthn!"*).
+    - Heavy hunting carbine rifle volleys + brutal 2-handed close-quarters grab and throw launching players 500+ px.
+  - 🤝 **2-Player Co-op Multiplayer Playtest (P2P WebRTC)**:
+    - Zero-server-latency WebRTC DataChannels with instant 4-digit room code sharing.
+    - Play Story Mode or Endless Mode cooperatively with Last Stand ghost state, wave revives, and off-screen teammate radar.
+  - 🪖 **2 New Playable Heroes: Kitsos & Billias**:
+    - **Billias ("The Burger Slugger")**: Burger Toss weapon + Movement Hunger passive (+20 HP burger eating).
+    - **Kitsos ("The Electric Speedster")**: Highest base movement speed, Lightning Strike weapon + 10% 4-enemy Chain Lightning.
+  - 🎮 **Game Mode Selection Screen**: Dedicated comic modal for Story Mode, Endless Mode, and Dungeons teaser.
+  - 🎁 **Boss Equipment Drops & Polish**: Bosses drop glowing gear crates; Bubble Gun secondary shot; rename to Skatmir; mobile orientation lock.
+  - ✉️ **Developer Mailbox Update & Celebration Gift**:
+    - Comprehensive Alpha 1.4.0 patch notes in the Developer Inbox with claimable +2,000 Coins & +100 Gems.
+  - 📐 **Modular Architecture & Quality Assurance**:
+    - All 133 source files strictly `< 600 lines`.
 
 ### **Alpha 1.3.9 - Kitsos & Billias Heroes, Mobile Fullscreen & Game Mode UI Optimization**
 - **Release Date:** September 9, 2026

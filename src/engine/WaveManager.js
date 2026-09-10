@@ -118,11 +118,20 @@ class WaveManager {
             return;
         }
 
+        // Waves 11+ (after the first boss falls): Psaltis the Hype Man joins the squad
+        // 1 singer on waves 11-13, 2 on 14-17, 3 on 18+ — ramping kill-priority pressure
+        const psaltisCount = waveNum >= 11 ? (waveNum <= 13 ? 1 : (waveNum <= 17 ? 2 : 3)) : 0;
+
         for (let i = 0; i < enemyCount; i++) {
             const angle = (i / enemyCount) * Math.PI * 2 + (Math.random() * 0.4);
             const dist = 550 + Math.random() * 300;
             const x = player.x + Math.cos(angle) * dist;
             const y = player.y + Math.sin(angle) * dist;
+
+            if (waveNum >= 11 && i < psaltisCount && typeof Psaltis !== 'undefined') {
+                enemies.push(new Psaltis(x, y, waveMult));
+                continue;
+            }
 
             if (waveNum >= 6) {
                 // Wave 6+: 3 Enemies (Fatmir, Casillas, Skarmogyftos)

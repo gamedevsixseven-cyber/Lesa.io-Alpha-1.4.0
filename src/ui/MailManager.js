@@ -11,6 +11,7 @@ class MailManager {
         this.ui = uiController;
 
         this.bubbleMailClaimed = localStorage.getItem('lesaio_alpha_bubble_mail_claimed') === 'true';
+        this.mail14Claimed = localStorage.getItem('lesaio_alpha14_mail_claimed') === 'true';
         this.mail13Claimed = localStorage.getItem('lesaio_alpha13_mail_claimed') === 'true';
         this.mail12Claimed = localStorage.getItem('lesaio_alpha12_mail_claimed') === 'true';
         this.mail11Claimed = localStorage.getItem('lesaio_alpha11_mail_claimed') === 'true';
@@ -100,6 +101,23 @@ class MailManager {
                         unlockedWeapons: (window.GameState && window.GameState.player.unlockedWeapons) || ['pea', 'bubble']
                     });
                 }
+            });
+        }
+
+        // Alpha 1.4 Big Update Gift Claim (+2,000 Coins & +100 Gems)
+        const claim14Btn = document.getElementById('claim-alpha14-gift-btn');
+        if (claim14Btn) {
+            claim14Btn.addEventListener('click', () => {
+                if (this.mail14Claimed) return;
+                this.mail14Claimed = true;
+                localStorage.setItem('lesaio_alpha14_mail_claimed', 'true');
+
+                if (this.ui.setCoins) this.ui.setCoins(this.ui.coins + 2000, true);
+                if (this.ui.setGems) this.ui.setGems(this.ui.gems + 100, true);
+
+                this.updateMailUI();
+                window.soundEngine.playPickup('star');
+                if (window.cloudSave) window.cloudSave.saveToCloud({ coins: this.ui.coins, gems: this.ui.gems });
             });
         }
 
@@ -335,6 +353,7 @@ class MailManager {
     isCardClaimed(card) {
         if (!card) return true;
         if (card.querySelector('#claim-alpha-bubble-btn')) return this.bubbleMailClaimed;
+        if (card.querySelector('#claim-alpha14-gift-btn')) return this.mail14Claimed;
         if (card.querySelector('#claim-alpha13-gift-btn')) return this.mail13Claimed;
         if (card.querySelector('#claim-alpha12-gift-btn')) return this.mail12Claimed;
         if (card.querySelector('#claim-alpha11-gift-btn')) return this.mail11Claimed;
@@ -387,6 +406,19 @@ class MailManager {
                 claimBubbleBtn.textContent = 'CLAIM WEAPON 🎁';
                 claimBubbleBtn.className = 'comic-btn comic-btn-sm comic-btn-primary';
                 claimBubbleBtn.disabled = false;
+            }
+        }
+
+        const claim14Btn = document.getElementById('claim-alpha14-gift-btn');
+        if (claim14Btn) {
+            if (this.mail14Claimed) {
+                claim14Btn.textContent = 'CLAIMED ✅';
+                claim14Btn.className = 'comic-btn comic-btn-sm quest-btn-claimed';
+                claim14Btn.disabled = true;
+            } else {
+                claim14Btn.textContent = 'CLAIM GIFT 🎁';
+                claim14Btn.className = 'comic-btn comic-btn-sm comic-btn-primary';
+                claim14Btn.disabled = false;
             }
         }
 
@@ -444,7 +476,7 @@ class MailManager {
 
         if (this.mailBadge) {
             const hasUnclaimedCustom = this.customMails.some(m => !m.claimed && (m.gems > 0 || m.coins > 0));
-            const hasUnclaimed = !this.bubbleMailClaimed || !this.mail13Claimed || !this.mail12Claimed || !this.mail11Claimed || !this.mail10Claimed || hasUnclaimedCustom;
+            const hasUnclaimed = !this.bubbleMailClaimed || !this.mail14Claimed || !this.mail13Claimed || !this.mail12Claimed || !this.mail11Claimed || !this.mail10Claimed || hasUnclaimedCustom;
             if (hasUnclaimed) {
                 this.mailBadge.classList.remove('hidden');
             } else {

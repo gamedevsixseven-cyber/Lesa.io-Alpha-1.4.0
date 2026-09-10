@@ -411,15 +411,33 @@ class Rouf extends EnemyBase {
 
         if (this.callTimer <= 0) {
             this.isCalling = false;
+            // Map caps: max 6 base officers, max 5 MAT riot officers
+            let baseAlive = 0;
+            let matAlive = 0;
+            for (const e of enemies) {
+                if (!e || e.dead) continue;
+                if (e.type === 'astynomos') baseAlive++;
+                else if (e.type === 'mat_officer') matAlive++;
+            }
+            let baseSlots = Math.max(0, 6 - baseAlive);
+            let matSlots = Math.max(0, 5 - matAlive);
+
             // Dispatch 2-3 Police Officers
             const count = this.isPhase2 ? 3 : 2;
             for (let i = 0; i < count; i++) {
+                const isMAT = this.isPhase2 && (i === 0 || Math.random() < 0.6);
+                if (isMAT) {
+                    if (matSlots <= 0) continue;
+                    matSlots--;
+                } else {
+                    if (baseSlots <= 0) continue;
+                    baseSlots--;
+                }
                 const angle = Math.random() * Math.PI * 2;
                 const spawnDist = 380 + Math.random() * 100;
                 const sx = this.x + Math.cos(angle) * spawnDist;
                 const sy = this.y + Math.sin(angle) * spawnDist;
 
-                const isMAT = this.isPhase2 && (i === 0 || Math.random() < 0.6);
                 if (typeof Astynomos !== 'undefined') {
                     enemies.push(new Astynomos(sx, sy, this.waveMultiplier, isMAT));
                 }

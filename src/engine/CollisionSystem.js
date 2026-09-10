@@ -341,6 +341,20 @@ class CollisionSystem {
             if (Math.random() < 0.35) {
                 game.drops.push(new Drop(enemy.x, enemy.y, 'star', 1));
             }
+        } else if (enemy.type === 'psaltis') {
+            player.score += 200;
+            if (game.ui && typeof game.ui.addKillfeed === 'function') {
+                game.ui.addKillfeed(`${heroName} silenced Psaltis! 🎵`);
+            }
+            for (let i = 0; i < 2; i++) {
+                game.drops.push(new Drop(enemy.x + (Math.random() * 30 - 15), enemy.y + (Math.random() * 30 - 15), 'xp', 25));
+            }
+            if (Math.random() < 0.4) {
+                game.drops.push(new Drop(enemy.x, enemy.y, 'heart', 35));
+            }
+            if (Math.random() < 0.3) {
+                game.drops.push(new Drop(enemy.x, enemy.y, 'star', 1));
+            }
         } else if (enemy.type === 'kleanthis') {
             player.kleanthisKills = (player.kleanthisKills || 0) + 1;
             player.score += 300;

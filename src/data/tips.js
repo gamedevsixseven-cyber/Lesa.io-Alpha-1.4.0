@@ -43,6 +43,11 @@ const RAW_TIPS = [
     'enemy_skarmo_smoke_teleport|enemy|*Skarmogyftos* can vanish in a POOF of smoke and flank you—turn around quickly when you hear him teleport!',
     'enemy_skarmo_curved_volley|enemy|Watch for *Skarmogyftos\' 3-way curved smoke volley*! Step between the expanding arcs to slip through unscathed!',
 
+    // 5B. PSALTIS (THE HYPE MAN)
+    'enemy_psaltis_anthem|enemy|*Psaltis* sings his anthem to hype up nearby enemies with bonus speed and damage—*silence him first*!',
+    'enemy_psaltis_water_counter|enemy|Drench *Psaltis* with the *Nerobalonaki*! One water balloon and his anthem dissolves into a coughing fit!',
+    'enemy_psaltis_high_note|enemy|Never corner *Psaltis*—his high-note blast knocks you back! Flank him from mid range instead!',
+
     // 6. KLEANTHIS (THE DAPPER CONQUEROR)
     'enemy_kleanthis_top_hat|enemy|*Kleanthis* enters the fray with high swagger and devastating cane strikes—keep your distance!',
     'enemy_kleanthis_defeat_bounty|enemy|Defeating *Kleanthis* awards a massive +300 score bounty and rare star drops!',

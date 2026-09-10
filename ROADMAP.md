@@ -19,17 +19,19 @@
                                        │
                                        ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│ ⚔️ PHASE 2 — ALPHA 1.4: Story Expansion & Boss Chapter 2                    │
+│ ⚔️ PHASE 2 — ALPHA 1.4 (COMPLETED ✅): Story Expansion & Boss Chapter 2      │
 │ ├─ Story Mode Waves 11–20 with escalating neighborhood threats              │
 │ ├─ Mid-wave Mini-Boss: Kiloumpas (Wave 15) with Karampina cutscene          │
-│ ├─ Story Boss Chapter 2: Rouf (Wave 20)                                     │
+│ ├─ Story Boss Chapter 2: Rouf (Wave 20) with authorities ending cutscene    │
 │ ├─ In-game equipment drops from boss crates                                 │
-│ └─ Dynamic environmental arena obstacles (water wells, cafe tables)         │
+│ ├─ New Playable Heroes: Kitsos & Billias                                    │
+│ ├─ Dedicated Game Mode Selection (Story, Endless, Dungeons preview)         │
+│ └─ 2-Player Co-op Playtest Mode (P2P WebRTC)                                │
 └──────────────────────────────────────┬──────────────────────────────────────┘
                                        │
                                        ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│ 💎 PHASE 3 — ALPHA 1.5: Epic & Legendary Gear, Fusion & Hero Evolution      │
+│ 💎 PHASE 3 — ALPHA 1.5 (NEXT): Epic & Legendary Gear, Fusion & Evolution    │
 │ ├─ Epic (🟣) gear with Signature Passives & Legendary (🟠) S-Tier relics    │
 │ ├─ 3-to-1 Duplicate Merging / Fusion in the Armory                          │
 │ ├─ Materials & Keys Backpack Tab (Stackable keys, crafting shards & stones) │
@@ -37,6 +39,7 @@
 │ │   ├─ Evolves Hero stats permanently                                       │
 │ │   └─ Unlocks Hero Signature Special Ability ("Q" on PC / Mobile button)   │
 │ │       └─ Psanas: "Rage" (2x HP, 2x DMG, 2x SPD, Boss Stun Immunity, 6.7s) │
+│ ├─ Dynamic environmental arena obstacles (water wells, cafe tables, hazards)│
 │ └─ Thematic Set Synergies (Tourist Set, Yaya Set, Psistis Set)              │
 └──────────────────────────────────────┬──────────────────────────────────────┘
                                        │
@@ -120,7 +123,7 @@
     * **Ability 1 ("100! Send the Patrol!")**: Channels emergency calls with police sirens, summoning squads of Greek Police Officers (`Astynomos`).
     * **Phase 2 Enrage (<= 50% HP)**: Screams *"STEILTE TA MAT! KINTOYNEVW!"*, summons armored MAT Riot Police with shields (50% frontal block), and unleashes 8-way radial soundwave bursts with overclocked speed.
 * **In-Game Equipment Drops**: Bosses drop glowing equipment crates with randomized gear rolls.
-* **Environmental Hazards**: Exploding olive oil jugs, slippery spilled frappé puddles, and destructible cafe tables.
+* **Environmental Hazards & Dynamic Obstacles**: Moved to Alpha 1.5.0 (exploding olive oil jugs, slippery spilled frappé puddles, and destructible cafe tables).
 
 ---
 
