@@ -9,6 +9,9 @@
     border-radius: 32px !important;
     box-shadow: 0 0 35px rgba(241, 196, 15, 0.35), 0 15px 40px rgba(0, 0, 0, 0.9) !important;
     max-width: 550px !important;
+    max-height: 92vh !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
     padding: 26px 28px !important;
     color: #ffffff;
     text-align: center;
@@ -216,47 +219,250 @@
     box-shadow: 0 2px 0 #b7791f !important;
 }
 
-/* Mobile Optimizations */
-@media (max-width: 600px) {
+/* ===================================================
+   MOBILE OPTIMIZATIONS (Portrait & Landscape Mobile)
+   =================================================== */
+@media screen and (max-height: 560px), screen and (max-width: 768px), screen and (pointer: coarse) and (max-height: 720px) {
     .tribute-modal-panel {
-        padding: 18px 16px !important;
-        border-radius: 24px !important;
-        max-width: 94% !important;
+        max-width: min(96vw, 540px) !important;
+        max-height: 95vh !important;
+        padding: 8px 14px !important;
+        border-radius: 16px !important;
+        border-width: 2.5px !important;
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch;
+        display: flex !important;
+        flex-direction: column !important;
+        justify-content: space-between !important;
+        box-sizing: border-box !important;
     }
+
+    .tribute-header-banner {
+        margin-bottom: 4px !important;
+        flex-direction: row !important;
+        justify-content: center !important;
+        align-items: center !important;
+        gap: 6px !important;
+        flex-wrap: wrap !important;
+    }
+
+    .tribute-dove-badge {
+        font-size: 1.25rem !important;
+        margin-bottom: 0 !important;
+        line-height: 1 !important;
+    }
+
     .tribute-title {
-        font-size: 1.45rem;
+        font-size: 1.08rem !important;
+        letter-spacing: 0.6px !important;
+        display: inline !important;
     }
+
+    .tribute-years {
+        font-size: 0.72rem !important;
+        margin-top: 0 !important;
+        letter-spacing: 1px !important;
+        display: inline-block !important;
+        margin-left: 4px !important;
+    }
+
+    /* Message / Quote Box: scaled and compacted so the message is readable & fits screen */
+    .tribute-quote-box {
+        padding: 5px 10px !important;
+        margin-bottom: 5px !important;
+        border-radius: 10px !important;
+        border-width: 1px !important;
+    }
+
     .tribute-intro {
-        font-size: 1.02rem;
+        font-size: 0.8rem !important;
+        margin: 0 0 2px 0 !important;
     }
+
     .tribute-body {
-        font-size: 0.88rem;
-        line-height: 1.45;
+        font-size: 0.71rem !important;
+        line-height: 1.25 !important;
+        margin: 0 0 2px 0 !important;
     }
+
     .tribute-closing {
-        font-size: 0.95rem;
+        font-size: 0.74rem !important;
+        margin: 2px 0 0 0 !important;
     }
+
+    /* Memorial Reward Box: streamlined horizontal row */
+    .tribute-reward-box {
+        padding: 4px 8px !important;
+        margin-bottom: 4px !important;
+        border-radius: 10px !important;
+        border-width: 1.5px !important;
+    }
+
+    .tribute-reward-header {
+        font-size: 0.7rem !important;
+        margin-bottom: 3px !important;
+        letter-spacing: 0.3px !important;
+    }
+
     .tribute-reward-items {
-        flex-direction: column;
-        gap: 8px;
+        display: flex !important;
+        flex-direction: row !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        gap: 6px !important;
     }
+
     .tribute-reward-card {
-        width: 100%;
-        box-sizing: border-box;
+        padding: 3px 6px !important;
+        gap: 6px !important;
+        border-radius: 8px !important;
+        border-width: 1.5px !important;
+        flex: 1 !important;
+        box-sizing: border-box !important;
     }
+
+    .tribute-item-icon-wrap {
+        width: 30px !important;
+        height: 30px !important;
+        border-radius: 6px !important;
+    }
+
+    .tribute-item-icon-img {
+        width: 26px !important;
+        height: 26px !important;
+    }
+
+    .tribute-item-name {
+        font-size: 0.72rem !important;
+        line-height: 1.15 !important;
+    }
+
+    .tribute-item-tag {
+        font-size: 0.58rem !important;
+        margin-top: 1px !important;
+    }
+
     .tribute-reward-currencies {
-        flex-direction: row;
-        width: 100%;
-        justify-content: center;
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 3px !important;
+        flex-shrink: 0 !important;
     }
+
     .tribute-curr-pill {
-        flex: 1;
-        text-align: center;
-        font-size: 0.8rem;
+        padding: 2px 8px !important;
+        font-size: 0.68rem !important;
+        border-radius: 8px !important;
+        border-width: 1.5px !important;
+        text-align: center !important;
     }
+
+    /* Claim Button: 100% visible, centered, and easily reachable */
+    .tribute-modal-actions,
+    .tribute-modal-panel .modal-actions {
+        margin-top: 4px !important;
+        margin-bottom: 0 !important;
+        display: flex !important;
+        justify-content: center !important;
+        flex-shrink: 0 !important;
+    }
+
     .tribute-claim-btn {
-        width: 100%;
+        width: min(100%, 290px) !important;
+        height: 34px !important;
+        font-size: 0.88rem !important;
+        padding: 4px 16px !important;
+        border-width: 2.5px !important;
+        border-radius: 12px !important;
+        box-shadow: 0 3px 0 #b7791f, 0 4px 10px rgba(0, 0, 0, 0.5) !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        gap: 6px !important;
+    }
+}
+
+/* Ultra-compact landscape phones (screen height <= 420px) */
+@media screen and (max-height: 420px) {
+    .tribute-modal-panel {
+        padding: 5px 10px !important;
+        max-height: 96vh !important;
+    }
+
+    .tribute-header-banner {
+        margin-bottom: 2px !important;
+        gap: 4px !important;
+    }
+
+    .tribute-dove-badge {
         font-size: 1.1rem !important;
-        padding: 10px 16px !important;
+    }
+
+    .tribute-title {
+        font-size: 0.96rem !important;
+    }
+
+    .tribute-years {
+        font-size: 0.68rem !important;
+    }
+
+    .tribute-quote-box {
+        padding: 3px 8px !important;
+        margin-bottom: 3px !important;
+    }
+
+    .tribute-intro {
+        font-size: 0.74rem !important;
+        margin-bottom: 1px !important;
+    }
+
+    .tribute-body {
+        font-size: 0.66rem !important;
+        line-height: 1.2 !important;
+        margin-bottom: 1px !important;
+    }
+
+    .tribute-closing {
+        font-size: 0.68rem !important;
+        margin-top: 1px !important;
+    }
+
+    .tribute-reward-box {
+        padding: 2px 6px !important;
+        margin-bottom: 3px !important;
+    }
+
+    .tribute-reward-header {
+        font-size: 0.64rem !important;
+        margin-bottom: 2px !important;
+    }
+
+    .tribute-item-icon-wrap {
+        width: 26px !important;
+        height: 26px !important;
+    }
+
+    .tribute-item-icon-img {
+        width: 22px !important;
+        height: 22px !important;
+    }
+
+    .tribute-item-name {
+        font-size: 0.68rem !important;
+    }
+
+    .tribute-item-tag {
+        font-size: 0.55rem !important;
+    }
+
+    .tribute-curr-pill {
+        padding: 1px 6px !important;
+        font-size: 0.62rem !important;
+    }
+
+    .tribute-claim-btn {
+        height: 28px !important;
+        font-size: 0.8rem !important;
+        padding: 2px 12px !important;
     }
 }
