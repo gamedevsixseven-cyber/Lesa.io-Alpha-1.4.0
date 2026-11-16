@@ -14,8 +14,10 @@ const DEFAULT_QUESTS = [
         rewardCoins: 150,
         rewardGems: 8,
         rewardBP: 100,
+        rewardMaterials: { armory_shards: 1 },
         claimed: false,
-        icon: '⚔️'
+        icon: '⚔️',
+        iconImg: 'assets/ui-icons/swords.svg'
     },
     {
         id: 'bonk_fatmir',
@@ -26,8 +28,10 @@ const DEFAULT_QUESTS = [
         rewardCoins: 220,
         rewardGems: 10,
         rewardBP: 120,
+        rewardMaterials: { armory_shards: 2 },
         claimed: false,
-        icon: '🥊'
+        icon: '🥊',
+        iconImg: 'assets/ui-icons/boxing_glove.svg'
     },
     {
         id: 'outplay_casillas',
@@ -38,8 +42,10 @@ const DEFAULT_QUESTS = [
         rewardCoins: 260,
         rewardGems: 12,
         rewardBP: 140,
+        rewardMaterials: { mati_crystal: 1 },
         claimed: false,
-        icon: '🎯'
+        icon: '🎯',
+        iconImg: 'assets/ui-icons/target.svg'
     },
     {
         id: 'reach_wave',
@@ -50,8 +56,10 @@ const DEFAULT_QUESTS = [
         rewardCoins: 350,
         rewardGems: 15,
         rewardBP: 180,
+        rewardMaterials: { armory_shards: 2, mati_crystal: 1 },
         claimed: false,
-        icon: '🌊'
+        icon: '🌊',
+        iconImg: 'assets/ui-icons/wave.svg'
     },
     {
         id: 'collect_xp',
@@ -62,8 +70,10 @@ const DEFAULT_QUESTS = [
         rewardCoins: 100,
         rewardGems: 5,
         rewardBP: 80,
+        rewardMaterials: { armory_shards: 1 },
         claimed: false,
-        icon: '🍪'
+        icon: '🍪',
+        iconImg: 'assets/ui-icons/cookie.svg'
     }
 ];
 

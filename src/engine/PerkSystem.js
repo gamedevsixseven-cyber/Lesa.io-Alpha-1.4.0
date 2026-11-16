@@ -15,6 +15,9 @@ class PerkSystem {
         this.dynamites = []; // Last Laugh live mini-dynamites: { x, y, timer, maxTimer, radius, damage }
         this.secondWindCooldown = 0; // 30s cooldown (1800 frames)
         this.flameSpawnTimer = 0;
+        this.epic = (typeof EpicPerkEffects !== 'undefined') ? new EpicPerkEffects() : null;
+        this.legendary = (typeof LegendaryPerkEffects !== 'undefined') ? new LegendaryPerkEffects() : null;
+        this.mythic = (typeof MythicPerkEffects !== 'undefined') ? new MythicPerkEffects() : null;
     }
 
     /**
@@ -26,7 +29,58 @@ class PerkSystem {
         this.dynamites = [];
         this.secondWindCooldown = 0;
         this.flameSpawnTimer = 0;
+        if (this.epic) this.epic.reset();
+        else if (typeof EpicPerkEffects !== 'undefined') this.epic = new EpicPerkEffects();
+        if (this.legendary) this.legendary.reset();
+        else if (typeof LegendaryPerkEffects !== 'undefined') this.legendary = new LegendaryPerkEffects();
+        if (this.mythic) this.mythic.reset();
+        else if (typeof MythicPerkEffects !== 'undefined') this.mythic = new MythicPerkEffects();
     }
+
+    onDash(player, effects) {
+        if (this.epic) this.epic.onDash(player, effects);
+        if (this.legendary) this.legendary.onDash(player, effects, typeof window !== 'undefined' ? window.gameInstance : null);
+        if (this.mythic) this.mythic.onDash(player, effects);
+    }
+    onSkillActivated(player, effects, game) {
+        if (this.mythic) this.mythic.onSkillActivated(player, effects, game);
+    }
+    applyPlayerStatModifiers(player, refreshBaseline = false) {
+        if (this.mythic) this.mythic.applyPlayerStatModifiers(player, refreshBaseline);
+    }
+    getHealMultiplier(player) { return this.mythic ? this.mythic.getHealMultiplier(player) : 1.0; }
+    onWeaponFire(player) { return this.legendary ? this.legendary.onWeaponFire(player) : null; }
+    getTargetOverride(enemy, fallback) { return this.epic ? this.epic.getTargetOverride(enemy, fallback) : fallback; }
+    getFireRateMultiplier(player) {
+        return (this.epic ? this.epic.getFireRateMultiplier(player) : 1.0)
+            * (this.legendary ? this.legendary.getFireRateMultiplier(player) : 1.0)
+            * (this.mythic ? this.mythic.getFireRateMultiplier(player) : 1.0);
+    }
+    getCritDamageBonus(player) { return this.legendary ? this.legendary.getCritDamageBonus(player) : 0; }
+    getDashSpeedMultiplier() { return this.legendary ? this.legendary.getDashSpeedMultiplier() : 1.0; }
+    getMagnetMultiplier() {
+        return (this.epic ? this.epic.getMagnetMultiplier() : 1.0) * (this.legendary ? this.legendary.getMagnetMultiplier() : 1.0);
+    }
+    getCoinMultiplier() {
+        return (this.epic ? this.epic.getCoinMultiplier() : 1.0) * (this.mythic ? this.mythic.getCoinMultiplier() : 1.0);
+    }
+    getXpMultiplier() {
+        return (this.epic ? this.epic.getXpMultiplier() : 1.0) * (this.mythic ? this.mythic.getXpMultiplier() : 1.0);
+    }
+    getMaterialDropLuckBonus() { return this.legendary ? this.legendary.getMaterialDropLuckBonus() : 0; }
+    getFullHpHeartCoinValue(player) { return this.legendary ? this.legendary.getFullHpHeartCoinValue(player) : 0; }
+    interceptPlayerDamage(player, amount, effects, game) {
+        let res = this.epic ? this.epic.interceptPlayerDamage(player, amount, effects, game) : { blocked: false, remainingDamage: amount };
+        if (res && res.blocked) return res;
+        if (this.legendary) res = this.legendary.interceptPlayerDamage(player, res.remainingDamage, effects, game);
+        return res;
+    }
+    onBulletHit(bullet, targetEnemy, damageDealt, enemies, effects, game) {
+        if (this.epic) this.epic.onBulletHit(bullet, targetEnemy, damageDealt, enemies, effects, game);
+        if (this.legendary) this.legendary.onBulletHit(bullet, targetEnemy, damageDealt, enemies, effects, game);
+        if (this.mythic) this.mythic.onBulletHit(bullet, targetEnemy, damageDealt, enemies, effects, game);
+    }
+    onCrateDestroyed(obs, game) { if (this.epic) this.epic.onCrateDestroyed(obs, game); }
 
     /**
      * Check if player has a specific perk equipped in their active 3 slots
@@ -35,6 +89,20 @@ class PerkSystem {
         if (typeof window === 'undefined' || !window.GameState || !window.GameState.player) return false;
         const equipped = window.GameState.player.equippedPerks;
         return Array.isArray(equipped) && equipped.includes(perkId);
+    }
+
+    /**
+     * Resolve active rank stats for a perk (defaults safely to Rank 1 stats)
+     */
+    static getRankStats(perkId) {
+        if (typeof window !== 'undefined' && window.GameState && typeof window.GameState.getPerkRankStats === 'function') {
+            const st = window.GameState.getPerkRankStats(perkId);
+            if (st) return st;
+        }
+        if (typeof PERKS_DATA !== 'undefined' && PERKS_DATA[perkId] && Array.isArray(PERKS_DATA[perkId].ranks) && PERKS_DATA[perkId].ranks[0]) {
+            return PERKS_DATA[perkId].ranks[0].stats || {};
+        }
+        return {};
     }
 
     /**
@@ -61,13 +129,16 @@ class PerkSystem {
             this.flameSpawnTimer += dt;
             if (this.flameSpawnTimer >= 2.0) {
                 this.flameSpawnTimer = 0;
+                const hfStats = PerkSystem.getRankStats('hot_foot');
+                const lifeFrames = Math.round((hfStats.durationSec || 2.0) * 60);
                 this.flameTrails.push({
                     x: player.x,
                     y: player.y,
-                    radius: 30,
-                    life: 120, // 2 seconds (120 frames at 60fps)
-                    maxLife: 120,
-                    dps: 35 / 60 // ~35 dmg per second
+                    radius: hfStats.radius || 30,
+                    life: lifeFrames,
+                    maxLife: lifeFrames,
+                    dps: (hfStats.dps || 35) / 60,
+                    slowFactor: hfStats.slowFactor || 0.70
                 });
                 if (game.effects && Math.random() < 0.5) {
                     game.effects.addSparks(player.x, player.y, '#ff4757', 3);
@@ -98,9 +169,9 @@ class PerkSystem {
                     const totalRad = flame.radius + e.radius;
 
                     if (distSq < totalRad * totalRad) {
-                        // Apply 30% speed slow (0.70x speed) for 20 frames
+                        // Apply flame slow factor for 20 frames
                         e.slowTimer = Math.max(e.slowTimer || 0, 20);
-                        e.slowFactor = 0.70;
+                        e.slowFactor = flame.slowFactor || 0.70;
 
                         // Apply burn tick damage (playSound = false to prevent repetitive hitmarker clicks)
                         e.takeDamage(flame.dps * dt, null, false, false);
@@ -132,9 +203,10 @@ class PerkSystem {
                         e.takeDamage(cp.damage, game.effects, true);
 
                         // Push enemy away strongly (knockback)
+                        const kb = cp.knockback || 36;
                         const pushAngle = Math.atan2(cp.vy, cp.vx);
-                        e.x += Math.cos(pushAngle) * 36;
-                        e.y += Math.sin(pushAngle) * 36;
+                        e.x += Math.cos(pushAngle) * kb;
+                        e.y += Math.sin(pushAngle) * kb;
 
                         if (game.effects) {
                             game.effects.addSparks(e.x, e.y, '#f39c12', 4);
@@ -202,6 +274,10 @@ class PerkSystem {
                 }
             }
         }
+
+        if (this.epic) this.epic.update(dt, game);
+        if (this.legendary) this.legendary.update(dt, game);
+        if (this.mythic) this.mythic.update(dt, game);
     }
 
     /**
@@ -212,11 +288,13 @@ class PerkSystem {
 
         // --- Perk 2: Second Wind ---
         if (PerkSystem.hasPerk('second_wind')) {
-            const hpThreshold = player.maxHp * 0.25;
+            const swStats = PerkSystem.getRankStats('second_wind');
+            const hpThreshold = player.maxHp * (swStats.hpThreshold || 0.25);
             if (player.hp <= hpThreshold && this.secondWindCooldown <= 0) {
-                this.secondWindCooldown = 1800; // 30s cooldown
+                this.secondWindCooldown = Math.round((swStats.cooldownSec || 30) * 60);
                 player.dashCooldown = 0; // Instant dash reset!
-                player.secondWindSpeedTimer = 180; // 3s speed boost (+25%)
+                player.secondWindSpeedTimer = Math.round((swStats.durationSec || 3.0) * 60);
+                player.secondWindSpeedMult = swStats.speedMult || 1.25;
 
                 if (window.soundEngine && typeof window.soundEngine.playPickup === 'function') {
                     window.soundEngine.playPickup('star');
@@ -231,7 +309,8 @@ class PerkSystem {
 
         // --- Perk 3: Counter-Blast ---
         if (PerkSystem.hasPerk('counter_blast')) {
-            const projectileCount = 8;
+            const cbStats = PerkSystem.getRankStats('counter_blast');
+            const projectileCount = cbStats.projectileCount || 8;
             const speed = 11;
 
             for (let i = 0; i < projectileCount; i++) {
@@ -242,7 +321,8 @@ class PerkSystem {
                     vx: Math.cos(angle) * speed,
                     vy: Math.sin(angle) * speed,
                     radius: 12,
-                    damage: 25,
+                    damage: cbStats.damage || 25,
+                    knockback: cbStats.knockback || 36,
                     life: 22,
                     hitEnemies: new Set()
                 });
@@ -256,6 +336,9 @@ class PerkSystem {
                 window.soundEngine.playHitmarker(true);
             }
         }
+
+        if (this.epic) this.epic.onPlayerDamage(player, amount, effects, game);
+        if (this.mythic) this.mythic.onPlayerDamage(player, amount, effects, camera, game);
     }
 
     /**
@@ -263,29 +346,44 @@ class PerkSystem {
      */
     getDamageMultiplier(targetEnemy) {
         if (!targetEnemy || targetEnemy.dead) return 1.0;
+        let mult = 1.0;
 
         if (PerkSystem.hasPerk('headhunter')) {
+            const hhStats = PerkSystem.getRankStats('headhunter');
             const hpRatio = (targetEnemy.hp || 0) / (targetEnemy.maxHp || 100);
-            if (hpRatio < 0.35) {
-                return 1.25; // +25% damage against enemies below 35% health
+            if (hpRatio < (hhStats.hpThreshold || 0.35)) {
+                mult *= (hhStats.damageMult || 1.25);
             }
         }
-
-        return 1.0;
+        if (this.legendary) mult *= this.legendary.getDamageMultiplier(targetEnemy);
+        if (this.mythic) mult *= this.mythic.getDamageMultiplier(targetEnemy);
+        return mult;
     }
 
     /**
      * Triggered on enemy defeat (handles Golden Touch gold pouch drops)
      */
     onEnemyKilled(enemy, game) {
-        if (!enemy || !game || !game.drops) return;
+        if (!enemy) return;
+
+        // Track story/olympus boss defeats cleanly for combat feat unlocks
+        if (!enemy._featRecorded && enemy.type && typeof PerkProgression !== 'undefined' && PerkProgression.BOSS_FEAT_LABELS[enemy.type]) {
+            enemy._featRecorded = true;
+            if (typeof window !== 'undefined' && window.GameState && typeof window.GameState.recordBossDefeat === 'function') {
+                window.GameState.recordBossDefeat(enemy.type);
+            }
+        }
+
+        if (!game || !game.drops) return;
 
         if (PerkSystem.hasPerk('golden_touch')) {
             const isBrute = enemy.type === 'fatmir' || enemy.type === 'casillas' || enemy.type === 'skarmogyftos' || enemy.type === 'kleanthis';
             if (isBrute) {
-                // 60% chance to drop a physical gold coin pouch (+15-25 coins)
-                if (Math.random() < 0.60) {
-                    const pouchCoins = Math.floor(Math.random() * 11) + 15; // 15 to 25 coins
+                const gtStats = PerkSystem.getRankStats('golden_touch');
+                if (Math.random() < (gtStats.dropChance || 0.60)) {
+                    const minC = gtStats.minCoins || 15;
+                    const maxC = gtStats.maxCoins || 25;
+                    const pouchCoins = Math.floor(Math.random() * (maxC - minC + 1)) + minC;
                     if (typeof Drop !== 'undefined') {
                         game.drops.push(new Drop(enemy.x, enemy.y, 'coin_pouch', pouchCoins));
                     }
@@ -293,22 +391,27 @@ class PerkSystem {
             }
         }
 
-        // Perk 6: Last Laugh (20% chance on enemy defeat to drop live mini-dynamite)
+        // Perk 6: Last Laugh (chance on enemy defeat to drop live mini-dynamite)
         if (PerkSystem.hasPerk('last_laugh')) {
-            if (Math.random() < 0.20) {
+            const llStats = PerkSystem.getRankStats('last_laugh');
+            if (Math.random() < (llStats.procChance || 0.20)) {
                 this.dynamites.push({
                     x: enemy.x,
                     y: enemy.y,
                     timer: 60, // 1 second (60 frames)
                     maxTimer: 60,
-                    radius: 100,
-                    damage: 40
+                    radius: llStats.radius || 100,
+                    damage: llStats.damage || 40
                 });
                 if (game.effects) {
                     game.effects.addSparks(enemy.x, enemy.y - 10, '#e74c3c', 4);
                 }
             }
         }
+
+        if (this.epic) this.epic.onEnemyKilled(enemy, game);
+        if (this.legendary) this.legendary.onEnemyKilled(enemy, game);
+        if (this.mythic) this.mythic.onEnemyKilled(enemy, game);
     }
 
     /**
@@ -318,31 +421,38 @@ class PerkSystem {
         if (!ctx) return;
 
         // 1. Draw Hot Foot flame pools
-        for (let i = 0; i < this.flameTrails.length; i++) {
-            const f = this.flameTrails[i];
-            const alpha = Math.min(1.0, f.life / (f.maxLife * 0.4));
+        if (this.flameTrails.length > 0) {
+            let flameDisc = PerkSystem._flameDisc;
+            if (!flameDisc) {
+                flameDisc = PerkSystem._flameDisc = document.createElement('canvas');
+                flameDisc.width = 128;
+                flameDisc.height = 128;
+                const fctx = flameDisc.getContext('2d');
+                const g = fctx.createRadialGradient(64, 64, 4, 64, 64, 64);
+                g.addColorStop(0, 'rgba(255, 230, 0, 0.85)');
+                g.addColorStop(0.45, 'rgba(255, 71, 87, 0.7)');
+                g.addColorStop(1, 'rgba(235, 77, 75, 0)');
+                fctx.fillStyle = g;
+                fctx.beginPath();
+                fctx.arc(64, 64, 64, 0, Math.PI * 2);
+                fctx.fill();
+            }
+            const prevAlpha = ctx.globalAlpha;
+            for (let i = 0; i < this.flameTrails.length; i++) {
+                const f = this.flameTrails[i];
+                const alpha = Math.min(1.0, f.life / (f.maxLife * 0.4));
+                ctx.globalAlpha = prevAlpha * alpha;
 
-            ctx.save();
-            ctx.globalAlpha = alpha;
+                // Outer burning glow (cached radial disc)
+                ctx.drawImage(flameDisc, f.x - f.radius, f.y - f.radius, f.radius * 2, f.radius * 2);
 
-            // Outer burning glow
-            const grad = ctx.createRadialGradient(f.x, f.y, 2, f.x, f.y, f.radius);
-            grad.addColorStop(0, 'rgba(255, 230, 0, 0.85)');
-            grad.addColorStop(0.45, 'rgba(255, 71, 87, 0.7)');
-            grad.addColorStop(1, 'rgba(235, 77, 75, 0)');
-
-            ctx.fillStyle = grad;
-            ctx.beginPath();
-            ctx.arc(f.x, f.y, f.radius, 0, Math.PI * 2);
-            ctx.fill();
-
-            // Inner flame tongue embers
-            ctx.fillStyle = '#fffa65';
-            ctx.beginPath();
-            ctx.arc(f.x + (Math.sin(f.life * 0.2) * 6), f.y - 4, f.radius * 0.35, 0, Math.PI * 2);
-            ctx.fill();
-
-            ctx.restore();
+                // Inner flame tongue embers
+                ctx.fillStyle = '#fffa65';
+                ctx.beginPath();
+                ctx.arc(f.x + (Math.sin(f.life * 0.2) * 6), f.y - 4, f.radius * 0.35, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.globalAlpha = prevAlpha;
         }
 
         // 2. Draw Counter-Blast projectiles
@@ -408,6 +518,16 @@ class PerkSystem {
             ctx.fill();
 
             ctx.restore();
+        }
+
+        if (this.epic) {
+            this.epic.draw(ctx, typeof window !== 'undefined' ? window.gameInstance : null);
+        }
+        if (this.legendary) {
+            this.legendary.draw(ctx, typeof window !== 'undefined' ? window.gameInstance : null);
+        }
+        if (this.mythic) {
+            this.mythic.draw(ctx, typeof window !== 'undefined' ? window.gameInstance : null);
         }
     }
 }

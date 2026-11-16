@@ -8,28 +8,82 @@ This file tracks the total lines of code and game architecture state across ever
 
 | Metric | Current Value |
 |---|---|
-| **Active Version** | **Alpha 1.4.0 (Story Expansion, Bosses Kiloumpas & Rouf, Co-op Playtest & New Heroes)** |
-| **Milestone Banner** | 🔥 **OVER 33,000 LINES OF MODULAR CODE!** |
-| **Total Source Files** | **133 files** |
-| **Max Lines Per File** | Strictly `< 600 lines` across all modules |
-| **Last Calculated** | September 10, 2026 |
+| **Active Version** | **Alpha 1.5.15 (Mount Olympus Ascent, Endgame Gear, Friends/Cloud Sync, Boss Weapons & Psanas Rework)** |
+| **Milestone Banner** | 🔥 **OVER 53,800 LINES OF EXECUTABLE & WEB CODE (`55,300+` WITH DOCS)!** |
+| **Total Code Lines (`JS+CSS+HTML+PS1+CS`)** | **53,880 lines** across **164 files** (`53,172 lines` core web app `JS+CSS+HTML`) |
+| **Total Project Lines (incl. `.md`)** | **55,344 lines** across **171 files** *(plus `75` `.svg` icons / `451` lines & `manifest.json` / `19` lines)* |
+| **Max Lines Per Source File** | Strictly `< 600 lines` across all `.js` and `.css` modules (`0` files at `600+`) |
+| **Last Calculated** | November 15, 2026 *(excluding `_backups/`, `scratch/`, `.git/`, `node_modules/`)* |
 
 ---
 
 ## 📂 Lines by File Extension
 
-| File Type | Description | File Count | Total Lines | Share |
+| File Type | Description | File Count | Total Lines | Share (of Primary 6) |
 |---|---|---|---|---|
-| **`.js`** | JavaScript Game Logic & Subsystems | 99 | 26,450 | 72.5% |
-| **`.css`** | UI, HUD, Armory, Co-op & Theatrical Styles | 20 | 6,580 | 18.0% |
-| **`.html`** | Main Application & Canvas Shell | 1 | 1,843 | 5.0% |
-| **`.md`** | Game Design, Gear, Roadmap & Version Specs | 8 | 1,510 | 4.1% |
-| **`.ps1`** | Local Web Server & Automation | 5 | 390 | 1.1% |
-| **`.cs`** | Desktop C# Game Launcher | 1 | 270 | 0.7% |
+| **`.js`** | JavaScript Game Logic & Subsystems | 131 | 41,591 | 75.1% |
+| **`.css`** | UI, HUD, Armory, Friends, Olympus & Modal Styles | 26 | 9,490 | 17.1% |
+| **`.html`** | Main Application & Canvas Shell (`index.html`) | 1 | 2,091 | 3.8% |
+| **`.md`** | Design, Gear, Roadmap, Bugfix & Version Specs | 7 | 1,464 | 2.6% |
+| **`.ps1`** | Local Web Server & Automation Scripts | 5 | 438 | 0.8% |
+| **`.cs`** | Desktop C# Game Launcher (`Launcher.cs`) | 1 | 270 | 0.5% |
+| **Total (Primary 6)** | **All Code, Markup, Scripts & Documentation** | **171** | **55,344** | **100.0%** |
+
+> Also tracked in live project assets: **75 `.svg` UI icons** (`451` lines in `assets/ui-icons/`) and **1 `.json` manifest** (`19` lines in `manifest.json`), bringing all tracked text assets to **247 files** and **55,814 lines**.
+
+---
+
+## 🧩 JavaScript Architecture Breakdown (`src/` — 131 files, 41,591 lines)
+
+| Module Directory | Role | Files | Lines |
+|---|---|---|---|
+| `src/ui/` | Modals, HUD, Friends, Inventory, Chests, Roster & SVG Icons | 22 | 7,571 |
+| `src/dungeons/` | Mount Olympus Ascent, Altar, Climb Transitions, Crests & Bosses | 14 | 5,306 |
+| `src/entities/` | Player, Weapons, Bullets, Foliage, Obstacles & Combat VFX | 15 | 4,942 |
+| `src/engine/` | Game Loop, Arena, Camera, Collision & Touch Input | 10 | 3,857 |
+| `src/Bosses/` | Story Chapter Bosses (`Kleanthis`, `Kiloumpas`, `Rouf`) | 6 | 2,848 |
+| `src/data/` | Heroes, Gear, Endgame Gear, Chests, Quests, Upgrades & Perks | 13 | 2,789 |
+| `src/heroes/` | Playable Hero Renderers & `Psanas` 2.5D Model Architecture | 7 | 2,449 |
+| `src/enemies/` | Wave Enemy Archetypes & Renderers | 6 | 2,324 |
+| `src/network/` | Co-op Networking, Host/Guest Sync & Lobby | 5 | 1,919 |
+| `src/` (root) | `main.js`, `firebase.js`, `audio.js` | 3 | 1,628 |
+| `src/weapons/` | Modular Weapon Implementations & Boss Weapons | 8 | 846 |
+| `src/admin/` | Admin Panel & Auth | 3 | 845 |
+| `src/progression/` | Quests, Achievements & Progression Managers | 3 | 810 |
+| `src/save/` | Cloud Account Sync & Player Identity (`#ABCDEF` Tags) | 4 | 729 |
+| `src/gear/` | Equipment Manager & Passive Bonus Engine | 2 | 645 |
+| `src/social/` | Friends List & Live Co-op Invites (`FriendService.js`) | 1 | 586 |
+| `src/core/`, `src/chests/`, `src/skills/`, `src/profile/`, `src/libs/` | Core Helpers, 4-Slot Chest System, Skills, Stats & Vendor Libs | 9 | 1,497 |
 
 ---
 
 ## 📈 Version Progression Log
+
+### **Alpha 1.5.15 - Boss Arsenal Weapons & Hero Psanas Model Rework**
+- **Release Date:** November 15, 2026
+- **Total Lines / Files:** **55,344 lines** (`53,880` code lines across `164` files; `41,591` `.js` lines across `131` files)
+- **Key Additions & Changes:**
+  - **Boss-Unlockable Weapons (`src/weapons/BossWeapons/`):** Added `KiloumpasCarbine.js` (`carbine`) and `RoufDialToneBlaster.js` (`dialtone`) with distinct models, stats, and boss-defeat unlock progression.
+  - **Hero Psanas Visual Rework (`src/heroes/PsanasHero.js`, `src/heroes/HeroSkinRenderer.js`):** Rebuilt Psanas's playable 2.5D model silhouette, outfit details, hair/glasses, and directional rendering fidelity.
+
+### **Alpha 1.5.12 - 1.5.14 - Mount Olympus Ascent & Combat Polish**
+- **Release Date:** November 14, 2026
+- **Key Additions & Changes:**
+  - **Mount Olympus Ascent (5-Floor Endgame Dungeon):** Built full mountain climb flow (`OlympusAscentSystem.js`, `OlympusClimbTransition.js`) ascending from Floor 1 (`300m Trail`) through Floor 5 (`2,918m Summit`), featuring multi-layered parallax climb transitions, bosses `CasillasSentinel`, `RavineChieftain`, `FrostTitanBoreas`, `KiloumpasBerserker`, and `ZeusBoss`, plus `OlympusAltarUI.js` god blessings between floors.
+  - **Olympus Ascent Crests & Progression Quality-of-Life:** Added `AscentCrestManager.js` (`2` daily crests, cap `3`, `+1` on defeating Wave 20 Rouf), saved overflow chests to Inventory instead of discarding, and preserved the active game mode on Play Again.
+  - **Combat Feel & FX:** Added `CombatRenderFX.js`, `CombatJuiceFX.js`, updated `Camera.js`, and mode card artwork (`card_dungeons.png`).
+
+### **Alpha 1.5.0 - 1.5.11 - Cloud Accounts, Friends, Endgame Gear, Chests & SVG UI**
+- **Release Date:** September 11 – November 14, 2026
+- **Key Additions & Changes:**
+  - **Friends, Player Tags & Cloud Sync (`Alpha 1.5.3 - 1.5.6`):** Added shareable `#ABCDEF` tags, Firestore friendships & live Co-op invites (`FriendService.js`, `FriendsModal.js`), `AccountSyncManager.js`, `PlayerIdentity.js`, modularized Co-op host/guest sessions, and server, security & performance fixes documented in `BUGS_FIXED.md`.
+  - **4-Slot Chests & Epic/Legendary Endgame Gear (`Alpha 1.5.8 - 1.5.10`):** Added `ChestManager.js` (4-slot countdown timers & gem speed-ups), 20 chest-only Epic/Legendary gear items in `gearEndgame.js` across 5 slots, passive combat bonuses (`GearPassives.js`), and quests/upgrades/perks polish.
+  - **Vector SVG Icon Library & Olympus Environment (`Alpha 1.5.1 - 1.5.11`):** Built `UiIcons.js` backed by `75` `.svg` icons in `assets/ui-icons/`, added `TouchInput.js` and `CinematicCutsceneOverlay.js`, and authored custom Mount Olympus terrain, ice, foliage, obstacle, and structure renderers (`OlympusAssets.js`, `OlympusLayouts.js`, `OlympusIceRenderer.js`).
+
+### **Alpha 1.4.1 - 1.4.9 - Post-Chapter 2 Refinements & Enemy/Co-op Polish**
+- **Release Date:** September – November 2026
+- **Key Additions & Changes:**
+  - Updated credits data (`creditsData.js`), Co-op lobby styles (`coop.css`), remote player synchronization (`RemotePlayer.js`), `Psaltis.js`, and `BossWarningOverlay.js`.
 
 ### **Alpha 1.4.0 - Story Expansion & Boss Chapter 2 (Official Release)**
 - **Release Date:** September 10, 2026

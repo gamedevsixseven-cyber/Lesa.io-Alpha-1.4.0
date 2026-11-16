@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+<path d="M24 11h16l-3 10H27z" fill="#f39c12" stroke="#1a1d2b" stroke-width="4.5" stroke-linejoin="round"/>
+  <path d="M25 21h14c9 5 12 14 10 25-2 7-9 10-17 10s-15-3-17-10c-2-11 1-20 10-25z" fill="#ffd32a" stroke="#1a1d2b" stroke-width="5"/>
+  <text x="32" y="45" text-anchor="middle" font-size="18" font-weight="900" fill="#1a1d2b" font-family="Arial">€</text>
+</svg>

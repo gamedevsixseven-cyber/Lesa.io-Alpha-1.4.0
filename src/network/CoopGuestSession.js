@@ -85,8 +85,31 @@ class CoopGuestSession {
                 }
             } else if (type === 'BOSS_TRIGGER') {
                 if (this.game.bossWarningOverlay && typeof this.game.bossWarningOverlay.trigger === 'function') {
-                    this.game.bossWarningOverlay.trigger(payload.bossName);
+                    this.game.bossWarningOverlay.trigger(payload.bossName, payload.rankName || '');
                 }
+            } else if (type === 'BOSS_CRATE_REWARD') {
+                if (payload && payload.crateId && typeof window !== 'undefined' && window.inventoryManager) {
+                    window.inventoryManager.addCrate(payload.crateId, 1);
+                    if (this.game.ui && typeof this.game.ui.addKillfeed === 'function') {
+                        const cDef = (typeof getBossCrate === 'function') ? getBossCrate(payload.crateId) : null;
+                        this.game.ui.addKillfeed(`📦 Co-op Victory vs ${payload.bossName || 'Boss'}: Earned ${cDef ? cDef.name : payload.crateId}!`);
+                    }
+                }
+            } else if (type === 'MATERIAL_REWARD') {
+                if (payload && payload.materials && typeof window !== 'undefined' && window.inventoryManager) {
+                    window.inventoryManager.awardBattleMaterials(payload.materials, {
+                        game: this.game,
+                        source: 'coop_sync',
+                        sourceName: payload.sourceName || 'Co-op Spoils',
+                        syncCoop: false
+                    });
+                }
+            } else if (type === 'ZEUS_REWARD_UNLOCK') {
+                if (typeof ZeusSkyPhase !== 'undefined' && typeof ZeusSkyPhase.grantZeusFirstKillRewards === 'function') {
+                    ZeusSkyPhase.grantZeusFirstKillRewards(null, this.game);
+                }
+            } else if (type === 'BOSS_REWARD_UNLOCK' && payload && payload.bossId && typeof BossRewardManager !== 'undefined') {
+                BossRewardManager.queueBossDrops(payload.bossId, { effects: this.game && this.game.effects, syncCoop: false, bossName: payload.bossName });
             }
         };
 
@@ -122,21 +145,33 @@ class CoopGuestSession {
         }
     }
 
-    handleHostQuit() {
-        if (this.game.state === 'PLAYING' || this.game.state === 'PAUSED') {
-            this.game.state = 'MENU';
-            this.game.isCoopGuest = false;
-            this.game.coopSession = null;
-            if (this.game.cutsceneOverlay) {
-                this.game.cutsceneOverlay.totalPlayers = 1;
-                this.game.cutsceneOverlay.setReadyState(0, 1, false);
-                this.game.cutsceneOverlay.onRequestAdvance = null;
+    handleHostQuit(reason = 'Host left the game') {
+        this.game.state = 'MENU';
+        this.game.isCoopGuest = false;
+        this.game.coopSession = null;
+
+        if (this.game.cutsceneOverlay) {
+            this.game.cutsceneOverlay.totalPlayers = 1;
+            this.game.cutsceneOverlay.setReadyState(0, 1, false);
+            this.game.cutsceneOverlay.onRequestAdvance = null;
+            if (typeof this.game.cutsceneOverlay.endCutscene === 'function') {
+                this.game.cutsceneOverlay.endCutscene();
             }
-            if (this.game.ui) {
-                this.game.ui.showMenuScreen();
-                this.game.ui.hideModals();
-                this.game.ui.addKillfeed('⚠️ Host left the game. Match ended.');
-            }
+        }
+
+        if (this.net && typeof this.net.disconnect === 'function') {
+            this.net.disconnect();
+        }
+
+        if (this.game.ui) {
+            this.game.ui.showMenuScreen();
+            this.game.ui.hideModals();
+            this.game.ui.addKillfeed('⚠️ Host left the match. Returned to Main Screen.');
+        }
+
+        if (window.soundEngine) {
+            window.soundEngine.stopBGM();
+            window.soundEngine.startMenuBGM();
         }
     }
 
@@ -284,7 +319,7 @@ class CoopGuestSession {
         // 3.5. Sync Boss Warning Overlay from Snapshot Authority
         if (data.bWarn) {
             if (this.game.bossWarningOverlay && !this.game.bossWarningOverlay.active) {
-                this.game.bossWarningOverlay.trigger(data.bWarn);
+                this.game.bossWarningOverlay.trigger(data.bWarn, data.bWarnRank || '');
             }
         }
 
@@ -331,6 +366,8 @@ class CoopGuestSession {
                         if (eNet.n) enemy.name = eNet.n;
                         enemy.targetX = netX;
                         enemy.targetY = netY;
+                        enemy.vx = Number.isFinite(eNet.vx) ? eNet.vx : 0;
+                        enemy.vy = Number.isFinite(eNet.vy) ? eNet.vy : 0;
                         enemy.targetAngle = netAngle;
                         enemy.x = netX;
                         enemy.y = netY;
@@ -343,6 +380,8 @@ class CoopGuestSession {
                 if (enemy) {
                     enemy.targetX = netX;
                     enemy.targetY = netY;
+                    enemy.vx = Number.isFinite(eNet.vx) ? eNet.vx : 0;
+                    enemy.vy = Number.isFinite(eNet.vy) ? eNet.vy : 0;
                     enemy.targetAngle = netAngle;
                     if (!Number.isFinite(enemy.x)) enemy.x = netX;
                     if (!Number.isFinite(enemy.y)) enemy.y = netY;
@@ -351,6 +390,11 @@ class CoopGuestSession {
                     enemy.maxHp = Number.isFinite(eNet.mhp) ? eNet.mhp : enemy.maxHp;
                     enemy.dead = false; // CRITICAL: alive on host means alive on guest!
                     if (eNet.r && Number.isFinite(eNet.r)) enemy.radius = eNet.r;
+                    if (eNet.fly !== undefined) {
+                        enemy.isFlying = !!eNet.fly;
+                        enemy.isAirborneImmune = !!eNet.fly;
+                        enemy.flyHeight = eNet.fly ? 1 : 0;
+                    }
                     if (eNet.hf) enemy.hitFlash = 8;
                 }
             }
@@ -364,30 +408,62 @@ class CoopGuestSession {
             }
         }
 
-        // 4.5. Synchronize Enemy Projectiles without wiping player bullets!
+        // 4.5. Synchronize Enemy Projectiles smoothly without wiping player bullets or teleporting
         if (Array.isArray(data.enemyBullets)) {
-            let writeIdx = 0;
+            const incomingBulletIds = new Set();
+            const existingBulletMap = new Map();
+
             for (let i = 0; i < this.game.bullets.length; i++) {
                 const b = this.game.bullets[i];
-                if (b && !b.isEnemy && !b.dead) {
-                    this.game.bullets[writeIdx++] = b;
+                if (b && b.isEnemy && b._netId) {
+                    existingBulletMap.set(b._netId, b);
                 }
             }
-            this.game.bullets.length = writeIdx;
 
             for (let i = 0; i < data.enemyBullets.length; i++) {
                 const eb = data.enemyBullets[i];
-                if (typeof Bullet !== 'undefined') {
-                    this.game.bullets.push(new Bullet({
-                        x: Number.isFinite(eb.x) ? eb.x : 0,
-                        y: Number.isFinite(eb.y) ? eb.y : 0,
-                        vx: Number.isFinite(eb.vx) ? eb.vx : 0,
-                        vy: Number.isFinite(eb.vy) ? eb.vy : 0,
+                if (!eb) continue;
+                const netId = eb.id || (i + 1);
+                incomingBulletIds.add(netId);
+
+                let b = existingBulletMap.get(netId);
+                const netX = Number.isFinite(eb.x) ? eb.x : 0;
+                const netY = Number.isFinite(eb.y) ? eb.y : 0;
+                const netVx = Number.isFinite(eb.vx) ? eb.vx : 0;
+                const netVy = Number.isFinite(eb.vy) ? eb.vy : 0;
+
+                if (!b && typeof Bullet !== 'undefined') {
+                    b = new Bullet({
+                        x: netX,
+                        y: netY,
+                        vx: netVx,
+                        vy: netVy,
                         radius: Number.isFinite(eb.r) ? eb.r : 10,
                         type: eb.t || 'soccer',
                         isEnemy: true,
                         damage: 15
-                    }));
+                    });
+                    b._netId = netId;
+                    this.game.bullets.push(b);
+                } else if (b) {
+                    b.vx = netVx;
+                    b.vy = netVy;
+                    const driftSq = (netX - b.x) ** 2 + (netY - b.y) ** 2;
+                    if (driftSq > 3600) {
+                        b.x = netX;
+                        b.y = netY;
+                    } else {
+                        b.x += (netX - b.x) * 0.35;
+                        b.y += (netY - b.y) * 0.35;
+                    }
+                }
+            }
+
+            // Despawn enemy bullets no longer on host
+            for (let i = 0; i < this.game.bullets.length; i++) {
+                const b = this.game.bullets[i];
+                if (b && b.isEnemy && b._netId && !incomingBulletIds.has(b._netId)) {
+                    b.dead = true;
                 }
             }
         }
@@ -461,6 +537,8 @@ class CoopGuestSession {
             this.net.send('GUEST_STATE', {
                 x: Math.round(p.x),
                 y: Math.round(p.y),
+                vx: Number((p.vx || 0).toFixed(2)),
+                vy: Number((p.vy || 0).toFixed(2)),
                 angle: Number((p.angle || 0).toFixed(2)),
                 isMoving: !!p.isMoving,
                 shieldActive: !!p.shieldActive,
@@ -487,86 +565,25 @@ class CoopGuestSession {
         if (t === 'kleanthis' && typeof Kleanthis !== 'undefined') return new Kleanthis(x, y);
         if (t === 'kiloumpas' && typeof Kiloumpas !== 'undefined') return new Kiloumpas(x, y);
         if (t === 'rouf' && typeof Rouf !== 'undefined') return new Rouf(x, y);
+        if (t === 'frost_wolf' && typeof FrostWolf !== 'undefined') return new FrostWolf(x, y);
+        if (t === 'ice_golem' && typeof IceGolem !== 'undefined') return new IceGolem(x, y);
+        if (t === 'casillas_sentinel' && typeof CasillasSentinel !== 'undefined') return new CasillasSentinel(x, y);
+        if (t === 'ravine_chieftain' && typeof RavineChieftain !== 'undefined') return new RavineChieftain(x, y);
+        if (t === 'frost_titan' && typeof FrostTitan !== 'undefined') return new FrostTitan(x, y);
+        if (t === 'kiloumpas_berserker' && typeof KiloumpasBerserker !== 'undefined') return new KiloumpasBerserker(x, y);
+        if (t === 'zeus' && typeof ZeusBoss !== 'undefined') return new ZeusBoss(x, y);
+        if (t === 'zeus_crystal' && typeof ZeusCrystal !== 'undefined') return new ZeusCrystal(x, y);
+        if (typeof EndlessWaveDirector !== 'undefined') {
+            const endlessEnemy = EndlessWaveDirector.spawnByType(t, x, y, 1.0);
+            if (endlessEnemy) return endlessEnemy;
+        }
         if (typeof Fatmir !== 'undefined') return new Fatmir(x, y);
         return null;
     }
 
     playRemoteSkill(remotePlayer, skillData = {}) {
-        if (!remotePlayer) return;
-        const skillId = skillData.skillId || 'blade_rush';
-        const level = skillData.level || 1;
-        const x = Number.isFinite(skillData.x) ? skillData.x : remotePlayer.x;
-        const y = Number.isFinite(skillData.y) ? skillData.y : remotePlayer.y;
-        const angle = Number.isFinite(skillData.angle) ? skillData.angle : (remotePlayer.angle || 0);
-        const fx = this.game.effects;
-        const cam = this.game.camera;
-        const se = window.soundEngine;
-
-        if (skillId === 'seismic_quake') {
-            const radius = 160 + (level - 1) * 15;
-            if (fx) {
-                fx.addComicSplash(x, y - 35, level >= 4 ? 'TITAN QUAKE! 💥' : 'QUAKE! 🪨');
-                if (typeof fx.addGroundCrack === 'function') fx.addGroundCrack(x, y, radius * 1.05, '#1e272e', level >= 4 ? '#f39c12' : '#3498db', 140);
-                fx.addShockwave(x, y, radius, 'rgba(52, 152, 219, 0.85)');
-                fx.addShockwave(x, y, radius * 0.65, 'rgba(41, 128, 185, 0.95)');
-                fx.addDust(x, y, 14, 20);
-                fx.addSparks(x, y, '#3498db', 16);
-            }
-            if (cam && typeof cam.addShake === 'function') cam.addShake(12);
-            if (se) {
-                if (typeof se.playNoiseCrack === 'function') se.playNoiseCrack(0, 0.2, 0.5);
-                if (typeof se.playFatmirSlam === 'function') se.playFatmirSlam();
-            }
-        } else if (skillId === 'yaya_scream') {
-            const range = 240 + (level - 1) * 20;
-            const shouts = ['ΕΛΑ ΕΔΩΩΩ! 📢', 'ΑΜΑΝ! 📢', 'ΣΤΑΜΑΤΑ! 📢', 'ΠΑΝΑΓΙΑ ΜΟΥ! 📢', 'ΞΥΛΟ ΠΟΥ ΘΑ ΦΑΣ! 📢'];
-            const shout = shouts[Math.floor(Math.random() * shouts.length)];
-            if (fx) {
-                fx.addComicSplash(x + Math.cos(angle) * 50, y + Math.sin(angle) * 50 - 25, shout);
-                fx.addSlash(x, y, angle, range * 0.8, '#9b59b6');
-                fx.addShockwave(x + Math.cos(angle) * (range * 0.45), y + Math.sin(angle) * (range * 0.45), range * 0.55, 'rgba(155, 89, 182, 0.85)');
-                fx.addSparks(x, y, '#9b59b6', 12);
-            }
-            if (cam && typeof cam.addShake === 'function') cam.addShake(9);
-            if (se && typeof se.playBossWarning === 'function') se.playBossWarning();
-        } else if (skillId === 'frappes') {
-            const hasPagakia = level >= 5;
-            remotePlayer.frenzyTimer = hasPagakia ? 480 : 300;
-            remotePlayer.hasPagakiaMastery = hasPagakia;
-            if (fx) {
-                fx.addComicSplash(x, y - 35, hasPagakia ? 'FRAPPES+! 🧊' : 'FRAPPES FRENZY! 🥤');
-                fx.addShockwave(x, y, 120, hasPagakia ? 'rgba(0, 206, 201, 0.85)' : 'rgba(243, 156, 18, 0.85)');
-                fx.addSparks(x, y, hasPagakia ? '#00cec9' : '#f39c12', 18);
-            }
-            if (se && typeof se.playPowerup === 'function') se.playPowerup();
-        } else if (skillId === 'nerobalonaki') {
-            const radius = 105 + (level - 1) * 12;
-            const duration = 360 + (level - 1) * 40;
-            const dropX = x + Math.cos(angle) * 45;
-            const dropY = y + Math.sin(angle) * 45;
-            if (fx) {
-                fx.addComicSplash(dropX, dropY - 28, 'SPLASH! 💦');
-                fx.addShockwave(dropX, dropY, radius + 10, 'rgba(0, 210, 211, 0.85)');
-                fx.addSparks(dropX, dropY, '#00d2d3', 14);
-            }
-            if (cam && typeof cam.shake === 'function') cam.shake(5, 7);
-            if (se && typeof se.playWaterSplash === 'function') se.playWaterSplash();
-            if (typeof WaterPuddle !== 'undefined' && this.game) {
-                if (!this.game.hazards) this.game.hazards = [];
-                this.game.hazards.push(new WaterPuddle(dropX, dropY, radius, duration, 0.55, 1.30));
-            }
-        } else {
-            // Blade Rush (default)
-            const reach = 75 + (level - 1) * 8;
-            const slashX = x + Math.cos(angle) * 36;
-            const slashY = y + Math.sin(angle) * 36;
-            if (fx) {
-                fx.addSlash(slashX, slashY, angle, reach + 5, '#00d2d3');
-                fx.addDust(x, y, 6, 8);
-                fx.addComicSplash(slashX, slashY - 26, level >= 3 ? 'CLEAVE!' : 'SWISH!');
-            }
-            if (cam && typeof cam.shake === 'function') cam.shake(6, 8);
-            if (se && typeof se.playBladeSwish === 'function') se.playBladeSwish();
+        if (typeof CoopSkillFx !== 'undefined') {
+            CoopSkillFx.playRemoteSkill(this.game, remotePlayer, skillData, false);
         }
     }
 }

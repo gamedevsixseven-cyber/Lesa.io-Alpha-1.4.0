@@ -3,6 +3,20 @@
  * High-performance object pooled particles, shockwave rings, and slash crescent trails.
  */
 
+const _STAR_UNIT_VERTS = (() => {
+    const out = new Float64Array(20);
+    for (let i = 0; i < 5; i++) {
+        const a1 = (18 + i * 72) * Math.PI / 180;
+        const a2 = (54 + i * 72) * Math.PI / 180;
+        const idx = i * 4;
+        out[idx] = Math.cos(a1);
+        out[idx + 1] = -Math.sin(a1);
+        out[idx + 2] = Math.cos(a2) * 0.4;
+        out[idx + 3] = -Math.sin(a2) * 0.4;
+    }
+    return out;
+})();
+
 class Particle {
     constructor() {
         this.reset(0, 0, 0, 0, '#ffffff', 4, 1.0, 'circle');
@@ -50,9 +64,10 @@ class Particle {
             ctx.rotate(this.rotation);
             ctx.fillStyle = this.color;
             ctx.beginPath();
-            for (let i = 0; i < 5; i++) {
-                ctx.lineTo(Math.cos((18 + i * 72) * Math.PI / 180) * r, -Math.sin((18 + i * 72) * Math.PI / 180) * r);
-                ctx.lineTo(Math.cos((54 + i * 72) * Math.PI / 180) * (r * 0.4), -Math.sin((54 + i * 72) * Math.PI / 180) * (r * 0.4));
+            const v = _STAR_UNIT_VERTS;
+            ctx.moveTo(v[0] * r, v[1] * r);
+            for (let i = 2; i < 20; i += 2) {
+                ctx.lineTo(v[i] * r, v[i + 1] * r);
             }
             ctx.closePath();
             ctx.fill();
@@ -68,7 +83,11 @@ class Particle {
 }
 
 class ShockwaveRing {
-    constructor(x, y, maxRadius = 140, color = 'rgba(255, 120, 0, 0.8)', lineWidth = 8) {
+    constructor(x = 0, y = 0, maxRadius = 140, color = 'rgba(255, 120, 0, 0.8)', lineWidth = 8) {
+        this.reset(x, y, maxRadius, color, lineWidth);
+    }
+
+    reset(x, y, maxRadius = 140, color = 'rgba(255, 120, 0, 0.8)', lineWidth = 8) {
         this.x = x;
         this.y = y;
         this.radius = 10;
@@ -96,7 +115,11 @@ class ShockwaveRing {
 }
 
 class SlashWave {
-    constructor(x, y, angle, radius = 75, arcSpan = Math.PI * 0.95, color = '#00d2d3') {
+    constructor(x = 0, y = 0, angle = 0, radius = 75, arcSpan = Math.PI * 0.95, color = '#00d2d3') {
+        this.reset(x, y, angle, radius, arcSpan, color);
+    }
+
+    reset(x, y, angle, radius = 75, arcSpan = Math.PI * 0.95, color = '#00d2d3') {
         this.x = x;
         this.y = y;
         this.angle = angle;

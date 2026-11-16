@@ -57,6 +57,7 @@ class Fatmir extends EnemyBase {
             if (effects) {
                 effects.addShockwave(this.x, this.y, 140, 'rgba(235, 77, 75, 0.9)');
                 effects.addComicSplash(this.x, this.y - 40, 'SLAM!');
+                if (typeof effects.onBossSlam === 'function') effects.onBossSlam(0.036);
             }
             if (dist < 130) {
                 player.takeDamage(this.damage * 1.2, effects);
@@ -168,12 +169,38 @@ class Fatmir extends EnemyBase {
             if (facingLeft) {
                 ctx.scale(-1, 1);
             }
-            if (flash) {
-                ctx.filter = 'brightness(2.5)';
-            } else if (this.isCharging) {
-                ctx.filter = 'drop-shadow(0 0 10px rgba(235, 77, 75, 0.9))';
+            if (!this.isCharging && typeof SpriteAtlasCache !== 'undefined') {
+                const fKey = `fatmir:${isBack ? 'b' : 'f'}:${flash ? 1 : 0}`;
+                const fw = Math.ceil(spriteW + 4);
+                const fh = Math.ceil(spriteH + 4);
+                const ax = fw * 0.5;
+                const ay = Math.ceil(spriteH - feetY + 2);
+                SpriteAtlasCache.drawCached(ctx, fKey, fw, fh, ax, ay, (fctx) => {
+                    if (flash) {
+                        const cached = CharacterSprites.getFiltered(img, 'flash_25', 'brightness(2.5)', 0);
+                        fctx.drawImage(cached ? cached.canvas : img, -spriteW / 2, feetY - spriteH, spriteW, spriteH);
+                    } else {
+                        fctx.drawImage(img, -spriteW / 2, feetY - spriteH, spriteW, spriteH);
+                    }
+                }, { flipX: facingLeft });
+                ctx.restore();
+                return;
             }
-            ctx.drawImage(img, -spriteW / 2, feetY - spriteH, spriteW, spriteH);
+            if (flash) {
+                const cached = CharacterSprites.getFiltered(img, 'flash_25', 'brightness(2.5)', 0);
+                ctx.drawImage(cached ? cached.canvas : img, -spriteW / 2, feetY - spriteH, spriteW, spriteH);
+            } else if (this.isCharging) {
+                const cached = CharacterSprites.getFiltered(img, 'charge_red', 'drop-shadow(0 0 18px rgba(235, 77, 75, 0.9))', 24);
+                if (cached) {
+                    const padW = cached.padPx * (spriteW / cached.w);
+                    const padH = cached.padPx * (spriteH / cached.h);
+                    ctx.drawImage(cached.canvas, -spriteW / 2 - padW, feetY - spriteH - padH, spriteW + padW * 2, spriteH + padH * 2);
+                } else {
+                    ctx.drawImage(img, -spriteW / 2, feetY - spriteH, spriteW, spriteH);
+                }
+            } else {
+                ctx.drawImage(img, -spriteW / 2, feetY - spriteH, spriteW, spriteH);
+            }
             ctx.restore();
             return;
         }

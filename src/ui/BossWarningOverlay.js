@@ -117,10 +117,14 @@ class BossWarningOverlay {
         ctx.font = `900 ${title2Size}px 'Luckiest Guy', cursive`;
         ctx.lineWidth = Math.max(4, 8 * scale);
         ctx.strokeStyle = '#1e272e';
-        const rankText = `BOSS INCOMING! • ${this.rankName}`;
-        ctx.strokeText(rankText, halfW, halfH + 34 * scale);
-        ctx.fillStyle = this.rankName.includes('HARD') ? '#e056fd' : '#54a0ff';
-        ctx.fillText(rankText, halfW, halfH + 34 * scale);
+        const rankText = `${this.bossName ? this.bossName + ' • ' : 'BOSS INCOMING! • '}${this.rankName}`;
+        ctx.strokeText(rankText, halfW, halfH + 34 * scale, bannerW - 28 * scale);
+        const rUp = (this.rankName || '').toUpperCase();
+        ctx.fillStyle = rUp.includes('INSANE') ? '#ff4757'
+            : (rUp.includes('VERY HARD') ? '#e67e22'
+                : (rUp.includes('HARD') ? '#e056fd'
+                    : (rUp.includes('EASY') ? '#2ed573' : '#54a0ff')));
+        ctx.fillText(rankText, halfW, halfH + 34 * scale, bannerW - 28 * scale);
 
         ctx.restore();
         ctx.restore();

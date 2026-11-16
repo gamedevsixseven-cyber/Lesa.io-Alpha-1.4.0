@@ -107,10 +107,10 @@ class ChestModalUI {
             actionBtnHtml = `
                 <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 14px;">
                     <button id="btn-start-unlock" class="comic-btn comic-btn-primary" style="width: 100%; padding: 12px;">
-                        <span>⏱️ START UNLOCK (${unlockDurationStr})</span>
+                        <span>${typeof UiIcons !== 'undefined' ? UiIcons.i('timer', 'ui-icon-sm') : '⏱️'} START UNLOCK (${unlockDurationStr})</span>
                     </button>
                     <button id="btn-gem-open" class="comic-btn" style="width: 100%; padding: 10px; background: #9b59b6; color: #fff; border-color: #1e272e;">
-                        <span>💎 OPEN NOW (${speedCost} GEMS)</span>
+                        <span>${typeof UiIcons !== 'undefined' ? UiIcons.i('gem', 'ui-icon-sm') : '💎'} OPEN NOW (${speedCost} GEMS)</span>
                     </button>
                 </div>
             `;
@@ -120,18 +120,18 @@ class ChestModalUI {
 
             const freeSkipHtml = canFreeSkip ? `
                 <button id="btn-free-skip" class="comic-btn btn-daily-free-skip" style="width: 100%; padding: 12px; font-size: 1rem;">
-                    <span>⚡ FREE FINISH (≤ 1 MIN LEFT — 1/DAY)</span>
+                    <span>${typeof UiIcons !== 'undefined' ? UiIcons.i('bolt', 'ui-icon-sm') : '⚡'} FREE FINISH (≤ 1 MIN LEFT — 1/DAY)</span>
                 </button>
             ` : '';
 
             actionBtnHtml = `
                 <div style="margin: 10px 0; font-weight: 800; color: #0984e3; font-size: 1.1rem;">
-                    ⏱️ Unlocking: ${manager.formatTime(rem)}
+                    ${typeof UiIcons !== 'undefined' ? UiIcons.i('timer', 'ui-icon-sm') : '⏱️'} Unlocking: ${manager.formatTime(rem)}
                 </div>
                 <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 10px;">
                     ${freeSkipHtml}
                     <button id="btn-gem-open" class="comic-btn" style="width: 100%; padding: 12px; background: #9b59b6; color: #fff; border-color: #1e272e;">
-                        <span>💎 SPEED UP (${speedCost} GEMS)</span>
+                        <span>${typeof UiIcons !== 'undefined' ? UiIcons.i('gem', 'ui-icon-sm') : '💎'} SPEED UP (${speedCost} GEMS)</span>
                     </button>
                 </div>
             `;
@@ -139,7 +139,7 @@ class ChestModalUI {
             actionBtnHtml = `
                 <div style="margin-top: 14px;">
                     <button id="btn-claim-open" class="comic-btn comic-btn-primary status-ready" style="width: 100%; padding: 14px; font-size: 1.2rem;">
-                        <span>✨ TAP TO OPEN! ✨</span>
+                        <span>${typeof UiIcons !== 'undefined' ? `${UiIcons.i('sparkle', 'ui-icon-sm')} TAP TO OPEN! ${UiIcons.i('sparkle', 'ui-icon-sm')}` : '✨ TAP TO OPEN! ✨'}</span>
                     </button>
                 </div>
             `;
@@ -149,15 +149,15 @@ class ChestModalUI {
             <img src="${def.icon}" class="chest-modal-preview" alt="${def.name}">
             <div class="chest-contents-summary">
                 <div class="chest-summary-item">
-                    <span class="chest-summary-icon">🪙</span>
+                    <span class="chest-summary-icon">${typeof UiIcons !== 'undefined' ? UiIcons.i('coin', 'ui-icon-sm') : '🪙'}</span>
                     <span class="chest-summary-text">${def.minCoins.toLocaleString()} - ${def.maxCoins.toLocaleString()}</span>
                 </div>
                 <div class="chest-summary-item">
-                    <span class="chest-summary-icon">💎</span>
+                    <span class="chest-summary-icon">${typeof UiIcons !== 'undefined' ? UiIcons.i('gem', 'ui-icon-sm') : '💎'}</span>
                     <span class="chest-summary-text">${def.gemDropChance > 0 ? `${def.minGems}-${def.maxGems}` : '0'} Gems</span>
                 </div>
                 <div class="chest-summary-item">
-                    <span class="chest-summary-icon">🛡️</span>
+                    <span class="chest-summary-icon">${typeof UiIcons !== 'undefined' ? UiIcons.i('shield', 'ui-icon-sm') : '🛡️'}</span>
                     <span class="chest-summary-text">${def.gearCount} Gear Cards</span>
                 </div>
             </div>
@@ -221,7 +221,7 @@ class ChestModalUI {
                 type: 'coins',
                 title: 'GOLD COINS',
                 amount: loot.coins,
-                icon: '🪙',
+                icon: '🪙', iconImg: typeof UiIcons !== 'undefined' ? UiIcons.getPath('coin') : '',
                 color: '#fed330',
                 sound: 'star'
             });
@@ -233,7 +233,7 @@ class ChestModalUI {
                 type: 'gems',
                 title: 'PREMIUM GEMS',
                 amount: loot.gems,
-                icon: '💎',
+                icon: '💎', iconImg: typeof UiIcons !== 'undefined' ? UiIcons.getPath('gem') : '',
                 color: '#54a0ff',
                 sound: 'diamond'
             });
@@ -247,7 +247,28 @@ class ChestModalUI {
                     title: item.name,
                     gear: item,
                     rarity: item.rarity || 'common',
+                    isDuplicate: !!item.isDuplicate,
+                    shardBonus: item.shardBonus || 0,
                     sound: (item.rarity === 'legendary' || item.rarity === 'mythic') ? 'levelup' : 'star'
+                });
+            }
+        }
+
+        // 4. Crafting Materials
+        if (loot.materials && typeof loot.materials === 'object') {
+            const order = (typeof MATERIAL_ORDER !== 'undefined') ? MATERIAL_ORDER : Object.keys(loot.materials);
+            for (const matId of order) {
+                const qty = loot.materials[matId] || 0;
+                if (qty <= 0) continue;
+                const matDef = (typeof MaterialRegistry !== 'undefined') ? MaterialRegistry.get(matId) : null;
+                if (!matDef) continue;
+                items.push({
+                    type: 'material',
+                    matId,
+                    mat: matDef,
+                    amount: qty,
+                    rarity: matDef.rarity || 'rare',
+                    sound: (matDef.rarity === 'legendary' || matDef.rarity === 'epic') ? 'diamond' : 'star'
                 });
             }
         }
@@ -318,14 +339,14 @@ class ChestModalUI {
             titleEl.style.color = def.color || '#fed330';
 
             bodyEl.innerHTML = `
-                <div class="cr-remaining-badge">⚡ ${items.length} REWARDS INSIDE</div>
+                <div class="cr-remaining-badge">${typeof UiIcons !== 'undefined' ? UiIcons.i('bolt', 'ui-icon-sm') : '⚡'} ${items.length} REWARDS INSIDE</div>
 
                 <div class="cr-loot-stage" id="cr-stage-clickarea">
                     <div class="cr-sunburst"></div>
                     <div class="cr-card-slam">
                         <img src="${def.icon}" class="cr-chest-intro-img" alt="${def.name}">
                     </div>
-                    <div class="cr-tap-hint">✨ TAP CHEST TO OPEN! ✨</div>
+                    <div class="cr-tap-hint">${typeof UiIcons !== 'undefined' ? `${UiIcons.i('sparkle', 'ui-icon-sm')} TAP CHEST TO OPEN! ${UiIcons.i('sparkle', 'ui-icon-sm')}` : '✨ TAP CHEST TO OPEN! ✨'}</div>
                 </div>
             `;
 
@@ -370,7 +391,7 @@ class ChestModalUI {
                 <div class="cr-card-slam">
                     <div class="cr-item-card tier-rare">
                         <div class="cr-card-rarity-ribbon" style="background: #fed330; color: #1e272e;">CURRENCY</div>
-                        <div class="cr-item-emoji">🪙</div>
+                        <div class="cr-item-emoji">${typeof UiIcons !== 'undefined' ? UiIcons.i('coin', 'ui-icon-box') : '🪙'}</div>
                         <div class="cr-item-name">GOLD COINS</div>
                         <div class="cr-item-qty">+${item.amount.toLocaleString()}</div>
                     </div>
@@ -381,7 +402,7 @@ class ChestModalUI {
                 <div class="cr-card-slam">
                     <div class="cr-item-card tier-epic">
                         <div class="cr-card-rarity-ribbon" style="background: #54a0ff; color: #ffffff;">VAULT GEMS</div>
-                        <div class="cr-item-emoji">💎</div>
+                        <div class="cr-item-emoji">${typeof UiIcons !== 'undefined' ? UiIcons.i('gem', 'ui-icon-box') : '💎'}</div>
                         <div class="cr-item-name">PREMIUM GEMS</div>
                         <div class="cr-item-qty" style="color: #54a0ff;">+${item.amount.toLocaleString()}</div>
                     </div>
@@ -390,9 +411,12 @@ class ChestModalUI {
         } else if (item.type === 'gear') {
             const g = item.gear;
             const rClass = item.rarity || 'common';
-            const iconHtml = g.iconImg 
-                ? `<img src="${g.iconImg}" class="cr-item-img" alt="${g.name}">` 
+            const iconHtml = g.iconImg
+                ? `<img src="${g.iconImg}" class="cr-item-img" alt="${g.name}">`
                 : `<div class="cr-item-emoji">${g.icon || '🛡️'}</div>`;
+            const dupTag = item.isDuplicate && item.shardBonus > 0
+                ? `<div class="cr-dup-shard-pill">DUPE ➔ +${item.shardBonus} SHARDS</div>`
+                : `<div class="cr-item-qty" style="color: #57606f; font-size: 0.72rem;">${(g.slot || 'GEAR').toUpperCase()}</div>`;
 
             itemCardHtml = `
                 <div class="cr-card-slam">
@@ -400,15 +424,30 @@ class ChestModalUI {
                         <div class="cr-card-rarity-ribbon">${rClass.toUpperCase()}</div>
                         ${iconHtml}
                         <div class="cr-item-name" title="${g.name}">${g.name}</div>
-                        <div class="cr-item-qty" style="color: #57606f; font-size: 0.72rem;">${(g.slot || 'GEAR').toUpperCase()}</div>
+                        ${dupTag}
+                    </div>
+                </div>
+            `;
+        } else if (item.type === 'material') {
+            const m = item.mat;
+            const mIconHtml = m.iconImg
+                ? `<img src="${m.iconImg}" class="cr-item-img" alt="${m.name}">`
+                : `<div class="cr-item-emoji">${m.icon || '⚙️'}</div>`;
+            itemCardHtml = `
+                <div class="cr-card-slam">
+                    <div class="cr-item-card tier-${m.rarity || 'rare'}" style="border-color: ${m.color};">
+                        <div class="cr-card-rarity-ribbon" style="background: ${m.badgeBg || m.color};">${m.rarityLabel || 'MATERIAL'}</div>
+                        ${mIconHtml}
+                        <div class="cr-item-name" title="${m.name}">${m.name}</div>
+                        <div class="cr-item-qty" style="color: ${m.color};">+${item.amount.toLocaleString()}</div>
                     </div>
                 </div>
             `;
         }
 
         const remainingText = remainingCount > 0 
-            ? `<div class="cr-remaining-badge">⚡ ${remainingCount} ${remainingCount === 1 ? 'REWARD' : 'REWARDS'} LEFT</div>` 
-            : `<div class="cr-remaining-badge" style="background: #2ed573; color: #ffffff;">✨ LAST REWARD! ✨</div>`;
+            ? `<div class="cr-remaining-badge">${typeof UiIcons !== 'undefined' ? UiIcons.i('bolt', 'ui-icon-sm') : '⚡'} ${remainingCount} ${remainingCount === 1 ? 'REWARD' : 'REWARDS'} LEFT</div>` 
+            : `<div class="cr-remaining-badge" style="background: #2ed573; color: #ffffff;">${typeof UiIcons !== 'undefined' ? `${UiIcons.i('sparkle', 'ui-icon-sm')} LAST REWARD! ${UiIcons.i('sparkle', 'ui-icon-sm')}` : '✨ LAST REWARD! ✨'}</div>`;
 
         bodyEl.innerHTML = `
             ${remainingText}
@@ -416,7 +455,7 @@ class ChestModalUI {
             <div class="cr-loot-stage" id="cr-stage-clickarea">
                 <div class="cr-sunburst"></div>
                 ${itemCardHtml}
-                <div class="cr-tap-hint">👆 TAP ANYWHERE TO REVEAL NEXT</div>
+                <div class="cr-tap-hint">${typeof UiIcons !== 'undefined' ? UiIcons.i('tap', 'ui-icon-sm') : '👆'} TAP ANYWHERE TO REVEAL NEXT</div>
             </div>
         `;
 
@@ -438,7 +477,8 @@ class ChestModalUI {
         const bodyEl = modal.querySelector('#chest-modal-body');
         const { def, loot } = this.sequence;
 
-        titleEl.textContent = '🎉 ALL REWARDS CLAIMED! 🎉';
+        if (typeof UiIcons !== 'undefined') UiIcons.setRichText(titleEl, '🎉 ALL REWARDS CLAIMED! 🎉', 'ui-icon-title');
+        else titleEl.textContent = '🎉 ALL REWARDS CLAIMED! 🎉';
         titleEl.style.color = '#fed330';
 
         if (window.soundEngine && typeof window.soundEngine.playLevelUp === 'function') {
@@ -450,11 +490,33 @@ class ChestModalUI {
             gearCardsHtml = loot.gear.map((item, idx) => {
                 const icon = item.iconImg ? `<img src="${item.iconImg}" class="loot-card-icon" alt="${item.name}">` : `<span style="font-size: 2rem;">${item.icon || '🛡️'}</span>`;
                 const rClass = item.rarity || 'common';
+                const dupLine = item.isDuplicate && item.shardBonus > 0
+                    ? `<div class="cr-dup-shard-mini">+${item.shardBonus} SHARDS</div>`
+                    : '';
                 return `
                     <div class="loot-card-item tier-${rClass}" style="animation-delay: ${idx * 0.08}s;">
                         <span style="font-size: 0.6rem; font-weight: 900; text-transform: uppercase; color: #747d8c;">${rClass}</span>
                         ${icon}
                         <div class="loot-card-name" title="${item.name}">${item.name}</div>
+                        ${dupLine}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        let matCardsHtml = '';
+        if (loot.materials && typeof loot.materials === 'object') {
+            const order = (typeof MATERIAL_ORDER !== 'undefined') ? MATERIAL_ORDER : Object.keys(loot.materials);
+            const matEntries = order.map((id) => [id, loot.materials[id] || 0]).filter(([, q]) => q > 0);
+            matCardsHtml = matEntries.map(([matId, qty], idx) => {
+                const m = (typeof MaterialRegistry !== 'undefined') ? MaterialRegistry.get(matId) : null;
+                if (!m) return '';
+                const mIcon = m.iconImg ? `<img src="${m.iconImg}" class="loot-card-icon" alt="${m.name}">` : `<span style="font-size: 1.8rem;">${m.icon || '⚙️'}</span>`;
+                return `
+                    <div class="loot-card-item" style="border-color: ${m.color}; animation-delay: ${(loot.gear.length + idx) * 0.08}s;">
+                        <span style="font-size: 0.6rem; font-weight: 900; color: ${m.color};">+${qty}</span>
+                        ${mIcon}
+                        <div class="loot-card-name" title="${m.name}">${m.shortName || m.name}</div>
                     </div>
                 `;
             }).join('');
@@ -465,17 +527,18 @@ class ChestModalUI {
             
             <div style="display: flex; justify-content: center; gap: 20px; margin: 8px 0;">
                 <div style="display: flex; align-items: center; gap: 6px; font-size: 1.3rem; font-family: 'Luckiest Guy', sans-serif; color: #fed330; text-shadow: 2px 2px 0 #000;">
-                    <span>🪙</span> +${loot.coins.toLocaleString()}
+                    <span>${typeof UiIcons !== 'undefined' ? UiIcons.i('coin', 'ui-icon-sm') : '🪙'}</span> +${loot.coins.toLocaleString()}
                 </div>
                 ${loot.gems > 0 ? `
                     <div style="display: flex; align-items: center; gap: 6px; font-size: 1.3rem; font-family: 'Luckiest Guy', sans-serif; color: #54a0ff; text-shadow: 2px 2px 0 #000;">
-                        <span>💎</span> +${loot.gems.toLocaleString()}
+                        <span>${typeof UiIcons !== 'undefined' ? UiIcons.i('gem', 'ui-icon-sm') : '💎'}</span> +${loot.gems.toLocaleString()}
                     </div>
                 ` : ''}
             </div>
 
             <div class="chest-loot-cards">
                 ${gearCardsHtml}
+                ${matCardsHtml}
             </div>
 
             <button id="btn-collect-loot" class="comic-btn comic-btn-primary" style="width: 100%; padding: 14px; font-size: 1.15rem; margin-top: 10px;">

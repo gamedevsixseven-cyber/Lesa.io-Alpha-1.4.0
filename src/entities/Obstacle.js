@@ -41,6 +41,9 @@ class Obstacle {
                 effects.addDust(this.x, this.y, 8, 14);
                 effects.addSparks(this.x, this.y, '#e58e26', 8);
             }
+            if (typeof window !== 'undefined' && window.perkSystem && typeof window.perkSystem.onCrateDestroyed === 'function') {
+                window.perkSystem.onCrateDestroyed(this, game || window.gameInstance);
+            }
             return true; // Destroyed!
         }
         return false;
@@ -129,7 +132,9 @@ class Obstacle {
 
         this.bounceCooldown = 25;
         this.bounceScale = 1.5;
-        window.soundEngine.playMushroomBounce();
+        if (window.soundEngine && typeof window.soundEngine.playMushroomBounce === 'function') {
+            window.soundEngine.playMushroomBounce();
+        }
 
         // Launch entity in current direction or random angle
         const angle = entity.angle !== undefined ? entity.angle : Math.random() * Math.PI * 2;
@@ -155,18 +160,27 @@ class Obstacle {
         ctx.save();
         ctx.translate(this.x, this.y);
 
-        // Shadow (tree illustration already has an authentic baked soft shadow)
-        if (this.type !== 'tree') {
+        // Shadow (trees and bushes draw their own tailored 2.5D ground shadow)
+        if (!this.isOlympianPillar && this.type !== 'tree' && this.type !== 'bush') {
             ctx.fillStyle = 'rgba(0, 0, 0, 0.22)';
             ctx.beginPath();
             ctx.ellipse(0, this.radius * 0.75, this.radius * 0.9, this.radius * 0.35, 0, 0, Math.PI * 2);
             ctx.fill();
         }
 
-        if (this.type === 'crate') {
+        if (this.olympusStyle && this.drawOlympusProp(ctx)) {
+            ctx.restore();
+            return;
+        }
+
+        if (this.isOlympianPillar) {
+            this.drawOlympianPillar(ctx);
+        } else if (this.type === 'crate') {
             this.drawCrate(ctx);
+            if (this.isSnowy) this.drawSnowCap(ctx, this.radius * 1.6);
         } else if (this.type === 'barrel') {
             this.drawBarrel(ctx);
+            if (this.isSnowy) this.drawSnowCap(ctx, this.radius * 1.5);
         } else if (this.type === 'mushroom') {
             this.drawMushroom(ctx);
         } else if (this.type === 'bush') {
@@ -176,6 +190,97 @@ class Obstacle {
         }
 
         ctx.restore();
+    }
+
+    drawOlympianPillar(ctx) {
+        const w = 46;
+        const h = 130;
+        const halfW = w / 2;
+
+        // Ground shadow
+        ctx.fillStyle = 'rgba(15, 25, 35, 0.35)';
+        ctx.beginPath();
+        ctx.ellipse(0, 8, 38, 14, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // White/Gold Marble Column Shaft
+        ctx.fillStyle = '#f8f9fa';
+        ctx.strokeStyle = '#1e272e';
+        ctx.lineWidth = 3.5;
+        ctx.beginPath();
+        ctx.roundRect(-halfW, -h, w, h, 6);
+        ctx.fill();
+        ctx.stroke();
+
+        // Column fluting vertical grooves
+        ctx.strokeStyle = 'rgba(218, 165, 32, 0.45)';
+        ctx.lineWidth = 2.5;
+        for (let x = -halfW + 8; x <= halfW - 8; x += 10) {
+            ctx.beginPath();
+            ctx.moveTo(x, -h + 14);
+            ctx.lineTo(x, -10);
+            ctx.stroke();
+        }
+
+        // Capital & Base (Gold trim)
+        ctx.fillStyle = '#f1c40f';
+        ctx.strokeStyle = '#1e272e';
+        ctx.lineWidth = 3;
+        ctx.fillRect(-halfW - 6, -h - 6, w + 12, 14);
+        ctx.strokeRect(-halfW - 6, -h - 6, w + 12, 14);
+
+        ctx.fillRect(-halfW - 4, -8, w + 8, 12);
+        ctx.strokeRect(-halfW - 4, -8, w + 8, 12);
+    }
+
+    drawOlympusProp(ctx) {
+        if (typeof OlympusAssets === 'undefined') return false;
+        const specs = {
+            olive_tree: { key: 'olive_tree', w: 210, h: 210, anchorY: 0.72, sx: 0.36, sy: 0.12, syOff: 12 },
+            snow_pine:  { key: 'snow_pine',  w: 205, h: 215, anchorY: 0.76, sx: 0.35, sy: 0.12, syOff: 10 },
+            pillar:     { key: 'olympus_pillar', w: 132, h: 176, anchorY: 0.80, sx: 0.32, sy: 0.11, syOff: 8 },
+            boulder:    { key: 'olympus_boulder', w: 126, h: 118, anchorY: 0.62, sx: 0.42, sy: 0.16, syOff: 12 },
+            brazier:    { key: 'olympus_brazier', w: 112, h: 128, anchorY: 0.72, sx: 0.34, sy: 0.12, syOff: 8 }
+        };
+        const s = specs[this.olympusStyle];
+        if (!s) return false;
+
+        if (this.olympusStyle === 'brazier') {
+            let glow = Obstacle._brazierGlow;
+            if (!glow) {
+                glow = Obstacle._brazierGlow = document.createElement('canvas');
+                glow.width = 128;
+                glow.height = 128;
+                const gctx = glow.getContext('2d');
+                const g = gctx.createRadialGradient(64, 64, 6, 64, 64, 64);
+                g.addColorStop(0, 'rgba(255, 196, 64, 0.42)');
+                g.addColorStop(1, 'rgba(255, 140, 20, 0)');
+                gctx.fillStyle = g;
+                gctx.beginPath();
+                gctx.arc(64, 64, 64, 0, Math.PI * 2);
+                gctx.fill();
+            }
+            const pulse = 0.82 + Math.sin(Date.now() * 0.008 + this.x) * 0.18;
+            const gr = 84 * pulse;
+            ctx.drawImage(glow, -gr, -34 - gr, gr * 2, gr * 2);
+        }
+
+        return OlympusAssets.drawCenteredSprite(ctx, s.key, 0, 0, s.w, s.h, {
+            anchorY: s.anchorY,
+            shadow: true,
+            shadowScaleX: s.sx,
+            shadowScaleY: s.sy,
+            shadowOffsetY: s.syOff
+        });
+    }
+
+    drawSnowCap(ctx, width) {
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(0, -width * 0.45, width * 0.55, Math.PI, 0);
+        ctx.quadraticCurveTo(width * 0.25, -width * 0.35, 0, -width * 0.4);
+        ctx.quadraticCurveTo(-width * 0.25, -width * 0.35, -width * 0.55, -width * 0.45);
+        ctx.fill();
     }
 
     drawCrate(ctx) {
@@ -240,25 +345,9 @@ class Obstacle {
     }
 
     drawBush(ctx) {
-        const r = this.radius;
-        ctx.lineWidth = 3;
-        ctx.strokeStyle = '#1b1b1b';
-        ctx.fillStyle = '#2ed573';
-
-        // Fluffy cartoon leafy bush
-        ctx.beginPath();
-        ctx.arc(-r * 0.45, 0, r * 0.55, 0, Math.PI * 2);
-        ctx.arc(r * 0.45, 0, r * 0.55, 0, Math.PI * 2);
-        ctx.arc(0, -r * 0.4, r * 0.6, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.stroke();
-
-        // Highlights
-        ctx.fillStyle = '#7bed9f';
-        ctx.beginPath();
-        ctx.arc(0, -r * 0.5, r * 0.3, 0, Math.PI * 2);
-        ctx.arc(-r * 0.4, -r * 0.1, r * 0.2, 0, Math.PI * 2);
-        ctx.fill();
+        if (typeof FoliageRenderer !== 'undefined') {
+            FoliageRenderer.drawSmallTree(this, ctx, 1.0);
+        }
     }
 
     drawBarrel(ctx) {
@@ -317,6 +406,7 @@ class Obstacle {
     }
 
     static treeImage = null;
+    static _scaledTreeCanvas = null;
     static getTreeImage() {
         if (!Obstacle.treeImage && typeof Image !== 'undefined') {
             Obstacle.treeImage = new Image();
@@ -325,8 +415,22 @@ class Obstacle {
         return Obstacle.treeImage;
     }
 
-    drawTree(ctx) {
+    static getScaledTreeSprite() {
+        if (Obstacle._scaledTreeCanvas) return Obstacle._scaledTreeCanvas;
         const img = Obstacle.getTreeImage();
+        if (!img || !img.complete || img.naturalWidth <= 0) return null;
+        // Pre-downsample 1254x1254 tree once to 1.5x display resolution to avoid 6x Lanczos resample per tree per frame
+        const c = document.createElement('canvas');
+        c.width = 324;
+        c.height = 316;
+        const tctx = c.getContext('2d');
+        tctx.drawImage(img, 0, 0, c.width, c.height);
+        Obstacle._scaledTreeCanvas = c;
+        return c;
+    }
+
+    drawTree(ctx) {
+        const sprite = Obstacle.getScaledTreeSprite();
         // 2.5D Scale: 215px wide by 210px tall
         const w = 215;
         const h = 210;
@@ -340,18 +444,11 @@ class Obstacle {
         ctx.ellipse(0, 4, 38, 14, 0, 0, Math.PI * 2);
         ctx.fill();
 
-        if (img && img.complete && img.naturalWidth > 0) {
-            ctx.drawImage(img, drawX, drawY, w, h);
-        } else {
-            // Fallback while loading
-            ctx.fillStyle = '#2ed573';
-            ctx.beginPath();
-            ctx.arc(0, -this.radius * 0.8, this.radius * 1.5, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.fillStyle = '#795548';
-            ctx.beginPath();
-            ctx.arc(0, 0, this.radius, 0, Math.PI * 2);
-            ctx.fill();
+        if (sprite) {
+            ctx.drawImage(sprite, drawX, drawY, w, h);
+        } else if (typeof FoliageRenderer !== 'undefined') {
+            // Crisp procedural tree fallback while image finishes loading
+            FoliageRenderer.drawSmallTree(this, ctx, 1.85);
         }
     }
 }

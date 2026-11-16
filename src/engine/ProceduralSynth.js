@@ -39,6 +39,30 @@ class ProceduralSynth {
             gain.gain.exponentialRampToValueAtTime(0.01, now + 0.12);
             osc.start(now);
             osc.stop(now + 0.13);
+        } else if (type === 'carbine') {
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(1250 + Math.random() * 140, now);
+            osc.frequency.exponentialRampToValueAtTime(190, now + 0.09);
+            gain.gain.setValueAtTime(masterVolume * 0.85, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.09);
+            osc.start(now);
+            osc.stop(now + 0.1);
+        } else if (type === 'zeus_thunderbolt') {
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(1650 + Math.random() * 180, now);
+            osc.frequency.exponentialRampToValueAtTime(240, now + 0.12);
+            gain.gain.setValueAtTime(masterVolume * 0.85, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.12);
+            osc.start(now);
+            osc.stop(now + 0.13);
+        } else if (type === 'dialtone' || type === 'soundwave') {
+            osc.type = 'square';
+            osc.frequency.setValueAtTime(697, now);
+            osc.frequency.setValueAtTime(1209, now + 0.045);
+            gain.gain.setValueAtTime(masterVolume * 0.55, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.11);
+            osc.start(now);
+            osc.stop(now + 0.12);
         } else if (type === 'money_gun' || type === 'money') {
             osc.type = 'triangle';
             osc.frequency.setValueAtTime(1100, now);

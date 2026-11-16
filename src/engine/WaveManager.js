@@ -13,6 +13,7 @@ class WaveManager {
         this.betweenWaveTimer = 0;
         this.waveAnnouncementText = '';
         this.waveAnnouncementTimer = 0;
+        this.dungeonManager = null;
     }
 
     reset(gameMode = 'story') {
@@ -24,13 +25,25 @@ class WaveManager {
         this.betweenWaveTimer = 0;
         this.waveAnnouncementText = '';
         this.waveAnnouncementTimer = 0;
+        this.roufCrestAwarded = false;
+        if (gameMode === 'dungeons' && typeof DungeonManager !== 'undefined') {
+            this.dungeonManager = new DungeonManager(this);
+        } else {
+            this.dungeonManager = null;
+        }
     }
 
     isBossWave(waveNum = this.wave) {
+        if (this.gameMode === 'endless' && typeof EndlessWaveDirector !== 'undefined') {
+            return EndlessWaveDirector.isBossWave(waveNum);
+        }
         return this.gameMode === 'story' && waveNum === 10;
     }
 
     isMiniBossWave(waveNum = this.wave) {
+        if (this.gameMode === 'endless' && typeof EndlessWaveDirector !== 'undefined') {
+            return EndlessWaveDirector.isMiniBossWave(waveNum);
+        }
         return this.gameMode === 'story' && waveNum === 15;
     }
 
@@ -39,9 +52,22 @@ class WaveManager {
     }
 
     startWave(waveNum, player, enemies, effects) {
+        if (this.gameMode === 'dungeons' && this.dungeonManager) {
+            this.dungeonManager.startFloor(waveNum, player, enemies, effects);
+            return;
+        }
+        if (this.gameMode === 'endless' && typeof EndlessWaveDirector !== 'undefined') {
+            EndlessWaveDirector.startEndlessWave(this, waveNum, player, enemies, effects);
+            return;
+        }
+
         this.wave = waveNum;
         this.waveState = 'IN_PROGRESS';
         this.waveEnemiesKilled = 0;
+        this.waveMatDrops = 0;
+        if (typeof window !== 'undefined' && window.GameState && typeof window.GameState.recordWaveProgress === 'function') {
+            window.GameState.recordWaveProgress('story', waveNum);
+        }
 
         const enemyCount = 4 + Math.floor(waveNum * 2.5);
         this.waveTotalEnemies = enemyCount;
@@ -172,6 +198,18 @@ class WaveManager {
         if (game.effects) {
             game.effects.addConfetti(game.player.x, game.player.y, 35);
         }
+        WaveManager.vacuumMaterialDrops(game.drops);
+
+        if (this.gameMode === 'endless' && typeof EndlessWaveDirector !== 'undefined') {
+            EndlessWaveDirector.onEndlessWaveCleared(this, game);
+            if (typeof window !== 'undefined' && window.EventBus) {
+                window.EventBus.emit('waveCompleted', { wave: this.wave });
+            }
+            if (typeof GearPassives !== 'undefined') {
+                GearPassives.onWaveCleared(game);
+            }
+            return;
+        }
 
         const isBossWave = this.isBossWave();
         const isMiniBoss = this.isMiniBossWave();
@@ -195,8 +233,28 @@ class WaveManager {
             game.effects.addComicSplash(game.player.x, game.player.y - 60, isRoufWave ? 'CHAPTER 2 COMPLETE! 🏆' : (isBossWave ? 'BOSS DEFEATED! 🏆' : 'MINI-BOSS DEFEATED! 💥'));
         }
 
+        // Story Final Boss (Rouf, Wave 20): +1 Olympus Ascent Crest (capped at 3)
+        if (this.gameMode === 'story' && isRoufWave && !this.roufCrestAwarded) {
+            this.roufCrestAwarded = true;
+            if (typeof window !== 'undefined' && window.ascentCrestManager) {
+                const res = window.ascentCrestManager.awardStoryBossCrest();
+                const msg = res.added > 0
+                    ? `+${res.added} OLYMPUS CREST! (${res.count}/${res.max})`
+                    : `OLYMPUS CRESTS FULL (${res.count}/${res.max})`;
+                if (game.ui && typeof game.ui.addKillfeed === 'function') {
+                    game.ui.addKillfeed(`Rouf Defeated — ${msg}`);
+                }
+                if (game.effects && typeof game.effects.spawnDamageText === 'function') {
+                    game.effects.spawnDamageText(game.player.x, game.player.y - 95, msg, '#fde047');
+                }
+            }
+        }
+
         if (typeof window !== 'undefined' && window.EventBus) {
             window.EventBus.emit('waveCompleted', { wave: this.wave });
+        }
+        if (typeof GearPassives !== 'undefined') {
+            GearPassives.onWaveCleared(game);
         }
 
         // Spawn bonus celebration drops (Extra lavish rewards for Boss/Mini-Boss/Rouf)
@@ -220,6 +278,11 @@ class WaveManager {
     update(dt, game) {
         if (this.waveAnnouncementTimer > 0) {
             this.waveAnnouncementTimer -= dt;
+        }
+
+        if (this.gameMode === 'dungeons' && this.dungeonManager) {
+            this.dungeonManager.update(dt, game);
+            return;
         }
 
         if (this.waveState === 'IN_PROGRESS') {
@@ -251,6 +314,11 @@ class WaveManager {
     }
 
     renderAnnouncement(ctx, width, height) {
+        if (this.gameMode === 'dungeons' && this.dungeonManager) {
+            this.dungeonManager.render(ctx, width, height);
+            return;
+        }
+
         if (this.waveAnnouncementTimer <= 0 || !this.waveAnnouncementText) return;
 
         // Suppress if the big boss warning screen is active so no duplicate popup appears behind it
@@ -262,23 +330,46 @@ class WaveManager {
         const halfW = width / 2;
         const halfH = height / 2;
 
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.font = "900 48px 'Luckiest Guy', cursive";
-
         ctx.fillStyle = '#1e272e';
         ctx.fillRect(halfW - 280, halfH - 120, 560, 74);
         ctx.lineWidth = 4;
         ctx.strokeStyle = '#fed330';
         ctx.strokeRect(halfW - 280, halfH - 120, 560, 74);
 
-        ctx.lineWidth = 8;
-        ctx.strokeStyle = '#1e272e';
-        ctx.fillStyle = '#fed330';
-        ctx.strokeText(this.waveAnnouncementText, halfW, halfH - 82);
-        ctx.fillText(this.waveAnnouncementText, halfW, halfH - 82);
+        if (typeof EnemyBase !== 'undefined' && EnemyBase.getLabelSprite) {
+            const lbl = EnemyBase.getLabelSprite(
+                this.waveAnnouncementText,
+                "900 48px 'Luckiest Guy', cursive",
+                '#fed330',
+                '#1e272e',
+                8,
+                530,
+                'middle'
+            );
+            EnemyBase.drawLabel(ctx, lbl, halfW, halfH - 82);
+        } else {
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.font = "900 48px 'Luckiest Guy', cursive";
+            ctx.lineWidth = 8;
+            ctx.strokeStyle = '#1e272e';
+            ctx.fillStyle = '#fed330';
+            ctx.strokeText(this.waveAnnouncementText, halfW, halfH - 82, 530);
+            ctx.fillText(this.waveAnnouncementText, halfW, halfH - 82, 530);
+        }
 
         ctx.restore();
+    }
+
+    static vacuumMaterialDrops(drops) {
+        if (!Array.isArray(drops) || typeof Drop === 'undefined' || !Drop.MATERIAL_DROP_MAP) return;
+        for (let i = 0; i < drops.length; i++) {
+            const d = drops[i];
+            if (d && !d.dead && Drop.MATERIAL_DROP_MAP[d.type]) {
+                d.magnetized = true;
+                d.life = Math.max(d.life || 0, 240);
+            }
+        }
     }
 }
 

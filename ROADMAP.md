@@ -222,6 +222,46 @@
 
 ---
 
+## 🎨 Art & UI Polish — Custom Icons In the Works
+
+> Deferred until image-generation quota resets, plus full audit of existing tab emojis queued for custom cartoon PNG replacement.
+
+### 1. Pending Epic & Legendary Gear Icons (6 Remaining of 20)
+Already wired: `14/20` PNG icons in `src/data/gearEndgame.js` (`assets/helmets/`, `assets/armors/`, `assets/belts/`, `assets/gloves/`, `assets/boots/`). Remaining `6` items currently using emoji fallbacks:
+* **Helmet**: `bouzouki_fedora` (`🎩`) → `assets/helmets/GoldenBouzoukiFedora.png`
+* **Armor**: `mat_riot_vest` (`🛡️`) → `assets/armors/MatRiotVest.png`
+* **Armor**: `aegis_jacket` (`🧥`) → `assets/armors/AegisKafenioJacket.png`
+* **Armor**: `grandmaster_cuirass` (`🔥`) → `assets/armors/GrandmasterButcherCuirass.png`
+* **Belt**: `tyche_belt` (`🎲`) → `assets/belts/GoldenTavliBeltTyche.png`
+* **Boots**: `titan_greaves` (`🥾`) → `assets/boots/TitanGreavesOlympus.png`
+
+### 2. Other Modal Tabs & Shared UI Emojis to Replace with Custom PNGs
+* **Shared Tab & Economy Chrome** (`index.html`, `ModalManager.js`, manager toasts/pills):
+  * Currency & status pills across tabs: Coins (`🪙`), Gems/Diamonds (`💎`), Lock (`🔒`), Unlocked (`🔓`), Equipped/Check (`✅`), Warning (`⚠️`), Star/Level/Max (`⭐`), Clocks/Timers (`⏱️`, `⏳`).
+* **Upgrades Tab** (`#upgrades-modal`, `src/data/upgrades.js`, `src/ui/UpgradeManager.js`):
+  * Modal title (`⚡`), summary bar (`🪙`, `⚡`, `⭐`), button icons (`🪙`, `⭐`), and all 4 Upgrade Cards: `Critical Chance` (`🎯`), `Critical Damage` (`💥`), `Max Health` (`❤️`), `Gold Bonus` (`🪙`).
+* **Perks Loadout Tab** (`#talents-modal`, `src/data/perks.js`, `src/ui/PerkManager.js`):
+  * Modal title (`🎖️`), summary bar (`🪙`, `🎖️`, `📦`), empty slot (`➕`), search (`🔍`), vault header (`📦`), category chips (`🔥`, `🎯`, `💥`, `💣`, `⚡`, `🪙`), and all 6 Perk Cards: `Hot Foot` (`🔥`), `Counter-Blast` (`💥`), `Golden Touch` (`🪙`), `Last Laugh` (`💣`), `Second Wind` (`⚡`), `Headhunter` (`🎯`).
+* **Daily Challenges / Quests Tab** (`#daily-quests-modal`, `src/data/quests.js`, `src/progression/QuestManager.js`):
+  * Modal title (`📜`), menu timer (`⏱`), claim toast/rewards (`🎉`, `🪙`, `💎`), and all 5 Quests: `Enemy Sweeper` (`⚔️`), `Skatmir Crusher` (`🥊`), `Casillas Dodger` (`🎯`), `Wave Survivor` (`🌊`), `Cookie Monster` (`🍪`).
+* **Hero Roster Tab** (`#heroes-modal`, `src/ui/HeroRoster.js`):
+  * Modal title (`🪖`), filter chips (`✅`, `🔒`, `⏳`), summary pills (`🪙`, `🪖`, `⭐`), mystery/coming-soon slots (`❓`, `⏳`), lock/buy/selected markers (`🔒`, `🪙`, `✅`). *(Hero portraits already use `assets/HeroesIcons/*.png`.)*
+* **Skills Tab** (`#skills-modal`, `src/data/skills.js`, `src/ui/SkillManager.js`):
+  * Modal title (`🗡️`), filter chips (`✅`, `🔒`, `⭐`), summary bar (`🪙`, `💎`, `🔓`, `🗡️`), Pagakia mastery ice icons (`🧊`, `⭐`), fallback/button icons. *(All 5 active skills already use `assets/SkillsIcons/*.png`; `FrappesLesaIO.png` also exists unused.)*
+* **Gear & Weapons Tab Chrome** (`#weapons-modal`, `src/ui/GearModalUI.js`, `src/data/weapons.js`):
+  * `🎒` inventory header & `⚔️ Weapons` subtab (note `assets/GearUIIcons/GearInventoryUI.png` & `assets/icons/icon_weapons.png` already exist unused), passive sparkle (`✨`), chest-only/fallback badges (`📦`, `🔒`, `🛡️`, `⚠️`), and all 10 `STAT_LABELS` (`❤️`, `👟`, `🛡️`, `🎯`, `💥`, `⚡`, `⚔️`, `💨`, `🌀`, `🧲`; note `ATK.png`, `DEF.png`, `HP.png` exist in `assets/GearUIIcons/`). *(Note: `HUDController.js` weapon indicator & `weapons.js` also keep emoji fallbacks alongside `assets/WeaponIcons/*.png`.)*
+* **Inventory & Chests Tab** (`#inventory-modal`, `src/ui/InventoryModalUI.js`, `src/data/bossRanks.js`, `src/ui/ChestModalUI.js`):
+  * Modal title (`🎒`), summary pills (`📦`, `🪙`, `💎`), section headers (`👑`, `🛡️`), Arsenal & Stats cards (`🛡️`, `🏆`, `⚡`), Boss Rank dots (`🟢`, `🔵`, `🟣`, `🟠`, `🔴`), and Chest reveal cards/prompts (`🪙`, `💎`, `🛡️`, `✨`, `⏱️`, `⚡`, `👆`, `🎉`).
+* **Profile, Mail, Friends, Settings & Menu Bottom Row** (`index.html`, `ProfileManager.js`, `MailManager.js`, `FriendsModal.js`, `SettingsManager.js`, `MenuController.js`):
+  * **Profile**: Header (`👑`), buttons (`✏️`, `📋`), Career Stats icons (`📊`, `⚔️`, `🌊`, `🏆`, `🥊`, `⚽`, `🎮`, `⏱️`, `🪖`).
+  * **Mail**: Header (`✉️`), mail/gift badges & patch bullets (`👑`, `📢`, `✨`, `🚨`, `🎁`, `⏳`, `🪙`, `💎`, `✅`).
+  * **Friends**: Header & tabs (`👥`, `🔔`, `➕`), status/actions (`📋`, `✅`, `🚀`, `🤝`, `📊`, `📨`, `🟢`, `⚫`, `⏳`, `🏆`, `🌊`).
+  * **Settings**: Gear icon (`⚙️`), audio/toggles (`🎵`, `🔊`, `🎯`, `✅`, `❌`), cloud (`☁️`, `🔄`, `⏳`).
+  * **Menu Bottom Row & Cards**: Leaderboard (`🏆`), Friends (`👥`), Clans (`🛡️`), Mail (`✉️`), Events (`📅`), Battle Pass (`ℹ️`, `🎁`, `👑`), Fullscreen (`⛶`).
+* **Shared Modal Headers Opportunity**: Existing menu button PNGs (`icon_heroes.png`, `icon_gear.png`, `icon_skills.png`, `icon_upgrades.png`, `icon_inventory.png`, `icon_talents.png` in `assets/icons/`) can also replace emoji prefixes in modal `<h2 class="modal-title">` headers (`index.html`) when refactoring tab UIs.
+
+---
+
 ## 🛠️ Architecture & Line-Count Principles
 
 1. **Strict File Size Limits**: Every source file must remain strictly `< 600 lines` (soft target ~400 lines).

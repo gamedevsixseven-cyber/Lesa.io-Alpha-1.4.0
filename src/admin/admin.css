@@ -2,17 +2,21 @@
    Lesa.io - Admin & Playtesting Panel Styling
    ========================================================== */
 
+#admin-modal.modal-overlay {
+    z-index: 9999;
+}
+
 #admin-modal .modal-panel {
-    max-width: 820px;
+    max-width: 860px;
     width: 95%;
-    max-height: 90vh;
+    max-height: 92vh;
     display: flex;
     flex-direction: column;
     background: #1e272e;
     color: #f1f2f6;
     border: 4px solid #fed330;
     box-shadow: 0 12px 35px rgba(0,0,0,0.85), 0 0 25px rgba(254, 211, 48, 0.4);
-    padding: 24px;
+    padding: 20px;
     border-radius: 16px;
     overflow: hidden;
 }
@@ -21,9 +25,13 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
+    flex-shrink: 0;
+    flex-wrap: wrap;
+    gap: 8px;
     border-bottom: 2px solid rgba(255,255,255,0.12);
-    padding-bottom: 12px;
-    margin-bottom: 14px;
+    padding-bottom: 10px;
+    margin-bottom: 10px;
+    padding-right: 34px;
 }
 
 .admin-title-badge {
@@ -50,10 +58,11 @@
 /* Tabs Navigation */
 .admin-tabs-nav {
     display: flex;
+    flex-shrink: 0;
     gap: 8px;
     border-bottom: 2px solid rgba(255,255,255,0.1);
     padding-bottom: 8px;
-    margin-bottom: 16px;
+    margin-bottom: 12px;
     overflow-x: auto;
 }
 
@@ -233,4 +242,116 @@
 
 .admin-text-input:focus {
     border-color: #fed330;
+}
+
+.admin-warp-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+}
+
+.admin-control-btn.btn-info {
+    background: #0984e3;
+    border-color: #74b9ff;
+    color: #ffffff;
+}
+
+.admin-control-btn.btn-olympus {
+    background: linear-gradient(135deg, #6c5ce7, #341f97);
+    border-color: #fed330;
+    color: #fed330;
+}
+
+.admin-control-btn.is-on {
+    background: #2ed573;
+    border-color: #7bed9f;
+    color: #1e272e;
+    box-shadow: 0 0 12px rgba(46, 213, 115, 0.45);
+}
+
+.admin-status-toast {
+    flex-shrink: 0;
+    margin-bottom: 10px;
+    padding: 8px 12px;
+    border-radius: 10px;
+    font-size: 0.88rem;
+    font-weight: 700;
+    background: rgba(46, 213, 115, 0.16);
+    border: 1px solid rgba(46, 213, 115, 0.55);
+    color: #7bed9f;
+}
+
+.admin-status-toast.is-warn {
+    background: rgba(240, 147, 43, 0.2);
+    border-color: rgba(254, 211, 48, 0.65);
+    color: #fed330;
+}
+
+.admin-status-toast.is-error {
+    background: rgba(235, 77, 75, 0.2);
+    border-color: rgba(255, 121, 121, 0.65);
+    color: #ff7979;
+}
+
+.admin-status-toast.hidden {
+    display: none;
+}
+
+/* Temporary Public Testing Launcher Button (shown only while AdminAuth.TESTING_OPEN_ACCESS = true) */
+.temp-admin-launch-btn {
+    position: fixed;
+    bottom: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 9500;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 12px;
+    border-radius: 999px;
+    background: rgba(30, 39, 46, 0.9);
+    color: #fed330;
+    border: 2px solid #fed330;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.45);
+    font-family: 'Luckiest Guy', cursive;
+    font-size: 0.78rem;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    touch-action: manipulation;
+}
+
+.temp-admin-launch-btn:hover {
+    filter: brightness(1.15);
+    transform: translateX(-50%) translateY(-1px);
+}
+
+@media (max-height: 500px), (max-width: 720px) {
+    #admin-modal .modal-panel {
+        padding: 12px;
+        max-height: 95vh;
+        width: 98%;
+    }
+    .admin-title-badge {
+        font-size: 1.05rem;
+    }
+    .admin-tab-btn {
+        padding: 6px 10px;
+        font-size: 0.82rem;
+    }
+    .admin-btn-grid {
+        grid-template-columns: repeat(auto-fill, minmax(145px, 1fr));
+        gap: 7px;
+    }
+    .admin-control-btn {
+        padding: 8px 10px;
+        font-size: 0.84rem;
+    }
+    .temp-admin-launch-btn {
+        bottom: 6px;
+        left: 50%;
+        padding: 4px 10px;
+        font-size: 0.72rem;
+    }
 }

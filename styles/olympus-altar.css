@@ -1,0 +1,489 @@
+/* ================================================================
+   OLYMPUS SANCTUARY ALTAR — Comic Temple Blessing Selection UI
+   Matches Lesa.io comic tokens (Luckiest Guy / Fredoka, bold outlines,
+   hard comic shadows, Greek key frieze, and warm parchment surfaces).
+   ================================================================ */
+
+#olympus-blessing-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 2600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    font-family: 'Fredoka', cursive, sans-serif;
+    background:
+        radial-gradient(circle at 50% 24%, rgba(254, 211, 48, 0.22) 0%, rgba(254, 211, 48, 0) 52%),
+        radial-gradient(circle at 50% 60%, rgba(45, 72, 130, 0.55) 0%, rgba(12, 19, 36, 0.90) 78%),
+        rgba(9, 14, 28, 0.86);
+    backdrop-filter: blur(7px);
+    -webkit-backdrop-filter: blur(7px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    animation: altarBackdropIn 0.22s ease-out both;
+}
+
+@keyframes altarBackdropIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes altarTemplePop {
+    0% { opacity: 0; transform: translateY(22px) scale(0.94); }
+    72% { opacity: 1; transform: translateY(-4px) scale(1.015); }
+    100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes altarCardPop {
+    0% { opacity: 0; transform: translateY(26px) scale(0.92); }
+    75% { opacity: 1; transform: translateY(-5px) scale(1.02); }
+    100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes altarSunSpin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+@keyframes altarFlamePulse {
+    0%, 100% { opacity: 0.62; transform: translate(-50%, -50%) scale(0.96); }
+    50% { opacity: 0.95; transform: translate(-50%, -50%) scale(1.09); }
+}
+
+.altar-temple-panel {
+    position: relative;
+    width: min(940px, 100%);
+    max-height: calc(100vh - 24px);
+    display: flex;
+    flex-direction: column;
+    background: linear-gradient(180deg, #fffdf4 0%, var(--comic-panel-bg, #fff9e6) 58%, #f8e5b2 100%);
+    border: 5px solid var(--dark-outline, #1e272e);
+    border-radius: 26px;
+    box-shadow: 0 18px 46px rgba(0, 0, 0, 0.62), 9px 9px 0 var(--dark-outline, #1e272e);
+    overflow: hidden;
+    animation: altarTemplePop 0.34s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.altar-meander-frieze {
+    height: 18px;
+    flex-shrink: 0;
+    background-color: #d99b26;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='36' height='18' viewBox='0 0 36 18'%3E%3Crect width='36' height='18' fill='%23f7b731'/%3E%3Cpath d='M0 15h36M0 3h36' stroke='%231e272e' stroke-width='2.2'/%3E%3Cpath d='M3 15V6h12v6H9V9h3M21 15V6h12v6h-6V9h3' fill='none' stroke='%23995800' stroke-width='2.2' stroke-linecap='square'/%3E%3C/svg%3E");
+    background-repeat: repeat-x;
+    background-size: 36px 18px;
+}
+.altar-meander-frieze.top { border-bottom: 4px solid var(--dark-outline, #1e272e); }
+.altar-meander-frieze.bottom { border-top: 4px solid var(--dark-outline, #1e272e); }
+
+.altar-scroll-body {
+    position: relative;
+    padding: 16px 26px 18px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+}
+.altar-scroll-body::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background-image: radial-gradient(rgba(214, 168, 72, 0.14) 1.5px, transparent 1.5px);
+    background-size: 14px 14px;
+    opacity: 0.7;
+}
+
+/* Header with flanking sanctuary braziers */
+.altar-header-stage {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    margin-bottom: 12px;
+}
+
+.altar-brazier-pedestal {
+    position: relative;
+    width: 68px;
+    height: 68px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(180deg, #fff5d1 0%, #f0cf85 100%);
+    border: 3.5px solid var(--dark-outline, #1e272e);
+    border-radius: 16px;
+    box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.7), 4px 4px 0 var(--dark-outline, #1e272e);
+}
+.altar-brazier-glow {
+    position: absolute;
+    left: 50%;
+    top: 38%;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255, 195, 48, 0.85) 0%, rgba(255, 107, 53, 0.35) 55%, rgba(255, 107, 53, 0) 100%);
+    pointer-events: none;
+    animation: altarFlamePulse 1.7s ease-in-out infinite;
+}
+.altar-brazier-img {
+    position: relative;
+    z-index: 1;
+    width: 54px;
+    height: 54px;
+    object-fit: contain;
+    filter: drop-shadow(0 2px 3px rgba(30, 39, 46, 0.45));
+}
+
+.altar-header-center { flex: 1; min-width: 0; text-align: center; }
+.altar-eyebrow-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 4px 14px;
+    margin-bottom: 6px;
+    background: linear-gradient(180deg, #3b5284 0%, #243356 100%);
+    color: #fff6c9;
+    border: 3px solid var(--dark-outline, #1e272e);
+    border-radius: 999px;
+    box-shadow: 3px 3px 0 var(--dark-outline, #1e272e);
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+}
+.altar-eyebrow-pill img {
+    width: 16px;
+    height: 16px;
+    object-fit: contain;
+    filter: brightness(0) invert(1) drop-shadow(0 1px 0 rgba(0, 0, 0, 0.4));
+}
+
+.altar-main-title {
+    margin: 0;
+    font-family: 'Luckiest Guy', cursive;
+    font-size: clamp(24px, 3.2vw, 34px);
+    line-height: 1.05;
+    letter-spacing: 1.4px;
+    color: var(--comic-yellow, #fed330);
+    -webkit-text-stroke: 2.5px var(--dark-outline, #1e272e);
+    paint-order: stroke fill;
+    text-shadow: 4px 4px 0 var(--dark-outline, #1e272e);
+}
+.altar-subtitle {
+    margin: 4px 0 0;
+    font-size: 13.5px;
+    font-weight: 600;
+    color: #534636;
+}
+
+/* Ascent Progress & Active Boons Strip */
+.altar-ascent-strip {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 9px 14px;
+    margin: 0 auto 15px;
+    background: #2b3342;
+    border: 3.5px solid var(--dark-outline, #1e272e);
+    border-radius: 16px;
+    box-shadow: 4px 4px 0 rgba(30, 39, 46, 0.9);
+}
+.altar-strip-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 11px;
+    border-radius: 999px;
+    border: 2.5px solid var(--dark-outline, #1e272e);
+    background: rgba(255, 255, 255, 0.11);
+    color: #f8fafc;
+    font-size: 12.5px;
+    font-weight: 700;
+}
+.altar-strip-pill.route { background: linear-gradient(180deg, #4b6584 0%, #34495e 100%); color: #fff6c9; }
+.altar-strip-pill.route .altar-arrow { color: var(--comic-yellow, #fed330); font-weight: 900; }
+.altar-strip-pill.elev { background: #3d485d; color: #7dd3fc; }
+.altar-strip-pill.hp { background: #3e2831; color: #ff9f9f; }
+.altar-strip-pill img { width: 15px; height: 15px; object-fit: contain; }
+.altar-strip-pill.route img { filter: brightness(1.18) drop-shadow(0 1px 1px rgba(0, 0, 0, 0.55)); }
+
+.altar-active-boons {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 9px;
+    border-radius: 999px;
+    border: 2.5px solid var(--dark-outline, #1e272e);
+    background: rgba(254, 211, 48, 0.16);
+    color: #ffeaa7;
+    font-size: 12px;
+    font-weight: 700;
+}
+.altar-boon-mini-dot {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid var(--dark-outline, #1e272e);
+    box-shadow: 0 2px 0 var(--dark-outline, #1e272e);
+}
+.altar-boon-mini-dot svg { width: 14px; height: 14px; }
+
+/* Blessing Cards Grid */
+.altar-cards-grid {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+    align-items: stretch;
+}
+.altar-card {
+    --god-color: #fed330;
+    --god-banner-top: #ffd84d;
+    --god-banner-bot: #f59f00;
+    --god-glow: rgba(254, 211, 48, 0.35);
+    --god-tint: #fff8df;
+    appearance: none;
+    font-family: inherit;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    text-align: center;
+    padding: 0;
+    background: linear-gradient(180deg, #ffffff 0%, var(--god-tint) 100%);
+    border: 4px solid var(--dark-outline, #1e272e);
+    border-radius: 20px;
+    box-shadow: 5px 5px 0 var(--dark-outline, #1e272e);
+    overflow: hidden;
+    cursor: pointer;
+    transition: transform 0.16s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.16s ease, filter 0.16s ease;
+    animation: altarCardPop 0.36s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.altar-card:nth-child(1) { animation-delay: 0.05s; }
+.altar-card:nth-child(2) { animation-delay: 0.12s; }
+.altar-card:nth-child(3) { animation-delay: 0.19s; }
+.altar-card:hover,
+.altar-card:focus-visible {
+    outline: none;
+    transform: translateY(-6px) scale(1.018);
+    box-shadow: 0 12px 24px var(--god-glow), 7px 9px 0 var(--dark-outline, #1e272e);
+    filter: brightness(1.02);
+}
+.altar-card:active,
+.altar-card.is-pressed {
+    transform: translate(3px, 4px) scale(0.99);
+    box-shadow: 2px 2px 0 var(--dark-outline, #1e272e);
+}
+
+.altar-card-ribbon {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 8px 12px;
+    background: linear-gradient(180deg, var(--god-banner-top) 0%, var(--god-banner-bot) 100%);
+    border-bottom: 3.5px solid var(--dark-outline, #1e272e);
+}
+.altar-god-tag { display: flex; flex-direction: column; align-items: flex-start; line-height: 1.05; text-align: left; }
+.altar-god-name {
+    font-family: 'Luckiest Guy', cursive;
+    font-size: 16px;
+    letter-spacing: 1px;
+    color: #ffffff;
+    -webkit-text-stroke: 2px var(--dark-outline, #1e272e);
+    paint-order: stroke fill;
+    text-shadow: 2px 2px 0 var(--dark-outline, #1e272e);
+}
+.altar-god-domain {
+    font-size: 10.5px;
+    font-weight: 800;
+    letter-spacing: 0.7px;
+    text-transform: uppercase;
+    color: rgba(30, 39, 46, 0.9);
+}
+.altar-hotkey-cap {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 30px;
+    height: 28px;
+    padding: 0 7px;
+    background: #fff9e6;
+    color: var(--dark-outline, #1e272e);
+    border: 2.5px solid var(--dark-outline, #1e272e);
+    border-radius: 8px;
+    box-shadow: 0 3px 0 var(--dark-outline, #1e272e);
+    font-family: 'Luckiest Guy', cursive;
+    font-size: 15px;
+    line-height: 1;
+}
+
+.altar-card-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 14px 14px 10px;
+}
+
+/* Medallion Crest with Spinning Sunburst Aura */
+.altar-medallion-wrap {
+    position: relative;
+    width: 90px;
+    height: 90px;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.altar-sunburst {
+    position: absolute;
+    inset: -12px;
+    border-radius: 50%;
+    background: repeating-conic-gradient(from 0deg, var(--god-banner-bot) 0deg 14deg, transparent 14deg 28deg);
+    -webkit-mask-image: radial-gradient(circle, #000 32%, transparent 72%);
+    mask-image: radial-gradient(circle, #000 32%, transparent 72%);
+    opacity: 0.42;
+    animation: altarSunSpin 18s linear infinite;
+}
+.altar-card:hover .altar-sunburst { opacity: 0.68; animation-duration: 9s; }
+.altar-medallion {
+    position: relative;
+    z-index: 1;
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: radial-gradient(circle at 30% 25%, #ffffff 0%, var(--god-tint) 48%, var(--god-color) 100%);
+    border: 4px solid var(--dark-outline, #1e272e);
+    box-shadow: inset 0 0 0 3px rgba(255, 255, 255, 0.55), inset 0 -5px 0 rgba(30, 39, 46, 0.16), 0 4px 0 var(--dark-outline, #1e272e);
+    transition: transform 0.18s ease;
+}
+.altar-card:hover .altar-medallion { transform: scale(1.07) rotate(-3deg); }
+.altar-medallion svg { width: 52px; height: 52px; filter: drop-shadow(0 2px 0 rgba(30, 39, 46, 0.25)); }
+
+.altar-text-stack { width: 100%; flex: 1; display: flex; flex-direction: column; align-items: center; }
+.altar-boon-title {
+    margin: 0 0 8px;
+    min-height: 43px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Luckiest Guy', cursive;
+    font-size: 20px;
+    line-height: 1.08;
+    letter-spacing: 0.6px;
+    color: var(--dark-outline, #1e272e);
+}
+
+.altar-stat-chips { display: flex; flex-wrap: wrap; justify-content: center; gap: 5px; margin-bottom: 9px; }
+.altar-stat-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 8px;
+    background: #fff9e6;
+    border: 2px solid var(--dark-outline, #1e272e);
+    border-radius: 999px;
+    box-shadow: 0 2px 0 rgba(30, 39, 46, 0.85);
+    font-size: 11.5px;
+    font-weight: 800;
+    color: var(--dark-outline, #1e272e);
+}
+.altar-stat-chip img { width: 14px; height: 14px; object-fit: contain; }
+.altar-boon-desc { margin: 0; font-size: 12.8px; font-weight: 600; line-height: 1.38; color: #495057; }
+
+.altar-card-cta {
+    margin: 10px 12px 12px;
+    padding: 9px 10px;
+    border-radius: 12px;
+    background: linear-gradient(180deg, var(--god-banner-top) 0%, var(--god-banner-bot) 100%);
+    border: 3px solid var(--dark-outline, #1e272e);
+    box-shadow: 0 4px 0 var(--dark-outline, #1e272e);
+    font-family: 'Luckiest Guy', cursive;
+    font-size: 15px;
+    letter-spacing: 0.9px;
+    color: #ffffff;
+    -webkit-text-stroke: 2px var(--dark-outline, #1e272e);
+    paint-order: stroke fill;
+    text-shadow: 2px 2px 0 var(--dark-outline, #1e272e);
+    transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+.altar-card:hover .altar-card-cta { transform: translateY(-1px); box-shadow: 0 5px 0 var(--dark-outline, #1e272e); }
+.altar-card:active .altar-card-cta,
+.altar-card.is-pressed .altar-card-cta { transform: translateY(2px); box-shadow: 0 1px 0 var(--dark-outline, #1e272e); }
+
+.altar-footer-hint {
+    position: relative;
+    z-index: 1;
+    margin-top: 11px;
+    text-align: center;
+    font-size: 12px;
+    font-weight: 700;
+    color: #6b5b43;
+}
+
+/* Narrow viewport stack */
+@media (max-width: 820px) {
+    .altar-scroll-body { padding: 14px 14px 16px; }
+    .altar-brazier-pedestal { width: 52px; height: 52px; border-radius: 13px; }
+    .altar-brazier-img { width: 42px; height: 42px; }
+    .altar-cards-grid { grid-template-columns: 1fr; gap: 11px; }
+    .altar-card { text-align: left; }
+    .altar-card-ribbon { padding: 6px 12px; }
+    .altar-card-body { flex-direction: row; flex-wrap: wrap; justify-content: flex-start; gap: 8px 12px; padding: 10px 12px; text-align: left; }
+    .altar-medallion-wrap { width: 64px; height: 64px; margin-bottom: 0; flex-shrink: 0; }
+    .altar-medallion { width: 56px; height: 56px; }
+    .altar-medallion svg { width: 38px; height: 38px; }
+    .altar-text-stack { align-items: flex-start; min-width: 170px; }
+    .altar-stat-chips { justify-content: flex-start; margin-bottom: 4px; }
+    .altar-boon-title { font-size: 17px; min-height: auto; justify-content: flex-start; margin-bottom: 4px; }
+    .altar-card-cta { margin: 0 12px 10px; padding: 7px 10px; text-align: center; }
+}
+
+@media (max-width: 480px) {
+    #olympus-blessing-modal { padding: 8px; }
+    .altar-temple-panel { border-radius: 20px; border-width: 4px; }
+    .altar-brazier-pedestal { display: none; }
+    .altar-scroll-body { padding: 12px 10px; }
+    .altar-ascent-strip { gap: 5px; padding: 7px 8px; margin-bottom: 11px; }
+    .altar-strip-pill { font-size: 11.5px; padding: 3px 8px; }
+}
+
+/* Compact phone/tablet landscape layout (Lesa.io runs in landscape on mobile) */
+@media (max-height: 520px) {
+    #olympus-blessing-modal { padding: 6px 12px; }
+    .altar-temple-panel { border-width: 4px; border-radius: 18px; max-height: calc(100vh - 12px); }
+    .altar-meander-frieze { height: 10px; background-size: 24px 10px; }
+    .altar-meander-frieze.top { border-bottom-width: 3px; }
+    .altar-meander-frieze.bottom { border-top-width: 3px; }
+    .altar-scroll-body { padding: 8px 14px 9px; }
+    .altar-header-stage { margin-bottom: 5px; gap: 10px; }
+    .altar-brazier-pedestal { width: 42px; height: 42px; border-radius: 10px; border-width: 2.5px; }
+    .altar-brazier-img { width: 32px; height: 32px; }
+    .altar-eyebrow-pill { font-size: 9.5px; padding: 2px 9px; margin-bottom: 2px; border-width: 2px; }
+    .altar-eyebrow-pill img { width: 12px; height: 12px; }
+    .altar-main-title { font-size: 21px; -webkit-text-stroke: 2px var(--dark-outline, #1e272e); text-shadow: 3px 3px 0 var(--dark-outline, #1e272e); }
+    .altar-subtitle { display: none; }
+    .altar-ascent-strip { padding: 4px 9px; margin-bottom: 8px; gap: 5px; border-width: 2.5px; border-radius: 12px; }
+    .altar-strip-pill { font-size: 10.5px; padding: 2px 7px; border-width: 2px; }
+    .altar-cards-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 9px; }
+    .altar-card { border-width: 3px; border-radius: 14px; text-align: center; }
+    .altar-card-ribbon { padding: 4px 8px; border-bottom-width: 2.5px; }
+    .altar-god-name { font-size: 13.5px; }
+    .altar-god-domain { font-size: 9px; }
+    .altar-hotkey-cap { min-width: 22px; height: 20px; font-size: 11px; border-width: 2px; border-radius: 6px; }
+    .altar-card-body { flex-direction: column; align-items: center; gap: 0; padding: 7px 8px 5px; text-align: center; }
+    .altar-medallion-wrap { width: 50px; height: 50px; margin-bottom: 4px; }
+    .altar-medallion { width: 46px; height: 46px; border-width: 3px; }
+    .altar-medallion svg { width: 30px; height: 30px; }
+    .altar-text-stack { align-items: center; }
+    .altar-boon-title { font-size: 14px; min-height: 28px; justify-content: center; margin-bottom: 3px; }
+    .altar-stat-chips { justify-content: center; gap: 3px; margin-bottom: 3px; }
+    .altar-stat-chip { font-size: 9.5px; padding: 1px 5px; border-width: 1.5px; }
+    .altar-stat-chip img { width: 11px; height: 11px; }
+    .altar-boon-desc { font-size: 10.5px; line-height: 1.2; }
+    .altar-card-cta { margin: 4px 8px 7px; padding: 4px 6px; font-size: 12px; border-width: 2.5px; border-radius: 9px; }
+    .altar-footer-hint { display: none; }
+}

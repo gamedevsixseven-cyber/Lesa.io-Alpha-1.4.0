@@ -7,15 +7,15 @@
 .perks-loadout-slots {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 14px;
-    margin: 14px 0 12px 0;
+    gap: 12px;
+    margin: 4px 0 10px 0;
 }
 
 .perk-slot-card {
     background: #ffffff;
     border: 3.5px solid var(--dark-outline);
     border-radius: 18px;
-    padding: 14px 10px;
+    padding: 10px 8px;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -198,14 +198,9 @@
 /* Category Filter Chips */
 .perks-filter-chips {
     display: flex;
+    flex-wrap: wrap;
     gap: 6px;
-    overflow-x: auto;
     padding-bottom: 2px;
-    scrollbar-width: none;
-}
-
-.perks-filter-chips::-webkit-scrollbar {
-    display: none;
 }
 
 .perk-filter-chip {
@@ -243,8 +238,6 @@
     border-radius: 16px;
     padding: 12px 14px;
     text-align: left;
-    max-height: 270px;
-    overflow-y: auto;
 }
 
 .perks-vault-header {
@@ -373,6 +366,11 @@
 
 .perk-vault-action-col {
     flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 5px;
+    min-width: 102px;
 }
 
 .perk-buy-btn {
@@ -450,3 +448,61 @@
     margin-bottom: 6px;
     display: block;
 }
+
+/* --- 4. FORGE STASH, RANKS, FEAT GATES & UPGRADES --- */
+.perk-slot-meta-row { display: flex; align-items: center; justify-content: center; gap: 4px; margin-bottom: 3px; }
+.perk-slot-rank-badge {
+    font-family: 'Fredoka', sans-serif; font-size: 0.64rem; font-weight: 900; color: #2f3542;
+    background: #ffeaa7; border: 1.5px solid var(--dark-outline); border-radius: 7px; padding: 1px 6px;
+}
+.perk-slot-rank-badge.is-cap { background: #ff6b6b; color: #fff; }
+
+.perks-material-stash { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+.perk-stash-chip {
+    display: inline-flex; align-items: center; gap: 4px; font-family: 'Fredoka', sans-serif;
+    font-size: 0.72rem; font-weight: 700; color: #2f3542; background: #fff;
+    border: 1.5px solid #cbd5e1; border-radius: 10px; padding: 2px 8px;
+}
+.perk-mat-icon { width: 15px; height: 15px; object-fit: contain; vertical-align: middle; }
+
+.perk-rarity-pill {
+    font-family: 'Luckiest Guy', cursive; font-size: 0.6rem; color: #fff; padding: 2px 6px;
+    border-radius: 7px; border: 1.5px solid var(--dark-outline); text-shadow: 1px 1px 0 #000;
+}
+.perk-rank-pill {
+    font-family: 'Luckiest Guy', cursive; font-size: 0.64rem; color: #2c3e50; background: #74b9ff;
+    padding: 2px 7px; border-radius: 7px; border: 1.5px solid var(--dark-outline);
+}
+.perk-rank-pill.is-max { background: #ffd32a; color: #1e272e; }
+.perk-vault-tag.tag-capstone { background: #ff7675; color: #fff; border-color: #d63031; }
+.perk-vault-tag.tag-tradeoff { background: #2d3436; color: #ffeaa7; border-color: #000; }
+.perk-vault-item.rarity-epic { border-left: 5px solid #9b59b6; }
+.perk-vault-item.rarity-legendary { border-left: 5px solid #f59e0b; background: #fffcf2; }
+.perk-vault-item.rarity-mythic { border-left: 5px solid #e74c3c; background: linear-gradient(135deg, #fff5f5 0%, #fffaf0 100%); box-shadow: inset 0 0 0 1px rgba(231, 76, 60, 0.28); }
+
+.perk-active-rank-line { margin-top: 3px; font-size: 0.72rem; font-weight: 800; color: #0984e3; }
+.perk-drawback-line { margin-top: 3px; font-size: 0.72rem; font-weight: 800; color: #d63031; }
+
+.perk-req-strip, .perk-cost-strip, .perk-next-rank-strip {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 5px;
+    margin-top: 5px; font-size: 0.7rem; font-weight: 700;
+}
+.perk-strip-label { font-family: 'Luckiest Guy', cursive; font-size: 0.64rem; color: #57606f; letter-spacing: 0.3px; }
+.perk-next-summary { color: #2f3542; font-weight: 800; }
+.perk-next-costs { display: inline-flex; flex-wrap: wrap; gap: 4px; }
+
+.perk-req-chip, .perk-cost-pill {
+    display: inline-flex; align-items: center; gap: 3px; padding: 2px 7px; border-radius: 8px;
+    border: 1.5px solid #cbd5e1; background: #f1f2f6; color: #57606f; font-weight: 800;
+}
+.perk-req-chip.is-met, .perk-cost-pill.is-affordable { background: #e8fff3; border-color: #2ed573; color: #1e8449; }
+.perk-req-chip.is-unmet, .perk-cost-pill.is-short { background: #fff0f0; border-color: #ff6b6b; color: #c0392b; }
+
+.perk-upgrade-btn {
+    font-family: 'Luckiest Guy', cursive; font-size: 0.74rem; padding: 5px 10px; background: #38bdf8;
+    color: #0f172a; border: 2.5px solid var(--dark-outline); border-radius: 10px;
+    cursor: pointer; box-shadow: 2px 2px 0 #000;
+}
+.perk-upgrade-btn.cannot-buy { opacity: 0.62; background: #dfe4ea; color: #57606f; }
+.perk-upgrade-btn:hover.can-buy { transform: scale(1.04); background: #0ea5e9; color: #fff; text-shadow: 1px 1px 0 #000; }
+.perk-upgrade-btn.is-maxed { background: #ffd32a; color: #1e272e; cursor: default; opacity: 0.92; }

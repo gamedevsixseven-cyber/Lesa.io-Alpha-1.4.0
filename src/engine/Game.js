@@ -15,6 +15,7 @@ class Game {
         this.arena = new Arena(3000, 3000);
         this.effects = new EffectsManager();
         this.waveManager = new WaveManager();
+        this.waveSkipper = (typeof WaveSkipperMachine !== 'undefined') ? new WaveSkipperMachine() : null;
 
         window.effectsManager = this.effects;
         window.gameInstance = this;
@@ -59,6 +60,7 @@ class Game {
                 this.player.useSkill(this.enemies, this.effects, this.camera, this);
             }
         };
+        this.input.onInteractCallback = () => (this.state === 'PLAYING' && !this.isCutsceneActive() && this.waveSkipper) && this.waveSkipper.tryActivate(this);
 
         this.input.onPauseCallback = () => {
             if (this.state === 'PLAYING') {
@@ -122,6 +124,7 @@ class Game {
         }
         if (this.camera) {
             this.camera.dpr = dpr;
+            this.camera.zoomPunch = 0;
             this.camera.targetZoom = this.camera.computeAdaptiveZoom();
             this.camera.zoom = this.camera.targetZoom;
         }
@@ -134,12 +137,9 @@ class Game {
     startNewGame(heroType = 'psanas', gameMode = 'story') {
         this.gameMode = gameMode;
         this.player = new Player(0, 0, heroType);
-        const chosenWeapon = (window.GameState && window.GameState.player && window.GameState.player.weaponType) || localStorage.getItem('lesaio_selected_weapon');
-        if (chosenWeapon === 'bubble') {
-            const isBubbleUnlocked = (window.GameState && window.GameState.player && window.GameState.player.unlockedWeapons && window.GameState.player.unlockedWeapons.includes('bubble')) || localStorage.getItem('lesaio_weapon_bubble_unlocked') === 'true';
-            if (isBubbleUnlocked) {
-                this.player.weaponType = 'bubble';
-            }
+        this.coinsEarnedThisRun = 0;
+        if (typeof WeaponSystem !== 'undefined') {
+            this.player.weaponType = WeaponSystem.resolveEquippedWeapon(this.player.weaponType);
         }
         this.enemies.length = 0;
         this.bullets.length = 0;
@@ -149,9 +149,16 @@ class Game {
         if (typeof window !== 'undefined' && window.perkSystem) {
             window.perkSystem.init(this);
         }
+        if (typeof GearPassives !== 'undefined') {
+            GearPassives.initPlayer(this.player);
+        }
 
         this.gameTime = 0;
+        if (gameMode !== 'dungeons' && this.arena && this.arena.dungeonFloor) {
+            this.arena.resetNormalTheme();
+        }
         this.waveManager.reset(gameMode);
+        if (this.waveSkipper) this.waveSkipper.reset(this);
         if (this.cutsceneOverlay) this.cutsceneOverlay.endCutscene();
         this.initLeaderboard();
 
@@ -193,6 +200,7 @@ class Game {
 
     gameOver() {
         this.state = 'GAME_OVER';
+        if (typeof document !== 'undefined') document.getElementById('olympus-blessing-modal')?.remove();
         if (this.touchInput) this.touchInput.hide();
         const timeElapsedSec = this.gameTime / 60;
         const timeStr = `${Math.floor(timeElapsedSec / 60)}m ${Math.floor(timeElapsedSec % 60)}s`;
@@ -200,17 +208,16 @@ class Game {
         const fatmirsBonked = (this.player && this.player.fatmirKills) || 0;
         const casillasOutplayed = (this.player && this.player.casillasKills) || 0;
         const skarmogyftosOutsmarted = (this.player && this.player.skarmogyftosKills) || 0;
+        const kleanthisDefeated = (this.player && this.player.kleanthisKills) || 0;
+        const kiloumpasDefeated = (this.player && this.player.kiloumpasKills) || 0;
+        const roufDefeated = (this.player && this.player.roufKills) || 0;
+        const totalKills = Math.max((this.player && this.player.kills) || 0, fatmirsBonked + casillasOutplayed + skarmogyftosOutsmarted + kleanthisDefeated + kiloumpasDefeated + roufDefeated);
 
         // Record lifetime stats in GameState
         if (typeof window !== 'undefined' && window.GameState) {
             window.GameState.recordMatch(
-                this.player.score,
-                this.waveManager.wave,
-                timeElapsedSec,
-                fatmirsBonked,
-                casillasOutplayed,
-                this.player.heroType,
-                skarmogyftosOutsmarted
+                this.player.score, this.waveManager.wave, timeElapsedSec,
+                fatmirsBonked, casillasOutplayed, this.player.heroType, skarmogyftosOutsmarted, totalKills, this.gameMode
             );
             this.highScore = window.GameState.player.stats.highScore;
         } else if (this.player.score > this.highScore) {
@@ -218,19 +225,18 @@ class Game {
             localStorage.setItem('lesaio_highscore', this.highScore.toString());
         }
 
-        // Calculate Match Gold Coins (Buffed: 20 per wave, 1 per 5 kills, 350 for Boss Kleanthis)
-        const kleanthisDefeated = (this.player && this.player.kleanthisKills) || 0;
+        // Calculate Match Gold Coins (Buffed: 20 per wave, 1 per 5 kills, bosses bonus)
         const wavesCleared = Math.max(0, (this.waveManager ? this.waveManager.wave - 1 : 0));
-        const totalKills = fatmirsBonked + casillasOutplayed + skarmogyftosOutsmarted + kleanthisDefeated;
         const wavesGold = wavesCleared * 20;
         const killsGold = Math.floor(totalKills / 5);
-        const kleanthisBossGold = (kleanthisDefeated > 0 || (this.waveManager && this.waveManager.wave > 10)) ? 350 : 0;
-        const baseGold = wavesGold + killsGold + kleanthisBossGold;
+        const bossGold = (kleanthisDefeated * 350) + (kiloumpasDefeated * 200) + (roufDefeated * 500) + ((this.player && this.player.endlessBossGoldBonus) || 0);
+        const baseGold = wavesGold + killsGold + bossGold;
 
         const upgrades = (typeof window !== 'undefined' && window.GameState && window.GameState.player && window.GameState.player.upgrades) || {};
         const goldBonusLvl = upgrades.goldBonus || 0;
-        const goldMultiplier = 1 + (goldBonusLvl * 0.03);
+        const goldMultiplier = (1 + (goldBonusLvl * 0.03)) * (typeof GearPassives !== 'undefined' ? GearPassives.getGoldMultiplier() : 1.0) * ((typeof window !== 'undefined' && window.perkSystem && window.perkSystem.getCoinMultiplier) ? window.perkSystem.getCoinMultiplier() : 1.0);
         const earnedCoins = Math.round(baseGold * goldMultiplier);
+        const displayedCoins = earnedCoins + (this.coinsEarnedThisRun || 0);
 
         // Credit earned coins to player's persistent wallet
         if (this.ui && typeof this.ui.setCoins === 'function') {
@@ -240,10 +246,10 @@ class Game {
         }
 
         // Calculate Match Account XP (waves, kills, and bosses)
-        const wavesXP = wavesCleared * 35; // 35 XP per wave cleared
-        const killsXP = totalKills * 2; // 2 XP per enemy kill
-        const bossXP = (kleanthisDefeated > 0 || (this.waveManager && this.waveManager.wave > 10)) ? 250 : 0; // 250 XP for Boss Kleanthis
-        const earnedXP = wavesXP + killsXP + bossXP;
+        const wavesXP = wavesCleared * 35;
+        const killsXP = totalKills * 2;
+        const bossXP = (kleanthisDefeated * 250) + (kiloumpasDefeated * 150) + (roufDefeated * 350) + ((this.player && this.player.endlessBossXpBonus) || 0);
+        const earnedXP = Math.round((wavesXP + killsXP + bossXP) * ((typeof window !== 'undefined' && window.perkSystem && window.perkSystem.getXpMultiplier) ? window.perkSystem.getXpMultiplier() : 1.0));
 
         // Credit earned XP to player's persistent Account Level
         if (typeof window !== 'undefined' && window.GameState && earnedXP > 0) {
@@ -283,8 +289,10 @@ class Game {
                     rand -= r.weight;
                 }
                 const awarded = window.chestManager.addChest(wonType);
-                if (awarded && this.ui) {
-                    this.ui.addKillfeed(`Earned ${wonType.toUpperCase()} CHEST! 📦`);
+                if (awarded === 'inventory' && this.ui) {
+                    this.ui.addKillfeed(`Slots full — ${wonType.toUpperCase()} CHEST saved to Inventory!`);
+                } else if (awarded && this.ui) {
+                    this.ui.addKillfeed(`Earned ${wonType.toUpperCase()} CHEST!`);
                 }
             }
         }
@@ -294,7 +302,7 @@ class Game {
             currentWave,
             totalKills,
             timeStr,
-            earnedCoins,
+            displayedCoins,
             earnedXP
         );
     }
@@ -333,6 +341,7 @@ class Game {
         this.camera.follow(this.player.x, this.player.y);
         this.camera.update(dt);
         this.arena.update(dt);
+        if (this.waveSkipper) this.waveSkipper.update(dt, this);
 
         // Bullets Compaction
         let bWrite = 0;
@@ -348,7 +357,8 @@ class Game {
             for (let i = 0; i < this.enemies.length; i++) {
                 const enemy = this.enemies[i];
                 if (Number.isFinite(enemy.targetX) && Number.isFinite(enemy.targetY)) {
-                    const lerp = Math.min(1.0, 0.45 * dt);
+                    if (enemy.vx || enemy.vy) { enemy.targetX += enemy.vx * dt; enemy.targetY += enemy.vy * dt; }
+                    const lerp = Math.min(1.0, 0.55 * dt);
                     enemy.x += (enemy.targetX - enemy.x) * lerp;
                     enemy.y += (enemy.targetY - enemy.y) * lerp;
                     if (Number.isFinite(enemy.targetAngle)) {
@@ -384,7 +394,9 @@ class Game {
                     }
                     continue;
                 }
-                if (enemy.updateFear && enemy.updateFear(dt, this.player, this.effects)) {
+                const baseTarget = (this.coopSession && enemy.coopTarget) ? enemy.coopTarget : this.player;
+                const targetEntity = (typeof window !== 'undefined' && window.perkSystem && window.perkSystem.getTargetOverride) ? window.perkSystem.getTargetOverride(enemy, baseTarget) : baseTarget;
+                if (enemy.updateFear && enemy.updateFear(dt, targetEntity, this.effects)) {
                     if (enemy.hitFlash > 0) enemy.hitFlash -= dt;
                     enemy.applyArenaBounds(this.arena);
                     if (enemy.dead) {
@@ -394,7 +406,6 @@ class Game {
                     }
                     continue;
                 }
-                const targetEntity = (this.coopSession && enemy.coopTarget) ? enemy.coopTarget : this.player;
                 enemy.update(dt, targetEntity, this.enemies, this.bullets, this.effects, this.arena);
                 if (enemy.dead) {
                     CollisionSystem.handleDeath(this, enemy);
@@ -497,22 +508,23 @@ class Game {
         for (let i = 0; i < this.arena.obstacles.length; i++) {
             const obs = this.arena.obstacles[i];
             if (obs.dead) continue;
-            // Defer trees south of player so their 2.5D canopy renders over player
-            if (obs.type === 'tree' && obs.y > this.player.y) continue;
+            // Defer tall 2.5D trees/pillars south of player so their top renders over player
+            if (obs.type === 'tree' && obs.isTall25D !== false && obs.y > this.player.y) continue;
             if (this.camera.isVisible(obs.x, obs.y, obs.radius + 120)) {
                 obs.draw(ctx);
             }
         }
 
-        // 4. Enemies (Viewport Culled)
+        // 3.5. Endless Wave Skipper & 4. Enemies (Viewport Culled + Hit Squash-and-Stretch)
+        if (this.waveSkipper) this.waveSkipper.draw(ctx, this.camera);
         for (let i = 0; i < this.enemies.length; i++) {
             const enemy = this.enemies[i];
             if (enemy.dead) continue;
             if (this.camera.isVisible(enemy.x, enemy.y, enemy.radius + 50)) {
+                const hitSquashed = (typeof CombatRenderFX !== 'undefined') && CombatRenderFX.beginEnemyTransform(ctx, enemy);
                 enemy.draw(ctx);
-                if (enemy.drawBubbleTrap) {
-                    enemy.drawBubbleTrap(ctx);
-                }
+                if (hitSquashed) CombatRenderFX.endEnemyTransform(ctx, hitSquashed);
+                if (enemy.drawBubbleTrap) enemy.drawBubbleTrap(ctx);
             }
         }
 
@@ -532,10 +544,10 @@ class Game {
             }
         }
 
-        // 6.5. Foreground 2.5D Trees (Canopy overlays player with peek-through transparency)
+        // 6.5. Foreground 2.5D Trees/Columns (Canopy overlays player with peek-through transparency)
         for (let i = 0; i < this.arena.obstacles.length; i++) {
             const obs = this.arena.obstacles[i];
-            if (obs.dead || obs.type !== 'tree' || obs.y <= this.player.y) continue;
+            if (obs.dead || obs.type !== 'tree' || obs.isTall25D === false || obs.y <= this.player.y) continue;
             if (this.camera.isVisible(obs.x, obs.y, obs.radius + 120)) {
                 const dx = this.player.x - obs.x;
                 const dy = this.player.y - (obs.y - 70);
@@ -556,15 +568,15 @@ class Game {
 
         this.camera.restoreTransform(ctx);
 
-        // 8. Screen Space Overlays & Wave Banners
+        // 8. Screen Space Overlays, Combat Feedback & Wave Banners
         if (this.state === 'PLAYING') {
+            if (this.effects && typeof this.effects.drawScreenSpace === 'function') {
+                this.effects.drawScreenSpace(ctx, this.canvas.width, this.canvas.height, this.player);
+            }
             this.waveManager.renderAnnouncement(ctx, this.canvas.width, this.canvas.height);
-            if (this.bossWarningOverlay) {
-                this.bossWarningOverlay.draw(ctx, this.canvas.width, this.canvas.height);
-            }
-            if (this.cutsceneOverlay) {
-                this.cutsceneOverlay.draw(ctx, this.canvas.width, this.canvas.height);
-            }
+            if (this.waveSkipper) this.waveSkipper.renderScreenOverlay(ctx, this.canvas.width, this.canvas.height, this);
+            if (this.bossWarningOverlay) this.bossWarningOverlay.draw(ctx, this.canvas.width, this.canvas.height);
+            if (this.cutsceneOverlay) this.cutsceneOverlay.draw(ctx, this.canvas.width, this.canvas.height);
         }
     }
 

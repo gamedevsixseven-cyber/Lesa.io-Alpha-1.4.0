@@ -54,7 +54,7 @@ class SeismicQuakeSkill {
 
             for (let i = 0; i < enemies.length; i++) {
                 const enemy = enemies[i];
-                if (enemy.dead) continue;
+                if (enemy.dead || enemy.isDying || enemy.isAirborneImmune) continue;
 
                 const dx = enemy.x - player.x;
                 const dy = enemy.y - player.y;
@@ -67,18 +67,20 @@ class SeismicQuakeSkill {
                     const nx = dx / dist;
                     const ny = dy / dist;
 
-                    // Knockback impulse
-                    enemy.x += nx * knockback;
-                    enemy.y += ny * knockback;
+                    if (!enemy.isStationary) {
+                        enemy.x += nx * knockback;
+                        enemy.y += ny * knockback;
+                    }
 
                     // Deal heavy crushing damage
                     enemy.takeDamage(finalDamage, effects, true);
 
-                    // Apply Stun debuff and interrupt charges
-                    if (typeof enemy.applyStun === 'function') {
-                        enemy.applyStun(stunSec, effects);
-                    } else {
-                        enemy.stunTimer = Math.round(stunSec * 60);
+                    if (!enemy.isStationary) {
+                        if (typeof enemy.applyStun === 'function') {
+                            enemy.applyStun(stunSec, effects);
+                        } else {
+                            enemy.stunTimer = Math.round(stunSec * 60);
+                        }
                     }
 
                     // Explicitly cancel brute charges if charging

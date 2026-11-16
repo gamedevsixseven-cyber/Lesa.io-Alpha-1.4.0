@@ -96,12 +96,17 @@ class ChestManager {
         return -1;
     }
 
-    addChest(type = 'common') {
+    addChest(type = 'common', options = {}) {
         const def = (typeof CHEST_TYPES !== 'undefined') ? CHEST_TYPES[type] : null;
         if (!def) return false;
 
         const emptyIdx = this.getFirstEmptySlot();
         if (emptyIdx === -1) {
+            if (!options.slotOnly && typeof window !== 'undefined' && window.inventoryManager && typeof window.inventoryManager.addChestToInventory === 'function') {
+                if (window.inventoryManager.addChestToInventory(type, 1)) {
+                    return 'inventory';
+                }
+            }
             return false; // All 4 slots full
         }
 
@@ -115,6 +120,9 @@ class ChestManager {
 
         this.save();
         this.render();
+        if (typeof window !== 'undefined' && window.inventoryModalUI && typeof window.inventoryModalUI.render === 'function') {
+            window.inventoryModalUI.render();
+        }
 
         if (window.soundEngine && typeof window.soundEngine.playPickup === 'function') {
             window.soundEngine.playPickup('diamond');
@@ -273,12 +281,10 @@ class ChestManager {
         return `${mins}M ${secs < 10 ? '0' + secs : secs}S`;
     }
 
-    openChest(slotIndex) {
-        const slot = this.slots[slotIndex];
-        if (!slot || slot.state !== 'READY') return null;
-
-        const def = CHEST_TYPES[slot.type] || CHEST_TYPES.common;
-
+    /**
+     * Rolls coins, gems, and eligible gear for a chest definition and credits the player.
+     */
+    rollAndGrantLootForDef(def, showModal = true) {
         // 1. Roll Coins
         const coins = Math.floor(Math.random() * (def.maxCoins - def.minCoins + 1)) + def.minCoins;
 
@@ -288,19 +294,40 @@ class ChestManager {
             gems = Math.floor(Math.random() * (def.maxGems - def.minGems + 1)) + def.minGems;
         }
 
-        // 3. Roll Gear Items from ALL_GEAR
+        // 3. Roll Gear Items from GEAR_DATA / ALL_GEAR (never dropping exclusive event items, and 0% Epic/Leg for Common/Uncommon chests)
         const droppedGear = [];
-        if (typeof ALL_GEAR !== 'undefined' && Array.isArray(ALL_GEAR) && ALL_GEAR.length > 0) {
+        const duplicateEntries = [];
+        const rawGear = (typeof ALL_GEAR !== 'undefined' && Array.isArray(ALL_GEAR) && ALL_GEAR.length > 0)
+            ? ALL_GEAR
+            : (typeof GEAR_DATA !== 'undefined' ? Object.values(GEAR_DATA) : []);
+        const allowEpic = ((def.gearOdds && def.gearOdds.epic) || 0) > 0 || (def.guaranteedEpic || 0) > 0;
+        const allowLeg = ((def.gearOdds && def.gearOdds.legendary) || 0) > 0 || (def.guaranteedLegendary || 0) > 0;
+        const eligibleGear = rawGear.filter(g => {
+            const r = g.rarity || 'common';
+            if (r === 'exclusive' || r === 'mythic' || g.excludeFromChests || g.bossUnlock) return false;
+            if (r === 'epic' && !allowEpic) return false;
+            if (r === 'legendary' && !allowLeg) return false;
+            return true;
+        });
+
+        if (eligibleGear.length > 0) {
             for (let i = 0; i < def.gearCount; i++) {
                 const targetRarity = this.rollRarity(def, i);
-                let pool = ALL_GEAR.filter(g => (g.rarity || 'common') === targetRarity);
-                if (pool.length === 0) pool = ALL_GEAR;
+                let pool = eligibleGear.filter(g => (g.rarity || 'common') === targetRarity);
+                if (pool.length === 0) pool = eligibleGear;
                 const chosen = pool[Math.floor(Math.random() * pool.length)];
                 if (chosen) {
-                    droppedGear.push(chosen);
-                    this.grantGearToInventory(chosen.id);
+                    const grantRes = this.grantGearToInventory(chosen.id);
+                    droppedGear.push({ ...chosen, isDuplicate: grantRes.isDuplicate, shardBonus: grantRes.shardBonus });
+                    if (grantRes.isDuplicate && grantRes.shardBonus > 0) duplicateEntries.push(grantRes);
                 }
             }
+        }
+
+        // 3.5. Container materials & duplicate gear salvage into Armory Shards
+        let matLoot = { materials: {}, duplicateShards: 0 };
+        if (typeof window !== 'undefined' && window.inventoryManager && typeof window.inventoryManager.applyContainerMaterials === 'function') {
+            matLoot = window.inventoryManager.applyContainerMaterials(def.id || def.rarity, duplicateEntries);
         }
 
         // 4. Deposit currencies
@@ -308,12 +335,29 @@ class ChestManager {
             window.GameState.addCurrency(coins, gems);
         }
 
+        const loot = { coins, gems, gear: droppedGear, materials: matLoot.materials, duplicateShards: matLoot.duplicateShards };
+
+        if (showModal && typeof ChestModalUI !== 'undefined' && typeof ChestModalUI.showLoot === 'function') {
+            ChestModalUI.showLoot(def, loot);
+        }
+
+        return loot;
+    }
+
+    openChest(slotIndex) {
+        const slot = this.slots[slotIndex];
+        if (!slot || slot.state !== 'READY') return null;
+
+        const def = CHEST_TYPES[slot.type] || CHEST_TYPES.common;
+        const loot = this.rollAndGrantLootForDef(def, false);
+
         // 5. Empty slot
         this.slots[slotIndex] = null;
         this.save();
         this.render();
-
-        const loot = { coins, gems, gear: droppedGear };
+        if (typeof window !== 'undefined' && window.inventoryModalUI && typeof window.inventoryModalUI.render === 'function') {
+            window.inventoryModalUI.render();
+        }
 
         // 6. Show Loot Opening Animation Modal
         if (typeof ChestModalUI !== 'undefined' && typeof ChestModalUI.showLoot === 'function') {
@@ -324,32 +368,33 @@ class ChestManager {
     }
 
     rollRarity(def, itemIndex) {
-        if (itemIndex === 0 && def.guaranteedLegendary) return 'legendary';
-        if (itemIndex === 0 && def.guaranteedEpic) return 'epic';
-        if (itemIndex === 0 && def.guaranteedRare) return 'rare';
+        if (itemIndex < (def.guaranteedLegendary || 0)) return 'legendary';
+        if (itemIndex < (def.guaranteedEpic || 0)) return 'epic';
+        if (itemIndex < (def.guaranteedRare || 0)) return 'rare';
 
-        const odds = def.gearOdds;
-        const rand = Math.random();
+        const odds = def.gearOdds || { common: 1.0 };
+        const entries = Object.entries(odds).filter(([, prob]) => prob > 0);
+        const total = entries.reduce((sum, [, prob]) => sum + prob, 0);
+        const rand = Math.random() * (total > 0 ? total : 1);
         let cumulative = 0;
 
-        for (const [rarity, prob] of Object.entries(odds)) {
+        for (const [rarity, prob] of entries) {
             cumulative += prob;
             if (rand <= cumulative) return rarity;
         }
-        return 'common';
+        return entries.length > 0 ? entries[entries.length - 1][0] : 'common';
     }
 
     grantGearToInventory(gearId) {
-        if (typeof GearManager !== 'undefined' && typeof GearManager.getUnlockedList === 'function') {
-            const list = GearManager.getUnlockedList();
-            if (!list.includes(gearId)) {
-                list.push(gearId);
-                if (window.GameState && window.GameState.player) {
-                    window.GameState.player.unlockedGear = list;
-                }
-                localStorage.setItem('lesaio_unlocked_gear', JSON.stringify(list));
-            }
+        if (typeof window !== 'undefined' && window.inventoryManager && typeof window.inventoryManager.grantGearToInventory === 'function') {
+            return window.inventoryManager.grantGearToInventory(gearId);
         }
+        if (typeof GearManager !== 'undefined' && typeof GearManager.unlock === 'function') {
+            const wasUnlocked = (typeof GearManager.isUnlocked === 'function') ? GearManager.isUnlocked(gearId) : false;
+            GearManager.unlock(gearId, { free: true, source: 'chest' });
+            return { isDuplicate: wasUnlocked, shardBonus: 0 };
+        }
+        return { isDuplicate: false, shardBonus: 0 };
     }
 
     updateTimerDisplays() {
@@ -384,7 +429,7 @@ class ChestManager {
                 // Empty Slot
                 card.className = 'chest-slot-card slot-empty';
                 card.innerHTML = `
-                    <div class="slot-empty-icon">🔒</div>
+                    <div class="slot-empty-icon">${typeof UiIcons !== 'undefined' ? UiIcons.i('lock', 'ui-icon-box') : '🔒'}</div>
                     <div class="slot-empty-title">EMPTY SLOT</div>
                     <div class="slot-empty-hint">Win matches or complete quests to earn chests!</div>
                 `;
@@ -403,7 +448,7 @@ class ChestManager {
                     const rem = this.getRemainingSeconds(slot);
                     const canFree = this.canUseDailyFreeSkip(slot);
                     const freeClass = canFree ? 'status-free-skip-ready' : '';
-                    const lblText = canFree ? '⚡ FREE FINISH!' : 'UNLOCKS IN';
+                    const lblText = canFree ? `${typeof UiIcons !== 'undefined' ? UiIcons.i('bolt', 'ui-icon-sm') : '⚡'} FREE FINISH!` : 'UNLOCKS IN';
                     footerHtml = `
                         <div class="chest-card-footer status-unlocking ${freeClass}">
                             <span class="status-unlocking-lbl">${lblText}</span>

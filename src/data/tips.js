@@ -57,6 +57,8 @@ const RAW_TIPS = [
     'weapon_watermelon_cannon|weapon|The *Watermelon Cannon* deals devastating AoE splash damage—ideal for eliminating dense enemy clusters!',
     'weapon_chili_blaster|weapon|The *Chili Blaster* shoots searing spicy projectiles that pierce straight through multiple enemies!',
     'weapon_bubble_gun|weapon|The *Bubble Gun* fires iridescent bubbles that bounce off obstacles and trap foes!',
+    'weapon_kiloumpas_carbine|weapon|Defeat Wave 15 mini-boss *Kiloumpas* to unlock *Kiloumpas\'s Carbine*, firing high-velocity piercing slugs with +15% Crit!',
+    'weapon_rouf_dialtone|weapon|Defeat Wave 20 boss *Rouf* to unlock *Rouf\'s Dial-Tone Blaster*, slowing enemies on hit and firing a 3-way sonic volley every 4th shot!',
 
     // 8. DROPS & POWERUPS
     'drop_xp_cookies|pickup|Collect golden *XP Cookies* to level up your hero and pick powerful upgrades during the match!',

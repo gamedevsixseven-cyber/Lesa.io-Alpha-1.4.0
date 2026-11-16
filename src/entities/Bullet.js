@@ -31,7 +31,11 @@ class Bullet {
         this.vx = opt.vx || 0;
         this.vy = opt.vy || 0;
         this.damage = opt.damage !== undefined ? opt.damage : 25;
-        this.speed = opt.speed || 12;
+        this.speed = typeof opt.speed === 'number' ? opt.speed : 12;
+        if (this.speed > 1.5 && Math.abs(Math.hypot(this.vx, this.vy) - 1) < 0.05) {
+            this.vx *= this.speed;
+            this.vy *= this.speed;
+        }
         this.radius = opt.radius || 8;
         this.type = opt.type || 'pea';
         this.isEnemy = opt.isEnemy || false;
@@ -46,6 +50,7 @@ class Bullet {
 
         this.rotation = Math.atan2(this.vy, this.vx);
         this.trail = [];
+        this.trailTimer = 0;
         this.age = 0;
         this.scaleX = 1.3;
         this.scaleY = 0.8;
@@ -58,19 +63,24 @@ class Bullet {
         this.y += this.vy * dt;
         this.distanceTraveled += moveDist;
 
-        // Trail recording
-        if (this.age % 2 === 0) {
-            this.trail.unshift({ x: this.x, y: this.y, alpha: 0.7 });
-            if (this.trail.length > 5) this.trail.pop();
+        // Trail recording (Smooth accumulator avoiding floating-point modulo dropouts)
+        this.trailTimer = (this.trailTimer || 0) + dt;
+        if (this.trailTimer >= 0.9) {
+            this.trailTimer = 0;
+            const pt = this.trail.length >= 7 ? this.trail.pop() : { x: this.x, y: this.y };
+            pt.x = this.x;
+            pt.y = this.y;
+            this.trail.unshift(pt);
         }
 
         // Bouncy bubble wobble or watermelon spin
-        if (this.type === 'bubble') {
+        if (typeof BossProjectileFX !== 'undefined' && BossProjectileFX.updateBullet(this, dt)) {
+        } else if (this.type === 'bubble') {
             this.scaleX = 1 + Math.sin(this.age * 0.3) * 0.2;
             this.scaleY = 1 + Math.cos(this.age * 0.3) * 0.2;
         } else if (this.type === 'watermelon' || this.type === 'soccer' || this.type === 'burger') {
             this.rotation += 0.15 * dt;
-        } else if (this.type === 'lightning') {
+        } else if (this.type === 'lightning' || this.type === 'zeus_thunderbolt') {
             this.scaleX = 1.4 + Math.sin(this.age * 0.8) * 0.25;
             this.scaleY = 0.7 + Math.cos(this.age * 0.8) * 0.2;
         } else if (this.type === 'money_gun' || this.type === 'euro') {
@@ -85,7 +95,12 @@ class Bullet {
 
         // Arena boundary collision
         if (arena) {
-            if (this.x - this.radius < -arena.halfWidth || this.x + this.radius > arena.halfWidth) {
+            const b = arena.dungeonBounds;
+            const minX = b ? b.minX : -arena.halfWidth;
+            const maxX = b ? b.maxX : arena.halfWidth;
+            const minY = b ? b.minY : -arena.halfHeight;
+            const maxY = b ? b.maxY : arena.halfHeight;
+            if (this.x - this.radius < minX || this.x + this.radius > maxX) {
                 if (this.bouncesLeft > 0) {
                     this.vx = -this.vx;
                     this.bouncesLeft--;
@@ -97,7 +112,7 @@ class Bullet {
                     this.dead = true;
                 }
             }
-            if (this.y - this.radius < -arena.halfHeight || this.y + this.radius > arena.halfHeight) {
+            if (this.y - this.radius < minY || this.y + this.radius > maxY) {
                 if (this.bouncesLeft > 0) {
                     this.vy = -this.vy;
                     this.bouncesLeft--;
@@ -114,7 +129,8 @@ class Bullet {
 
     explode(effects) {
         if (!effects) return;
-        if (this.type === 'watermelon') {
+        if (typeof BossProjectileFX !== 'undefined' && BossProjectileFX.explodeBullet(this, effects)) {
+        } else if (this.type === 'watermelon') {
             effects.addShockwave(this.x, this.y, 90, 'rgba(235, 77, 75, 0.7)');
             effects.addSparks(this.x, this.y, '#eb4d4b', 10);
             effects.addSparks(this.x, this.y, '#6ab04c', 8);
@@ -140,25 +156,35 @@ class Bullet {
             effects.addSparks(this.x, this.y, '#2ecc71', 5);
             effects.addSparks(this.x, this.y, '#e74c3c', 5);
             effects.addComicSplash(this.x, this.y - 15, 'SPLAT!');
-        } else if (this.type === 'lightning') {
-            effects.addShockwave(this.x, this.y, 65, 'rgba(0, 210, 211, 0.7)');
+        } else if (this.type === 'lightning' || this.type === 'zeus_thunderbolt') {
+            effects.addShockwave(this.x, this.y, 65, this.type === 'zeus_thunderbolt' ? 'rgba(254, 211, 48, 0.8)' : 'rgba(0, 210, 211, 0.7)');
             effects.addSparks(this.x, this.y, '#00d2d3', 9);
             effects.addSparks(this.x, this.y, '#ffffff', 6);
+        } else if (this.type === 'carbine') {
+            effects.addSparks(this.x, this.y, '#ffd32a', 7);
+            effects.addSparks(this.x, this.y, '#ff9f43', 4);
+        } else if (this.type === 'dialtone' || this.type === 'soundwave') {
+            effects.addShockwave(this.x, this.y, 52, 'rgba(0, 210, 211, 0.65)');
+            effects.addSparks(this.x, this.y, '#fed330', 6);
         } else {
             effects.addSparks(this.x, this.y, this.isEnemy ? '#ff3b30' : '#7bed9f', 5);
+        }
+        if (typeof effects.addImpactSplat === 'function') {
+            effects.addImpactSplat(this.x, this.y, this.type, this.isCrit, this.isEnemy, this.isChargedBubble ? 1.4 : 1.0);
         }
     }
 
     draw(ctx) {
-        // Draw trail (Optimized: Zero save/restore per trail point)
-        if (this.trail.length > 0) {
+        if (typeof CombatRenderFX !== 'undefined') {
+            CombatRenderFX.drawBulletTrail(ctx, this);
+        } else if (this.trail.length > 0) {
             ctx.fillStyle = this.getTrailColor();
             const len = this.trail.length;
             for (let i = 0; i < len; i++) {
                 const pt = this.trail[i];
-                ctx.globalAlpha = (1 - i / len) * 0.38;
+                ctx.globalAlpha = Math.max(0.05, (1 - (i + 1) / (len + 1)) * 0.45);
                 ctx.beginPath();
-                ctx.arc(pt.x, pt.y, this.radius * (1 - i / len * 0.6), 0, Math.PI * 2);
+                ctx.arc(pt.x, pt.y, Math.max(1.5, this.radius * (1 - (i + 1) / (len + 1) * 0.55)), 0, Math.PI * 2);
                 ctx.fill();
             }
             ctx.globalAlpha = 1.0;
@@ -169,7 +195,8 @@ class Bullet {
         ctx.rotate(this.rotation);
         ctx.scale(this.scaleX, this.scaleY);
 
-        if (this.type === 'watermelon') {
+        if (typeof BossProjectileFX !== 'undefined' && BossProjectileFX.drawBullet(ctx, this)) {
+        } else if (this.type === 'watermelon') {
             this.drawWatermelon(ctx);
         } else if (this.type === 'bubble') {
             this.drawBubble(ctx);
@@ -181,7 +208,16 @@ class Bullet {
             this.drawSmokeBomb(ctx);
         } else if (this.type === 'money_gun' || this.type === 'euro') {
             this.drawEuroBill(ctx);
-        } else if (this.type === 'soundwave' || this.type === 'dialtone') {
+        } else if (this.type === 'carbine') {
+            if (typeof KiloumpasCarbine !== 'undefined') KiloumpasCarbine.drawBullet(ctx, this);
+            else this.drawPea(ctx);
+        } else if (this.type === 'dialtone') {
+            if (typeof RoufDialToneBlaster !== 'undefined') RoufDialToneBlaster.drawBullet(ctx, this);
+            else this.drawSoundwave(ctx);
+        } else if (this.type === 'zeus_thunderbolt') {
+            if (typeof ZeusThunderbolt !== 'undefined') ZeusThunderbolt.drawBullet(ctx, this);
+            else this.drawLightning(ctx);
+        } else if (this.type === 'soundwave') {
             this.drawSoundwave(ctx);
         } else if (this.type === 'burger') {
             this.drawBurger(ctx);
@@ -195,15 +231,18 @@ class Bullet {
     }
 
     getTrailColor() {
+        if (typeof BossProjectileFX !== 'undefined') { const c = BossProjectileFX.getTrailColor(this); if (c) return c; }
         if (this.type === 'watermelon') return '#eb4d4b';
         if (this.type === 'bubble') return '#70a1ff';
         if (this.type === 'pepper') return '#ff6b6b';
         if (this.type === 'soccer') return '#ffffff';
         if (this.type === 'smoke') return '#9b59b6';
-        if (this.type === 'money_gun' || this.type === 'euro') return '#f39c12';
+        if (this.type === 'money_gun' || this.type === 'euro' || this.type === 'carbine') return '#f39c12';
         if (this.type === 'soundwave' || this.type === 'dialtone') return '#fed330';
         if (this.type === 'burger') return '#e59b52';
         if (this.type === 'lightning') return '#00d2d3';
+        if (this.type === 'zeus_thunderbolt') return '#fed330';
+        if (this.color) return this.color;
         return this.isEnemy ? '#ff4757' : '#2ed573';
     }
 
@@ -211,7 +250,7 @@ class Bullet {
         // Outline
         ctx.lineWidth = 2.5;
         ctx.strokeStyle = '#1b1b1b';
-        ctx.fillStyle = this.isEnemy ? '#ff4757' : '#2ed573';
+        ctx.fillStyle = this.color || (this.isEnemy ? '#ff4757' : '#2ed573');
 
         ctx.beginPath();
         ctx.arc(0, 0, this.radius, 0, Math.PI * 2);
@@ -260,21 +299,15 @@ class Bullet {
         ctx.save();
         ctx.rotate(this.wobblePhase ? this.wobblePhase * 0.3 : 0);
 
-        // 1. Translucent iridescent bubble fill
-        const bubbleGrad = ctx.createRadialGradient(-rx * 0.3, -ry * 0.3, rx * 0.1, 0, 0, rx);
-        bubbleGrad.addColorStop(0, 'rgba(255, 255, 255, 0.85)');
-        bubbleGrad.addColorStop(0.3, 'rgba(112, 161, 255, 0.45)');
-        bubbleGrad.addColorStop(0.7, 'rgba(0, 206, 201, 0.55)');
-        bubbleGrad.addColorStop(0.95, 'rgba(224, 86, 253, 0.65)');
-        bubbleGrad.addColorStop(1, 'rgba(112, 161, 255, 0.7)');
-
-        ctx.fillStyle = bubbleGrad;
+        // 1. Translucent iridescent bubble fill (cached radial disc)
+        const disc = (typeof CombatRenderFX !== 'undefined' && CombatRenderFX.getIridescentBubbleDisc)
+            ? CombatRenderFX.getIridescentBubbleDisc() : null;
+        if (disc) ctx.drawImage(disc, -rx, -ry, rx * 2, ry * 2);
         ctx.strokeStyle = '#1e272e';
         ctx.lineWidth = 2.2;
-
         ctx.beginPath();
         ctx.ellipse(0, 0, rx, ry, 0, 0, Math.PI * 2);
-        ctx.fill();
+        if (!disc) { ctx.fillStyle = 'rgba(112, 161, 255, 0.55)'; ctx.fill(); }
         ctx.stroke();
 
         // 2. Inner soap film rainbow rim

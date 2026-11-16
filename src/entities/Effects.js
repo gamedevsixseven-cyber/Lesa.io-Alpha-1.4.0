@@ -37,7 +37,9 @@ class EffectsManager {
         this.particles = [];
         this.particlePool = [];
         this.shockwaves = [];
+        this.shockwavePool = [];
         this.slashes = [];
+        this.slashPool = [];
         this.groundCracks = [];
         this.lightningBeams = [];
 
@@ -48,6 +50,7 @@ class EffectsManager {
         // Settings toggles
         this.showPopups = localStorage.getItem('lesaio_popups') !== 'false'; // default true
         this.showDamage = localStorage.getItem('lesaio_damage_numbers') !== 'false'; // default true
+        this.combatJuice = (typeof CombatJuiceFX !== 'undefined') ? new CombatJuiceFX(this) : null;
     }
 
     setShowPopups(val) {
@@ -213,10 +216,17 @@ class EffectsManager {
 
     addShockwave(x, y, radius = 130, color = 'rgba(255, 100, 0, 0.8)') {
         if (!this.isCameraVisible(x, y, radius)) return;
+        let sw;
         if (this.shockwaves.length >= 8) {
-            this.shockwaves.shift(); // Bound active shockwaves
+            sw = this.shockwaves.shift();
+            if (sw && sw.reset) sw.reset(x, y, radius, color, 8);
+            else sw = new ShockwaveClass(x, y, radius, color);
+        } else {
+            sw = this.shockwavePool.pop();
+            if (sw && sw.reset) sw.reset(x, y, radius, color, 8);
+            else sw = new ShockwaveClass(x, y, radius, color);
         }
-        this.shockwaves.push(new ShockwaveClass(x, y, radius, color));
+        this.shockwaves.push(sw);
     }
 
     addGroundCrack(x, y, radius = 160, color = '#2c3e50', glowColor = '#3498db', maxLife = 140) {
@@ -241,10 +251,17 @@ class EffectsManager {
 
     addSlash(x, y, angle, radius = 75, color = '#00d2d3') {
         if (!this.isCameraVisible(x, y, radius)) return;
+        let sl;
         if (this.slashes.length >= 6) {
-            this.slashes.shift();
+            sl = this.slashes.shift();
+            if (sl && sl.reset) sl.reset(x, y, angle, radius, Math.PI * 0.95, color);
+            else sl = new SlashWaveClass(x, y, angle, radius, Math.PI * 0.95, color);
+        } else {
+            sl = this.slashPool.pop();
+            if (sl && sl.reset) sl.reset(x, y, angle, radius, Math.PI * 0.95, color);
+            else sl = new SlashWaveClass(x, y, angle, radius, Math.PI * 0.95, color);
         }
-        this.slashes.push(new SlashWaveClass(x, y, angle, radius, Math.PI * 0.95, color));
+        this.slashes.push(sl);
 
         // Spawn controlled metallic sparkles along the crescent
         const sparkCount = Math.min(4, Math.max(0, this.MAX_PARTICLES - this.particles.length));
@@ -289,6 +306,46 @@ class EffectsManager {
         if (color) this.addSparks(x, y, color, 3);
     }
 
+    addMuzzleFlash(x, y, angle, weaponType = 'pea', scale = 1.0, isEnemy = false) {
+        if (this.combatJuice && this.isCameraVisible(x, y, 60)) {
+            this.combatJuice.triggerMuzzleFlash(x, y, angle, weaponType, scale, isEnemy);
+        }
+    }
+
+    addImpactSplat(x, y, weaponType = 'pea', isCrit = false, isEnemy = false, scale = 1.0) {
+        if (this.combatJuice && this.isCameraVisible(x, y, 60)) {
+            this.combatJuice.addImpactSplat(x, y, weaponType, isCrit, isEnemy, scale);
+        }
+    }
+
+    addDeathPop(x, y, radius = 26, color = '#2ed573', isBoss = false) {
+        if (this.combatJuice && this.isCameraVisible(x, y, radius * 3 + 40)) {
+            this.combatJuice.addDeathPop(x, y, radius, color, isBoss);
+        }
+    }
+
+    triggerScreenFlash(color = '#ffd32a', maxAlpha = 0.34, durationFrames = 28) {
+        if (this.combatJuice) {
+            this.combatJuice.triggerScreenFlash(color, maxAlpha, durationFrames);
+        }
+    }
+
+    onBossSlam(zoomAmount = 0.042) {
+        const cam = (typeof window !== 'undefined' && window.gameInstance) ? window.gameInstance.camera : null;
+        if (cam && typeof cam.punchZoom === 'function') {
+            cam.punchZoom(zoomAmount, false);
+        }
+    }
+
+    drawScreenSpace(ctx, width, height, player) {
+        if (typeof KolossosArenaAtmosphere !== 'undefined') {
+            KolossosArenaAtmosphere.drawScreenFog(ctx, width, height);
+        }
+        if (this.combatJuice) {
+            this.combatJuice.drawScreenOverlays(ctx, width, height, player);
+        }
+    }
+
     update(dt = 1) {
         // High-Performance In-place Compaction with Pool Recycling
         let pWrite = 0;
@@ -321,6 +378,8 @@ class EffectsManager {
             sw.update(dt);
             if (sw.life > 0) {
                 this.shockwaves[sWrite++] = sw;
+            } else {
+                this.shockwavePool.push(sw);
             }
         }
         this.shockwaves.length = sWrite;
@@ -331,6 +390,8 @@ class EffectsManager {
             slash.update(dt);
             if (slash.life > 0) {
                 this.slashes[slWrite++] = slash;
+            } else {
+                this.slashPool.push(slash);
             }
         }
         this.slashes.length = slWrite;
@@ -354,10 +415,17 @@ class EffectsManager {
             }
         }
         this.lightningBeams.length = lbWrite;
+
+        if (this.combatJuice) this.combatJuice.update(dt);
+        if (typeof KolossosArenaAtmosphere !== 'undefined') {
+            const gameRef = (typeof window !== 'undefined') ? window.gameInstance : null;
+            KolossosArenaAtmosphere.update(dt, gameRef);
+        }
     }
 
     drawGround(ctx) {
         const cam = window.gameInstance ? window.gameInstance.camera : null;
+        if (this.combatJuice) this.combatJuice.drawGround(ctx, cam);
         for (let i = 0; i < this.groundCracks.length; i++) {
             const gc = this.groundCracks[i];
             if (!cam || cam.isVisible(gc.x, gc.y, gc.radius + 30)) {
@@ -385,10 +453,15 @@ class EffectsManager {
             if (!cam || cam.isVisible(beam.x2, beam.y2, 100)) beam.draw(ctx);
         }
 
-        // 3. Particles
+        // 3. Particles & World Combat Juice (Muzzle Flashes & Death Pops)
         for (let i = 0; i < this.particles.length; i++) {
             const p = this.particles[i];
             if (!cam || cam.isVisible(p.x, p.y, p.radius + 20)) p.draw(ctx);
+        }
+        if (this.combatJuice) this.combatJuice.drawWorld(ctx, cam);
+
+        if (typeof KolossosArenaAtmosphere !== 'undefined') {
+            KolossosArenaAtmosphere.drawWorldFog(ctx, cam);
         }
 
         // 4. Comic Popups & Floating Damage: Hardware-Accelerated Bitmap Pass
@@ -418,6 +491,10 @@ class EffectsManager {
         this.slashes.length = 0;
         this.groundCracks.length = 0;
         this.lightningBeams.length = 0;
+        if (this.combatJuice) this.combatJuice.clear();
+        if (typeof KolossosArenaAtmosphere !== 'undefined') {
+            KolossosArenaAtmosphere.reset();
+        }
     }
 }
 

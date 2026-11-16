@@ -190,8 +190,8 @@
     border: 4px solid var(--dark-outline) !important;
     border-radius: 28px !important;
     box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4) !important;
-    padding: 20px 26px 18px 26px !important;
-    max-width: 740px !important;
+    padding: 18px 24px 14px 24px !important;
+    max-width: 780px !important;
     position: relative;
 }
 
@@ -200,8 +200,9 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    margin: 2px 0 12px 0;
+    margin: 0 0 8px 0;
     text-align: center;
+    flex-shrink: 0;
 }
 
 .gear-modal-title-row {
@@ -212,8 +213,8 @@
 }
 
 .gear-title-shield-img {
-    width: 55px;
-    height: 55px;
+    width: 48px;
+    height: 48px;
     object-fit: contain;
     transform: translateX(2px);
     margin-right: 2px;
@@ -221,17 +222,17 @@
 }
 
 .gear-title-text-img {
-    height: 44px;
+    height: 38px;
     max-width: 82%;
     object-fit: contain;
     filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.18));
 }
 
 .gear-subtitle-banner-img {
-    height: 17px;
+    height: 15px;
     max-width: 82%;
     object-fit: contain;
-    margin-top: 5px;
+    margin-top: 4px;
 }
 
 /* THE ENCLOSING SQUARE AROUND THE SLOTS & HERO */
@@ -239,29 +240,29 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    gap: 14px;
-    margin: 4px 0 16px 0;
+    gap: 12px;
+    margin: 2px 0 12px 0;
     background: #f1f2f7;
     border: 2px solid var(--dark-outline);
-    border-radius: 24px;
-    padding: 16px 18px;
+    border-radius: 22px;
+    padding: 12px 16px;
     box-sizing: border-box;
 }
 
 .gear-slots-column {
     display: flex;
     flex-direction: column;
-    gap: 12px;
-    width: 104px;
+    gap: 8px;
+    width: 100px;
     flex-shrink: 0;
 }
 
 .gear-slot-card {
-    width: 104px;
-    height: 102px;
+    width: 100px;
+    height: 92px;
     background: #ffffff;
-    border-radius: 18px;
-    padding: 7px 6px 6px 6px;
+    border-radius: 16px;
+    padding: 5px 6px 5px 6px;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -338,15 +339,15 @@
 .weapon-card:hover { transform: translateY(-2px); box-shadow: 3px 3px 0 var(--dark-outline); }
 .weapon-card.active-weapon { border-color: #2ed573; border-width: 3.2px; }
 
-.weapon-card-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-.weapon-card-left { display: flex; align-items: center; gap: 12px; }
+.weapon-card-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 8px; }
+.weapon-card-left { display: flex; align-items: center; gap: 10px; min-width: 0; }
 .weapon-icon-wrap { width: 56px; height: 56px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 .weapon-card-img { width: 54px; height: 54px; object-fit: contain; filter: drop-shadow(0 3px 5px rgba(0, 0, 0, 0.18)); transition: transform 0.15s ease; }
 .weapon-card:hover .weapon-card-img { transform: scale(1.08); }
 .weapon-card.weapon-locked { opacity: 0.8; background: #f8f9fa; border-style: dashed; }
 .weapon-card.weapon-locked:hover { transform: none; box-shadow: var(--shadow-solid-sm); }
-.weapon-name { font-family: 'Luckiest Guy', cursive; font-size: 1.15rem; color: var(--dark-outline); margin: 0; letter-spacing: 0.5px; }
-.weapon-badge { font-family: 'Luckiest Guy', cursive; font-size: 0.7rem; border: 2px solid var(--dark-outline); border-radius: 10px; padding: 2px 10px; letter-spacing: 0.4px; }
+.weapon-name { font-family: 'Luckiest Guy', cursive; font-size: 1.05rem; line-height: 1.1; color: var(--dark-outline); margin: 0; letter-spacing: 0.4px; }
+.weapon-badge { font-family: 'Luckiest Guy', cursive; font-size: 0.68rem; border: 2px solid var(--dark-outline); border-radius: 10px; padding: 2px 9px; letter-spacing: 0.4px; white-space: nowrap; flex-shrink: 0; }
 
 .badge-equipped { background: #2ed573; color: #ffffff; }
 .badge-psanas { background: #3867d6; color: #ffffff; }
@@ -356,6 +357,7 @@
 .badge-billias { background: #e67e22; color: #ffffff; }
 .badge-kitsos { background: #00d2d3; color: #111111; }
 .badge-arena { background: #1e90ff; color: #ffffff; }
+.badge-locked { background: #636e72; color: #ffffff; }
 
 /* 10-Tier Equipment Rarity Badges */
 .badge-common { background: #95a5a6; color: #ffffff; }
@@ -425,78 +427,107 @@
 /* --- 3. POWER UPGRADES MODAL --- */
 .upgrades-grid {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 14px;
-    margin: 16px 0;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    margin: 2px 0;
 }
 
 .upgrade-card {
+    position: relative;
     background: #ffffff;
-    border: 3.5px solid var(--dark-outline);
-    border-radius: 20px;
-    padding: 14px;
+    border: 3px solid var(--dark-outline);
+    border-radius: 16px;
+    padding: 10px 12px;
     box-shadow: var(--shadow-solid-sm);
     display: flex;
     flex-direction: column;
     align-items: center;
     text-align: center;
-    transition: transform 0.15s ease;
+    transition: transform 0.15s ease, border-color 0.15s ease;
 }
 
 .upgrade-card:hover {
-    transform: translateY(-3px);
+    transform: translateY(-2px);
+}
+
+.upgrade-card.is-maxed {
+    border-color: #2ed573;
+    background: #f0fff4;
+}
+
+.upgrade-lvl-badge {
+    position: absolute;
+    top: 8px;
+    right: 9px;
+    background: #2f3542;
+    color: #fed330;
+    border: 2px solid var(--dark-outline);
+    border-radius: 8px;
+    font-family: 'Luckiest Guy', cursive;
+    font-size: 0.66rem;
+    padding: 2px 6px;
 }
 
 .upgrade-icon-wrap {
-    width: 54px;
-    height: 54px;
+    width: 40px;
+    height: 40px;
     border-radius: 50%;
     background: #fed330;
-    border: 3px solid var(--dark-outline);
+    border: 2.5px solid var(--dark-outline);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.8rem;
-    margin-bottom: 8px;
+    font-size: 1.35rem;
+    margin-bottom: 4px;
 }
 
 .upgrade-title {
     font-family: 'Luckiest Guy', cursive;
-    font-size: 1.15rem;
+    font-size: 1.04rem;
     color: var(--dark-outline);
-    margin-bottom: 4px;
+    margin-bottom: 2px;
 }
 
 .upgrade-desc {
-    font-size: 0.8rem;
+    font-size: 0.74rem;
     font-weight: 800;
-    color: #747d8c;
-    margin-bottom: 8px;
+    color: #57606f;
+    margin-bottom: 6px;
 }
 
 .upgrade-current-stat {
-    display: inline-flex;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1px;
+    background: #f1f2f6;
+    border: 1.5px solid #dcdde1;
+    border-radius: 9px;
+    padding: 4px 8px;
+    margin-bottom: 6px;
+    box-sizing: border-box;
+}
+
+.upgrade-stat-line {
+    display: flex;
     align-items: center;
     justify-content: center;
-    gap: 6px;
-    background: #f1f2f6;
-    border: 2px solid #dcdde1;
-    border-radius: 10px;
-    padding: 4px 12px;
-    margin-bottom: 8px;
+    gap: 5px;
+    flex-wrap: wrap;
 }
 
 .upgrade-current-stat .stat-label {
     color: #57606f;
-    font-size: 0.74rem;
+    font-size: 0.72rem;
     font-weight: 900;
-    letter-spacing: 0.4px;
+    letter-spacing: 0.3px;
     text-transform: uppercase;
 }
 
 .upgrade-current-stat .stat-val {
     color: #2f3542;
-    font-size: 0.86rem;
+    font-size: 0.84rem;
     font-weight: 900;
 }
 
@@ -504,7 +535,13 @@
     color: #10ac84;
 }
 
-.upgrade-pips { display: flex; gap: 6px; margin-bottom: 10px; }
+.upgrade-next-val {
+    font-size: 0.74rem;
+    font-weight: 800;
+    color: #0984e3;
+}
+
+.upgrade-pips { display: flex; gap: 6px; margin-bottom: 8px; }
 .upgrade-pip { width: 14px; height: 14px; border-radius: 4px; border: 2px solid var(--dark-outline); background: #dfe4ea; }
 .upgrade-pip.filled { background: #2ed573; }
 

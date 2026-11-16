@@ -415,124 +415,103 @@
 
 /* ================= HEROES ROSTER OVERHAUL ================= */
 
-#heroes-modal .modal-panel {
-    max-height: 90vh;
-    overflow-y: auto;
-}
-
-.heroes-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-    gap: 12px;
-    margin-top: 8px;
-}
+#heroes-modal .modal-panel { max-width: 980px; width: 95%; }
+.heroes-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-top: 2px; }
+@media (max-width: 900px) { .heroes-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 620px) { .heroes-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 
 .hero-select-card {
     position: relative;
     background: #ffffff;
-    border: 4px solid var(--dark-outline);
-    border-radius: 22px;
-    padding: 16px 14px;
+    border: 3.5px solid var(--dark-outline);
+    border-radius: 18px;
+    padding: 11px 10px 10px 10px;
     box-shadow: var(--shadow-solid);
     display: flex;
     flex-direction: column;
     align-items: center;
     text-align: center;
-    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
     cursor: pointer;
+    overflow: hidden;
 }
-
-.hero-select-card:hover {
-    transform: translateY(-4px);
-    box-shadow: var(--shadow-solid-lg);
-}
-
+.hero-select-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-solid-lg); }
 .hero-select-card.active {
     border-color: #2ed573;
     background: #f0fff4;
     box-shadow: 0 0 0 3px #2ed573, var(--shadow-solid);
 }
+.hero-select-card.hero-locked { background: #f8f9fa; border-color: #747d8c; }
 
+.hero-lock-badge,
 .hero-card-badge {
     position: absolute;
-    top: -12px;
-    background: var(--comic-blue);
+    top: 8px;
+    right: 8px;
     border: 2px solid var(--dark-outline);
-    border-radius: 10px;
+    border-radius: 9px;
     color: #ffffff;
     font-family: 'Luckiest Guy', cursive;
-    font-size: 0.75rem;
-    padding: 2px 10px;
-    text-shadow: 1px 1px 0 var(--dark-outline);
+    font-size: 0.66rem;
+    padding: 2px 7px;
+    box-shadow: 1.5px 1.5px 0 var(--dark-outline);
+    z-index: 2;
+    letter-spacing: 0.3px;
 }
+.hero-lock-badge { background: #ff4757; }
+.hero-card-badge { background: var(--comic-blue); }
+.hero-badge-owned { background: #2ed573; }
+.hero-badge-afford { background: #fed330; color: var(--dark-outline); }
 
 .hero-select-avatar {
-    width: 95px;
-    height: 95px;
+    width: 66px;
+    height: 66px;
     border-radius: 50%;
-    border: 3.5px solid var(--dark-outline);
+    border: 3px solid var(--dark-outline);
     background: var(--comic-yellow);
     overflow: hidden;
-    margin-top: 6px;
-    margin-bottom: 8px;
+    margin: 12px 0 4px 0;
     box-shadow: var(--shadow-solid-sm);
+    flex-shrink: 0;
 }
-
-.hero-select-avatar img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    object-position: center center;
-    transform: scale(1.06);
-}
-
-.hero-select-name {
-    font-family: 'Luckiest Guy', cursive;
-    font-size: 1.45rem;
-    color: var(--dark-outline);
-    margin-bottom: 6px;
-}
+.hero-select-avatar img { width: 100%; height: 100%; object-fit: cover; object-position: center; transform: scale(1.06); }
+.hero-select-name { font-family: 'Luckiest Guy', cursive; font-size: 1.18rem; color: var(--dark-outline); margin-bottom: 4px; line-height: 1.08; }
 
 .hero-stat-row {
     width: 100%;
     display: flex;
     justify-content: space-between;
-    font-size: 0.85rem;
+    align-items: center;
+    gap: 4px;
+    background: #f1f2f6;
+    border: 1.5px solid #dcdde1;
+    border-radius: 7px;
+    padding: 2px 7px;
+    font-size: 0.72rem;
     font-weight: 800;
-    margin-bottom: 2px;
+    margin-bottom: 3px;
     color: #57606f;
+    box-sizing: border-box;
 }
+.hero-stat-row strong { color: var(--dark-outline); white-space: nowrap; }
 
 .hero-perk {
-    font-size: 0.75rem;
-    font-weight: 700;
+    font-size: 0.69rem;
+    font-weight: 800;
     color: #e67e22;
-    margin: 6px 0 12px 0;
-    text-align: center;
+    margin: 2px 0 6px 0;
+    min-height: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1.2;
 }
-
-.hero-equip-btn {
-    width: 100%;
-}
+.hero-equip-btn { width: 100%; margin-top: auto; white-space: nowrap; font-size: 0.78rem; padding: 5px 8px; }
 
 /* Coming Soon Hero Teaser Card */
-.hero-card-coming-soon {
-    background: #f8f9fa;
-    border-color: #a4b0be;
-    opacity: 0.9;
-}
-
-.hero-card-coming-soon:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-solid-sm);
-    border-color: #747d8c;
-}
-
-.hero-badge-coming-soon {
-    background: #57606f !important;
-    color: #f1f2f6 !important;
-}
-
+.hero-card-coming-soon { background: #f8f9fa; border-color: #a4b0be !important; opacity: 0.9; }
+.hero-card-coming-soon:hover { transform: translateY(-2px); box-shadow: var(--shadow-solid-sm); border-color: #747d8c !important; }
+.hero-badge-coming-soon { background: #57606f !important; color: #f1f2f6 !important; }
 .hero-avatar-mystery {
     background: linear-gradient(135deg, #2f3640, #1e272e) !important;
     display: flex;
@@ -540,13 +519,7 @@
     justify-content: center;
     border-color: #718093 !important;
 }
-
-.mystery-avatar-icon {
-    font-size: 2.8rem;
-    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.4));
-    user-select: none;
-}
-
+.mystery-avatar-icon { font-size: 2.3rem; filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.4)); user-select: none; }
 .hero-coming-soon-btn {
     background: #747d8c !important;
     color: #f1f2f6 !important;

@@ -166,6 +166,7 @@ class Kiloumpas extends EnemyBase {
                 if (effects) {
                     effects.addShockwave(this.x, this.y, 140, 'rgba(254, 211, 48, 0.9)');
                     effects.addDust(this.x, this.y, 12, 14);
+                    if (typeof effects.onBossSlam === 'function') effects.onBossSlam(0.045);
                 }
                 if (window.soundEngine && typeof window.soundEngine.playHit === 'function') {
                     window.soundEngine.playHit(true, true);

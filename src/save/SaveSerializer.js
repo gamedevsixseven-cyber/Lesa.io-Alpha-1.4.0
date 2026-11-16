@@ -25,14 +25,29 @@ class SaveSerializer {
                 diamonds: state.player.gems || 0,
                 selectedHero: state.player.selectedHero || 'psanas',
                 unlockedHeroes: Array.from(state.player.unlockedHeroes || ['psanas']),
+                selectedWeapon: state.player.selectedWeapon || state.player.weaponType || 'pea',
+                unlockedWeapons: Array.from(state.player.unlockedWeapons || ['pea']),
+                olympianStarStones: state.player.olympianStarStones || 0,
+                ascentCrests: (typeof window !== 'undefined' && window.ascentCrestManager) ? window.ascentCrestManager.getCount() : (state.player.ascentCrests ?? 0),
+                ascentCrestsDate: (typeof window !== 'undefined' && window.ascentCrestManager) ? window.ascentCrestManager.lastDailyDate : (state.player.ascentCrestsDate || ''),
                 selectedSkill: state.player.selectedSkill || 'blade_rush',
                 unlockedSkills: Array.from(state.player.unlockedSkills || ['blade_rush', 'nerobalonaki']),
                 skillLevels: { ...(state.player.skillLevels || { blade_rush: 1, nerobalonaki: 1 }) },
                 upgrades: { ...(state.player.upgrades || { critChance: 0, critDamage: 0, maxHealth: 0, goldBonus: 0 }) },
                 unlockedPerks: Array.from(state.player.unlockedPerks || []),
                 equippedPerks: Array.from(state.player.equippedPerks || [null, null, null]),
+                perkRanks: { ...(state.player.perkRanks || {}) },
+                combatFeats: { ...(state.player.combatFeats || {}) },
                 equippedGear: (typeof GearManager !== 'undefined') ? GearManager.getEquippedMap() : (state.player.equippedGear || { helmet: null, armor: null, belt: null, gloves: null, boots: null }),
                 unlockedGear: (typeof GearManager !== 'undefined') ? Array.from(GearManager.getUnlockedList() || []) : Array.from(state.player.unlockedGear || []),
+                gearLevels: (typeof GearUpgradeManager !== 'undefined') ? GearUpgradeManager.getAllLevels() : (state.player.gearLevels || {}),
+                evolvedGear: (typeof GearUpgradeManager !== 'undefined') ? GearUpgradeManager.getEvolvedList() : Array.from(state.player.evolvedGear || []),
+                evolvedWeapons: (typeof WeaponEvolutionManager !== 'undefined') ? WeaponEvolutionManager.getEvolvedList() : Array.from(state.player.evolvedWeapons || []),
+                evolutionStones: (typeof GearUpgradeManager !== 'undefined') ? GearUpgradeManager.getEvolutionStones() : (state.player.evolutionStones || 0),
+                cosmetics: (typeof CosmeticManager !== 'undefined') ? CosmeticManager.getState() : (state.player.cosmetics || null),
+                materials: (typeof window !== 'undefined' && window.inventoryManager && typeof window.inventoryManager.getMaterials === 'function')
+                    ? window.inventoryManager.getMaterials()
+                    : ((typeof MaterialRegistry !== 'undefined') ? MaterialRegistry.normalizeMap(state.player.materials) : { ...(state.player.materials || {}) }),
                 stats: {
                     totalKills: state.player.stats.totalKills || 0,
                     maxWave: state.player.stats.maxWave || 1,
@@ -71,10 +86,27 @@ class SaveSerializer {
             state.player.coins = typeof p.coins === 'number' ? p.coins : (typeof p.gold === 'number' ? p.gold : state.player.coins);
             state.player.gems = typeof p.diamonds === 'number' ? p.diamonds : (typeof p.gems === 'number' ? p.gems : state.player.gems);
             state.player.selectedHero = p.selectedHero || state.player.selectedHero;
+            state.player.selectedWeapon = p.selectedWeapon || p.weaponType || state.player.selectedWeapon || 'pea';
+            state.player.weaponType = state.player.selectedWeapon;
+            if (typeof p.olympianStarStones === 'number') {
+                state.player.olympianStarStones = Math.max(state.player.olympianStarStones || 0, p.olympianStarStones);
+                localStorage.setItem('lesaio_olympian_star_stones', state.player.olympianStarStones.toString());
+            }
+            if (typeof p.ascentCrests === 'number' && typeof window !== 'undefined' && window.ascentCrestManager) {
+                window.ascentCrestManager.syncExternalState(p.ascentCrests, p.ascentCrestsDate || '');
+            }
             state.player.selectedSkill = p.selectedSkill || state.player.selectedSkill || 'blade_rush';
 
             if (Array.isArray(p.unlockedHeroes)) {
                 state.player.unlockedHeroes = Array.from(new Set([...state.player.unlockedHeroes, ...p.unlockedHeroes]));
+            }
+
+            if (Array.isArray(p.unlockedWeapons)) {
+                state.player.unlockedWeapons = Array.from(new Set([...(state.player.unlockedWeapons || ['pea']), ...p.unlockedWeapons]));
+                localStorage.setItem('lesaio_unlocked_weapons', JSON.stringify(state.player.unlockedWeapons));
+                if (state.player.unlockedWeapons.includes('bubble')) {
+                    localStorage.setItem('lesaio_weapon_bubble_unlocked', 'true');
+                }
             }
 
             if (Array.isArray(p.unlockedSkills)) {
@@ -106,6 +138,20 @@ class SaveSerializer {
                 localStorage.setItem('lesaio_equipped_perks', JSON.stringify(state.player.equippedPerks));
             }
 
+            if (p.perkRanks && typeof p.perkRanks === 'object') {
+                state.player.perkRanks = (typeof PerkProgression !== 'undefined')
+                    ? PerkProgression.mergePerkRanks(state.player.perkRanks, p.perkRanks, state.player.unlockedPerks)
+                    : { ...(state.player.perkRanks || {}), ...p.perkRanks };
+                localStorage.setItem('lesaio_perk_ranks', JSON.stringify(state.player.perkRanks));
+            }
+
+            if (p.combatFeats && typeof p.combatFeats === 'object') {
+                state.player.combatFeats = (typeof PerkProgression !== 'undefined')
+                    ? PerkProgression.mergeFeats(state.player.combatFeats, p.combatFeats)
+                    : { ...(state.player.combatFeats || {}), ...p.combatFeats };
+                localStorage.setItem('lesaio_combat_feats', JSON.stringify(state.player.combatFeats));
+            }
+
             if (p.equippedGear && typeof p.equippedGear === 'object') {
                 state.player.equippedGear = { helmet: null, armor: null, belt: null, gloves: null, boots: null, ...p.equippedGear };
                 localStorage.setItem('lesaio_equipped_gear', JSON.stringify(state.player.equippedGear));
@@ -114,6 +160,74 @@ class SaveSerializer {
             if (Array.isArray(p.unlockedGear)) {
                 state.player.unlockedGear = Array.from(new Set([...(state.player.unlockedGear || []), ...p.unlockedGear]));
                 localStorage.setItem('lesaio_unlocked_gear', JSON.stringify(state.player.unlockedGear));
+            }
+            if (p.gearLevels && typeof p.gearLevels === 'object' && !Array.isArray(p.gearLevels)) {
+                const mergedLevels = { ...(state.player.gearLevels || {}) };
+                for (const [gid, lvl] of Object.entries(p.gearLevels)) {
+                    const n = parseInt(lvl, 10) || 1;
+                    if (n > (mergedLevels[gid] || 1)) mergedLevels[gid] = n;
+                }
+                if (typeof GearUpgradeManager !== 'undefined') {
+                    state.player.gearLevels = GearUpgradeManager.setLevelsMap(mergedLevels);
+                } else {
+                    state.player.gearLevels = mergedLevels;
+                    localStorage.setItem('lesaio_gear_levels', JSON.stringify(mergedLevels));
+                }
+            }
+            if (Array.isArray(p.evolvedGear)) {
+                const mergedEvo = Array.from(new Set([...(state.player.evolvedGear || []), ...p.evolvedGear]));
+                if (typeof GearUpgradeManager !== 'undefined') {
+                    state.player.evolvedGear = GearUpgradeManager.setEvolvedList(mergedEvo);
+                } else {
+                    state.player.evolvedGear = mergedEvo;
+                    localStorage.setItem('lesaio_evolved_gear', JSON.stringify(mergedEvo));
+                }
+            }
+            if (Array.isArray(p.evolvedWeapons)) {
+                const mergedWepEvo = Array.from(new Set([...(state.player.evolvedWeapons || []), ...p.evolvedWeapons]));
+                if (typeof WeaponEvolutionManager !== 'undefined') {
+                    state.player.evolvedWeapons = WeaponEvolutionManager.setEvolvedList(mergedWepEvo);
+                } else {
+                    state.player.evolvedWeapons = mergedWepEvo;
+                    localStorage.setItem('lesaio_evolved_weapons', JSON.stringify(mergedWepEvo));
+                }
+            }
+            if (typeof p.evolutionStones === 'number') {
+                const mergedStones = Math.max(state.player.evolutionStones || 0, Math.floor(p.evolutionStones));
+                if (typeof GearUpgradeManager !== 'undefined') {
+                    GearUpgradeManager.setEvolutionStones(mergedStones);
+                } else {
+                    state.player.evolutionStones = mergedStones;
+                    localStorage.setItem('lesaio_evolution_stones', mergedStones.toString());
+                }
+            }
+
+            if (p.cosmetics && typeof p.cosmetics === 'object' && typeof CosmeticManager !== 'undefined') {
+                const curC = CosmeticManager.getState();
+                CosmeticManager.saveState({
+                    equippedBanner: p.cosmetics.equippedBanner || curC.equippedBanner,
+                    equippedFrame: p.cosmetics.equippedFrame || curC.equippedFrame,
+                    displayedCoins: Array.isArray(p.cosmetics.displayedCoins) ? p.cosmetics.displayedCoins : curC.displayedCoins,
+                    unlockedBanners: [...curC.unlockedBanners, ...(p.cosmetics.unlockedBanners || [])],
+                    unlockedFrames: [...curC.unlockedFrames, ...(p.cosmetics.unlockedFrames || [])],
+                    unlockedCoins: [...curC.unlockedCoins, ...(p.cosmetics.unlockedCoins || [])]
+                }, false);
+            }
+
+            if (p.materials && typeof p.materials === 'object') {
+                const normMats = (typeof MaterialRegistry !== 'undefined')
+                    ? MaterialRegistry.normalizeMap(p.materials)
+                    : { ...p.materials };
+                state.player.materials = normMats;
+                if (typeof window !== 'undefined' && window.inventoryManager && typeof window.inventoryManager.syncExternalMaterials === 'function') {
+                    window.inventoryManager.syncExternalMaterials(normMats);
+                } else if (typeof localStorage !== 'undefined') {
+                    try {
+                        const existing = JSON.parse(localStorage.getItem('lesaio_inventory') || '{}');
+                        existing.materials = normMats;
+                        localStorage.setItem('lesaio_inventory', JSON.stringify(existing));
+                    } catch (e) {}
+                }
             }
 
             if (p.stats) {

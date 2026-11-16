@@ -74,7 +74,7 @@ const CHEST_TYPES = {
         guaranteedRare: 1,
         gearOdds: {
             common: 0.15,
-            uncommon: 0.60,
+            uncommon: 0.59,
             rare: 0.25,
             epic: 0.01,
             legendary: 0.00

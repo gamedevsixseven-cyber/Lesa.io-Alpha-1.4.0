@@ -149,7 +149,8 @@ class StarterPackModal {
 
         // Redirect to real Stripe Payment page
         this.buyBtn.disabled = true;
-        this.buyBtn.innerHTML = '<span>🔒 Taking you to Stripe Checkout...</span>';
+        const lockIc = typeof UiIcons !== 'undefined' ? UiIcons.i('lock', 'ui-icon-sm') : '🔒';
+        this.buyBtn.innerHTML = `<span>${lockIc} Taking you to Stripe Checkout...</span>`;
         if (window.soundEngine && typeof window.soundEngine.playSelect === 'function') {
             window.soundEngine.playSelect();
         }

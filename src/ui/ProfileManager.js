@@ -57,6 +57,22 @@ class ProfileManager {
             });
         }
 
+        const copyIdBtn = document.getElementById('prof-copy-id-btn');
+        if (copyIdBtn) {
+            copyIdBtn.addEventListener('click', () => {
+                const tag = (window.friendService && window.friendService.getMyTag()) || '';
+                if (tag && navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(tag).catch(() => {});
+                }
+                if (typeof UiIcons !== 'undefined') UiIcons.setRichText(copyIdBtn, '✅ COPIED!', 'ui-icon-sm');
+                else copyIdBtn.textContent = '✅ COPIED!';
+                setTimeout(() => {
+                    if (typeof UiIcons !== 'undefined') UiIcons.setRichText(copyIdBtn, '📋 Copy ID', 'ui-icon-sm');
+                    else copyIdBtn.textContent = '📋 Copy ID';
+                }, 1800);
+            });
+        }
+
         const cancelRenameBtn = document.getElementById('cancel-rename-btn');
         if (cancelRenameBtn) {
             cancelRenameBtn.addEventListener('click', () => {
@@ -94,10 +110,19 @@ class ProfileManager {
             window.EventBus.on('statsUpdated', () => this.updateProfileUI());
             window.EventBus.on('heroSelected', () => this.updateProfileUI());
         }
+        if (typeof ProfileCosmeticsUI !== 'undefined') {
+            ProfileCosmeticsUI.init();
+        }
     }
 
     showProfileModal() {
+        if (typeof CosmeticManager !== 'undefined') {
+            CosmeticManager.syncUnlocks({ silent: true, syncRemote: false });
+        }
         this.updateProfileUI();
+        if (typeof ProfileCosmeticsUI !== 'undefined') {
+            ProfileCosmeticsUI.renderActiveTab();
+        }
         if (this.playerProfileModal) {
             this.playerProfileModal.classList.remove('hidden');
         }
@@ -115,7 +140,11 @@ class ProfileManager {
         const err = document.getElementById('rename-error-text');
 
         if (input && this.gameState) input.value = this.gameState.player.name;
-        if (balance && this.gameState) balance.textContent = `Your Gems: 💎 ${this.gameState.player.gems}`;
+        if (balance && this.gameState) {
+            const gemText = `Your Gems: 💎 ${this.gameState.player.gems}`;
+            if (typeof UiIcons !== 'undefined') UiIcons.setRichText(balance, gemText, 'ui-icon-sm');
+            else balance.textContent = gemText;
+        }
         if (err) err.classList.add('hidden');
 
         if (this.renameModal) this.renameModal.classList.remove('hidden');
@@ -181,6 +210,7 @@ class ProfileManager {
         if (window.soundEngine) window.soundEngine.playLevelUp();
         this.hideFirstTimeNameModal();
         this.updateProfileUI();
+        if (window.friendService) window.friendService.syncMyProfile(true);
         if (typeof TributeManager !== 'undefined') {
             TributeManager.checkAndShow();
         }
@@ -204,7 +234,9 @@ class ProfileManager {
 
         if (this.gameState.player.gems < 100) {
             if (err) {
-                err.textContent = 'Not enough Gems! (Requires 100 💎)';
+                const errText = 'Not enough Gems! (Requires 100 💎)';
+                if (typeof UiIcons !== 'undefined') UiIcons.setRichText(err, errText, 'ui-icon-sm');
+                else err.textContent = errText;
                 err.classList.remove('hidden');
             }
             return;
@@ -217,6 +249,7 @@ class ProfileManager {
         if (window.soundEngine) window.soundEngine.playLevelUp();
         this.hideRenameModal();
         this.updateProfileUI();
+        if (window.friendService) window.friendService.syncMyProfile(true);
     }
 
     updateProfileUI() {
@@ -245,6 +278,13 @@ class ProfileManager {
         if (modalXpFill) modalXpFill.style.width = `${xpPct}%`;
         if (modalXpText) modalXpText.textContent = `${p.accountXp} / ${xpNeeded} XP`;
 
+        const modalTag = document.getElementById('prof-modal-tag');
+        if (modalTag) {
+            const myTag = (window.friendService && window.friendService.getMyTag())
+                || (typeof PlayerIdentity !== 'undefined' && window.cloudSave ? PlayerIdentity.getOnlineTag(window.cloudSave.getEffectivePlayerUid()) : '#HERO00');
+            modalTag.textContent = `ID: ${myTag}`;
+        }
+
         const avatars = {
             psanas: 'assets/HeroesIcons/PsanasAvatar.png',
             psogas: 'assets/HeroesIcons/PsogasAvatar.png',
@@ -255,10 +295,25 @@ class ProfileManager {
         };
         if (modalAvatar) modalAvatar.src = avatars[p.selectedHero] || avatars.psanas;
 
+        if (typeof CosmeticManager !== 'undefined') {
+            CosmeticManager.syncUnlocks({ silent: true, syncRemote: false });
+        }
+        if (typeof ProfileCosmeticsUI !== 'undefined') {
+            ProfileCosmeticsUI.refreshHeaderPreview();
+        }
+
         // Favorite Hero
         const fav = this.statsManager.getFavoriteHero();
         const favEl = document.getElementById('prof-fav-hero');
-        if (favEl) favEl.textContent = `${fav.emoji} ${fav.name}`;
+        if (favEl) {
+            if (typeof UiIcons !== 'undefined' && fav.iconKey) {
+                favEl.innerHTML = `${UiIcons.i(fav.iconKey, 'ui-icon-sm')} ${UiIcons.esc(fav.name)}`;
+            } else if (typeof UiIcons !== 'undefined') {
+                UiIcons.setRichText(favEl, `${fav.emoji} ${fav.name}`, 'ui-icon-sm');
+            } else {
+                favEl.textContent = `${fav.emoji} ${fav.name}`;
+            }
+        }
 
         // Career Stats
         const statKills = document.getElementById('prof-total-kills');

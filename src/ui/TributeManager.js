@@ -57,6 +57,9 @@ class TributeManager {
         if (modal) {
             modal.classList.add('hidden');
         }
+        if (typeof BossRewardModalUI !== 'undefined') {
+            BossRewardModalUI.checkAndShowPending();
+        }
     }
 
     static claimReward() {

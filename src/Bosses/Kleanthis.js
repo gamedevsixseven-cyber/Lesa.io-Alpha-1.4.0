@@ -310,6 +310,7 @@ class Kleanthis extends EnemyBase {
             effects.addShockwave(this.x, this.y, 140, 'rgba(254, 211, 48, 0.9)');
             effects.addDust(this.x, this.y, 14, 16);
             effects.addComicSplash(this.x, this.y - 35, 'KARATE SLAM! 🥋💥');
+            if (typeof effects.onBossSlam === 'function') effects.onBossSlam(0.045);
         }
 
         if (window.soundEngine) {
@@ -400,9 +401,11 @@ class Kleanthis extends EnemyBase {
             const bvy = Math.sin(angle) * shardSpeed;
 
             if (typeof Bullet !== 'undefined' && bullets) {
-                const bullet = new Bullet(this.x, this.y, bvx, bvy, 24, '#ff4757', 150, false);
-                bullet.isEnemy = true;
-                bullet.radius = 9;
+                const bullet = new Bullet({
+                    x: this.x, y: this.y, vx: bvx, vy: bvy,
+                    damage: 24, speed: shardSpeed, radius: 10,
+                    type: 'kleanthis_wine_shard', isEnemy: true, range: 650, shooter: this
+                });
                 bullets.push(bullet);
             }
         }

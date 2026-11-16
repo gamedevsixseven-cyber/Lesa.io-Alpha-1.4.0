@@ -8,6 +8,7 @@ class QuestManager {
         this.ui = uiController;
         this.quests = [];
         this.timerInterval = null;
+        this._syncTimer = null;
 
         this.initQuests();
         this.startTimer();
@@ -90,6 +91,8 @@ class QuestManager {
                 if (tpl) {
                     q.rewardCoins = tpl.rewardCoins;
                     q.rewardGems = tpl.rewardGems;
+                    q.rewardMaterials = tpl.rewardMaterials ? { ...tpl.rewardMaterials } : null;
+                    if (tpl.iconImg) q.iconImg = tpl.iconImg;
                 }
             });
             this.saveQuests();
@@ -123,7 +126,15 @@ class QuestManager {
             const cardTimer = document.getElementById('menu-quests-timer');
             const modalTimer = document.getElementById('modal-quests-timer');
 
-            if (cardTimer) cardTimer.textContent = `⏱ ${time.formatted}`;
+            if (cardTimer) {
+                const timerTextEl = cardTimer.querySelector('#menu-quests-timer-val');
+                if (timerTextEl) {
+                    timerTextEl.textContent = time.formatted;
+                } else {
+                    const timerIco = typeof UiIcons !== 'undefined' ? UiIcons.i('timer', 'ui-icon-sm') : '⏱';
+                    cardTimer.innerHTML = `${timerIco} <span id="menu-quests-timer-val">${time.formatted}</span>`;
+                }
+            }
             if (modalTimer) modalTimer.textContent = time.formatted;
 
             if (time.diff <= 1000) {
@@ -156,10 +167,28 @@ class QuestManager {
         }
 
         if (changed) {
-            this.saveQuests();
+            this.scheduleProgressSync();
+        }
+    }
+
+    scheduleProgressSync() {
+        if (this._syncTimer) return;
+        this._syncTimer = setTimeout(() => {
+            this._syncTimer = null;
+            this.flushProgressSync();
+        }, 250);
+    }
+
+    flushProgressSync() {
+        this.saveQuests();
+        const menuEl = typeof document !== 'undefined' ? document.getElementById('main-menu') : null;
+        const modalEl = typeof document !== 'undefined' ? document.getElementById('daily-quests-modal') : null;
+        if (!menuEl || !menuEl.classList.contains('hidden')) {
             this.renderSideCardQuests();
-            this.renderModalQuests();
             this.updateBadge();
+        }
+        if (modalEl && !modalEl.classList.contains('hidden')) {
+            this.renderModalQuests();
         }
     }
 
@@ -174,12 +203,16 @@ class QuestManager {
             window.soundEngine.playLevelUp();
         }
 
-        // Add Coins & Gems directly through GameState
+        // Add Coins, Gems & Crafting Materials
         if (window.GameState) {
             window.GameState.addCurrency(quest.rewardCoins, quest.rewardGems);
         } else if (this.ui) {
             this.ui.setCoins(this.ui.coins + quest.rewardCoins);
             this.ui.setGems(this.ui.gems + quest.rewardGems);
+        }
+
+        if (quest.rewardMaterials && typeof window !== 'undefined' && window.inventoryManager && typeof window.inventoryManager.addMaterials === 'function') {
+            window.inventoryManager.addMaterials(quest.rewardMaterials, { source: 'quest', questId: quest.id });
         }
 
         if (this.ui && this.ui.currencyManager) {
@@ -205,7 +238,11 @@ class QuestManager {
             if (panel) panel.prepend(toast);
         }
 
-        toast.innerHTML = `🎉 <strong>${quest.title}</strong> Claimed! &nbsp; <span style="color:#fed330;">+${quest.rewardCoins} 🪙</span> &nbsp; <span style="color:#00d2d3;">+${quest.rewardGems} 💎</span>`;
+        const icoCelebrate = typeof UiIcons !== 'undefined' ? UiIcons.i('celebrate') : '🎉';
+        const icoCoin = typeof UiIcons !== 'undefined' ? UiIcons.i('coin', 'ui-icon-sm') : '🪙';
+        const icoGem = typeof UiIcons !== 'undefined' ? UiIcons.i('gem', 'ui-icon-sm') : '💎';
+        const matToastHtml = this._formatMaterialBadges(quest.rewardMaterials);
+        toast.innerHTML = `${icoCelebrate} <strong>${quest.title}</strong> Claimed! &nbsp; <span style="color:#fed330;">+${quest.rewardCoins} ${icoCoin}</span> &nbsp; <span style="color:#00d2d3;">+${quest.rewardGems} ${icoGem}</span>${matToastHtml ? ` &nbsp; ${matToastHtml}` : ''}`;
         toast.style.display = 'block';
 
         clearTimeout(this._toastTimeout);
@@ -225,16 +262,18 @@ class QuestManager {
             const pct = Math.min(100, Math.round((q.progress / q.target) * 100));
             const item = document.createElement('div');
             item.className = 'quest-item';
+            const qIconHtml = typeof UiIcons !== 'undefined' ? UiIcons.renderDefIcon(q, 'ui-icon-sm') : q.icon;
+            const qCoinHtml = typeof UiIcons !== 'undefined' ? UiIcons.i('coin', 'ui-icon-sm') : '🪙';
             item.innerHTML = `
                 <div class="quest-info-row">
-                    <span>${q.icon} ${q.title}</span>
+                    <span>${qIconHtml} ${q.title}</span>
                     <span>${q.progress}/${q.target}</span>
                 </div>
                 <div class="quest-bar-row">
                     <div class="quest-bar">
                         <div class="quest-fill" style="width: ${pct}%"></div>
                     </div>
-                    <span class="quest-reward">+${q.rewardCoins} 🪙</span>
+                    <span class="quest-reward">+${q.rewardCoins} ${qCoinHtml}</span>
                 </div>
             `;
             container.appendChild(item);
@@ -264,8 +303,12 @@ class QuestManager {
                 buttonHtml = `<button class="comic-btn quest-btn-progress" disabled>${q.progress} / ${q.target}</button>`;
             }
 
+            const qIconCol = typeof UiIcons !== 'undefined' ? UiIcons.renderDefIcon(q, 'ui-icon-box') : q.icon;
+            const qCoin = typeof UiIcons !== 'undefined' ? UiIcons.i('coin', 'ui-icon-sm') : '🪙';
+            const qGem = typeof UiIcons !== 'undefined' ? UiIcons.i('gem', 'ui-icon-sm') : '💎';
+            const qMatHtml = this._formatMaterialBadges(q.rewardMaterials);
             card.innerHTML = `
-                <div class="challenge-icon-col">${q.icon}</div>
+                <div class="challenge-icon-col">${qIconCol}</div>
                 <div class="challenge-info-col">
                     <div class="challenge-title-row">
                         <span class="challenge-title">${q.title}</span>
@@ -278,8 +321,9 @@ class QuestManager {
                 </div>
                 <div class="challenge-reward-col">
                     <div class="challenge-rewards-badge">
-                        <span>+${q.rewardCoins} 🪙</span>
-                        <span>+${q.rewardGems} 💎</span>
+                        <span>+${q.rewardCoins} ${qCoin}</span>
+                        <span>+${q.rewardGems} ${qGem}</span>
+                        ${qMatHtml}
                     </div>
                     ${buttonHtml}
                 </div>
@@ -294,6 +338,19 @@ class QuestManager {
                 this.claimReward(id);
             });
         });
+    }
+
+    _formatMaterialBadges(matMap) {
+        if (!matMap || typeof matMap !== 'object') return '';
+        return Object.entries(matMap).map(([matId, qty]) => {
+            if (!qty || qty <= 0) return '';
+            const def = (typeof MaterialRegistry !== 'undefined') ? MaterialRegistry.get(matId) : null;
+            const iconHtml = (def && typeof UiIcons !== 'undefined')
+                ? UiIcons.i(def.iconKey, 'ui-icon-sm', def.name)
+                : (def ? def.icon : '⚙️');
+            const col = def ? def.color : '#38bdf8';
+            return `<span style="color:${col};" title="${def ? def.name : matId}">+${qty} ${iconHtml}</span>`;
+        }).join('');
     }
 
     updateBadge() {

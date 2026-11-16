@@ -46,15 +46,27 @@ class EnemyBase {
         // Ice Slow State (Frappes+ Pagakia)
         this.iceSlowTimer = 0;
         this.iceSlowMultiplier = 1.0;
+
+        // Sonic Slow State (Rouf Dial-Tone Blaster)
+        this.sonicSlowTimer = 0;
+        this.sonicSlowMultiplier = 1.0;
+
+        // Shock Vulnerability State (Wrath of Olympus)
+        this.shockedTimer = 0;
+        this.shockVulnerabilityMultiplier = 1.0;
+
+        // Chronos Time-Rift Slow State
+        this.chronoSlowTimer = 0;
+        this.chronoSlowMultiplier = 1.0;
     }
 
     takeDamage(amount, effects = null, fromCrit = null, playSound = true) {
-        let finalAmount = amount;
         const isDrenched = this.waterDrenchedTimer > 0;
-        if (isDrenched) {
-            // Take +30% amplified damage when drenched by Nerobalonaki!
-            finalAmount = Math.round(amount * (this.damageVulnerabilityMultiplier || 1.30));
-        }
+        const isShocked = this.shockedTimer > 0;
+        let dmgScale = 1.0;
+        if (isDrenched) dmgScale *= (this.damageVulnerabilityMultiplier || 1.30);
+        if (isShocked) dmgScale *= (this.shockVulnerabilityMultiplier || 1.12);
+        const finalAmount = dmgScale > 1.0 ? Math.round(amount * dmgScale) : amount;
 
         this.hp -= finalAmount;
         this.hitFlash = 8;
@@ -63,10 +75,13 @@ class EnemyBase {
         if (playSound && window.soundEngine) {
             window.soundEngine.playHit(true, isCrit);
         }
+        if (isCrit && typeof window !== 'undefined' && window.gameInstance && window.gameInstance.camera && typeof window.gameInstance.camera.punchZoom === 'function') {
+            window.gameInstance.camera.punchZoom(0.022, true);
+        }
 
         if (effects) {
             effects.addDamage(this.x, this.y, finalAmount, isCrit, false, isDrenched);
-            effects.addSparks(this.x, this.y, this.type === 'fatmir' ? '#eb4d4b' : '#2ed573', 5);
+            effects.addSparks(this.x, this.y, this.type === 'fatmir' ? '#eb4d4b' : '#2ed573', isCrit ? 7 : 5);
             if (isDrenched) {
                 effects.addSparks(this.x, this.y - 12, '#00d2d3', 3);
             }
@@ -87,7 +102,12 @@ class EnemyBase {
             }
             if (effects) {
                 effects.addComicSplash(this.x, this.y, 'K.O!');
-                effects.addDust(this.x, this.y, 8, 14);
+                if (typeof effects.addDeathPop === 'function') {
+                    this._deathPopped = true;
+                    effects.addDeathPop(this.x, this.y, this.radius, this.color, this.isBoss || this.isMiniBoss);
+                } else {
+                    effects.addDust(this.x, this.y, 8, 14);
+                }
             }
             return true; // Killed
         }
@@ -126,10 +146,15 @@ class EnemyBase {
 
     applyArenaBounds(arena) {
         if (!arena) return;
-        if (this.x - this.radius < -arena.halfWidth) this.x = -arena.halfWidth + this.radius;
-        if (this.x + this.radius > arena.halfWidth) this.x = arena.halfWidth - this.radius;
-        if (this.y - this.radius < -arena.halfHeight) this.y = -arena.halfHeight + this.radius;
-        if (this.y + this.radius > arena.halfHeight) this.y = arena.halfHeight - this.radius;
+        const b = arena.dungeonBounds;
+        const minX = b ? b.minX : -arena.halfWidth;
+        const maxX = b ? b.maxX : arena.halfWidth;
+        const minY = b ? b.minY : -arena.halfHeight;
+        const maxY = b ? b.maxY : arena.halfHeight;
+        if (this.x - this.radius < minX) this.x = minX + this.radius;
+        if (this.x + this.radius > maxX) this.x = maxX - this.radius;
+        if (this.y - this.radius < minY) this.y = minY + this.radius;
+        if (this.y + this.radius > maxY) this.y = maxY - this.radius;
     }
 
     updateDebuffs(dt = 1) {
@@ -146,13 +171,36 @@ class EnemyBase {
                 this.iceSlowMultiplier = 1.0;
             }
         }
+        if (this.sonicSlowTimer > 0) {
+            this.sonicSlowTimer -= dt;
+            if (this.sonicSlowTimer <= 0) {
+                this.sonicSlowMultiplier = 1.0;
+            }
+        }
+        if (this.shockedTimer > 0) {
+            this.shockedTimer -= dt;
+            if (this.shockedTimer <= 0) {
+                this.shockVulnerabilityMultiplier = 1.0;
+            }
+        }
+        if (this.chronoSlowTimer > 0) {
+            this.chronoSlowTimer -= dt;
+            if (this.chronoSlowTimer <= 0) this.chronoSlowMultiplier = 1.0;
+        }
     }
 
     getEffectiveSpeed() {
         let mult = 1.0;
         if (this.waterDrenchedTimer > 0) mult *= (this.waterSlowMultiplier || 0.55);
         if (this.iceSlowTimer > 0) mult *= (this.iceSlowMultiplier || 0.50);
+        if (this.sonicSlowTimer > 0) mult *= (this.sonicSlowMultiplier || 0.70);
+        if (this.chronoSlowTimer > 0) mult *= (this.chronoSlowMultiplier || 0.50);
         return this.speed * mult;
+    }
+
+    applyChronoSlow(durationSeconds = 0.4, slowMultiplier = 0.50) {
+        this.chronoSlowTimer = Math.max(this.chronoSlowTimer || 0, Math.round(durationSeconds * 60));
+        this.chronoSlowMultiplier = Math.min(this.chronoSlowMultiplier || 1.0, slowMultiplier);
     }
 
     applyStun(durationSeconds = 2.0, effects = null) {
@@ -183,6 +231,22 @@ class EnemyBase {
         this.iceSlowMultiplier = Math.min(this.iceSlowMultiplier, slowMultiplier);
         if (effects && Math.random() < 0.35) {
             effects.addSparks(this.x, this.y, '#00cec9', 4);
+        }
+    }
+
+    applySonicSlow(durationSeconds = 1.5, slowMultiplier = 0.70, effects = null) {
+        this.sonicSlowTimer = Math.max(this.sonicSlowTimer, Math.round(durationSeconds * 60));
+        this.sonicSlowMultiplier = Math.min(this.sonicSlowMultiplier, slowMultiplier);
+        if (effects && Math.random() < 0.45) {
+            effects.addSparks(this.x, this.y, '#fed330', 4);
+        }
+    }
+
+    applyShockVulnerability(durationSeconds = 3.5, damageMult = 1.12, effects = null) {
+        this.shockedTimer = Math.max(this.shockedTimer, Math.round(durationSeconds * 60));
+        this.shockVulnerabilityMultiplier = Math.max(this.shockVulnerabilityMultiplier || 1.0, damageMult);
+        if (effects && Math.random() < 0.35) {
+            effects.addSparks(this.x, this.y, '#00f5ff', 3);
         }
     }
 
@@ -219,39 +283,50 @@ class EnemyBase {
         const offset = this.type === 'fatmir' ? 94 : (this.hudOffsetY || (this.radius + 14));
         const hudY = this.y - offset;
 
-        // Name tag & Status Indicator
-        ctx.save();
-        ctx.font = '800 12px "Luckiest Guy", "Fredoka", sans-serif';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'bottom';
-        ctx.lineWidth = 3;
-        ctx.strokeStyle = '#1e272e';
-
         let displayName = this.name;
+        let nameColor = this.type === 'fatmir' ? '#ff6b6b' : '#2ed573';
         if (this.stunTimer > 0) {
             displayName = `💫 ${(this.stunTimer / 60).toFixed(1)}s`;
-            ctx.fillStyle = '#f1c40f';
+            nameColor = '#f1c40f';
         } else if (this.fearTimer > 0) {
             displayName = `😱 FLEEING (${(this.fearTimer / 60).toFixed(1)}s)`;
-            ctx.fillStyle = '#74b9ff';
+            nameColor = '#74b9ff';
         } else if (this.iceSlowTimer > 0) {
             displayName = `${this.name} 🧊 -50%`;
-            ctx.fillStyle = '#00cec9';
+            nameColor = '#00cec9';
+        } else if (this.sonicSlowTimer > 0) {
+            const pct = Math.round((1 - (this.sonicSlowMultiplier || 0.70)) * 100);
+            displayName = `${this.name} 📡 -${pct}%`;
+            nameColor = '#fed330';
+        } else if (this.chronoSlowTimer > 0) {
+            const pct = Math.round((1 - (this.chronoSlowMultiplier || 0.50)) * 100);
+            displayName = `${this.name} ⏳ -${pct}%`;
+            nameColor = '#00cec9';
         } else if (this.waterDrenchedTimer > 0) {
             displayName = `${this.name} 💧 -45%`;
-            ctx.fillStyle = this.type === 'fatmir' ? '#ff6b6b' : '#2ed573';
-        } else {
-            ctx.fillStyle = this.type === 'fatmir' ? '#ff6b6b' : '#2ed573';
+        } else if (this.shockedTimer > 0) {
+            const pct = Math.round(((this.shockVulnerabilityMultiplier || 1.12) - 1) * 100);
+            displayName = `${this.name} ⚡ +${pct}%`;
+            nameColor = '#fed330';
         }
 
-        ctx.strokeText(displayName, this.x, hudY - 3);
-        ctx.fillText(displayName, this.x, hudY - 3);
+        const lbl = EnemyBase.getLabelSprite(
+            displayName,
+            '800 12px "Luckiest Guy", "Fredoka", sans-serif',
+            nameColor,
+            '#1e272e',
+            3,
+            0,
+            'bottom'
+        );
+        EnemyBase.drawLabel(ctx, lbl, this.x, hudY - 3);
 
         // Health Bar
         const barW = this.type === 'fatmir' ? 46 : 36;
         const barH = 5;
         const hpRatio = Math.max(0, this.hp / this.maxHp);
 
+        ctx.save();
         ctx.lineWidth = 2;
         ctx.strokeStyle = '#1e272e';
         ctx.fillStyle = '#2f3542';
@@ -264,10 +339,16 @@ class EnemyBase {
         // Trapped in Bubble Indicator Tag
         if (this.bubbleTrappedTimer > 0) {
             const timeLeftSec = (this.bubbleTrappedTimer / 60).toFixed(1);
-            ctx.fillStyle = '#00d2d3';
-            ctx.font = '800 11px "Luckiest Guy", cursive';
-            ctx.strokeText(`🫧 TRAPPED (${timeLeftSec}s)`, this.x, hudY - 14);
-            ctx.fillText(`🫧 TRAPPED (${timeLeftSec}s)`, this.x, hudY - 14);
+            const trapLbl = EnemyBase.getLabelSprite(
+                `🫧 TRAPPED (${timeLeftSec}s)`,
+                '800 11px "Luckiest Guy", cursive',
+                '#00d2d3',
+                '#1e272e',
+                2,
+                0,
+                'bottom'
+            );
+            EnemyBase.drawLabel(ctx, trapLbl, this.x, hudY - 14);
         }
 
         ctx.restore();
@@ -310,35 +391,168 @@ class EnemyBase {
         return true; // Enemy is immobilized
     }
 
+    static getLabelSprite(text, font, fillStyle, strokeStyle = '', lineWidth = 0, maxWidth = 0, baseline = 'bottom') {
+        let cache = EnemyBase._labelCache;
+        if (!cache) {
+            cache = EnemyBase._labelCache = new Map();
+            if (typeof document !== 'undefined' && document.fonts && document.fonts.ready && !EnemyBase._fontsHooked) {
+                EnemyBase._fontsHooked = true;
+                document.fonts.ready.then(() => { if (EnemyBase._labelCache) EnemyBase._labelCache.clear(); });
+            }
+        }
+        const roundedMaxW = maxWidth > 0 ? Math.round(maxWidth * 2) / 2 : 0;
+        const key = `${text}|${font}|${fillStyle}|${strokeStyle}|${lineWidth}|${roundedMaxW}|${baseline}`;
+        const hit = cache.get(key);
+        if (hit) return hit;
+
+        if (cache.size >= 480) {
+            let count = 0;
+            for (const k of cache.keys()) {
+                cache.delete(k);
+                if (++count >= 80) break;
+            }
+        }
+
+        if (!EnemyBase._measureCtx && typeof document !== 'undefined') {
+            const mc = document.createElement('canvas');
+            mc.width = 4;
+            mc.height = 4;
+            EnemyBase._measureCtx = mc.getContext('2d');
+        }
+        const mctx = EnemyBase._measureCtx;
+        const dpr = 2;
+        mctx.font = font;
+        const m = mctx.measureText(text);
+        const pxMatch = /(\d+(?:\.\d+)?)px/.exec(font);
+        const fontPx = pxMatch ? parseFloat(pxMatch[1]) : 12;
+        const rawW = Math.ceil(m.width || text.length * fontPx * 0.6);
+        const textW = roundedMaxW > 0 ? Math.min(rawW, Math.ceil(roundedMaxW)) : rawW;
+        const strokePad = Math.ceil(lineWidth || 0);
+        const padX = strokePad + 6;
+        const padY = strokePad + 8;
+        const ascent = Math.max(fontPx * 1.15, Math.ceil(m.actualBoundingBoxAscent || fontPx * 1.1));
+        const descent = Math.max(4, Math.ceil(m.actualBoundingBoxDescent || 4));
+        const logicalW = Math.max(4, textW + padX * 2);
+        const logicalH = Math.max(4, Math.ceil(ascent + descent + padY * 2));
+
+        const cx = logicalW / 2;
+        const drawY = baseline === 'middle' ? (logicalH / 2) : (padY + ascent);
+        const paintLabel = (targetCtx) => {
+            targetCtx.font = font;
+            targetCtx.textAlign = 'center';
+            targetCtx.textBaseline = baseline === 'middle' ? 'middle' : 'bottom';
+            targetCtx.lineJoin = 'round';
+            targetCtx.miterLimit = 2;
+            if (strokeStyle && lineWidth > 0) {
+                targetCtx.lineWidth = lineWidth;
+                targetCtx.strokeStyle = strokeStyle;
+                if (roundedMaxW > 0) targetCtx.strokeText(text, cx, drawY, roundedMaxW);
+                else targetCtx.strokeText(text, cx, drawY);
+            }
+            targetCtx.fillStyle = fillStyle;
+            if (roundedMaxW > 0) targetCtx.fillText(text, cx, drawY, roundedMaxW);
+            else targetCtx.fillText(text, cx, drawY);
+        };
+
+        let entry;
+        if (typeof SpriteAtlasCache !== 'undefined') {
+            const atlasEntry = SpriteAtlasCache.bakeCustom(
+                `lbl:${key}`,
+                logicalW,
+                logicalH,
+                dpr,
+                paintLabel,
+                true
+            );
+            entry = {
+                canvas: atlasEntry.canvas,
+                sx: atlasEntry.sx,
+                sy: atlasEntry.sy,
+                sw: atlasEntry.sw,
+                sh: atlasEntry.sh,
+                logicalW: atlasEntry.logicalW,
+                logicalH: atlasEntry.logicalH,
+                anchorX: cx,
+                anchorY: drawY
+            };
+        } else {
+            const c = document.createElement('canvas');
+            c.width = Math.ceil(logicalW * dpr);
+            c.height = Math.ceil(logicalH * dpr);
+            const cctx = c.getContext('2d');
+            cctx.scale(dpr, dpr);
+            paintLabel(cctx);
+            entry = {
+                canvas: c,
+                sx: 0,
+                sy: 0,
+                sw: c.width,
+                sh: c.height,
+                logicalW,
+                logicalH,
+                anchorX: cx,
+                anchorY: drawY
+            };
+        }
+        cache.set(key, entry);
+        return entry;
+    }
+
+    static drawLabel(ctx, lbl, x, y) {
+        if (!lbl || !lbl.canvas) return;
+        ctx.drawImage(
+            lbl.canvas,
+            lbl.sx, lbl.sy, lbl.sw, lbl.sh,
+            x - lbl.anchorX, y - lbl.anchorY, lbl.logicalW, lbl.logicalH
+        );
+    }
+
+    static _getBubbleDisc() {
+        if (EnemyBase._bubbleDiscCanvas) return EnemyBase._bubbleDiscCanvas;
+        const size = 128;
+        const r = 64;
+        const c = document.createElement('canvas');
+        c.width = size;
+        c.height = size;
+        const bctx = c.getContext('2d');
+        const g = bctx.createRadialGradient(r - r * 0.3, r - r * 0.3, r * 0.1, r, r, r);
+        g.addColorStop(0, 'rgba(255, 255, 255, 0.7)');
+        g.addColorStop(0.35, 'rgba(112, 161, 255, 0.45)');
+        g.addColorStop(0.7, 'rgba(0, 206, 201, 0.5)');
+        g.addColorStop(0.95, 'rgba(224, 86, 253, 0.6)');
+        g.addColorStop(1, 'rgba(112, 161, 255, 0.75)');
+        bctx.fillStyle = g;
+        bctx.beginPath();
+        bctx.arc(r, r, r, 0, Math.PI * 2);
+        bctx.fill();
+        EnemyBase._bubbleDiscCanvas = c;
+        return c;
+    }
+
     drawBubbleTrap(ctx) {
         if (this.bubbleTrappedTimer <= 0) return;
 
         ctx.save();
         const r = this.radius * 1.45;
         const wobble = Math.sin(this.bubbleTrapAge * 0.2) * (r * 0.05);
+        const R = r + wobble;
 
         // Translucent iridescent bubble enclosing the trapped enemy
-        const bubbleGrad = ctx.createRadialGradient(this.x - r * 0.3, this.y - r * 0.3, r * 0.1, this.x, this.y, r);
-        bubbleGrad.addColorStop(0, 'rgba(255, 255, 255, 0.7)');
-        bubbleGrad.addColorStop(0.35, 'rgba(112, 161, 255, 0.45)');
-        bubbleGrad.addColorStop(0.7, 'rgba(0, 206, 201, 0.5)');
-        bubbleGrad.addColorStop(0.95, 'rgba(224, 86, 253, 0.6)');
-        bubbleGrad.addColorStop(1, 'rgba(112, 161, 255, 0.75)');
+        const disc = EnemyBase._getBubbleDisc();
+        ctx.drawImage(disc, this.x - R, this.y - R, R * 2, R * 2);
 
-        ctx.fillStyle = bubbleGrad;
         ctx.strokeStyle = '#1e272e';
         ctx.lineWidth = 2.4;
 
         ctx.beginPath();
-        ctx.arc(this.x, this.y, r + wobble, 0, Math.PI * 2);
-        ctx.fill();
+        ctx.arc(this.x, this.y, R, 0, Math.PI * 2);
         ctx.stroke();
 
         // Rainbow soap film ring
         ctx.strokeStyle = 'rgba(255, 255, 255, 0.65)';
         ctx.lineWidth = 1.6;
         ctx.beginPath();
-        ctx.arc(this.x, this.y, (r + wobble) * 0.88, 0, Math.PI * 2);
+        ctx.arc(this.x, this.y, R * 0.88, 0, Math.PI * 2);
         ctx.stroke();
 
         // Gloss highlights
@@ -353,4 +567,8 @@ class EnemyBase {
 
         ctx.restore();
     }
+}
+
+if (typeof window !== 'undefined') {
+    window.EnemyBase = EnemyBase;
 }

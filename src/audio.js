@@ -78,6 +78,15 @@ class SoundEngine {
         this.critAudioBuffer = null;
         this.critBufferLoading = false;
 
+        // Burst cooldowns prevent cloning dozens of <audio> elements / oscillators in a single AoE frame
+        this._lastKillMs = 0;
+        this._lastSynthHitMs = 0;
+        this._lastPickupMs = 0;
+        this._lastShootMs = 0;
+        this._lastKeyMs = {};
+        this._creditsActive = false;
+        this._creditsFadeToken = 0;
+
         // Unlock Web Audio Context on user interaction (browser policy)
         const events = ['click', 'pointerdown', 'mousedown', 'keydown', 'touchstart'];
         const unlockAudio = () => {
@@ -225,34 +234,64 @@ class SoundEngine {
     startCreditsBGM(fadeInDuration = 2.5) {
         if (this.muted || this.bgmMuted || this.bgmVolume <= 0) return;
         this.init();
+        const fadeToken = ++this._creditsFadeToken;
+        this._creditsActive = true;
         try {
             this.stopBGM();
             this.stopMenuBGM();
-            if (this.creditsMusic) {
-                this.creditsMusic.currentTime = 0;
-                const targetVol = this.bgmVolume;
-                if (fadeInDuration > 0) {
-                    this.creditsMusic.volume = 0;
-                    const playPromise = this.creditsMusic.play();
-                    if (playPromise !== undefined) playPromise.catch(() => {});
-                    const startTime = performance.now();
+            const track = this.creditsMusic;
+            if (track) {
+                track.currentTime = 0;
+                const getTargetVol = () => (this.muted || this.bgmMuted ? 0 : Math.max(0, Math.min(1, this.bgmVolume)));
+
+                const beginFade = () => {
+                    if (!this._creditsActive || this._creditsFadeToken !== fadeToken) return;
+                    if (fadeInDuration <= 0) {
+                        track.volume = getTargetVol();
+                        return;
+                    }
+                    let fadeStart = null;
                     const fade = (now) => {
-                        if (!this.creditsMusic || this.creditsMusic.paused) return;
-                        const progress = Math.min((now - startTime) / (fadeInDuration * 1000), 1.0);
-                        this.creditsMusic.volume = targetVol * progress;
+                        if (!this._creditsActive || this._creditsFadeToken !== fadeToken || !this.creditsMusic) return;
+                        if (this.creditsMusic.paused) {
+                            // Keep waiting if audio decoder is still starting/buffering
+                            requestAnimationFrame(fade);
+                            return;
+                        }
+                        if (fadeStart === null) fadeStart = now;
+                        const progress = Math.max(0, Math.min((now - fadeStart) / (fadeInDuration * 1000), 1.0));
+                        this.creditsMusic.volume = Math.max(0, Math.min(1, getTargetVol() * progress));
                         if (progress < 1.0) requestAnimationFrame(fade);
                     };
                     requestAnimationFrame(fade);
+                };
+
+                track.volume = fadeInDuration > 0 ? 0 : getTargetVol();
+                const playPromise = track.play();
+                if (playPromise !== undefined) {
+                    playPromise.then(beginFade).catch(() => {
+                        // Retry once on the next user gesture if autoplay was blocked
+                        if (!this._creditsActive || this._creditsFadeToken !== fadeToken) return;
+                        const retry = () => {
+                            window.removeEventListener('pointerdown', retry);
+                            window.removeEventListener('keydown', retry);
+                            if (!this._creditsActive || this._creditsFadeToken !== fadeToken) return;
+                            const p = track.play();
+                            if (p && p.then) p.then(beginFade).catch(() => {});
+                        };
+                        window.addEventListener('pointerdown', retry, { once: true, passive: true });
+                        window.addEventListener('keydown', retry, { once: true, passive: true });
+                    });
                 } else {
-                    this.creditsMusic.volume = targetVol;
-                    const playPromise = this.creditsMusic.play();
-                    if (playPromise !== undefined) playPromise.catch(() => {});
+                    beginFade();
                 }
             }
         } catch (e) {}
     }
 
     stopCreditsBGM() {
+        this._creditsActive = false;
+        this._creditsFadeToken++;
         try {
             if (this.creditsMusic) {
                 this.creditsMusic.pause();
@@ -285,9 +324,14 @@ class SoundEngine {
         }
     }
 
-    playSfx(key, volumeMult = 1.0) {
+    playSfx(key, volumeMult = 1.0, minIntervalMs = 0) {
         if (this.muted || this.masterVolume <= 0) return false;
         this.init();
+        if (minIntervalMs > 0) {
+            const now = performance.now();
+            if (now - (this._lastKeyMs[key] || 0) < minIntervalMs) return false;
+            this._lastKeyMs[key] = now;
+        }
         const item = this.sounds[key];
         if (!item) return false;
 
@@ -309,12 +353,12 @@ class SoundEngine {
 
     playSelect() { return this.playSfx('select'); }
     playGoBack() { return this.playSfx('goBack'); }
-    playKill() { return this.playSfx('kill'); }
-    playTntExplosion() { return this.playSfx('tnt'); }
-    playWaterSplash() { return this.playSfx('waterSplash'); }
+    playKill() { return this.playSfx('kill', 1.0, 55); }
+    playTntExplosion() { return this.playSfx('tnt', 1.0, 40); }
+    playWaterSplash() { return this.playSfx('waterSplash', 1.0, 45); }
     playWaterBalloonSplash() { return this.playWaterSplash(); }
-    playChargedBubble() { return this.playSfx('bubbleCharged'); }
-    playMoneyShoot() { return this.playSfx('moneyGun'); }
+    playChargedBubble() { return this.playSfx('bubbleCharged', 1.0, 45); }
+    playMoneyShoot() { return this.playSfx('moneyGun', 1.0, 35); }
 
     playHitmarker(isCrit = false) {
         if (this.muted || this.masterVolume <= 0) return;
@@ -409,6 +453,9 @@ class SoundEngine {
                 this.playHitmarker(false);
             }
         }
+        const now = performance.now();
+        if (now - this._lastSynthHitMs < 32) return;
+        this._lastSynthHitMs = now;
         if (typeof ProceduralSynth !== 'undefined') {
             ProceduralSynth.playHit(this.ctx, this.masterVolume, isEnemy, isCrit);
         }
@@ -457,6 +504,9 @@ class SoundEngine {
     playPickup(type = 'xp') {
         if (this.muted || this.masterVolume <= 0) return;
         this.init();
+        const now = performance.now();
+        if (now - this._lastPickupMs < 28) return;
+        this._lastPickupMs = now;
         if (typeof ProceduralSynth !== 'undefined') {
             ProceduralSynth.playPickup(this.ctx, this.masterVolume, type);
         }

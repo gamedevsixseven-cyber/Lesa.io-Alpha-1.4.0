@@ -5,20 +5,24 @@
 
 class HeroRenderer {
     static draw(player, ctx) {
-        // 1. Ghost dash & airborne trails
+        // 1. Ghost dash, sprint & airborne trails
         for (const ghost of player.ghostTrails) {
-            ctx.save();
-            ctx.translate(ghost.x, ghost.y);
-            ctx.globalAlpha = ghost.alpha * (ghost.isBlade ? 0.65 : 0.4);
-            if (ghost.isAirborne) {
-                ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
-                ctx.beginPath();
-                ctx.arc(0, 0, (player.radius || 25) * 0.75, 0, Math.PI * 2);
-                ctx.fill();
+            if (typeof CombatRenderFX !== 'undefined') {
+                CombatRenderFX.drawHeroAfterimage(ctx, player, ghost);
             } else {
-                HeroSkinRenderer.drawModel(player, ctx, 0, ghost.isBlade, false);
+                ctx.save();
+                ctx.translate(ghost.x, ghost.y);
+                ctx.globalAlpha = ghost.alpha * (ghost.isBlade ? 0.65 : 0.4);
+                if (ghost.isAirborne) {
+                    ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+                    ctx.beginPath();
+                    ctx.arc(0, 0, (player.radius || 25) * 0.75, 0, Math.PI * 2);
+                    ctx.fill();
+                } else {
+                    HeroSkinRenderer.drawModel(player, ctx, 0, ghost.isBlade, false);
+                }
+                ctx.restore();
             }
-            ctx.restore();
         }
 
         ctx.save();
@@ -104,8 +108,8 @@ class HeroRenderer {
             ctx.fillStyle = flash ? '#ffffff' : '#eb4d4b';
             ctx.fillRect(0, -5, 16, 10);
             ctx.strokeRect(0, -5, 16, 10);
-        } else if (player.weaponType === 'bubble') {
-            if (typeof BubbleGun !== 'undefined') BubbleGun.drawWeapon(ctx, flash, 0);
+        } else if (typeof WeaponSystem !== 'undefined' && WeaponSystem.drawEquippedModel(ctx, player.weaponType, flash, 0, player)) {
+            // Shared unlockable weapon rendered by WeaponSystem
         } else {
             ctx.fillStyle = flash ? '#ffffff' : '#9c6615';
             ctx.beginPath();

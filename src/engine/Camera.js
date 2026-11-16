@@ -19,6 +19,8 @@ class Camera {
 
         this.zoom = this.computeAdaptiveZoom();
         this.targetZoom = this.zoom;
+        this.zoomPunch = 0;
+        this.lastCritPunchMs = 0;
     }
 
     computeAdaptiveZoom() {
@@ -42,11 +44,26 @@ class Camera {
         this.targetY = targetY;
     }
 
+    punchZoom(amount = 0.03, isCrit = false) {
+        if (typeof localStorage !== 'undefined' && localStorage.getItem('lesaio_screenshake') === 'false') {
+            return;
+        }
+        if (isCrit) {
+            const now = (typeof performance !== 'undefined') ? performance.now() : Date.now();
+            if (now - this.lastCritPunchMs < 170) return;
+            this.lastCritPunchMs = now;
+        }
+        this.zoomPunch = Math.max(-0.05, Math.min(0.06, this.zoomPunch + amount));
+    }
+
     addShake(amount) {
         if (typeof localStorage !== 'undefined' && localStorage.getItem('lesaio_screenshake') === 'false') {
             return;
         }
         this.shakeAmount = Math.min(this.shakeAmount + amount, 28);
+        if (amount >= 10) {
+            this.punchZoom(Math.min(0.042, amount * 0.0026), false);
+        }
     }
 
     shake(amount, duration = 8) {
@@ -58,8 +75,15 @@ class Camera {
         this.x += (this.targetX - this.x) * this.lerpSpeed;
         this.y += (this.targetY - this.y) * this.lerpSpeed;
 
-        // Smooth zoom
-        this.zoom += (this.targetZoom - this.zoom) * 0.1;
+        // Smooth zoom + subtle impact zoom-punch decay
+        if (Math.abs(this.zoomPunch) > 0.0004) {
+            this.zoomPunch *= Math.pow(0.82, dt);
+        } else {
+            this.zoomPunch = 0;
+        }
+        const effectiveTarget = this.targetZoom * (1 + this.zoomPunch);
+        const zoomRate = this.zoomPunch !== 0 ? 0.28 : 0.1;
+        this.zoom += (effectiveTarget - this.zoom) * zoomRate;
 
         // Screen Shake calculation
         if (this.shakeAmount > 0.1) {

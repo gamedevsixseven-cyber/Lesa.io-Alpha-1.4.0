@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <!-- Warm Celestial Glow -->
+  <circle cx="32" cy="34" r="24" fill="#d97706" opacity="0.22"/>
+  <!-- 3D Bronze Ingot Top Face -->
+  <polygon points="18,16 46,16 56,28 8,28" fill="#fbbf24" stroke="#1a1d2b" stroke-width="4" stroke-linejoin="round"/>
+  <!-- Left & Front Bevel Body -->
+  <polygon points="8,28 56,28 52,50 12,50" fill="#d97706" stroke="#1a1d2b" stroke-width="4" stroke-linejoin="round"/>
+  <!-- Darker Lower Facet Shading -->
+  <polygon points="38,28 56,28 52,50 35,50" fill="#b45309"/>
+  <polygon points="8,28 56,28 52,50 12,50" fill="none" stroke="#1a1d2b" stroke-width="4" stroke-linejoin="round"/>
+  <!-- Engraved Greek Laurel Emblem on Ingot Front -->
+  <path d="M23 44 C19 40 20 34 25 32" stroke="#fef08a" stroke-width="2.8" stroke-linecap="round"/>
+  <path d="M41 44 C45 40 44 34 39 32" stroke="#fef08a" stroke-width="2.8" stroke-linecap="round"/>
+  <polygon points="32,31 35,38 32,45 29,38" fill="#a855f7" stroke="#1a1d2b" stroke-width="2" stroke-linejoin="round"/>
+  <!-- Mystic Crack & Specular Edge -->
+  <polyline points="20,19 43,19" stroke="#ffffff" stroke-width="2.6" stroke-linecap="round" opacity="0.75"/>
+  <polyline points="12,31 18,35 15,40" stroke="#7e22ce" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" opacity="0.8"/>
+</svg>

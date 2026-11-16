@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <!-- Soft Cyan Forge Glow -->
+  <circle cx="32" cy="34" r="24" fill="#38bdf8" opacity="0.20"/>
+  <!-- Left Jagged Steel Plate Shard -->
+  <polygon points="10,36 22,14 34,24 27,48 12,46" fill="#64748b" stroke="#1a1d2b" stroke-width="3.8" stroke-linejoin="round"/>
+  <polygon points="22,14 34,24 26,31 16,25" fill="#94a3b8"/>
+  <circle cx="19" cy="40" r="2.2" fill="#cbd5e1" stroke="#1a1d2b" stroke-width="1.6"/>
+  <!-- Top-Right Brass Gear Tooth Fragment -->
+  <path d="M35 12 L42 9 L46 15 L53 15 L55 23 L49 27 L51 34 L43 38 L37 31 L31 28 L33 19 Z" fill="#f59e0b" stroke="#1a1d2b" stroke-width="3.6" stroke-linejoin="round"/>
+  <path d="M40 14 L46 16 L49 24 L42 29 L37 22 Z" fill="#fcd34d"/>
+  <circle cx="43" cy="23" r="3.6" fill="#1a1d2b"/>
+  <!-- Center Forefront Honed Cyan-Tempered Shard -->
+  <polygon points="24,52 33,24 44,30 49,51 34,56" fill="#0ea5e9" stroke="#1a1d2b" stroke-width="4" stroke-linejoin="round"/>
+  <polygon points="33,24 44,30 37,43 29,39" fill="#7dd3fc"/>
+  <line x1="35" y1="28" x2="31" y2="48" stroke="#ffffff" stroke-width="2.6" stroke-linecap="round" opacity="0.85"/>
+  <!-- Crisp Forge Sparks -->
+  <path d="M16 14 L18 19 L23 20 L18 22 L16 27 L14 22 L9 20 L14 19 Z" fill="#fef08a" stroke="#1a1d2b" stroke-width="2" stroke-linejoin="round"/>
+  <circle cx="52" cy="46" r="2.8" fill="#7dd3fc" stroke="#1a1d2b" stroke-width="2"/>
+</svg>

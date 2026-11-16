@@ -341,6 +341,11 @@
 
 /* ================= SETTINGS MODAL ================= */
 
+#settings-modal .modal-panel {
+    max-height: 92vh;
+    overflow-y: auto;
+}
+
 .settings-controls-list {
     display: flex;
     flex-direction: column;

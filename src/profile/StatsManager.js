@@ -37,12 +37,15 @@ class StatsManager {
         }
 
         const map = {
-            psanas: { name: 'Psanas', emoji: '🏹' },
-            psogas: { name: 'Psogas', emoji: '🔥' },
-            petros: { name: 'Petros', emoji: '🛡️' }
+            psanas: { name: 'Psanas', emoji: '🏹', iconKey: 'target' },
+            psogas: { name: 'Psogas', emoji: '🔥', iconKey: 'flame' },
+            petros: { name: 'Petros', emoji: '🛡️', iconKey: 'shield' },
+            '50balos': { name: '50balos', emoji: '💰', iconKey: 'bag_gold' },
+            billias: { name: 'Billias', emoji: '🍔', iconKey: 'weapon_burger' },
+            kitsos: { name: 'Kitsos', emoji: '⚡', iconKey: 'bolt' }
         };
 
-        return map[fav] || { name: 'Psanas', emoji: '🏹' };
+        return map[fav] || { name: 'Psanas', emoji: '🏹', iconKey: 'target' };
     }
 
     /**

@@ -1,0 +1,372 @@
+/* ===================================================
+ * Lesa.io - Gear Upgrades, Evolution Stone & Forge UI
+ * =================================================== */
+
+.gear-upgrade-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 8px 14px;
+    margin-bottom: 10px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+    border: 2.5px solid #1e272e;
+    box-shadow: 0 3px 0 rgba(30, 39, 46, 0.3);
+}
+
+.gear-evo-stone-pill {
+    display: inline-flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 7px;
+    font-size: 0.84rem;
+    font-weight: 800;
+    color: #f8fafc;
+}
+
+.gear-evo-stone-pill strong {
+    color: #fef08a;
+}
+
+.gear-evo-stone-pill img {
+    width: 22px;
+    height: 22px;
+    object-fit: contain;
+    filter: drop-shadow(0 2px 4px rgba(239, 68, 68, 0.6));
+}
+
+.gear-evo-craft-link {
+    background: linear-gradient(180deg, #fbbf24 0%, #f59e0b 100%);
+    color: #1e272e;
+    border: 2px solid #1e272e;
+    border-radius: 999px;
+    padding: 4px 12px;
+    font-size: 0.72rem;
+    font-weight: 900;
+    letter-spacing: 0.4px;
+    cursor: pointer;
+    box-shadow: 0 2px 0 #1e272e;
+    transition: transform 0.12s ease;
+}
+
+.gear-evo-craft-link:hover {
+    transform: translateY(-1px);
+}
+
+/* Slot & Card Upgrade Badges */
+.gear-slot-card {
+    position: relative;
+}
+
+.gear-slot-lvl-badge {
+    position: absolute;
+    bottom: 20px;
+    right: 4px;
+    padding: 1px 6px;
+    border-radius: 999px;
+    font-size: 0.56rem;
+    font-weight: 900;
+    color: #ffffff;
+    background: #1e272e;
+    border: 1.5px solid rgba(255, 255, 255, 0.85);
+    z-index: 3;
+    letter-spacing: 0.3px;
+}
+
+.gear-slot-lvl-badge.is-evolved {
+    background: linear-gradient(135deg, #e74c3c 0%, #f59e0b 100%);
+    color: #fffef5;
+    border-color: #fef08a;
+    box-shadow: 0 0 8px rgba(245, 158, 11, 0.75);
+}
+
+.gear-card-lvl-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    margin-bottom: 4px;
+}
+
+.gear-lvl-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.68rem;
+    font-weight: 900;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: rgba(30, 39, 46, 0.08);
+    color: #1e272e;
+    border: 1.5px solid rgba(30, 39, 46, 0.25);
+}
+
+.gear-lvl-pill.is-max {
+    background: #fef3c7;
+    color: #b45309;
+    border-color: #f59e0b;
+}
+
+.gear-lvl-pill.is-evolved {
+    background: linear-gradient(135deg, #dc2626 0%, #f59e0b 100%);
+    color: #ffffff;
+    border-color: #1e272e;
+    text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.45);
+    box-shadow: 0 2px 6px rgba(220, 38, 38, 0.4);
+}
+
+.gear-lvl-pips {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+}
+
+.gear-lvl-pip {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    border: 1.5px solid #1e272e;
+    background: #e2e8f0;
+}
+
+.gear-lvl-pip.is-filled {
+    background: #38bdf8;
+}
+
+.gear-lvl-pip.is-evolved {
+    background: linear-gradient(135deg, #ef4444, #fbbf24);
+    box-shadow: 0 0 5px rgba(251, 191, 36, 0.9);
+}
+
+/* Stat Upgrade Delta Hint */
+.gear-stat-delta {
+    color: #059669;
+    font-weight: 900;
+    font-size: 0.72rem;
+    margin-left: 2px;
+}
+
+/* Awakened / Evolved Mythic Card Aura */
+.gear-card.is-evolved-card,
+.weapon-card.is-evolved-card {
+    background: linear-gradient(155deg, #fff5f5 0%, #fef9c3 55%, #ecfeff 100%);
+    border-color: #e74c3c;
+    box-shadow: 0 0 0 2px #fbbf24, 0 5px 0 #991b1b, 0 8px 18px rgba(245, 158, 11, 0.35);
+}
+
+.gear-slot-card.is-evolved-card {
+    border-color: #f59e0b !important;
+    box-shadow: 0 0 12px rgba(245, 158, 11, 0.65), 0 3px 0 #991b1b;
+}
+
+.weapon-evo-row {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    margin: 4px 0 6px;
+}
+
+.gear-evolved-passive-pill {
+    background: linear-gradient(135deg, rgba(220, 38, 38, 0.14), rgba(245, 158, 11, 0.22));
+    border-color: #d97706 !important;
+    color: #7c2d12 !important;
+}
+
+/* Card Upgrade / Evolve Controls */
+.gear-upgrade-box {
+    margin-top: 6px;
+    padding-top: 6px;
+    border-top: 1.5px dashed rgba(30, 39, 46, 0.18);
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.gear-upgrade-cost-line {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 5px;
+    font-size: 0.68rem;
+    font-weight: 800;
+    color: #334155;
+}
+
+.gear-cost-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    padding: 1px 6px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.85);
+    border: 1.5px solid #cbd5e1;
+}
+
+.gear-cost-chip.is-short {
+    border-color: #fca5a5;
+    background: #fef2f2;
+    color: #b91c1c;
+}
+
+.gear-cost-chip img {
+    width: 13px;
+    height: 13px;
+    object-fit: contain;
+}
+
+.gear-btn-upgrade {
+    background: linear-gradient(180deg, #38bdf8 0%, #0284c7 100%);
+    color: #ffffff;
+    border: 2px solid #1e272e;
+    box-shadow: 0 3px 0 #1e272e;
+}
+
+.gear-btn-upgrade:hover:not(:disabled):not(.disabled) {
+    filter: brightness(1.07);
+    transform: translateY(-1px);
+}
+
+.gear-btn-evolve {
+    background: linear-gradient(135deg, #ef4444 0%, #f59e0b 100%);
+    color: #ffffff;
+    border: 2px solid #1e272e;
+    box-shadow: 0 3px 0 #1e272e, 0 0 12px rgba(245, 158, 11, 0.45);
+    font-weight: 900;
+}
+
+.gear-btn-evolve:hover:not(:disabled):not(.disabled) {
+    filter: brightness(1.08);
+    transform: translateY(-1px);
+}
+
+.gear-btn-upgrade:disabled,
+.gear-btn-upgrade.disabled,
+.gear-btn-evolve:disabled,
+.gear-btn-evolve.disabled {
+    opacity: 0.56;
+    cursor: pointer;
+    filter: grayscale(0.28);
+}
+
+/* Inventory Evolution Stone Card Craft Strip */
+.inv-mat-card.inv-mat-evo {
+    background: linear-gradient(160deg, #fff5f5 0%, #fef9e7 100%);
+    border-color: #e11d48;
+}
+
+.inv-craft-recipe {
+    width: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 4px;
+    margin: 5px 0 7px;
+}
+
+.inv-craft-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    font-size: 0.65rem;
+    font-weight: 800;
+    padding: 2px 6px;
+    border-radius: 999px;
+    background: #ffffff;
+    border: 1.5px solid #cbd5e1;
+    color: #1e293b;
+}
+
+.inv-craft-chip.is-short {
+    background: #fef2f2;
+    border-color: #fca5a5;
+    color: #b91c1c;
+}
+
+.inv-craft-chip img {
+    width: 12px;
+    height: 12px;
+    object-fit: contain;
+}
+
+.inv-craft-evo-btn {
+    width: 100%;
+    margin-top: auto;
+    padding: 7px 10px;
+    border-radius: 10px;
+    border: 2.5px solid #1e272e;
+    background: linear-gradient(135deg, #ef4444 0%, #f59e0b 100%);
+    color: #ffffff;
+    font-size: 0.76rem;
+    font-weight: 900;
+    letter-spacing: 0.4px;
+    cursor: pointer;
+    box-shadow: 0 3px 0 #1e272e;
+    transition: transform 0.12s ease, filter 0.12s ease;
+}
+
+.inv-craft-evo-btn:hover:not(:disabled) {
+    transform: translateY(-1px);
+    filter: brightness(1.06);
+}
+
+.inv-craft-evo-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    filter: grayscale(0.35);
+}
+
+@media (max-width: 680px) {
+    .gear-upgrade-toolbar {
+        padding: 6px 10px;
+    }
+    .gear-evo-stone-pill {
+        font-size: 0.76rem;
+    }
+}
+
+@media (max-height: 500px) and (orientation: landscape) {
+    .gear-upgrade-toolbar {
+        padding: 3px 8px;
+        margin-bottom: 4px;
+        gap: 6px;
+        border-radius: 8px;
+    }
+    .gear-evo-stone-pill {
+        font-size: 0.62rem;
+        gap: 4px;
+    }
+    .gear-evo-stone-pill img {
+        width: 14px;
+        height: 14px;
+    }
+    .gear-evo-craft-link {
+        padding: 2px 8px;
+        font-size: 0.58rem;
+    }
+    .weapon-evo-row {
+        margin: 2px 0;
+    }
+    .weapon-card .weapon-stat-row {
+        gap: 4px;
+    }
+    .weapon-evo-row .gear-lvl-pill {
+        font-size: 0.52rem;
+        padding: 1px 5px;
+    }
+    .weapon-evo-box {
+        margin-top: 3px;
+        padding-top: 3px;
+        gap: 3px;
+    }
+    .weapon-evo-box .gear-upgrade-cost-line {
+        font-size: 0.52rem;
+        gap: 3px;
+    }
+    .weapon-evo-box .gear-btn-evolve {
+        padding: 2px 6px;
+        font-size: 0.55rem;
+    }
+}

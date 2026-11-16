@@ -154,6 +154,22 @@ This document outlines the bugs identified and resolved in the project server an
   3. Added floating damage compaction: Rapid hits on the same target accumulate onto rising numbers rather than spawning dozens of duplicate text elements.
   4. Extracted [src/entities/ParticleEffect.js](file:///c:/Lesa.io/src/entities/ParticleEffect.js), reducing `src/entities/Effects.js` from 557 lines down to 365 lines (< 500 lines limit).
 
+### 23. Bullet Trail Delta-Time Modulo Bug & Missing Trail FX
+- **The Issue:** In [src/entities/Bullet.js](file:///c:/Lesa.io/src/entities/Bullet.js), trail recording was triggered via `if (this.age % 2 === 0)`. Because delta-time `dt` is a dynamic floating-point number, this check evaluated to false on almost every single frame.
+- **The Impact:** Projectile trails were virtually absent or flashed erratically during gameplay.
+- **The Fix:** Replaced floating-point modulo check with a fixed `trailTimer` accumulator (`>= 1.4`) and tapered alpha and radius rendering for silky smooth projectile trails.
 
+### 24. Barrel Permanent Depletion Bug & Respawn Overlapping
+- **The Issue:** In [src/engine/Arena.js](file:///c:/Lesa.io/src/engine/Arena.js), when an explosive barrel was destroyed, the respawn timeout solely called `this.respawnCrate()`. `respawnBarrel()` was never triggered. In addition, obstacle generation placed trees after props without distance avoidance checks.
+- **The Impact:** Destroyed barrels turned into crates, leaving the arena with zero barrels over time. Props and crates often spawned inside trees or on top of each other.
+- **The Fix:** Checked `obs.type === 'barrel'` to invoke `respawnBarrel()`, generated trees first, added spatial clearance checks against existing trees and obstacles, and prevented respawns right on top of the player.
 
+### 25. False Kill Attribution for Kiloumpas and Astynomos / MAT Police
+- **The Issue:** In [src/engine/CollisionSystem.js](file:///c:/Lesa.io/src/engine/CollisionSystem.js), `handleDeath` lacked explicit branches for mini-boss `kiloumpas` and chapter 2 police `astynomos` / `mat_officer`, defaulting to Casillas.
+- **The Impact:** Defeating Kiloumpas or police officers falsely awarded Casillas kills (`player.casillasKills++`) and broadcasted `"outplayed Casillas! ⚽"`.
+- **The Fix:** Added explicit death handling branches with dedicated killfeed broadcasts, drop scaling, and boss crate rewards.
 
+### 26. Unguarded `window.soundEngine` Call in Obstacle Mushroom Bounce
+- **The Issue:** In [src/entities/Obstacle.js](file:///c:/Lesa.io/src/entities/Obstacle.js), `triggerMushroom()` directly invoked `window.soundEngine.playMushroomBounce()` without checking whether `window.soundEngine` existed.
+- **The Impact:** Bouncing on a mushroom with uninitialized sound threw an uncaught TypeError that froze the game.
+- **The Fix:** Added defensive guard `if (window.soundEngine && typeof window.soundEngine.playMushroomBounce === 'function')`.

@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <!-- Tempest Glow -->
+  <circle cx="32" cy="33" r="25" fill="#7c3aed" opacity="0.22"/>
+  <!-- Dark Stormcloud Crown -->
+  <path d="M13 24 C10 16 18 10 25 13 C28 7 38 7 41 13 C48 11 55 17 51 25 C52 29 48 31 44 31 L19 31 C15 31 12 28 13 24 Z" fill="#334155" stroke="#14141c" stroke-width="3.2" stroke-linejoin="round"/>
+  <path d="M19 19 C23 15 30 14 35 16" stroke="#94a3b8" stroke-width="2.2" stroke-linecap="round"/>
+  <!-- Left & Right Cyan Support Bolts -->
+  <polygon points="20,29 14,41 19,41 16,52 24,38 19,38" fill="#00f5ff" stroke="#14141c" stroke-width="2.2" stroke-linejoin="round"/>
+  <polygon points="46,29 40,41 45,41 42,52 50,38 45,38" fill="#00f5ff" stroke="#14141c" stroke-width="2.2" stroke-linejoin="round"/>
+  <!-- Center Giant Golden Master Lightning Bolt -->
+  <polygon points="35,23 24,39 32,39 27,57 42,35 34,35" fill="#fde047" stroke="#14141c" stroke-width="2.8" stroke-linejoin="round"/>
+  <!-- Impact Shock Ring -->
+  <ellipse cx="32" cy="56" rx="18" ry="4.5" stroke="#fbbf24" stroke-width="2.4" fill="#fef08a" fill-opacity="0.35"/>
+</svg>

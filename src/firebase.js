@@ -56,6 +56,7 @@ class CloudSaveService {
                         if (window.uiController && window.uiController.settingsManager) {
                             window.uiController.settingsManager.updateCloudUI();
                         }
+                        if (window.friendService) window.friendService.onAuthChanged();
                     });
                 }
             }
@@ -147,6 +148,9 @@ class CloudSaveService {
             const pLevel = p.accountLevel !== undefined ? p.accountLevel : (p.level || 1);
             const pXp = p.accountXp !== undefined ? p.accountXp : (p.xp || 0);
             const pSkills = p.skillLevels || { blade_rush: 1, nerobalonaki: 1 };
+            const pName = p.name || p.playerName || localStorage.getItem('lesaio_player_name') || 'Psanas';
+            const fTag = (typeof PlayerIdentity !== 'undefined') ? PlayerIdentity.getOnlineTag(user.uid) : '#HERO00';
+            const fTagClean = (typeof PlayerIdentity !== 'undefined') ? PlayerIdentity.normalizeTag(fTag) : 'HERO00';
 
             this.lastSavedGems = pGems;
             this.lastSavedCoins = pCoins;
@@ -155,6 +159,10 @@ class CloudSaveService {
 
             await userDocRef.set({
                 ...saveData,
+                playerName: pName,
+                playerNameLower: pName.toLowerCase(),
+                friendTag: fTag,
+                friendTagClean: fTagClean,
                 coins: pCoins,
                 gold: pCoins,
                 gems: pGems,
@@ -570,6 +578,7 @@ class CloudSaveService {
             await this.auth.signOut();
         }
         this.currentUser = null;
+        if (window.friendService) window.friendService.onAuthChanged();
     }
 }
 

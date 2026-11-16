@@ -1,0 +1,49 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Admin list: ONLY editable inside Firebase Console. Clients cannot list or write.
+    match /admins/{docId} {
+      allow get: if request.auth != null
+        && (docId == request.auth.uid
+            || (request.auth.token.email != null && docId == request.auth.token.email.lower()));
+      allow list, write: if false;
+    }
+
+    match /config/{docId} {
+      allow read, write: if false;
+    }
+
+    // Player saves, Online IDs, Name search, and live presence
+    // Clients can never grant themselves isAdmin via players/{id}
+    match /players/{playerId} {
+      allow read: if true;
+      allow create: if !('isAdmin' in request.resource.data) || request.resource.data.isAdmin == false;
+      allow update: if !request.resource.data.diff(resource.data).affectedKeys().hasAny(['isAdmin']);
+      allow delete: if false;
+    }
+
+    // Unique player name registry
+    match /usernames/{nameId} {
+      allow read, create, update: if true;
+      allow delete: if false;
+    }
+
+    // Mutual friend requests and accepted friendships
+    match /friendships/{relId} {
+      allow read, delete: if true;
+      allow create, update: if request.resource.data.users is list
+        && request.resource.data.users.size() == 2
+        && request.resource.data.status in ['pending', 'accepted'];
+    }
+
+    // Real-time Co-op room invitations between friends
+    match /friend_invites/{inviteId} {
+      allow read, delete: if true;
+      allow create, update: if request.resource.data.fromUid is string
+        && request.resource.data.toUid is string
+        && request.resource.data.roomCode is string;
+    }
+  }
+}
+

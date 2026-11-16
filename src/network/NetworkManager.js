@@ -25,7 +25,10 @@ class NetworkManager {
 
         this.pingInterval = null;
         this.lastPingTime = 0;
-        this.latency = 0;
+        this.latency = 20; // Default estimate ms
+        this.lastMessageTime = performance.now();
+        this.watchdogInterval = null;
+        this.isGracefulDisconnecting = false;
     }
 
     normalizeRoomId(code) {
@@ -111,8 +114,15 @@ class NetworkManager {
             });
 
             this.peer.on('open', () => {
-                this.conn = this.peer.connect(targetPeerId, { reliable: true, serialization: 'json' });
+                this.conn = this.peer.connect(targetPeerId, { serialization: 'json' });
                 this.setupConnectionHandlers();
+                if (this.connectTimeout) clearTimeout(this.connectTimeout);
+                this.connectTimeout = setTimeout(() => {
+                    if (!this.connected) {
+                        console.warn('[NetworkManager] Join connection timed out');
+                        if (this.onErrorCallback) this.onErrorCallback('Room not found or connection timed out');
+                    }
+                }, 10000);
             });
 
             this.peer.on('error', (err) => {
@@ -129,8 +139,14 @@ class NetworkManager {
     setupConnectionHandlers() {
         if (!this.conn) return;
 
-        this.conn.on('open', () => {
+        const onConnOpen = () => {
+            if (this.connected) return;
+            if (this.connectTimeout) {
+                clearTimeout(this.connectTimeout);
+                this.connectTimeout = null;
+            }
             this.connected = true;
+            this.lastMessageTime = performance.now();
             console.log('[NetworkManager] Connection established!');
 
             // Send handshake hello
@@ -140,9 +156,15 @@ class NetworkManager {
             });
 
             this.startHeartbeat();
-        });
+        };
+
+        this.conn.on('open', onConnOpen);
+        if (this.conn.open) {
+            onConnOpen();
+        }
 
         this.conn.on('data', (raw) => {
+            this.lastMessageTime = performance.now();
             let data = raw;
             if (typeof raw === 'string') {
                 try {
@@ -182,7 +204,9 @@ class NetworkManager {
             if (data.type === 'PONG') {
                 const now = performance.now();
                 if (data.payload && data.payload.time) {
-                    this.latency = Math.round((now - data.payload.time) / 2);
+                    const sample = Math.round((now - data.payload.time) / 2);
+                    // Smoothed moving average latency
+                    this.latency = Math.round((this.latency * 0.7) + (sample * 0.3));
                 }
                 return;
             }
@@ -202,7 +226,7 @@ class NetworkManager {
 
         this.conn.on('error', (err) => {
             console.error('[NetworkManager] Data connection error:', err);
-            this.handleDisconnect(err.message);
+            this.handleDisconnect(err ? (err.message || String(err)) : 'Data connection error');
         });
     }
 
@@ -218,11 +242,25 @@ class NetworkManager {
 
     startHeartbeat() {
         if (this.pingInterval) clearInterval(this.pingInterval);
+        if (this.watchdogInterval) clearInterval(this.watchdogInterval);
+
+        // Ping at 1.5s interval
         this.pingInterval = setInterval(() => {
             if (this.connected) {
                 this.send('PING', { time: performance.now() });
             }
-        }, 2000);
+        }, 1500);
+
+        // Watchdog: detect dead peer if no packets for > 4.5 seconds
+        this.watchdogInterval = setInterval(() => {
+            if (this.connected) {
+                const idleTime = performance.now() - this.lastMessageTime;
+                if (idleTime > 4500) {
+                    console.warn(`[NetworkManager] Peer heartbeat timeout (${Math.round(idleTime)}ms idle)`);
+                    this.handleDisconnect('Connection timed out');
+                }
+            }
+        }, 1000);
     }
 
     handleDisconnect(reason = 'Disconnected') {
@@ -230,13 +268,38 @@ class NetworkManager {
         this.connected = false;
         if (this.pingInterval) clearInterval(this.pingInterval);
         this.pingInterval = null;
+        if (this.watchdogInterval) clearInterval(this.watchdogInterval);
+        this.watchdogInterval = null;
 
         if (wasConnected && this.onDisconnectedCallback) {
             this.onDisconnectedCallback(reason);
         }
     }
 
+    disconnectGracefully(reason = 'Host left the match', onDone = null) {
+        if (this.isGracefulDisconnecting) return;
+        this.isGracefulDisconnecting = true;
+
+        if (this.connected) {
+            try {
+                this.send('HOST_QUIT_MATCH', { reason });
+            } catch (e) {}
+        }
+
+        // Allow outgoing buffer to flush onto network wire
+        setTimeout(() => {
+            this.disconnect();
+            this.isGracefulDisconnecting = false;
+            if (typeof onDone === 'function') onDone();
+        }, 120);
+    }
+
     disconnect() {
+        if (this.connectTimeout) {
+            clearTimeout(this.connectTimeout);
+            this.connectTimeout = null;
+        }
+        this.connected = false;
         this.handleDisconnect('Disconnected locally');
         if (this.conn) {
             try { this.conn.close(); } catch (e) {}

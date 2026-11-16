@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <!-- Radiant Mythic Storm Glow -->
+  <circle cx="32" cy="34" r="26" fill="#00f5ff" opacity="0.18"/>
+  <circle cx="32" cy="34" r="20" fill="#f59e0b" opacity="0.22"/>
+  <!-- Royal Indigo-Red Mantle Shoulders -->
+  <path d="M12 18 L6 46 L19 42 L21 20 Z" fill="#1e3a8a" stroke="#14141c" stroke-width="2.8" stroke-linejoin="round"/>
+  <path d="M52 18 L58 46 L45 42 L43 20 Z" fill="#1e3a8a" stroke="#14141c" stroke-width="2.8" stroke-linejoin="round"/>
+  <!-- Gilded Pauldrons -->
+  <path d="M9 22 Q12 10 25 14 L22 25 L10 27 Z" fill="#fbbf24" stroke="#14141c" stroke-width="3" stroke-linejoin="round"/>
+  <path d="M55 22 Q52 10 39 14 L42 25 L54 27 Z" fill="#fbbf24" stroke="#14141c" stroke-width="3" stroke-linejoin="round"/>
+  <!-- Sculpted Bronze Cuirass Body -->
+  <path d="M21 14 L27 18 L37 18 L43 14 L48 25 L43 52 Q32 58 21 52 L16 25 Z" fill="#f59e0b" stroke="#14141c" stroke-width="3.4" stroke-linejoin="round"/>
+  <!-- Highlight Plate & Abs Trim -->
+  <path d="M22 21 L42 21 L40 46 Q32 51 24 46 Z" fill="#fde047" stroke="#14141c" stroke-width="2.2" stroke-linejoin="round"/>
+  <!-- Silver-Blue Belt Sash -->
+  <rect x="21" y="42" width="22" height="6" rx="2" fill="#0284c7" stroke="#14141c" stroke-width="2.4"/>
+  <!-- Glowing Center Thunderbolt Crest -->
+  <polygon points="34,21 25,33 31,33 29,43 39,30 33,30" fill="#00f5ff" stroke="#14141c" stroke-width="2.2" stroke-linejoin="round"/>
+  <!-- Pauldron Glints -->
+  <path d="M13 18 Q18 15 21 17" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round"/>
+  <path d="M43 17 Q46 15 51 18" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round"/>
+</svg>

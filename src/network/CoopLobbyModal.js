@@ -23,7 +23,7 @@ class CoopLobbyModal {
         const gs = (typeof window !== 'undefined') ? window.GameState : null;
         const name = (gs && gs.player && gs.player.name) || localStorage.getItem('lesaio_player_name') || 'Hero';
         const heroType = (gs && gs.player && gs.player.selectedHero) || 'psanas';
-        const weaponType = (gs && gs.player && gs.player.weaponType) || localStorage.getItem('lesaio_selected_weapon') || 'pea';
+        const weaponType = (gs && gs.player && (gs.player.selectedWeapon || gs.player.weaponType)) || localStorage.getItem('lesaio_selected_weapon') || 'pea';
         return { name, heroType, weaponType };
     }
 
@@ -40,15 +40,15 @@ class CoopLobbyModal {
             <div class="coop-panel">
                 <div class="coop-header">
                     <div class="coop-title-wrap">
-                        <h2 class="coop-title">🤝 CO-OP PLAYTEST</h2>
+                        <h2 class="coop-title">${typeof UiIcons !== 'undefined' ? UiIcons.i('handshake', 'ui-icon-title') : '🤝'} CO-OP PLAYTEST</h2>
                         <span class="coop-badge">1-Day Test</span>
                     </div>
                     <button id="coop-close-btn" class="coop-close-btn" title="Close">✕</button>
                 </div>
 
                 <div class="coop-tabs">
-                    <button id="coop-tab-host" class="coop-tab-btn active">👑 HOST GAME</button>
-                    <button id="coop-tab-join" class="coop-tab-btn">🚀 JOIN GAME</button>
+                    <button id="coop-tab-host" class="coop-tab-btn active">${typeof UiIcons !== 'undefined' ? UiIcons.i('crown', 'ui-icon-sm') : '👑'} HOST GAME</button>
+                    <button id="coop-tab-join" class="coop-tab-btn">${typeof UiIcons !== 'undefined' ? UiIcons.i('rocket', 'ui-icon-sm') : '🚀'} JOIN GAME</button>
                 </div>
 
                 <!-- Host Tab -->
@@ -56,14 +56,14 @@ class CoopLobbyModal {
                     <div class="coop-code-box">
                         <span class="coop-code-label">YOUR ROOM CODE (SHARE WITH FRIEND)</span>
                         <span id="coop-host-code" class="coop-code-digits">----</span>
-                        <button id="coop-copy-code-btn" class="coop-copy-btn">📋 COPY CODE</button>
+                        <button id="coop-copy-code-btn" class="coop-copy-btn">${typeof UiIcons !== 'undefined' ? UiIcons.i('copy', 'ui-icon-sm') : '📋'} COPY CODE</button>
                     </div>
 
                     <div>
                         <span class="coop-code-label" style="display:block; margin-bottom: 6px;">SELECT GAME MODE:</span>
                         <div class="coop-mode-picker">
-                            <button id="coop-mode-story" class="coop-mode-btn selected">📖 STORY MODE</button>
-                            <button id="coop-mode-endless" class="coop-mode-btn">⚡ ENDLESS MODE</button>
+                            <button id="coop-mode-story" class="coop-mode-btn selected">${typeof UiIcons !== 'undefined' ? UiIcons.i('book', 'ui-icon-sm') : '📖'} STORY MODE</button>
+                            <button id="coop-mode-endless" class="coop-mode-btn">${typeof UiIcons !== 'undefined' ? UiIcons.i('bolt', 'ui-icon-sm') : '⚡'} ENDLESS MODE</button>
                         </div>
                     </div>
 
@@ -71,6 +71,8 @@ class CoopLobbyModal {
                         <div id="coop-host-dot" class="coop-status-dot"></div>
                         <span id="coop-host-status">Waiting for partner to join...</span>
                     </div>
+
+                    <div id="coop-friend-quicklist" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;"></div>
 
                     <button id="coop-start-btn" class="coop-launch-btn" disabled>START CO-OP BATTLE</button>
                 </div>
@@ -98,7 +100,12 @@ class CoopLobbyModal {
     bindEvents() {
         const closeBtn = document.getElementById('coop-close-btn');
         if (closeBtn) {
-            closeBtn.addEventListener('click', () => this.hide());
+            closeBtn.addEventListener('click', () => {
+                this.hide();
+                if (window.networkManager && (!window.gameInstance || !window.gameInstance.coopSession)) {
+                    window.networkManager.disconnect();
+                }
+            });
         }
 
         const tabHost = document.getElementById('coop-tab-host');
@@ -121,6 +128,8 @@ class CoopLobbyModal {
             tabHost.classList.remove('active');
             contentJoin.classList.add('active');
             contentHost.classList.remove('active');
+            if (window.friendService) window.friendService.setPresenceStatus('In Lobby', null);
+            this.resetJoinUI();
         });
 
         // Mode selectors
@@ -144,8 +153,8 @@ class CoopLobbyModal {
         copyBtn.addEventListener('click', () => {
             if (this.roomCode) {
                 navigator.clipboard.writeText(this.roomCode).then(() => {
-                    copyBtn.textContent = '✅ COPIED!';
-                    setTimeout(() => { copyBtn.textContent = '📋 COPY CODE'; }, 2000);
+                    if (typeof UiIcons !== 'undefined') UiIcons.setRichText(copyBtn, '✅ COPIED!', 'ui-icon-sm'); else copyBtn.textContent = '✅ COPIED!';
+                    setTimeout(() => { if (typeof UiIcons !== 'undefined') UiIcons.setRichText(copyBtn, '📋 COPY CODE', 'ui-icon-sm'); else copyBtn.textContent = '📋 COPY CODE'; }, 2000);
                 });
             }
         });
@@ -157,6 +166,7 @@ class CoopLobbyModal {
             const code = (joinInput.value || '').trim();
             if (!code) return;
 
+            this.bindNetworkCallbacks();
             const userData = this.getLocalUserData();
             const statusEl = document.getElementById('coop-join-status');
             statusEl.textContent = `Connecting to room ${code}...`;
@@ -165,13 +175,34 @@ class CoopLobbyModal {
             window.networkManager.join(code, userData);
         });
 
+        if (joinInput) {
+            joinInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && !connectBtn.disabled) {
+                    connectBtn.click();
+                }
+            });
+        }
+
         // Start match button (Host)
         const startBtn = document.getElementById('coop-start-btn');
         startBtn.addEventListener('click', () => {
             this.launchMatchAsHost();
         });
 
-        // Setup NetworkManager callbacks
+        this.bindNetworkCallbacks();
+
+        if (typeof window !== 'undefined' && window.EventBus) {
+            window.EventBus.on('friendsUpdated', () => {
+                if (this.modal && !this.modal.classList.contains('hidden') && this.activeTab === 'host') {
+                    this.renderFriendQuickInvite();
+                }
+            });
+        }
+    }
+
+    bindNetworkCallbacks() {
+        if (!window.networkManager) return;
+
         window.networkManager.onConnectedCallback = (isHost, peerInfo) => {
             this.handlePeerConnected(isHost, peerInfo);
         };
@@ -182,9 +213,12 @@ class CoopLobbyModal {
 
         window.networkManager.onErrorCallback = (err) => {
             const statusEl = (this.activeTab === 'host') ? document.getElementById('coop-host-status') : document.getElementById('coop-join-status');
-            if (statusEl) statusEl.textContent = `⚠️ Network notice: ${err}`;
+            if (statusEl) { if (typeof UiIcons !== 'undefined') UiIcons.setRichText(statusEl, `⚠️ Network notice: ${err}`, 'ui-icon-sm'); else statusEl.textContent = `⚠️ Network notice: ${err}`; }
             const connectBtn = document.getElementById('coop-connect-btn');
-            if (connectBtn) connectBtn.disabled = false;
+            if (connectBtn) {
+                connectBtn.textContent = 'CONNECT TO HOST';
+                connectBtn.disabled = false;
+            }
         };
 
         // Listen for Guest MATCH_START
@@ -193,6 +227,18 @@ class CoopLobbyModal {
                 this.launchMatchAsGuest(payload);
             }
         };
+    }
+
+    resetJoinUI() {
+        const statusEl = document.getElementById('coop-join-status');
+        const dotEl = document.getElementById('coop-join-dot');
+        const connectBtn = document.getElementById('coop-connect-btn');
+        if (statusEl) statusEl.textContent = 'Enter code and click Connect';
+        if (dotEl) dotEl.classList.remove('connected');
+        if (connectBtn) {
+            connectBtn.textContent = 'CONNECT TO HOST';
+            connectBtn.disabled = false;
+        }
     }
 
     setupHostRoom() {
@@ -209,6 +255,37 @@ class CoopLobbyModal {
         if (statusEl) statusEl.textContent = 'Waiting for partner to join...';
         if (dotEl) dotEl.classList.remove('connected');
         if (startBtn) startBtn.disabled = true;
+
+        if (window.friendService) {
+            window.friendService.setPresenceStatus('Hosting Co-op', this.roomCode);
+        }
+        this.renderFriendQuickInvite();
+    }
+
+    renderFriendQuickInvite() {
+        const container = document.getElementById('coop-friend-quicklist');
+        if (!container || !window.friendService) return;
+        const fs = window.friendService;
+        const onlineFriends = fs.friends
+            .map(f => ({ uid: f.otherUid, ...(fs.friendProfiles[f.otherUid] || f.profile) }))
+            .filter(f => f.isOnline);
+        if (!onlineFriends.length) {
+            container.innerHTML = '';
+            return;
+        }
+        container.innerHTML = `<span style="font-size:11px;color:#94a3b8;width:100%;">INVITE ONLINE FRIENDS:</span>`;
+        onlineFriends.slice(0, 4).forEach((f) => {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'friend-btn friend-btn-primary';
+            if (typeof UiIcons !== 'undefined') UiIcons.setRichText(btn, `📨 ${f.name}`, 'ui-icon-sm'); else btn.textContent = `📨 ${f.name}`;
+            btn.onclick = async () => {
+                btn.disabled = true;
+                await fs.sendCoopInvite(f.uid, this.roomCode, this.selectedMode || 'story');
+                btn.textContent = `✓ Sent to ${f.name}`;
+            };
+            container.appendChild(btn);
+        });
     }
 
     handlePeerConnected(isHost, peerInfo) {
@@ -221,7 +298,7 @@ class CoopLobbyModal {
             const dotEl = document.getElementById('coop-host-dot');
             const startBtn = document.getElementById('coop-start-btn');
 
-            if (statusEl) statusEl.textContent = `✅ Partner Connected: ${partnerName} (${partnerHero})!`;
+            if (statusEl) { if (typeof UiIcons !== 'undefined') UiIcons.setRichText(statusEl, `✅ Partner Connected: ${partnerName} (${partnerHero})!`, 'ui-icon-sm'); else statusEl.textContent = `✅ Partner Connected: ${partnerName} (${partnerHero})!`; }
             if (dotEl) dotEl.classList.add('connected');
             if (startBtn) startBtn.disabled = false;
         } else {
@@ -229,7 +306,7 @@ class CoopLobbyModal {
             const dotEl = document.getElementById('coop-join-dot');
             const connectBtn = document.getElementById('coop-connect-btn');
 
-            if (statusEl) statusEl.textContent = `✅ Connected to Host! Waiting for match start...`;
+            if (statusEl) { if (typeof UiIcons !== 'undefined') UiIcons.setRichText(statusEl, '✅ Connected to Host! Waiting for match start...', 'ui-icon-sm'); else statusEl.textContent = `✅ Connected to Host! Waiting for match start...`; }
             if (dotEl) dotEl.classList.add('connected');
             if (connectBtn) {
                 connectBtn.textContent = 'READY & WAITING...';
@@ -242,8 +319,24 @@ class CoopLobbyModal {
         if (window.gameInstance && window.gameInstance.ui) {
             window.gameInstance.ui.addKillfeed('⚠️ Co-op partner disconnected');
         }
-        const statusEl = (this.activeTab === 'host') ? document.getElementById('coop-host-status') : document.getElementById('coop-join-status');
-        if (statusEl) statusEl.textContent = 'Partner disconnected. Reconnecting...';
+        if (this.activeTab === 'host') {
+            const statusEl = document.getElementById('coop-host-status');
+            const dotEl = document.getElementById('coop-host-dot');
+            const startBtn = document.getElementById('coop-start-btn');
+            if (statusEl) statusEl.textContent = 'Partner disconnected. Waiting for friend...';
+            if (dotEl) dotEl.classList.remove('connected');
+            if (startBtn) startBtn.disabled = true;
+        } else {
+            const statusEl = document.getElementById('coop-join-status');
+            const dotEl = document.getElementById('coop-join-dot');
+            const connectBtn = document.getElementById('coop-connect-btn');
+            if (statusEl) { if (typeof UiIcons !== 'undefined') UiIcons.setRichText(statusEl, '⚠️ Host disconnected or room closed.', 'ui-icon-sm'); else statusEl.textContent = '⚠️ Host disconnected or room closed.'; }
+            if (dotEl) dotEl.classList.remove('connected');
+            if (connectBtn) {
+                connectBtn.textContent = 'CONNECT TO HOST';
+                connectBtn.disabled = false;
+            }
+        }
     }
 
     launchMatchAsHost() {
@@ -257,6 +350,7 @@ class CoopLobbyModal {
         });
 
         this.hide();
+        if (window.friendService) window.friendService.setPresenceStatus('Playing Co-op', null);
 
         if (window.menuController) window.menuController.hideGameModeModal();
         const menuScreen = document.getElementById('menu-screen');
@@ -277,6 +371,7 @@ class CoopLobbyModal {
 
     launchMatchAsGuest(payload) {
         this.hide();
+        if (window.friendService) window.friendService.setPresenceStatus('Playing Co-op', null);
 
         if (window.menuController) window.menuController.hideGameModeModal();
         const menuScreen = document.getElementById('menu-screen');
@@ -301,14 +396,30 @@ class CoopLobbyModal {
 
     show() {
         this.ensureModalMarkup();
+        if (!window.gameInstance || !window.gameInstance.coopSession) {
+            this.bindNetworkCallbacks();
+        }
+        const tabHost = document.getElementById('coop-tab-host');
+        const tabJoin = document.getElementById('coop-tab-join');
+        const contentHost = document.getElementById('coop-content-host');
+        const contentJoin = document.getElementById('coop-content-join');
+        const isHost = (this.activeTab === 'host');
+        if (tabHost) tabHost.classList.toggle('active', isHost);
+        if (tabJoin) tabJoin.classList.toggle('active', !isHost);
+        if (contentHost) contentHost.classList.toggle('active', isHost);
+        if (contentJoin) contentJoin.classList.toggle('active', !isHost);
+        this.resetJoinUI();
         if (this.modal) this.modal.classList.remove('hidden');
-        if (this.activeTab === 'host') {
+        if (isHost) {
             this.setupHostRoom();
         }
     }
 
     hide() {
         if (this.modal) this.modal.classList.add('hidden');
+        if (window.friendService && (!window.gameInstance || window.gameInstance.state !== 'PLAYING')) {
+            window.friendService.setPresenceStatus('In Lobby', null);
+        }
     }
 }
 

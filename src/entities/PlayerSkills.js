@@ -21,7 +21,7 @@ class PlayerSkills {
         if (typeof SKILLS === 'undefined' || !SKILLS[skillId]) return 8.0;
         const skill = SKILLS[skillId];
         if (skillId === 'frappes' && level >= 5 && skill.masteryCooldown) {
-            return skill.masteryCooldown; // 9.0s CDR
+            return skill.masteryCooldown; // 9.0s Pagakia CDR
         }
         return skill.cooldown;
     }
@@ -55,9 +55,18 @@ class PlayerSkills {
                     FrappesSkill.execute(player, level, enemies, effects, camera, activeGame);
                 }
                 break;
+            case 'wrath_of_olympus':
+                if (typeof WrathOfOlympusSkill !== 'undefined') {
+                    WrathOfOlympusSkill.execute(player, level, enemies, effects, camera, activeGame);
+                }
+                break;
             default:
                 this.executeBladeRush(player, level, enemies, effects, camera);
                 break;
+        }
+
+        if (typeof window !== 'undefined' && window.perkSystem && typeof window.perkSystem.onSkillActivated === 'function') {
+            window.perkSystem.onSkillActivated(player, effects, activeGame);
         }
     }
 

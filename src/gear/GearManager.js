@@ -62,23 +62,41 @@ class GearManager {
         return list.includes(itemId);
     }
 
-    static unlock(itemId) {
+    static unlock(itemId, options = {}) {
         const item = this.getGearData(itemId);
         if (!item) return { success: false, reason: 'Item not found' };
         if (this.isUnlocked(itemId)) return { success: true, alreadyUnlocked: true };
 
-        const cost = item.cost || 0;
+        const src = options && options.source;
+        const isGranted = !!(options && options.free) || src === 'chest' || src === 'admin' || src === 'tribute' || src === 'boss_zeus' || src === 'boss';
+        const isBossLocked = !!(item.bossUnlock || item.rarity === 'mythic');
+        const isChestRestricted = !!(item.chestOnly || item.rarity === 'epic' || item.rarity === 'legendary' || item.rarity === 'exclusive' || isBossLocked);
+
+        if (isChestRestricted && !isGranted) {
+            return {
+                success: false,
+                reason: isBossLocked
+                    ? 'Defeat Zeus on Mount Olympus Floor 5 to unlock this Mythic item'
+                    : (item.rarity === 'exclusive'
+                        ? 'Event exclusive item cannot be purchased with coins'
+                        : 'Chest drop only! Open Rare+, Epic, or Legendary chests')
+            };
+        }
+
+        const cost = isGranted ? 0 : (item.cost || 0);
         const currentCoins = (typeof window !== 'undefined' && window.GameState && window.GameState.player) ? window.GameState.player.coins : 0;
 
         if (currentCoins < cost) {
             return { success: false, reason: 'Not enough coins' };
         }
 
-        // Deduct coins
-        if (window.GameState && window.GameState.addCurrency) {
-            window.GameState.addCurrency(-cost, 0);
-        } else if (window.GameState && window.GameState.player) {
-            window.GameState.player.coins -= cost;
+        // Deduct coins when purchased directly
+        if (cost > 0) {
+            if (window.GameState && window.GameState.addCurrency) {
+                window.GameState.addCurrency(-cost, 0);
+            } else if (window.GameState && window.GameState.player) {
+                window.GameState.player.coins -= cost;
+            }
         }
 
         const list = this.getUnlockedList();
@@ -131,6 +149,15 @@ class GearManager {
         return false;
     }
 
+    static getEffectiveStats(itemOrId) {
+        const item = typeof itemOrId === 'object' ? itemOrId : this.getGearData(itemOrId);
+        if (!item || !item.stats) return {};
+        if (typeof GearUpgradeManager !== 'undefined' && typeof GearUpgradeManager.getEffectiveStats === 'function') {
+            return GearUpgradeManager.getEffectiveStats(item);
+        }
+        return { ...item.stats };
+    }
+
     static getEquippedTotalStats() {
         const totals = {
             maxHp: 0,
@@ -153,7 +180,8 @@ class GearManager {
             const item = this.getGearData(itemId);
             if (!item || !item.stats) continue;
 
-            for (const [k, v] of Object.entries(item.stats)) {
+            const effectiveStats = this.getEffectiveStats(item);
+            for (const [k, v] of Object.entries(effectiveStats)) {
                 if (typeof totals[k] === 'number') {
                     totals[k] += v;
                 }
@@ -165,6 +193,25 @@ class GearManager {
         totals.critChance = Math.min(45, totals.critChance);
 
         return totals;
+    }
+
+    static getEquippedPassives() {
+        const passives = new Set();
+        const equipped = this.getEquippedMap();
+        for (const slot of ['helmet', 'armor', 'belt', 'gloves', 'boots']) {
+            const itemId = equipped[slot];
+            if (!itemId) continue;
+            const item = this.getGearData(itemId);
+            if (item && item.passive && item.passive.id) {
+                passives.add(item.passive.id);
+            }
+        }
+        return passives;
+    }
+
+    static hasPassive(passiveId) {
+        if (!passiveId) return false;
+        return this.getEquippedPassives().has(passiveId);
     }
 
     static syncPlayerStats() {

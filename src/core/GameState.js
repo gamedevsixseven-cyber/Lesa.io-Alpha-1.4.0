@@ -22,6 +22,42 @@ class GameState {
             upgrades: JSON.parse(localStorage.getItem('lesaio_upgrades') || '{"critChance": 0, "critDamage": 0, "maxHealth": 0, "goldBonus": 0}'),
             unlockedPerks: JSON.parse(localStorage.getItem('lesaio_unlocked_perks') || '[]'),
             equippedPerks: JSON.parse(localStorage.getItem('lesaio_equipped_perks') || '[null, null, null]'),
+            gearLevels: JSON.parse(localStorage.getItem('lesaio_gear_levels') || '{}'),
+            evolvedGear: JSON.parse(localStorage.getItem('lesaio_evolved_gear') || '[]'),
+            evolvedWeapons: JSON.parse(localStorage.getItem('lesaio_evolved_weapons') || '[]'),
+            evolutionStones: parseInt(localStorage.getItem('lesaio_evolution_stones') || '0', 10) || 0,
+            perkRanks: (() => {
+                try {
+                    const unlocked = JSON.parse(localStorage.getItem('lesaio_unlocked_perks') || '[]');
+                    const raw = JSON.parse(localStorage.getItem('lesaio_perk_ranks') || '{}');
+                    return (typeof PerkProgression !== 'undefined')
+                        ? PerkProgression.normalizePerkRanks(raw, unlocked)
+                        : raw;
+                } catch (e) {
+                    return {};
+                }
+            })(),
+            combatFeats: (typeof PerkProgression !== 'undefined')
+                ? PerkProgression.loadFeats()
+                : { storyMaxWave: 1, endlessMaxWave: 0, olympusMaxFloor: 0, defeatedBosses: {}, endlessMiniBossKills: 0 },
+            cosmetics: (typeof CosmeticManager !== 'undefined')
+                ? CosmeticManager.getState()
+                : {
+                    equippedBanner: localStorage.getItem('lesaio_equipped_banner') || 'banner_recruit',
+                    equippedFrame: localStorage.getItem('lesaio_equipped_frame') || 'frame_rookie',
+                    displayedCoins: JSON.parse(localStorage.getItem('lesaio_displayed_coins') || '[]'),
+                    unlockedBanners: JSON.parse(localStorage.getItem('lesaio_unlocked_banners') || '["banner_recruit"]'),
+                    unlockedFrames: JSON.parse(localStorage.getItem('lesaio_unlocked_frames') || '["frame_rookie"]'),
+                    unlockedCoins: JSON.parse(localStorage.getItem('lesaio_unlocked_coins') || '[]')
+                },
+            materials: (() => {
+                try {
+                    const invRaw = JSON.parse(localStorage.getItem('lesaio_inventory') || '{}');
+                    return (typeof MaterialRegistry !== 'undefined') ? MaterialRegistry.normalizeMap(invRaw.materials) : (invRaw.materials || {});
+                } catch (e) {
+                    return (typeof MaterialRegistry !== 'undefined') ? MaterialRegistry.createEmptyMap() : {};
+                }
+            })(),
             stats: {
                 totalKills: parseInt(localStorage.getItem('lesaio_total_kills') || '0', 10),
                 maxWave: parseInt(localStorage.getItem('lesaio_max_wave') || '1', 10),
@@ -48,6 +84,10 @@ class GameState {
         } else if (!this.player.unlockedPerks.includes('hot_foot')) {
             // Grant Hot Foot freely if Level 5+
             this.player.unlockedPerks.push('hot_foot');
+            if (!this.player.perkRanks || !this.player.perkRanks.hot_foot) {
+                this.player.perkRanks = { ...(this.player.perkRanks || {}), hot_foot: 1 };
+                localStorage.setItem('lesaio_perk_ranks', JSON.stringify(this.player.perkRanks));
+            }
             localStorage.setItem('lesaio_unlocked_perks', JSON.stringify(this.player.unlockedPerks));
         }
 
@@ -191,20 +231,73 @@ class GameState {
     }
 
     /**
-     * Unlock a perk with gold coins
+     * Get unlocked perk rank (0 if locked, 1..maxRank if unlocked)
      */
-    unlockPerk(perkId, cost = 0) {
-        if (!Array.isArray(this.player.unlockedPerks)) this.player.unlockedPerks = [];
-        if (this.player.unlockedPerks.includes(perkId)) return true;
-        if (cost > 0 && !this.spendCoins(cost)) return false;
+    getPerkRank(perkId) {
+        if (typeof PerkProgression !== 'undefined') {
+            return PerkProgression.getPerkRank(this, perkId);
+        }
+        return (Array.isArray(this.player.unlockedPerks) && this.player.unlockedPerks.includes(perkId)) ? 1 : 0;
+    }
 
+    /**
+     * Get active rank stats object for a perk (defaults cleanly to Rank 1 stats)
+     */
+    getPerkRankStats(perkId) {
+        if (typeof PerkProgression === 'undefined') return null;
+        const rank = Math.max(1, this.getPerkRank(perkId));
+        const rankData = PerkProgression.getPerkRankData(perkId, rank);
+        return (rankData && rankData.stats) || null;
+    }
+
+    /**
+     * Unlock/forge a perk with detailed result { success, reason }
+     */
+    unlockPerkWithResult(perkId, costOverride = null) {
+        if (typeof PerkProgression !== 'undefined') {
+            return PerkProgression.unlockPerk(this, perkId, costOverride);
+        }
+        if (!Array.isArray(this.player.unlockedPerks)) this.player.unlockedPerks = [];
+        if (this.player.unlockedPerks.includes(perkId)) return { success: true };
+        const cost = typeof costOverride === 'number' ? costOverride : 0;
+        if (cost > 0 && !this.spendCoins(cost)) return { success: false, reason: 'Not enough Coins!' };
         this.player.unlockedPerks.push(perkId);
         localStorage.setItem('lesaio_unlocked_perks', JSON.stringify(this.player.unlockedPerks));
+        if (window.EventBus) window.EventBus.emit('perkUnlocked', { perkId });
+        return { success: true };
+    }
 
-        if (window.EventBus) {
-            window.EventBus.emit('perkUnlocked', { perkId });
+    /**
+     * Unlock a perk (boolean return preserved for backward compatibility)
+     */
+    unlockPerk(perkId, cost = null) {
+        return !!this.unlockPerkWithResult(perkId, cost).success;
+    }
+
+    /**
+     * Ascend/upgrade an unlocked perk to its next rank (Lv.1 -> Lv.3)
+     */
+    upgradePerk(perkId) {
+        if (typeof PerkProgression === 'undefined') {
+            return { success: false, reason: 'Perk progression unavailable' };
         }
-        return true;
+        return PerkProgression.upgradePerk(this, perkId);
+    }
+
+    /**
+     * Record a defeated boss for lifetime feat gates
+     */
+    recordBossDefeat(bossId) {
+        if (typeof PerkProgression === 'undefined') return false;
+        return PerkProgression.recordBossDefeat(this, bossId);
+    }
+
+    /**
+     * Record highest wave / floor reached per mode for feat gates
+     */
+    recordWaveProgress(mode, waveNum) {
+        if (typeof PerkProgression === 'undefined') return false;
+        return PerkProgression.recordWaveProgress(this, mode, waveNum);
     }
 
     /**
@@ -225,20 +318,24 @@ class GameState {
             }
         }
 
-        // Check Tag Exclusivity (e.g. only 1 perk with exclusive tag like 'dash' can be equipped at a time)
-        const newPerkDef = (typeof PERKS_DATA !== 'undefined') ? PERKS_DATA[perkId] : null;
-        const exclusiveTags = (typeof EXCLUSIVE_PERK_TAGS !== 'undefined') ? EXCLUSIVE_PERK_TAGS : ['dash'];
+        // Check Tag/Group Exclusivity (e.g. max 1 'dash' or 'capstone' perk at a time)
+        const getGroup = (id) => {
+            if (typeof PerkProgression !== 'undefined') return PerkProgression.getExclusiveGroup(id);
+            const def = (typeof PERKS_DATA !== 'undefined') ? PERKS_DATA[id] : null;
+            const exclusiveTags = (typeof EXCLUSIVE_PERK_TAGS !== 'undefined') ? EXCLUSIVE_PERK_TAGS : ['dash'];
+            return (def && def.tag && exclusiveTags.includes(def.tag)) ? def.tag : null;
+        };
+
+        const exclusiveGroup = getGroup(perkId);
         let swappedOldPerk = null;
 
-        if (newPerkDef && newPerkDef.tag && exclusiveTags.includes(newPerkDef.tag)) {
+        if (exclusiveGroup) {
             for (let i = 0; i < 3; i++) {
                 const existingId = this.player.equippedPerks[i];
-                if (existingId && existingId !== perkId) {
+                if (existingId && existingId !== perkId && getGroup(existingId) === exclusiveGroup) {
                     const existingDef = (typeof PERKS_DATA !== 'undefined') ? PERKS_DATA[existingId] : null;
-                    if (existingDef && existingDef.tag === newPerkDef.tag) {
-                        this.player.equippedPerks[i] = null;
-                        swappedOldPerk = existingDef;
-                    }
+                    this.player.equippedPerks[i] = null;
+                    swappedOldPerk = existingDef;
                 }
             }
         }
@@ -248,7 +345,7 @@ class GameState {
         localStorage.setItem('lesaio_equipped_perks', JSON.stringify(this.player.equippedPerks));
 
         if (window.EventBus) {
-            window.EventBus.emit('perkEquipped', { perkId, slot, swappedOldPerk });
+            window.EventBus.emit('perkEquipped', { perkId, slot, swappedOldPerk, exclusiveGroup });
         }
         return true;
     }
@@ -289,7 +386,9 @@ class GameState {
         // Check if player just reached Level 5 to unlock Hot Foot for free!
         if (leveledUp && this.player.accountLevel >= 5 && !this.player.unlockedPerks.includes('hot_foot')) {
             this.player.unlockedPerks.push('hot_foot');
+            this.player.perkRanks = { ...(this.player.perkRanks || {}), hot_foot: 1 };
             localStorage.setItem('lesaio_unlocked_perks', JSON.stringify(this.player.unlockedPerks));
+            localStorage.setItem('lesaio_perk_ranks', JSON.stringify(this.player.perkRanks));
             if (window.EventBus) {
                 window.EventBus.emit('perkUnlocked', { perkId: 'hot_foot' });
             }
@@ -352,14 +451,15 @@ class GameState {
     /**
      * Record match completion and merge lifetime career stats
      */
-    recordMatch(score, wave, timeSeconds, fatmirs, casillas, heroId, skarmogyftos = 0) {
+    recordMatch(score, wave, timeSeconds, fatmirs, casillas, heroId, skarmogyftos = 0, totalMatchKills = null, gameMode = null) {
         const stats = this.player.stats;
         stats.matchesPlayed += 1;
         stats.totalTimeSeconds += Math.floor(timeSeconds);
         stats.totalFatmirs += fatmirs;
         stats.totalCasillas += casillas;
         stats.totalSkarmogyftos = (stats.totalSkarmogyftos || 0) + skarmogyftos;
-        stats.totalKills += (fatmirs + casillas + skarmogyftos);
+        const matchKills = typeof totalMatchKills === 'number' ? totalMatchKills : (fatmirs + casillas + skarmogyftos);
+        stats.totalKills += matchKills;
 
         if (score > stats.highScore) {
             stats.highScore = score;
@@ -369,6 +469,9 @@ class GameState {
         if (wave > stats.maxWave) {
             stats.maxWave = wave;
             localStorage.setItem('lesaio_max_wave', wave.toString());
+        }
+        if (gameMode && typeof PerkProgression !== 'undefined') {
+            PerkProgression.recordWaveProgress(this, gameMode, wave);
         }
 
         if (heroId) {

@@ -78,7 +78,7 @@ class YayaScreamSkill {
 
             for (let i = 0; i < enemies.length; i++) {
                 const enemy = enemies[i];
-                if (enemy.dead) continue;
+                if (enemy.dead || enemy.isDying || enemy.isAirborneImmune) continue;
 
                 const edx = enemy.x - player.x;
                 const edy = enemy.y - player.y;
@@ -91,17 +91,20 @@ class YayaScreamSkill {
                     if (Math.abs(angleDiff) <= coneAngle * 0.55) {
                         hitCount++;
                         enemy.takeDamage(finalDamage, effects, false);
+                        if (enemy.dead || enemy.hp <= 0) continue;
 
-                        if (typeof enemy.applyFear === 'function') {
-                            enemy.applyFear(fearSec, effects);
-                        } else {
-                            enemy.fearTimer = Math.round(fearSec * 60);
+                        if (!enemy.isStationary) {
+                            if (typeof enemy.applyFear === 'function') {
+                                enemy.applyFear(fearSec, effects);
+                            } else {
+                                enemy.fearTimer = Math.round(fearSec * 60);
+                            }
+
+                            // Push slightly backward
+                            const fdir = Math.atan2(edy, edx);
+                            enemy.x += Math.cos(fdir) * 14;
+                            enemy.y += Math.sin(fdir) * 14;
                         }
-
-                        // Push slightly backward
-                        const fdir = Math.atan2(edy, edx);
-                        enemy.x += Math.cos(fdir) * 14;
-                        enemy.y += Math.sin(fdir) * 14;
 
                         if (effects) {
                             effects.addSparks(enemy.x, enemy.y, '#74b9ff', 4); // sweat drop sparks

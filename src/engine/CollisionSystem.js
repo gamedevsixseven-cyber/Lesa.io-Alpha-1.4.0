@@ -18,10 +18,11 @@ class CollisionSystem {
 
         // 0. Player Arena Map Borders Collision
         if (arena && p) {
-            const minX = -arena.halfWidth + p.radius;
-            const maxX = arena.halfWidth - p.radius;
-            const minY = -arena.halfHeight + p.radius;
-            const maxY = arena.halfHeight - p.radius;
+            const b = arena.dungeonBounds;
+            const minX = (b ? b.minX : -arena.halfWidth) + p.radius;
+            const maxX = (b ? b.maxX : arena.halfWidth) - p.radius;
+            const minY = (b ? b.minY : -arena.halfHeight) + p.radius;
+            const maxY = (b ? b.maxY : arena.halfHeight) - p.radius;
 
             if (p.x < minX) { p.x = minX; if (p.vx < 0) p.vx = 0; }
             else if (p.x > maxX) { p.x = maxX; if (p.vx > 0) p.vx = 0; }
@@ -39,7 +40,7 @@ class CollisionSystem {
                 // Player Bullet vs Enemies
                 for (let ei = 0; ei < enemies.length; ei++) {
                     const e = enemies[ei];
-                    if (e.dead || e.isDying) continue;
+                    if (e.dead || e.isDying || e.isAirborneImmune) continue;
                     if (b.hitEntities && b.hitEntities.has(e)) continue;
 
                     const bdx = b.x - e.x;
@@ -50,11 +51,13 @@ class CollisionSystem {
                     if (Math.abs(bdx) <= radSum && Math.abs(bdy) <= radSum) {
                         if (bdx * bdx + bdy * bdy < radSum * radSum) {
                             if (b.hitEntities) b.hitEntities.add(e);
-                            const dmgMult = (typeof window !== 'undefined' && window.perkSystem) ? window.perkSystem.getDamageMultiplier(e) : 1.0;
-                            e.takeDamage(b.damage * dmgMult, effects, b.isCrit);
+                            let dmgMult = (typeof window !== 'undefined' && window.perkSystem) ? window.perkSystem.getDamageMultiplier(e) : 1.0;
+                            if (typeof GearPassives !== 'undefined') dmgMult *= GearPassives.getDamageMultiplier(p, e, b.isCrit);
+                            const finalDmg = b.damage * dmgMult;
+                            e.takeDamage(finalDmg, effects, b.isCrit);
                             if (game.isCoopGuest) e.dead = false;
                             if (b.isChargedBubble) {
-                                if (e.isBoss || e.isMiniBoss) {
+                                if (e.isBoss || e.isMiniBoss || e.isStationary) {
                                     // Bosses cannot go in the bubble: deals damage and immediately pops!
                                     b.explode(effects);
                                     b.dead = true;
@@ -67,13 +70,25 @@ class CollisionSystem {
                                 e.applyIceSlow(3.0, 0.50, effects);
                             }
                             if (b.type === 'lightning' && Math.random() < 0.10) {
-                                CollisionSystem.triggerLightningChain(e, b.damage * dmgMult, enemies, effects, game);
+                                CollisionSystem.triggerLightningChain(e, finalDmg, enemies, effects, game);
+                            }
+                            if (b.type === 'dialtone' && !b.isEnemy && typeof e.applySonicSlow === 'function') {
+                                e.applySonicSlow(1.5, 0.70, effects);
+                            }
+                            if (b.type === 'zeus_thunderbolt' && !b.isEnemy && typeof ZeusThunderbolt !== 'undefined') ZeusThunderbolt.onHit(b, e, finalDmg, enemies, effects, game);
+                            if (typeof GearPassives !== 'undefined') {
+                                GearPassives.onBulletHit(b, e, finalDmg, enemies, effects, game);
+                            }
+                            if (typeof window !== 'undefined' && window.perkSystem && typeof window.perkSystem.onBulletHit === 'function') {
+                                window.perkSystem.onBulletHit(b, e, finalDmg, enemies, effects, game);
                             }
                             b.pierce--;
                             if (b.pierce <= 0) {
                                 b.explode(effects);
                                 b.dead = true;
                                 break;
+                            } else if (effects && typeof effects.addImpactSplat === 'function') {
+                                effects.addImpactSplat(b.x, b.y, b.type, b.isCrit, false, 0.58);
                             }
                         }
                     }
@@ -148,6 +163,9 @@ class CollisionSystem {
                         if (pdx * pdx + pdy * pdy < radSum * radSum) {
                             if (!game.isCoopGuest) {
                                 p.takeDamage(b.damage, effects, camera);
+                                if (b.frostChillFrames > 0) {
+                                    p.speedDebuffTimer = Math.max(p.speedDebuffTimer || 0, b.frostChillFrames);
+                                }
                             }
                             b.explode(effects);
                             b.dead = true;
@@ -164,6 +182,9 @@ class CollisionSystem {
                         if (p2dx * p2dx + p2dy * p2dy < radSum2 * radSum2) {
                             if (!game.isCoopGuest) {
                                 p2.takeDamage(b.damage, effects, camera);
+                                if (b.frostChillFrames > 0) {
+                                    p2.speedDebuffTimer = Math.max(p2.speedDebuffTimer || 0, b.frostChillFrames);
+                                }
                             }
                             b.explode(effects);
                             b.dead = true;
@@ -180,7 +201,7 @@ class CollisionSystem {
 
         for (let i = 0; i < enemies.length; i++) {
             const e = enemies[i];
-            if (e.dead || e.isDying || e.bubbleTrappedTimer > 0) continue;
+            if (e.dead || e.isDying || e.bubbleTrappedTimer > 0 || e.isAirborneImmune) continue;
             const edx = e.x - p.x;
             const edy = e.y - p.y;
             const hitDist = p.isBladeRushing ? (e.radius + p.radius + 35) : (e.radius + p.radius);
@@ -193,8 +214,10 @@ class CollisionSystem {
                             p.bladeRushHitEnemies.add(e);
                             const slashDamage = 85 * (p.damageMultiplier || 1);
                             e.takeDamage(slashDamage, effects);
-                            e.x += Math.cos(p.angle) * 18;
-                            e.y += Math.sin(p.angle) * 18;
+                            if (!e.isStationary) {
+                                e.x += Math.cos(p.angle) * 18;
+                                e.y += Math.sin(p.angle) * 18;
+                            }
                             if (effects) {
                                 effects.addSlash(e.x, e.y, p.angle, 65, '#00d2d3');
                                 effects.addSparks(e.x, e.y, '#00d2d3', 6);
@@ -204,7 +227,7 @@ class CollisionSystem {
                                 window.soundEngine.playHit(true, true);
                             }
                         }
-                    } else {
+                    } else if (e.damage > 0) {
                         if (!game.isCoopGuest) {
                             p.takeDamage(e.damage * 0.4, effects, camera);
                         }
@@ -216,7 +239,7 @@ class CollisionSystem {
             }
 
             // Remote partner body collision (authoritative on Host)
-            if (p2 && !game.isCoopGuest) {
+            if (p2 && !game.isCoopGuest && e.damage > 0) {
                 const p2edx = e.x - p2.x;
                 const p2edy = e.y - p2.y;
                 const hitDist2 = e.radius + p2.radius;
@@ -307,6 +330,10 @@ class CollisionSystem {
         const player = game.player;
         player.kills++;
         game.waveManager.waveEnemiesKilled++;
+        if (!enemy._deathPopped && game.effects && typeof game.effects.addDeathPop === 'function') {
+            enemy._deathPopped = true;
+            game.effects.addDeathPop(enemy.x, enemy.y, enemy.radius, enemy.color, enemy.isBoss || enemy.isMiniBoss);
+        }
 
         const heroName = player.name;
 
@@ -388,11 +415,84 @@ class CollisionSystem {
             if (game.ui && typeof game.ui.addKillfeed === 'function') {
                 game.ui.addKillfeed(`${heroName} busted Rouf! 🚨`);
             }
+            if (!game.isCoopGuest) {
+                if (typeof BossRewardManager !== 'undefined') {
+                    const q = BossRewardManager.queueBossDrops('rouf', { effects: game.effects, x: enemy.x, y: enemy.y, game });
+                    if (q.queued.length > 0 && game.ui && typeof game.ui.addKillfeed === 'function') game.ui.addKillfeed(`📱 Boss Drop: Dial-Tone Blaster (Claim in Menu)!`);
+                } else if (typeof WeaponSystem !== 'undefined') {
+                    const unlockRes = WeaponSystem.unlockWeapon('dialtone', { effects: game.effects, x: enemy.x, y: enemy.y });
+                    if (unlockRes.unlockedNow && game.ui && typeof game.ui.addKillfeed === 'function') game.ui.addKillfeed(`📱 Unlocked Weapon: Rouf's Dial-Tone Blaster!`);
+                }
+            }
             for (let i = 0; i < 6; i++) {
                 game.drops.push(new Drop(enemy.x, enemy.y, 'xp', 40));
             }
             game.drops.push(new Drop(enemy.x, enemy.y, 'heart', 50));
             game.drops.push(new Drop(enemy.x, enemy.y, 'star', 3));
+        } else if (enemy.type === 'kiloumpas') {
+            player.kiloumpasKills = (player.kiloumpasKills || 0) + 1;
+            player.score += 450;
+            if (!enemy.crateAwarded) {
+                enemy.crateAwarded = true;
+                if (typeof window !== 'undefined' && window.inventoryManager) {
+                    window.inventoryManager.addCrate('boss_crate_normal', 1);
+                }
+            }
+            if (game.ui && typeof game.ui.addKillfeed === 'function') {
+                game.ui.addKillfeed(`${heroName} out-slugged Kiloumpas! 👴`);
+            }
+            if (!game.isCoopGuest) {
+                if (typeof BossRewardManager !== 'undefined') {
+                    const q = BossRewardManager.queueBossDrops('kiloumpas', { effects: game.effects, x: enemy.x, y: enemy.y, game });
+                    if (q.queued.length > 0 && game.ui && typeof game.ui.addKillfeed === 'function') game.ui.addKillfeed(`🔫 Boss Drop: Kiloumpas's Carbine (Claim in Menu)!`);
+                } else if (typeof WeaponSystem !== 'undefined') {
+                    const unlockRes = WeaponSystem.unlockWeapon('carbine', { effects: game.effects, x: enemy.x, y: enemy.y });
+                    if (unlockRes.unlockedNow && game.ui && typeof game.ui.addKillfeed === 'function') game.ui.addKillfeed(`🔫 Unlocked Weapon: Kiloumpas's Carbine!`);
+                }
+            }
+            for (let i = 0; i < 5; i++) {
+                game.drops.push(new Drop(enemy.x, enemy.y, 'xp', 35));
+            }
+            game.drops.push(new Drop(enemy.x, enemy.y, 'heart', 45));
+            game.drops.push(new Drop(enemy.x, enemy.y, 'star', 2));
+        } else if (enemy.type === 'astynomos' || enemy.type === 'mat_officer') {
+            player.score += 180;
+            if (game.ui && typeof game.ui.addKillfeed === 'function') {
+                const label = enemy.type === 'mat_officer' ? 'MAT Police! 🛡️' : 'Police Officer! 👮';
+                game.ui.addKillfeed(`${heroName} evaded ${label}`);
+            }
+            for (let i = 0; i < 2; i++) {
+                game.drops.push(new Drop(enemy.x, enemy.y, 'xp', 25));
+            }
+            if (Math.random() < 0.35) {
+                game.drops.push(new Drop(enemy.x, enemy.y, 'heart', 30));
+            }
+        } else if (enemy.type === 'zeus_crystal') {
+            player.score += (enemy.scoreValue || 180);
+            if (game.ui && typeof game.ui.addKillfeed === 'function') {
+                game.ui.addKillfeed(`${heroName} shattered ${enemy.name || 'Storm Crystal'}! 💎`);
+            }
+            for (let i = 0; i < 2; i++) {
+                game.drops.push(new Drop(enemy.x + (Math.random() - 0.5) * 24, enemy.y + (Math.random() - 0.5) * 24, 'xp', 30));
+            }
+            if (Math.random() < 0.35) game.drops.push(new Drop(enemy.x, enemy.y, 'heart', 35));
+        } else if (enemy.type === 'frost_wolf' || enemy.type === 'ice_golem' || enemy.type === 'casillas_sentinel' || enemy.type === 'ravine_chieftain' || enemy.type === 'frost_titan' || enemy.type === 'kiloumpas_berserker' || enemy.type === 'zeus') {
+            player.score += (enemy.scoreValue || 250);
+            if (game.ui && typeof game.ui.addKillfeed === 'function') {
+                game.ui.addKillfeed(`${heroName} defeated ${enemy.name || 'Olympian foe'}! ⚡`);
+            }
+            if (!game.isCoopGuest && enemy.type === 'zeus' && typeof ZeusSkyPhase !== 'undefined') ZeusSkyPhase.grantZeusFirstKillRewards(enemy, game);
+            const xpTotal = enemy.xpDrop || 50;
+            const orbCount = enemy.isBoss ? 5 : 2;
+            const xpPerOrb = Math.max(15, Math.round(xpTotal / orbCount));
+            for (let i = 0; i < orbCount; i++) {
+                game.drops.push(new Drop(enemy.x + (Math.random() - 0.5) * 30, enemy.y + (Math.random() - 0.5) * 30, 'xp', xpPerOrb));
+            }
+            if (enemy.isBoss || Math.random() < 0.35) {
+                game.drops.push(new Drop(enemy.x, enemy.y, 'heart', 40));
+            }
+        } else if (typeof EndlessWaveDirector !== 'undefined' && EndlessWaveDirector.handleEnemyDeath(game, enemy)) {
+            // Endless enemies & bosses handled by EndlessWaveDirector (score, crate drops, loot)
         } else {
             player.casillasKills++;
             player.score += 150;
@@ -410,9 +510,33 @@ class CollisionSystem {
             }
         }
 
-        // Battle Perks On-Kill Hook (Golden Touch coin pouch drops)
+        if (game.gameMode === 'endless' && typeof EndlessWaveDirector !== 'undefined' && typeof EndlessWaveDirector.maybeDropChronoCore === 'function') {
+            EndlessWaveDirector.maybeDropChronoCore(game, enemy);
+        }
+
+        if (!game.isCoopGuest && typeof MaterialRegistry !== 'undefined') {
+            if (!enemy.materialsAwarded && (enemy.type === 'kleanthis' || enemy.type === 'kiloumpas' || enemy.type === 'rouf')) {
+                enemy.materialsAwarded = true;
+                const bossMats = MaterialRegistry.getStoryBossRewards(enemy.type);
+                if (bossMats && typeof window !== 'undefined' && window.inventoryManager) {
+                    window.inventoryManager.awardBattleMaterials(bossMats, {
+                        game,
+                        x: enemy.x,
+                        y: enemy.y,
+                        source: 'story_boss',
+                        sourceName: `${enemy.name || enemy.type} Bounty`
+                    });
+                }
+            }
+            MaterialRegistry.maybeDropForEnemy(game, enemy);
+        }
+
+        // Battle Perks & Endgame Gear On-Kill Hooks
         if (typeof window !== 'undefined' && window.perkSystem) {
             window.perkSystem.onEnemyKilled(enemy, game);
+        }
+        if (typeof GearPassives !== 'undefined') {
+            GearPassives.onEnemyKilled(player, enemy, game);
         }
     }
 
@@ -434,7 +558,7 @@ class CollisionSystem {
 
             for (let i = 0; i < enemies.length; i++) {
                 const cand = enemies[i];
-                if (cand.dead || cand.isDying || chained.has(cand)) continue;
+                if (cand.dead || cand.isDying || cand.isAirborneImmune || chained.has(cand)) continue;
 
                 const dx = cand.x - lastX;
                 const dy = cand.y - lastY;

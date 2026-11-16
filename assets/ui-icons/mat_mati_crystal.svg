@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <!-- Protective Azure Aura -->
+  <circle cx="32" cy="34" r="25" fill="#2563eb" opacity="0.20"/>
+  <!-- Gold Hanging Loop -->
+  <circle cx="32" cy="11" r="5" fill="#fbbf24" stroke="#1a1d2b" stroke-width="3.4"/>
+  <circle cx="32" cy="11" r="1.8" fill="#1a1d2b"/>
+  <!-- Faceted Outer Cobalt Crystal Shield / Halo -->
+  <polygon points="32,14 52,24 55,41 32,57 9,41 12,24" fill="#f59e0b" stroke="#1a1d2b" stroke-width="4" stroke-linejoin="round"/>
+  <polygon points="32,17 48,26 51,39 32,53 13,39 16,26" fill="#1d4ed8" stroke="#1a1d2b" stroke-width="3.2" stroke-linejoin="round"/>
+  <!-- Facet Highlights on Cobalt Glass -->
+  <polygon points="32,17 48,26 39,34 25,34 16,26" fill="#3b82f6" opacity="0.7"/>
+  <!-- Classic Greek Mati White Iris Ring -->
+  <circle cx="32" cy="35" r="11.5" fill="#ffffff" stroke="#1a1d2b" stroke-width="2.8"/>
+  <!-- Inner Sky-Cyan Iris -->
+  <circle cx="32" cy="35" r="7.5" fill="#38bdf8" stroke="#1a1d2b" stroke-width="2.2"/>
+  <!-- Deep Midnight Pupil -->
+  <circle cx="32" cy="35" r="4" fill="#0f172a"/>
+  <!-- Twin Glossy Eye Highlights -->
+  <circle cx="29.2" cy="32.2" r="2.2" fill="#ffffff"/>
+  <circle cx="34.8" cy="37.4" r="1.1" fill="#ffffff" opacity="0.85"/>
+  <!-- Rim Gleams -->
+  <path d="M18 27 L24 22" stroke="#ffffff" stroke-width="2.6" stroke-linecap="round" opacity="0.8"/>
+</svg>

@@ -1,0 +1,352 @@
+/* ===================================================
+   LESA.IO - SHARED OPENED TABS UI SHELL & QOL STYLES
+   Unified modal sizing, sticky headers/footers, dark summary pills,
+   filter chips, slim scrollbars, and affordability feedback.
+   =================================================== */
+
+/* --- 1. UNIFIED TAB MODAL SHELL (FIXES VIEWPORT CLIPPING) --- */
+.tab-modal-panel {
+    max-height: 92vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    padding: 16px 24px 14px 24px;
+}
+
+.tab-modal-panel > .modal-title {
+    font-size: 2.05rem;
+    margin-bottom: 2px;
+    line-height: 1.05;
+    flex-shrink: 0;
+}
+
+.tab-modal-panel > .modal-subtitle {
+    font-size: 0.88rem;
+    margin-bottom: 7px;
+    line-height: 1.25;
+    flex-shrink: 0;
+}
+
+.tab-modal-panel > .modal-actions {
+    flex-shrink: 0;
+    margin-top: 8px !important;
+}
+
+/* Scrollable Grid / Vault Body */
+.tab-scroll-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 6px 8px 8px 4px;
+    scrollbar-width: thin;
+    scrollbar-color: #b2bec3 rgba(0, 0, 0, 0.05);
+}
+
+.tab-scroll-body::-webkit-scrollbar {
+    width: 8px;
+}
+
+.tab-scroll-body::-webkit-scrollbar-track {
+    background: rgba(30, 39, 46, 0.08);
+    border-radius: 10px;
+}
+
+.tab-scroll-body::-webkit-scrollbar-thumb {
+    background: #b2bec3;
+    border-radius: 10px;
+    border: 1.5px solid #fff9e6;
+}
+
+.tab-scroll-body::-webkit-scrollbar-thumb:hover {
+    background: #747d8c;
+}
+
+/* --- 2. UNIFIED DARK SUMMARY BAR (MATCHING INVENTORY TAB) --- */
+.tab-summary-bar {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    margin: 2px 0 10px 0;
+    flex-wrap: wrap;
+    flex-shrink: 0;
+}
+
+.tab-summary-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #2f3542;
+    border: 2.5px solid var(--dark-outline, #1e272e);
+    border-radius: 20px;
+    padding: 4px 13px;
+    box-shadow: 2px 3px 0 var(--dark-outline, #1e272e);
+}
+
+.tab-pill-icon {
+    font-size: 0.95rem;
+    line-height: 1;
+}
+
+.tab-pill-label {
+    font-family: 'Luckiest Guy', cursive;
+    font-size: 0.78rem;
+    color: #ced6e0;
+    letter-spacing: 0.4px;
+}
+
+.tab-pill-val {
+    font-family: 'Luckiest Guy', cursive;
+    font-size: 0.92rem;
+    color: #ffffff;
+    letter-spacing: 0.3px;
+}
+
+.tab-pill-gold .tab-pill-val {
+    color: #fed330;
+}
+
+.tab-pill-gems .tab-pill-val {
+    color: #00cec9;
+}
+
+.tab-pill-green .tab-pill-val {
+    color: #2ed573;
+}
+
+/* --- 3. UNIFIED FILTER CHIPS (MATCHING PERKS TAB) --- */
+.tab-filter-chips {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 7px;
+    margin: 0 0 8px 0;
+    flex-wrap: wrap;
+    flex-shrink: 0;
+}
+
+.tab-filter-chip {
+    font-family: 'Luckiest Guy', cursive;
+    font-size: 0.76rem;
+    letter-spacing: 0.4px;
+    padding: 4px 12px;
+    background: #ffffff;
+    color: #57606f;
+    border: 2px solid var(--dark-outline, #1e272e);
+    border-radius: 12px;
+    cursor: pointer;
+    box-shadow: 1.5px 1.5px 0 var(--dark-outline, #1e272e);
+    white-space: nowrap;
+    transition: transform 0.1s ease, background 0.1s ease, color 0.1s ease;
+}
+
+.tab-filter-chip:hover {
+    transform: translateY(-1px);
+    background: #f1f2f6;
+}
+
+.tab-filter-chip.active {
+    background: #2ed573;
+    color: #ffffff;
+    border-color: var(--dark-outline, #1e272e);
+    box-shadow: 2px 2px 0 var(--dark-outline, #1e272e);
+    text-shadow: 1px 1px 0 #000000;
+}
+
+.tab-filter-chip-count {
+    font-family: 'Fredoka', sans-serif;
+    font-size: 0.72rem;
+    font-weight: 800;
+    opacity: 0.9;
+    margin-left: 3px;
+}
+
+/* --- 4. AFFORDABILITY & FEEDBACK HELPERS --- */
+.comic-btn.is-insufficient {
+    background: #dfe4ea !important;
+    color: #57606f !important;
+    border-color: #747d8c !important;
+    box-shadow: 1.5px 2px 0 #747d8c !important;
+    text-shadow: none !important;
+    cursor: pointer;
+    opacity: 0.9;
+}
+
+.comic-btn.is-insufficient:hover {
+    background: #ced6e0 !important;
+    transform: translateY(-1px);
+}
+
+.comic-btn.is-can-afford-unlock {
+    background: #fed330 !important;
+    color: var(--dark-outline, #1e272e) !important;
+    box-shadow: 0 0 0 2px rgba(254, 211, 48, 0.35), 2px 3px 0 var(--dark-outline, #1e272e) !important;
+}
+
+.tab-empty-filter-state {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 36px 16px;
+    color: #57606f;
+    font-family: 'Fredoka', sans-serif;
+    font-weight: 700;
+    font-size: 0.96rem;
+    background: rgba(255, 255, 255, 0.65);
+    border: 2.5px dashed #ced6e0;
+    border-radius: 18px;
+}
+
+.tab-card-shake {
+    animation: tabCardShake 0.32s ease;
+}
+
+@keyframes tabCardShake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    50% { transform: translateX(5px); }
+    75% { transform: translateX(-3px); }
+}
+
+/* Mobile landscape compatibility: keep mobile-modals scrolling intact */
+@media screen and (max-height: 520px), screen and (pointer: coarse) and (max-height: 700px) {
+    /* Pin modal header and Done actions while keeping cards strictly scrollable inside tab-scroll-body */
+    .modal-panel.tab-modal-panel {
+        overflow: hidden !important;
+        padding: 6px 12px !important;
+    }
+
+    .tab-scroll-body {
+        flex: 1 1 auto !important;
+        min-height: 0 !important;
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch;
+        padding: 2px 4px !important;
+    }
+
+    .tab-summary-bar {
+        gap: 4px !important;
+        margin: 2px 0 4px 0 !important;
+    }
+
+    .tab-summary-pill {
+        padding: 2px 8px !important;
+        border-width: 1.5px !important;
+    }
+
+    .tab-pill-label, .tab-pill-val {
+        font-size: 0.65rem !important;
+    }
+
+    .tab-filter-chips {
+        gap: 4px !important;
+        margin-bottom: 4px !important;
+    }
+
+    .tab-filter-chip {
+        font-size: 0.62rem !important;
+        padding: 2px 7px !important;
+    }
+}
+
+/* --- 5. CUSTOM VECTOR UI ICONS (.ui-icon) --- */
+.ui-icon {
+    display: inline-block;
+    width: 1.16em;
+    height: 1.16em;
+    vertical-align: -0.2em;
+    object-fit: contain;
+    pointer-events: none;
+    flex-shrink: 0;
+    user-select: none;
+}
+
+.ui-icon-sm {
+    width: 1em;
+    height: 1em;
+    vertical-align: -0.15em;
+}
+
+.ui-icon-title {
+    width: 1.08em;
+    height: 1.08em;
+    vertical-align: -0.15em;
+    margin-right: 4px;
+}
+
+.ui-icon-box {
+    width: 74%;
+    height: 74%;
+    max-width: 100%;
+    max-height: 100%;
+    vertical-align: middle;
+}
+
+.challenge-icon-col .ui-icon-box,
+.cr-item-emoji .ui-icon-box {
+    width: 1.25em;
+    height: 1.25em;
+}
+
+.mystery-avatar-icon .ui-icon-box {
+    width: 1.2em;
+    height: 1.2em;
+}
+
+.stat-icon .ui-icon,
+.cloud-icon .ui-icon,
+.tribute-dove-badge .ui-icon {
+    width: 1.25em;
+    height: 1.25em;
+    vertical-align: middle;
+}
+
+.tab-pill-icon,
+.gear-stat-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.slot-empty-icon .ui-icon {
+    width: 1.2em;
+    height: 1.2em;
+    vertical-align: middle;
+}
+
+.bot-btn-icon,
+.bp-reward-icon,
+.res-slot-icon,
+.perk-empty-icon,
+.skill-icon-fallback {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+}
+
+.bot-btn-icon .ui-icon {
+    width: 1.2em;
+    height: 1.2em;
+    vertical-align: middle;
+}
+
+.bp-reward-icon .ui-icon,
+.res-slot-icon .ui-icon,
+.perk-empty-icon .ui-icon,
+.perks-vault-empty-search-icon .ui-icon,
+.skill-icon-fallback .ui-icon,
+.rotate-device-icon .ui-icon,
+.rotate-arrow-icon .ui-icon {
+    width: 1.16em;
+    height: 1.16em;
+    vertical-align: middle;
+}
+
+.player-avatar-frame-menu .avatar-crown .ui-icon {
+    width: 1.16em;
+    height: 1.16em;
+    border-radius: 0;
+    object-fit: contain;
+    transform: none;
+}

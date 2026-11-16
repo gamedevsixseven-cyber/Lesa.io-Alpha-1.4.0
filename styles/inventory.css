@@ -5,52 +5,49 @@
 #inventory-modal .modal-panel {
     max-width: 780px !important;
     width: 95%;
-    max-height: 90vh;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
 }
 
 #inventory-content-mount {
+    flex: 1 1 auto;
+    min-height: 0;
     overflow-y: auto;
-    max-height: calc(90vh - 120px);
-    padding: 6px 8px 14px 8px;
+    padding: 6px 8px 10px 4px;
 }
 
 /* --- SUMMARY BAR --- */
 .inv-summary-bar {
     display: flex;
     justify-content: center;
-    gap: 12px;
-    margin-bottom: 14px;
+    gap: 8px;
+    margin-bottom: 12px;
     flex-wrap: wrap;
 }
 
 .inv-summary-pill {
     display: inline-flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
     background: #2f3542;
     border: 2.5px solid var(--dark-outline, #1e272e);
     border-radius: 20px;
-    padding: 5px 14px;
+    padding: 4px 11px;
     box-shadow: 2px 3px 0 var(--dark-outline, #1e272e);
 }
 
 .inv-pill-icon {
-    font-size: 1.1rem;
+    font-size: 1rem;
 }
 
 .inv-pill-label {
     font-family: 'Luckiest Guy', cursive;
-    font-size: 0.85rem;
+    font-size: 0.78rem;
     color: #ced6e0;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.4px;
 }
 
 .inv-pill-val {
     font-family: 'Luckiest Guy', cursive;
-    font-size: 1rem;
+    font-size: 0.92rem;
     color: #ffffff;
 }
 
@@ -268,6 +265,57 @@
     box-shadow: none !important;
 }
 
+/* --- OVERFLOW CHESTS VAULT --- */
+.inv-chest-actions {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.inv-chest-btn {
+    padding: 6px 8px;
+    font-size: 0.78rem;
+}
+
+.btn-slot-active {
+    background: #2ed573;
+    color: var(--dark-outline, #1e272e);
+    cursor: pointer;
+    box-shadow: 0 3px 0 var(--dark-outline, #1e272e);
+}
+
+.btn-slot-active:hover {
+    background: #7bed9f;
+    transform: translateY(-2px);
+}
+
+.btn-gem-active {
+    background: #00d2d3;
+    color: var(--dark-outline, #1e272e);
+    cursor: pointer;
+    box-shadow: 0 3px 0 var(--dark-outline, #1e272e);
+}
+
+.btn-gem-active:hover {
+    background: #48dbfb;
+    transform: translateY(-2px);
+}
+
+.inv-empty-chests-banner {
+    background: #f1f2f6;
+    border: 2px dashed #a4b0be;
+    border-radius: 14px;
+    padding: 10px 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.8rem;
+    font-weight: 800;
+    color: #57606f;
+    margin-bottom: 10px;
+}
+
 /* --- RESOURCES GRID --- */
 .inv-resources-grid {
     display: grid;
@@ -302,11 +350,227 @@
     color: #57606f;
 }
 
+/* Crafting Materials Pill in Summary Bar */
+.inv-materials-pill {
+    border-color: #f59e0b;
+    background: linear-gradient(135deg, #2f3542, #1e272e);
+}
+
+.inv-materials-pill .inv-pill-label {
+    color: #ffeaa7;
+}
+
+.inv-materials-pill .inv-pill-val {
+    color: #38bdf8;
+}
+
+/* Crafting Materials Backpack Grid */
+.inv-materials-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(195px, 1fr));
+    gap: 12px;
+    margin-bottom: 18px;
+}
+
+.inv-mat-card {
+    --mat-color: #f59e0b;
+    --mat-bg: #fffdf5;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 12px 10px 10px;
+    border-radius: 16px;
+    border: 3px solid #1e272e;
+    background: linear-gradient(180deg, #ffffff 0%, var(--mat-bg) 100%);
+    box-shadow: 0 4px 0 #1e272e;
+    overflow: hidden;
+    transition: transform 0.14s ease, box-shadow 0.14s ease, border-color 0.14s ease;
+}
+
+.inv-mat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 0 #1e272e;
+}
+
+.inv-mat-card.mat-owned {
+    border-color: #1e272e;
+    background: linear-gradient(180deg, #ffffff 0%, var(--mat-bg) 100%);
+}
+
+.inv-mat-card.mat-empty {
+    background: linear-gradient(180deg, #f8fafc 0%, #eef2f6 100%);
+    border-color: #94a3b8;
+    box-shadow: 0 3px 0 #94a3b8;
+}
+
+.inv-mat-card.mat-empty .inv-mat-icon-wrap {
+    filter: grayscale(0.45);
+    opacity: 0.78;
+}
+
+.inv-mat-card.inv-mat-relic {
+    background: linear-gradient(180deg, #fffdf2 0%, #fef3c7 55%, #fde68a 100%);
+    border-color: #b45309;
+    box-shadow: 0 4px 0 #78350f, inset 0 0 0 1px rgba(255, 255, 255, 0.75);
+}
+
+.inv-mat-top {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    margin-bottom: 6px;
+    z-index: 1;
+}
+
+.inv-mat-badge {
+    font-size: 0.62rem;
+    font-weight: 900;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    padding: 2px 7px;
+    border-radius: 999px;
+    color: #ffffff;
+    background: var(--mat-color, #475569);
+    border: 2px solid #1e272e;
+    box-shadow: 0 2px 0 #1e272e;
+    line-height: 1.25;
+}
+
+.inv-mat-qty {
+    font-family: 'Luckiest Guy', 'Fredoka', sans-serif;
+    font-size: 1.05rem;
+    letter-spacing: 0.4px;
+    color: #1e272e;
+    background: #fef08a;
+    border: 2px solid #1e272e;
+    border-radius: 10px;
+    padding: 1px 8px;
+    box-shadow: 0 2px 0 #1e272e;
+    line-height: 1.25;
+}
+
+.inv-mat-card.mat-empty .inv-mat-qty {
+    background: #e2e8f0;
+    color: #475569;
+}
+
+.inv-mat-icon-wrap {
+    position: relative;
+    width: 68px;
+    height: 68px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 4px 0 6px;
+    border-radius: 16px;
+    background: radial-gradient(circle at 50% 45%, rgba(255, 255, 255, 0.95) 0%, rgba(241, 245, 249, 0.75) 100%);
+    border: 2px solid rgba(30, 39, 46, 0.16);
+}
+
+.inv-mat-glow {
+    position: absolute;
+    inset: -6px;
+    border-radius: 50%;
+    background: radial-gradient(circle, var(--mat-color, #f59e0b) 0%, transparent 70%);
+    opacity: 0.24;
+    pointer-events: none;
+}
+
+.inv-mat-card.mat-empty .inv-mat-glow {
+    opacity: 0.08;
+}
+
+.inv-mat-icon-wrap .inv-mat-img,
+.inv-mat-img {
+    position: relative;
+    z-index: 1;
+    width: 54px;
+    height: 54px;
+    object-fit: contain;
+    filter: drop-shadow(0 3px 3px rgba(15, 23, 42, 0.25));
+}
+
+.inv-mat-emoji {
+    position: relative;
+    z-index: 1;
+    font-size: 2.15rem;
+    line-height: 1;
+}
+
+.inv-mat-name {
+    font-size: 0.92rem;
+    font-weight: 900;
+    color: #1e272e;
+    line-height: 1.2;
+    margin-bottom: 4px;
+}
+
+.inv-mat-desc {
+    font-size: 0.74rem;
+    font-weight: 700;
+    color: #475569;
+    line-height: 1.3;
+    margin-bottom: 6px;
+}
+
+.inv-mat-used {
+    width: 100%;
+    font-size: 0.71rem;
+    font-weight: 800;
+    color: #1e293b;
+    background: rgba(255, 255, 255, 0.8);
+    border: 1.5px solid rgba(30, 39, 46, 0.22);
+    border-radius: 9px;
+    padding: 4px 6px;
+    margin-bottom: 7px;
+    line-height: 1.25;
+}
+
+.inv-mat-sources {
+    width: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 4px;
+    margin-top: auto;
+}
+
+.inv-mat-src-chip {
+    font-size: 0.64rem;
+    font-weight: 800;
+    color: #334155;
+    background: #f1f5f9;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 999px;
+    padding: 2px 7px;
+    line-height: 1.2;
+}
+
 /* Mobile Responsiveness */
 @media (max-width: 600px) {
     .inv-crates-grid {
         grid-template-columns: repeat(2, 1fr);
         gap: 8px;
+    }
+    .inv-materials-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 8px;
+    }
+    .inv-mat-card {
+        padding: 9px 7px 8px;
+    }
+    .inv-mat-icon-wrap {
+        width: 54px;
+        height: 54px;
+    }
+    .inv-mat-icon-wrap .inv-mat-img,
+    .inv-mat-img {
+        width: 42px;
+        height: 42px;
     }
     .inv-crate-card {
         padding: 8px 6px;

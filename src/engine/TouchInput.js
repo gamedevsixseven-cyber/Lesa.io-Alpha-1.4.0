@@ -27,6 +27,7 @@ class TouchInput {
         this.aimPointerId = null;
         this.aimOrigin = { x: 0, y: 0 };
         this.isShooting = false;
+        this.isBubbleChargeHeld = false;
         this.autoFireEnabled = localStorage.getItem('lesaio_autofire') === 'true';
         this.autoAimMaxDistance = 750;
 
@@ -102,7 +103,7 @@ class TouchInput {
         }
 
         // Auto Fullscreen on Play / Mode selection for mobile
-        ['start-btn', 'mode-select-story-btn', 'mode-select-endless-btn', 'open-coop-btn'].forEach((id) => {
+        ['start-btn', 'mode-select-story-btn', 'mode-select-endless-btn', 'mode-select-dungeons-btn', 'open-coop-btn'].forEach((id) => {
             const btn = document.getElementById(id);
             if (btn) {
                 btn.addEventListener('click', () => {
@@ -270,28 +271,35 @@ class TouchInput {
         // 5. Big Bubble Charge Button (Mobile)
         if (this.bubbleBtn) {
             this.bubbleBtn.addEventListener('pointerdown', (e) => {
-                if (e.pointerType && e.pointerType !== 'touch') return;
                 e.stopPropagation();
+                if (e.pointerId && this.bubbleBtn.setPointerCapture) {
+                    try { this.bubbleBtn.setPointerCapture(e.pointerId); } catch (_) {}
+                }
                 if (navigator.vibrate) navigator.vibrate(15);
                 this.bubbleBtn.classList.add('pressed');
-                const player = this.game.player;
+                this.isBubbleChargeHeld = true;
+                const player = this.game ? this.game.player : null;
                 if (player && player.weaponType === 'bubble') {
                     player.isChargingBubble = true;
                 }
-            });
-            const releaseCharge = () => {
-                this.bubbleBtn.classList.remove('pressed');
-                const player = this.game.player;
-                if (player && player.weaponType === 'bubble' && player.isChargingBubble) {
-                    if ((player.bubbleCharge || 0) >= 0.35) {
-                        player.fireChargedBubble(this.game.effects);
-                    }
-                    player.bubbleCharge = 0;
-                    player.isChargingBubble = false;
+                if (this.game && this.game.input && this.game.input.mouse) {
+                    this.game.input.mouse.leftDown = false;
                 }
+            });
+            const releaseCharge = (e) => {
+                if (e && e.pointerId && this.bubbleBtn.releasePointerCapture) {
+                    try { this.bubbleBtn.releasePointerCapture(e.pointerId); } catch (_) {}
+                }
+                this.bubbleBtn.classList.remove('pressed');
+                this.isBubbleChargeHeld = false;
             };
             this.bubbleBtn.addEventListener('pointerup', releaseCharge);
             this.bubbleBtn.addEventListener('pointercancel', releaseCharge);
+            this.bubbleBtn.addEventListener('pointerleave', (e) => {
+                if (this.isBubbleChargeHeld && !this.bubbleBtn.hasPointerCapture?.(e.pointerId)) {
+                    releaseCharge(e);
+                }
+            });
         }
     }
 
@@ -351,8 +359,8 @@ class TouchInput {
         if (this.game && this.game.player) {
             this.game.player.angle = angle;
         }
-        if (this.game && this.game.input) {
-            this.game.input.mouse.leftDown = true;
+        if (this.game && this.game.input && this.game.input.mouse) {
+            this.game.input.mouse.leftDown = !(this.game.player && (this.game.player.isChargingBubble || this.isBubbleChargeHeld));
         }
     }
 
@@ -364,6 +372,8 @@ class TouchInput {
             if (this.game.input) this.game.input.mouse.leftDown = false;
             this.isShooting = false;
             this.isMoving = false;
+            this.isBubbleChargeHeld = false;
+            if (this.bubbleBtn) this.bubbleBtn.classList.remove('pressed');
             return;
         }
 
@@ -404,11 +414,11 @@ class TouchInput {
             const angle = Math.atan2(nearestEnemy.y - player.y, nearestEnemy.x - player.x);
             player.angle = angle;
             this.aimAngle = angle;
-            if (this.game.input) {
-                this.game.input.mouse.leftDown = true;
+            if (this.game && this.game.input && this.game.input.mouse) {
+                this.game.input.mouse.leftDown = !(player.isChargingBubble || this.isBubbleChargeHeld);
             }
         } else {
-            if (this.game.input && !this.isShooting) {
+            if (this.game && this.game.input && this.game.input.mouse && !this.isShooting) {
                 this.game.input.mouse.leftDown = false;
             }
         }
@@ -563,6 +573,8 @@ class TouchInput {
     hide() {
         if (this.container) this.container.classList.add('hidden');
         if (this.joystickBase) this.joystickBase.classList.remove('active');
+        if (this.bubbleBtn) this.bubbleBtn.classList.remove('pressed');
+        this.isBubbleChargeHeld = false;
         this.joystickPointerId = null;
         this.movement = { dx: 0, dy: 0 };
         this.isMoving = false;

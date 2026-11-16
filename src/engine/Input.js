@@ -19,6 +19,7 @@ class InputManager {
         this.onShootCallback = null;
         this.onDashCallback = null;
         this.onSkillCallback = null;
+        this.onInteractCallback = null;
         this.onPauseCallback = null;
 
         this.init();
@@ -40,6 +41,10 @@ class InputManager {
 
             if (e.code === 'KeyE' || e.key === 'e' || e.key === 'E') {
                 if (this.onSkillCallback) this.onSkillCallback();
+            }
+
+            if ((e.code === 'KeyF' || e.key === 'f' || e.key === 'F') && !e.repeat) {
+                if (this.onInteractCallback) this.onInteractCallback();
             }
         });
 

@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <!-- Divine Crimson-Gold Aura -->
+  <circle cx="32" cy="32" r="26" fill="#f59e0b" opacity="0.24"/>
+  <circle cx="32" cy="32" r="20" fill="#ef4444" opacity="0.18"/>
+  <!-- Outer Faceted Evolution Crystal -->
+  <polygon points="32,6 52,18 56,38 42,56 22,56 8,38 12,18" fill="#dc2626" stroke="#1a1d2b" stroke-width="4" stroke-linejoin="round"/>
+  <!-- Upper Illuminated Facets -->
+  <polygon points="32,6 52,18 42,27 22,27 12,18" fill="#fbbf24" opacity="0.92"/>
+  <polygon points="32,6 42,27 32,33 22,27" fill="#fef08a" opacity="0.95"/>
+  <!-- Lower Shadow Facets -->
+  <polygon points="8,38 22,27 25,44 22,56" fill="#991b1b" opacity="0.88"/>
+  <polygon points="56,38 42,27 39,44 42,56" fill="#b91c1c" opacity="0.88"/>
+  <polygon points="25,44 39,44 42,56 22,56" fill="#7f1d1d" opacity="0.92"/>
+  <!-- Radiant Core Lightning Rune -->
+  <polygon points="35,20 24,34 32,34 29,48 41,33 33,33" fill="#38bdf8" stroke="#1a1d2b" stroke-width="2.4" stroke-linejoin="round"/>
+  <polygon points="34,23 28,33 33,33 31,42 37,34 32,34" fill="#e0f2fe"/>
+  <!-- Outer Ink Outline & Gloss Glint -->
+  <polygon points="32,6 52,18 56,38 42,56 22,56 8,38 12,18" fill="none" stroke="#1a1d2b" stroke-width="4" stroke-linejoin="round"/>
+  <path d="M17 18 L24 12" stroke="#ffffff" stroke-width="3" stroke-linecap="round" opacity="0.9"/>
+  <!-- Orbital Stars -->
+  <path d="M54 11 L55.3 14.2 L58.5 15.5 L55.3 16.8 L54 20 L52.7 16.8 L49.5 15.5 L52.7 14.2 Z" fill="#fef08a" stroke="#1a1d2b" stroke-width="1.6"/>
+  <path d="M10 47 L11 49.5 L13.5 50.5 L11 51.5 L10 54 L9 51.5 L6.5 50.5 L9 49.5 Z" fill="#38bdf8" stroke="#1a1d2b" stroke-width="1.5"/>
+</svg>

@@ -15,11 +15,13 @@ class MenuController {
 
         this.initButtons();
         this.updateHeroAvatarUI();
+        this.updateAscentCrestBadge();
         this.startStarterPackTimer();
 
-        // Listen for hero changes
+        // Listen for hero and crest changes
         if (typeof window !== 'undefined' && window.EventBus) {
             window.EventBus.on('heroSelected', () => this.updateHeroAvatarUI());
+            window.EventBus.on('crestsUpdated', () => this.updateAscentCrestBadge());
         }
     }
 
@@ -66,10 +68,22 @@ class MenuController {
         };
 
         const handleDungeons = () => {
-            if (window.soundEngine) window.soundEngine.playHit();
-            if (this.ui && typeof this.ui.addKillfeed === 'function') {
-                this.ui.addKillfeed('🏰 Dungeons opening in Chapter 3!');
+            const crestMgr = window.ascentCrestManager;
+            if (crestMgr && !crestMgr.canEnterAscent()) {
+                if (window.soundEngine && typeof window.soundEngine.playGoBack === 'function') {
+                    window.soundEngine.playGoBack();
+                } else if (window.soundEngine) {
+                    window.soundEngine.playSelect();
+                }
+                this.showCrestShortageNotice();
+                return;
             }
+            if (window.soundEngine && typeof window.soundEngine.playStartGame === 'function') {
+                window.soundEngine.playStartGame();
+            } else if (window.soundEngine) {
+                window.soundEngine.playSelect();
+            }
+            this.startGame('dungeons');
         };
 
         const modeStoryBtn = document.getElementById('mode-select-story-btn');
@@ -173,11 +187,15 @@ class MenuController {
         if (leaderboardBtn) {
             leaderboardBtn.addEventListener('click', () => {
                 if (window.soundEngine) window.soundEngine.playSelect();
-                this.ui.modalManager.showFeatureModal(
-                    '🏆 GLOBAL LEADERBOARDS',
-                    'Top .io Champions',
-                    'Check world rankings for most Skatmirs bonked and Casillases outplayed!'
-                );
+                if (window.leaderboardModal && typeof window.leaderboardModal.show === 'function') {
+                    window.leaderboardModal.show();
+                } else {
+                    this.ui.modalManager.showFeatureModal(
+                        '🏆 GLOBAL LEADERBOARDS',
+                        'Top .io Champions',
+                        'Check world rankings for most Skatmirs bonked and Casillases outplayed!'
+                    );
+                }
             });
         }
 
@@ -185,11 +203,15 @@ class MenuController {
         if (friendsBtn) {
             friendsBtn.addEventListener('click', () => {
                 if (window.soundEngine) window.soundEngine.playSelect();
-                this.ui.modalManager.showFeatureModal(
-                    '👥 FRIENDS',
-                    'Social & Co-op Arena',
-                    'Connect with cartoon battle companions and send daily cookie gifts!'
-                );
+                if (window.friendsModal) {
+                    window.friendsModal.show('friends');
+                } else {
+                    this.ui.modalManager.showFeatureModal(
+                        '👥 FRIENDS',
+                        'Social & Co-op Arena',
+                        'Connect with friends by Name or Online ID!'
+                    );
+                }
             });
         }
 
@@ -318,6 +340,13 @@ class MenuController {
 
     showGameModeModal() {
         if (!this.gameModeModal) this.gameModeModal = document.getElementById('game-mode-modal');
+        this.updateAscentCrestBadge();
+        const noticeEl = document.getElementById('mode-crest-notice');
+        if (noticeEl) noticeEl.classList.add('hidden');
+        if (this._crestNoticeTimer) {
+            clearTimeout(this._crestNoticeTimer);
+            this._crestNoticeTimer = null;
+        }
         if (this.gameModeModal) this.gameModeModal.classList.remove('hidden');
     }
 
@@ -326,7 +355,65 @@ class MenuController {
         if (this.gameModeModal) this.gameModeModal.classList.add('hidden');
     }
 
+    updateAscentCrestBadge() {
+        const crestMgr = window.ascentCrestManager;
+        if (!crestMgr) return;
+        if (typeof crestMgr.ensureDailyRefill === 'function') {
+            crestMgr.ensureDailyRefill();
+        }
+        const count = crestMgr.getCount();
+        const cap = crestMgr.getCap();
+
+        const textEl = document.getElementById('mode-crest-text');
+        if (textEl) textEl.textContent = `${count} / ${cap}`;
+
+        const pipsEl = document.getElementById('mode-crest-pips');
+        if (pipsEl) {
+            const pips = pipsEl.querySelectorAll('.crest-pip');
+            pips.forEach((pip, idx) => {
+                pip.classList.toggle('filled', idx < count);
+            });
+        }
+
+        const slotEl = document.querySelector('.mode-slot-dungeons');
+        if (slotEl) {
+            slotEl.classList.toggle('is-crest-empty', count <= 0);
+        }
+    }
+
+    showCrestShortageNotice() {
+        this.updateAscentCrestBadge();
+        const noticeEl = document.getElementById('mode-crest-notice');
+        if (noticeEl) {
+            noticeEl.textContent = 'No Crests left (0/3)! Beat Story Final Boss Rouf (Wave 20) for +1 Crest, or get +2 Daily.';
+            noticeEl.classList.remove('hidden');
+            if (this._crestNoticeTimer) clearTimeout(this._crestNoticeTimer);
+            this._crestNoticeTimer = setTimeout(() => {
+                noticeEl.classList.add('hidden');
+                this._crestNoticeTimer = null;
+            }, 3800);
+        }
+
+        const slotEl = document.querySelector('.mode-slot-dungeons');
+        if (slotEl) {
+            slotEl.classList.remove('crest-shake');
+            void slotEl.offsetWidth;
+            slotEl.classList.add('crest-shake');
+            if (this._crestShakeTimer) clearTimeout(this._crestShakeTimer);
+            this._crestShakeTimer = setTimeout(() => {
+                slotEl.classList.remove('crest-shake');
+                this._crestShakeTimer = null;
+            }, 450);
+        }
+    }
+
     startGame(gameMode = 'story') {
+        if (gameMode === 'dungeons' && window.ascentCrestManager) {
+            if (!window.ascentCrestManager.consumeCrest()) {
+                this.showCrestShortageNotice();
+                return;
+            }
+        }
         this.hideGameModeModal();
         if (typeof window.triggerGameFullscreen === 'function') {
             window.triggerGameFullscreen();
@@ -336,6 +423,10 @@ class MenuController {
             this.menuScreen.style.setProperty('display', 'none', 'important');
         }
         this.ui.hud.show();
+        if (window.friendService) {
+            const label = gameMode === 'dungeons' ? 'Climbing Mt. Olympus' : (gameMode === 'endless' ? 'Playing Endless' : 'Playing Story');
+            window.friendService.setPresenceStatus(label, null);
+        }
 
         if (window.gameInstance) {
             const hero = this.gameState ? this.gameState.player.selectedHero : 'psanas';

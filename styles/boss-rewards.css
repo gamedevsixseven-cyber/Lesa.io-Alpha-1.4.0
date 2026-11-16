@@ -1,0 +1,367 @@
+/* ===================================================
+   LESA.IO - COMPACT IN-GAME BOSS DROP TOAST & MENU CLAIM MODAL
+   =================================================== */
+
+/* Compact non-centered in-game corner popup (pinned cleanly under top-left HP card) */
+#boss-unlock-toast,
+.boss-unlock-toast {
+    position: fixed;
+    top: 108px;
+    left: 16px;
+    z-index: 2450;
+    pointer-events: none;
+    max-width: 282px;
+    width: max-content;
+    min-width: 224px;
+    background: rgba(24, 30, 41, 0.96);
+    border: 3px solid var(--dark-outline, #1e272e);
+    border-radius: 15px;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.42), 3px 3px 0 var(--dark-outline, #1e272e);
+    padding: 7px 11px;
+    color: #ffffff;
+    font-family: 'Fredoka', sans-serif;
+    opacity: 1;
+    transform: none;
+}
+
+.boss-unlock-toast.is-hiding {
+    opacity: 0;
+    transition: opacity 0.22s ease;
+}
+
+.boss-unlock-toast.rarity-epic {
+    border-color: #9b59b6;
+    box-shadow: 0 4px 14px rgba(155, 89, 182, 0.38), 3px 3px 0 #1e272e;
+}
+
+.boss-unlock-toast.rarity-legendary {
+    border-color: #f39c12;
+    box-shadow: 0 4px 16px rgba(243, 156, 18, 0.44), 3px 3px 0 #1e272e;
+}
+
+.boss-unlock-toast.rarity-mythic {
+    border-color: #fed330;
+    box-shadow: 0 4px 18px rgba(231, 76, 60, 0.5), 3px 3px 0 #1e272e;
+}
+
+.but-eyebrow {
+    font-family: 'Luckiest Guy', cursive;
+    font-size: 0.65rem;
+    letter-spacing: 0.7px;
+    color: #fed330;
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.but-subtag {
+    font-family: 'Fredoka', sans-serif;
+    font-size: 0.62rem;
+    font-weight: 700;
+    color: #70a1ff;
+    text-transform: uppercase;
+}
+
+.but-rows {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.but-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+}
+
+.but-icon-box {
+    width: 30px;
+    height: 30px;
+    border-radius: 9px;
+    border: 2px solid rgba(255, 255, 255, 0.24);
+    background: rgba(255, 255, 255, 0.08);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    overflow: hidden;
+}
+
+.but-icon-img {
+    width: 26px;
+    height: 26px;
+    object-fit: contain;
+}
+
+.but-text-col {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    line-height: 1.12;
+}
+
+.but-item-name {
+    font-family: 'Luckiest Guy', cursive;
+    font-size: 0.82rem;
+    color: #ffffff;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.but-item-cat {
+    font-size: 0.64rem;
+    font-weight: 700;
+    color: #cbd5e1;
+}
+
+/* ===================================================
+   MENU BOSS REWARD CLAIM & EQUIP MODAL
+   =================================================== */
+
+#boss-reward-claim-modal {
+    z-index: 2500;
+}
+
+.boss-reward-panel {
+    max-width: 460px;
+    width: min(94vw, 460px);
+    padding: 20px 22px 18px;
+    background: linear-gradient(180deg, #fffdf4 0%, var(--comic-panel-bg, #fff9e6) 100%);
+    border: 4.5px solid var(--dark-outline, #1e272e);
+    border-radius: 26px;
+    box-shadow: 0 18px 46px rgba(0, 0, 0, 0.58), 7px 7px 0 var(--dark-outline, #1e272e);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.boss-reward-panel.is-multi {
+    max-width: 820px;
+    width: min(95vw, 820px);
+}
+
+.br-header {
+    text-align: center;
+    margin-bottom: 14px;
+}
+
+.br-eyebrow {
+    display: inline-block;
+    background: #1e272e;
+    color: #fed330;
+    font-family: 'Luckiest Guy', cursive;
+    font-size: 0.72rem;
+    letter-spacing: 0.8px;
+    padding: 3px 12px;
+    border-radius: 12px;
+    margin-bottom: 6px;
+}
+
+.br-title {
+    margin: 0;
+    font-family: 'Luckiest Guy', cursive;
+    font-size: 1.65rem;
+    color: var(--dark-outline, #1e272e);
+    letter-spacing: 0.7px;
+    line-height: 1.08;
+}
+
+.br-subtitle {
+    margin: 4px 0 0;
+    font-family: 'Fredoka', sans-serif;
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: #57606f;
+}
+
+.br-cards-grid {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.br-cards-grid.cols-3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.br-cards-grid.cols-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.br-card {
+    background: #ffffff;
+    border: 3px solid var(--dark-outline, #1e272e);
+    border-radius: 18px;
+    padding: 12px 12px 10px;
+    box-shadow: 3px 3px 0 rgba(30, 39, 46, 0.14);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 8px;
+    min-width: 0;
+    box-sizing: border-box;
+}
+
+.br-card.rarity-epic { border-color: #9b59b6; }
+.br-card.rarity-legendary { border-color: #f39c12; }
+.br-card.rarity-mythic {
+    border-color: #e74c3c;
+    box-shadow: 0 4px 0 #1e272e, 0 0 14px rgba(231, 76, 60, 0.25);
+}
+.br-card.is-card-equipped {
+    border-color: #2ed573;
+    background: linear-gradient(180deg, #ffffff 0%, #f1fcf4 100%);
+}
+
+.br-card-badges {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+}
+
+.br-cat-pill {
+    font-family: 'Luckiest Guy', cursive;
+    font-size: 0.65rem;
+    letter-spacing: 0.4px;
+    background: #eef0f5;
+    color: #2f3542;
+    border: 1.8px solid var(--dark-outline, #1e272e);
+    border-radius: 8px;
+    padding: 2px 7px;
+}
+
+.br-icon-stage {
+    width: 78px;
+    height: 78px;
+    margin: 2px auto;
+    border-radius: 18px;
+    border: 2.5px solid var(--dark-outline, #1e272e);
+    background: radial-gradient(circle, #fff9e6 0%, #f1f2f6 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+
+.br-card.rarity-mythic .br-icon-stage {
+    background: radial-gradient(circle, #fff5e6 0%, #fdecec 100%);
+    border-color: #e74c3c;
+}
+
+.br-card-img {
+    width: 64px;
+    height: 64px;
+    object-fit: contain;
+    filter: drop-shadow(0 3px 5px rgba(0, 0, 0, 0.22));
+}
+
+.br-card-name {
+    margin: 0;
+    font-family: 'Luckiest Guy', cursive;
+    font-size: 1rem;
+    color: var(--dark-outline, #1e272e);
+    text-align: center;
+    line-height: 1.15;
+}
+
+.br-card-desc {
+    margin: 0;
+    font-family: 'Fredoka', sans-serif;
+    font-size: 0.74rem;
+    font-weight: 600;
+    color: #57606f;
+    text-align: center;
+    line-height: 1.25;
+}
+
+.br-card-stats {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.br-stat-row {
+    background: #f1f2f6;
+    border-radius: 8px;
+    padding: 3px 8px;
+    font-family: 'Fredoka', sans-serif;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #1e272e;
+    display: flex;
+    justify-content: space-between;
+    gap: 6px;
+}
+
+.br-card-equip-btn {
+    width: 100%;
+    padding: 7px 10px;
+    border-radius: 12px;
+    border: 2.2px solid var(--dark-outline, #1e272e);
+    background: #1e90ff;
+    color: #ffffff;
+    font-family: 'Luckiest Guy', cursive;
+    font-size: 0.85rem;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    box-shadow: 2px 2px 0 var(--dark-outline, #1e272e);
+    transition: transform 0.08s ease, background 0.15s ease;
+}
+
+.br-card-equip-btn:hover { transform: translateY(-1px); filter: brightness(1.06); }
+.br-card-equip-btn:active { transform: translateY(1px); box-shadow: 1px 1px 0 var(--dark-outline, #1e272e); }
+.br-card-equip-btn.is-equipped {
+    background: #2ed573;
+    cursor: default;
+}
+
+.br-actions {
+    width: 100%;
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+}
+
+.br-actions .comic-btn {
+    flex: 1;
+    padding: 10px 14px;
+    font-size: 1.02rem;
+}
+
+.br-btn-claim {
+    background: #fed330;
+    color: var(--dark-outline, #1e272e);
+}
+
+.br-btn-equip {
+    background: #2ed573;
+    color: #ffffff;
+}
+
+@media (max-width: 720px) {
+    #boss-unlock-toast,
+    .boss-unlock-toast {
+        top: 90px;
+        left: 10px;
+        max-width: 232px;
+        min-width: 190px;
+        padding: 6px 9px;
+    }
+
+    .br-cards-grid.cols-3,
+    .br-cards-grid.cols-2 {
+        grid-template-columns: 1fr;
+    }
+
+    .boss-reward-panel.is-multi {
+        max-height: 90vh;
+        overflow-y: auto;
+    }
+}

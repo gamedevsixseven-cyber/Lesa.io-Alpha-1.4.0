@@ -325,9 +325,30 @@ class Psaltis extends EnemyBase {
         ctx.translate(this.x, this.y + shadowBob);
 
         const facingLeft = Math.cos(this.angle) < 0;
-        if (facingLeft) ctx.scale(-1, 1);
-
-        this.drawPsaltisBody(ctx, this.hitFlash > 0);
+        const flash = this.hitFlash > 0;
+        if (typeof SpriteAtlasCache !== 'undefined') {
+            const r = this.radius || 22;
+            const rKey = Math.round(r * 2);
+            const singing = !!this.isSinging;
+            const singBin = singing ? SpriteAtlasCache.quantizePhase(this.age * 0.35, 8) : -1;
+            const bodyKey = `psaltis_b:${rKey}:${singing ? 's' + singBin : 'idle'}:${flash ? 1 : 0}`;
+            const bw = Math.ceil(r * 4.4);
+            const bh = Math.ceil(r * 5.6);
+            SpriteAtlasCache.drawCached(ctx, bodyKey, bw, bh, bw * 0.5, bh * 0.62, (bctx) => {
+                const origAge = this.age;
+                if (singing) {
+                    this.age = SpriteAtlasCache.binAngle(singBin, 8) / 0.35;
+                }
+                try {
+                    this.drawPsaltisBody(bctx, flash);
+                } finally {
+                    this.age = origAge;
+                }
+            }, { flipX: facingLeft });
+        } else {
+            if (facingLeft) ctx.scale(-1, 1);
+            this.drawPsaltisBody(ctx, flash);
+        }
 
         ctx.restore();
 
@@ -467,42 +488,30 @@ class Psaltis extends EnemyBase {
 
         // F. Floating notes while singing
         if (singing) {
-            ctx.fillStyle = '#f1c40f';
-            ctx.strokeStyle = '#1e272e';
-            ctx.lineWidth = 1.4;
-            ctx.font = '900 18px "Fredoka", sans-serif';
-            ctx.textAlign = 'center';
+            const noteLbl = EnemyBase.getLabelSprite('♪', '900 18px "Fredoka", sans-serif', '#f1c40f', '#1e272e', 1.4, 0, 'bottom');
+            const prevAlpha = ctx.globalAlpha;
             for (let n = 0; n < 2; n++) {
                 const notePhase = (this.age * 0.06 + n * 1.7) % 2;
                 const noteY = -r * 1.5 - notePhase * 26;
                 const noteX = r * 0.7 + Math.sin(this.age * 0.1 + n * 2.1) * 10;
-                ctx.globalAlpha = Math.max(0, 1 - notePhase / 2);
-                ctx.strokeText('♪', noteX, noteY);
-                ctx.fillText('♪', noteX, noteY);
+                ctx.globalAlpha = prevAlpha * Math.max(0, 1 - notePhase / 2);
+                EnemyBase.drawLabel(ctx, noteLbl, noteX, noteY);
             }
-            ctx.globalAlpha = 1;
+            ctx.globalAlpha = prevAlpha;
         }
     }
 
     drawBuffedAllyNotes(ctx) {
         if (typeof window === 'undefined' || !window.gameInstance || !window.gameInstance.enemies) return;
         const enemies = window.gameInstance.enemies;
-
-        ctx.save();
-        ctx.font = '900 17px "Fredoka", sans-serif';
-        ctx.textAlign = 'center';
-        ctx.lineWidth = 3;
-        ctx.strokeStyle = '#1e272e';
-        ctx.fillStyle = '#f1c40f';
+        const noteLbl = EnemyBase.getLabelSprite('♪', '900 17px "Fredoka", sans-serif', '#f1c40f', '#1e272e', 3, 0, 'bottom');
 
         for (let i = 0; i < enemies.length; i++) {
             const e = enemies[i];
             if (!e || !e._psaltisCheer || e === this) continue;
             const noteY = e.y - e.radius - 30 + Math.sin(this.age * 0.12 + i) * 3;
-            ctx.strokeText('♪', e.x, noteY);
-            ctx.fillText('♪', e.x, noteY);
+            EnemyBase.drawLabel(ctx, noteLbl, e.x, noteY);
         }
-        ctx.restore();
     }
 }
 

@@ -196,7 +196,7 @@ class SettingsManager {
         if (!isLinked) return;
 
         if (this.syncCloudBtn && !silent) {
-            this.syncCloudBtn.innerHTML = '<span>⏳ SYNCING...</span>';
+            this.syncCloudBtn.innerHTML = `<span>${typeof UiIcons !== 'undefined' ? UiIcons.i('hourglass', 'ui-icon-sm') : '⏳'} SYNCING...</span>`;
             this.syncCloudBtn.disabled = true;
         }
 
@@ -205,7 +205,9 @@ class SettingsManager {
         const p = gs ? gs.player : null;
         const s = p ? p.stats : null;
 
+        const serialized = (typeof SaveSerializer !== 'undefined' && gs) ? SaveSerializer.serialize(gs) : null;
         const savePayload = {
+            ...(serialized || {}),
             coins: this.ui.coins,
             gems: this.ui.gems,
             playerName: (p && p.name) || localStorage.getItem('lesaio_player_name') || 'Psanas',
@@ -239,9 +241,10 @@ class SettingsManager {
             window.soundEngine.playPickup('star');
             if (this.syncCloudBtn) {
                 this.syncCloudBtn.disabled = false;
-                this.syncCloudBtn.innerHTML = cloudSuccess ? '<span>✅ CLOUD SYNCED!</span>' : '<span>✅ SAVED!</span>';
+                const okIc = typeof UiIcons !== 'undefined' ? UiIcons.i('check', 'ui-icon-sm') : '✅';
+                this.syncCloudBtn.innerHTML = cloudSuccess ? `<span>${okIc} CLOUD SYNCED!</span>` : `<span>${okIc} SAVED!</span>`;
                 setTimeout(() => {
-                    if (this.syncCloudBtn) this.syncCloudBtn.innerHTML = '<span>🔄 SYNC NOW</span>';
+                    if (this.syncCloudBtn) this.syncCloudBtn.innerHTML = `<span>${typeof UiIcons !== 'undefined' ? UiIcons.i('sync', 'ui-icon-sm') : '🔄'} SYNC NOW</span>`;
                 }, 2000);
             }
         }
@@ -284,7 +287,10 @@ class SettingsManager {
         if (isLinked) {
             if (this.cloudStatusBadge) {
                 this.cloudStatusBadge.className = 'cloud-status-badge status-linked';
-                if (this.cloudStatusText) this.cloudStatusText.textContent = '☁️ Synced to Google Cloud';
+                if (this.cloudStatusText) {
+                    if (typeof UiIcons !== 'undefined') UiIcons.setRichText(this.cloudStatusText, '☁️ Synced to Google Cloud', 'ui-icon-sm');
+                    else this.cloudStatusText.textContent = '☁️ Synced to Google Cloud';
+                }
             }
             if (this.cloudLastSync) this.cloudLastSync.textContent = `Last Sync: ${lastSync}`;
 
@@ -327,22 +333,26 @@ class SettingsManager {
 
         if (this.togglePopupsBtn) {
             const on = window.effectsManager ? window.effectsManager.showPopups : true;
-            this.togglePopupsBtn.textContent = on ? 'ON ✅' : 'OFF ❌';
+            if (typeof UiIcons !== 'undefined') UiIcons.setRichText(this.togglePopupsBtn, on ? 'ON ✅' : 'OFF ❌', 'ui-icon-sm');
+            else this.togglePopupsBtn.textContent = on ? 'ON ✅' : 'OFF ❌';
             this.togglePopupsBtn.className = on ? 'comic-btn comic-btn-sm toggle-on' : 'comic-btn comic-btn-sm toggle-off';
         }
         if (this.toggleDamageBtn) {
             const on = window.effectsManager ? window.effectsManager.showDamage : true;
-            this.toggleDamageBtn.textContent = on ? 'ON ✅' : 'OFF ❌';
+            if (typeof UiIcons !== 'undefined') UiIcons.setRichText(this.toggleDamageBtn, on ? 'ON ✅' : 'OFF ❌', 'ui-icon-sm');
+            else this.toggleDamageBtn.textContent = on ? 'ON ✅' : 'OFF ❌';
             this.toggleDamageBtn.className = on ? 'comic-btn comic-btn-sm toggle-on' : 'comic-btn comic-btn-sm toggle-off';
         }
         if (this.toggleShakeBtn) {
             const on = localStorage.getItem('lesaio_screenshake') !== 'false';
-            this.toggleShakeBtn.textContent = on ? 'ON ✅' : 'OFF ❌';
+            if (typeof UiIcons !== 'undefined') UiIcons.setRichText(this.toggleShakeBtn, on ? 'ON ✅' : 'OFF ❌', 'ui-icon-sm');
+            else this.toggleShakeBtn.textContent = on ? 'ON ✅' : 'OFF ❌';
             this.toggleShakeBtn.className = on ? 'comic-btn comic-btn-sm toggle-on' : 'comic-btn comic-btn-sm toggle-off';
         }
         if (this.toggleAutofireBtn) {
             const on = localStorage.getItem('lesaio_autofire') === 'true';
-            this.toggleAutofireBtn.textContent = on ? 'ON ✅' : 'OFF ❌';
+            if (typeof UiIcons !== 'undefined') UiIcons.setRichText(this.toggleAutofireBtn, on ? 'ON ✅' : 'OFF ❌', 'ui-icon-sm');
+            else this.toggleAutofireBtn.textContent = on ? 'ON ✅' : 'OFF ❌';
             this.toggleAutofireBtn.className = on ? 'comic-btn comic-btn-sm toggle-on' : 'comic-btn comic-btn-sm toggle-off';
         }
 

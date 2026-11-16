@@ -120,8 +120,12 @@ class KleanthisRenderer {
 
             ctx.save();
             if (facingLeft) ctx.scale(-1, 1);
-            if (flash) ctx.filter = 'brightness(2.5)';
-            ctx.drawImage(img, -spriteW / 2, feetY - spriteH, spriteW, spriteH);
+            if (flash && typeof CharacterSprites !== 'undefined' && CharacterSprites.getFiltered) {
+                const cached = CharacterSprites.getFiltered(img, 'flash_25', 'brightness(2.5)', 0);
+                ctx.drawImage(cached ? cached.canvas : img, -spriteW / 2, feetY - spriteH, spriteW, spriteH);
+            } else {
+                ctx.drawImage(img, -spriteW / 2, feetY - spriteH, spriteW, spriteH);
+            }
             ctx.restore();
             return;
         }

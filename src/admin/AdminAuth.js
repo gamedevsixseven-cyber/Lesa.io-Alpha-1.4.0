@@ -6,6 +6,9 @@
  */
 
 class AdminAuthService {
+    // Strict Firestore-only Dev access: set to true only for temporary local/public playtesting.
+    static TESTING_OPEN_ACCESS = false;
+
     constructor() {
         this.cachedAdminStatus = null;
         this.cachedUser = null;
@@ -31,8 +34,24 @@ class AdminAuthService {
      * Strictly verifies whether the current user is an authorized Admin in Firebase Firestore.
      * @returns {Promise<{ authorized: boolean, reason?: string, user?: object }>}
      */
+    isTestingOverrideEnabled() {
+        return AdminAuthService.TESTING_OPEN_ACCESS === true;
+    }
+
     async verifyAdminAccess(forceRefresh = false) {
         const user = this.getCurrentUser();
+
+        if (this.isTestingOverrideEnabled()) {
+            const testUser = user
+                ? { uid: user.uid, email: user.email, name: user.displayName || user.email }
+                : { uid: 'temp-tester', email: 'Public Testing Mode', name: 'Tester' };
+            return {
+                authorized: true,
+                isTestingOverride: true,
+                reason: 'TESTING_OPEN_ACCESS',
+                user: testUser
+            };
+        }
 
         if (!user) {
             return {
@@ -84,14 +103,16 @@ class AdminAuthService {
                 return this._setAuthorized(user, true);
             }
 
-            // 4. Check global config 'config/admins'
-            const configAdminsDoc = await db.collection('config').doc('admins').get();
-            if (configAdminsDoc.exists) {
-                const data = configAdminsDoc.data();
-                if (data && (data[uid] === true || (email && data[email] === true))) {
-                    return this._setAuthorized(user, true);
+            // 4. Check global config 'config/admins' (optional; safely ignored if locked by Firestore Rules)
+            try {
+                const configAdminsDoc = await db.collection('config').doc('admins').get();
+                if (configAdminsDoc.exists) {
+                    const data = configAdminsDoc.data();
+                    if (data && (data[uid] === true || (email && data[email] === true))) {
+                        return this._setAuthorized(user, true);
+                    }
                 }
-            }
+            } catch (_) {}
 
             // Access Denied: Not found in any Firebase Admin records
             this._setAuthorized(user, false);

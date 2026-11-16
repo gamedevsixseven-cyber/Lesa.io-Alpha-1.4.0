@@ -82,7 +82,17 @@ class RemotePlayer {
         if (!data) return;
         if (typeof data.x === 'number') this.targetX = data.x;
         if (typeof data.y === 'number') this.targetY = data.y;
+        if (typeof data.vx === 'number') this.vx = data.vx;
+        if (typeof data.vy === 'number') this.vy = data.vy;
         if (typeof data.angle === 'number') this.targetAngle = data.angle;
+
+        // Snap immediately if large discrepancy (e.g. spawn, teleport, or dash)
+        const distSq = (this.targetX - this.x) ** 2 + (this.targetY - this.y) ** 2;
+        if (distSq > 20000 || data.isDashing) {
+            this.x = this.targetX;
+            this.y = this.targetY;
+        }
+
         if (this.isHost && typeof data.hp === 'number') {
             if (data.hp < this.hp) this.hitFlash = 10;
             this.hp = data.hp;
@@ -98,8 +108,17 @@ class RemotePlayer {
     }
 
     update(dt) {
-        // Smooth exponential interpolation towards network target
-        const lerpFactor = Math.min(1.0, 0.38 * (dt || 1.0));
+        const normDt = dt || 1.0;
+
+        // Predictive Dead Reckoning: extrapolate target coordinates with velocity
+        if (this.isMoving && (this.vx || this.vy)) {
+            this.targetX += (this.vx || 0) * normDt;
+            this.targetY += (this.vy || 0) * normDt;
+        }
+
+        // Adaptive responsive lerp: tighter convergence to eliminate dragging lag
+        const distSq = (this.targetX - this.x) ** 2 + (this.targetY - this.y) ** 2;
+        const lerpFactor = distSq > 15000 ? 1.0 : (distSq > 3000 ? Math.min(1.0, 0.72 * normDt) : Math.min(1.0, 0.52 * normDt));
         this.x += (this.targetX - this.x) * lerpFactor;
         this.y += (this.targetY - this.y) * lerpFactor;
 
@@ -107,10 +126,10 @@ class RemotePlayer {
         let diff = this.targetAngle - this.angle;
         while (diff < -Math.PI) diff += Math.PI * 2;
         while (diff > Math.PI) diff -= Math.PI * 2;
-        this.angle += diff * lerpFactor;
+        this.angle += diff * Math.min(1.0, 0.60 * normDt);
 
         if (this.isMoving && !this.isDowned) {
-            this.walkCycle += 0.26 * (dt || 1.0);
+            this.walkCycle += 0.26 * normDt;
         }
 
         if (this.hitFlash > 0) {

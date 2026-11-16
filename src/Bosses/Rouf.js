@@ -384,6 +384,7 @@ class Rouf extends EnemyBase {
             effects.addComicSplash(this.x, this.y - 40, 'MH ME AGGIZETE! 📱💥', '#ff4757', 22);
             effects.addShockwave(this.x, this.y, 90, 'rgba(254, 211, 48, 0.9)');
             effects.addDust(this.x, this.y, 10, 14);
+            if (typeof effects.onBossSlam === 'function') effects.onBossSlam(0.04);
         }
 
         if (window.soundEngine && typeof window.soundEngine.playHit === 'function') {

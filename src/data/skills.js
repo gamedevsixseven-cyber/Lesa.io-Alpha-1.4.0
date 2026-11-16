@@ -408,6 +408,131 @@ const SKILLS = {
             { label: 'Duration', value: '5.0s Caffeinated' },
             { label: 'Mastery', value: 'Pagakia 🧊 (Frappes+)' }
         ]
+    },
+    wrath_of_olympus: {
+        id: 'wrath_of_olympus',
+        name: 'Wrath of Olympus',
+        badge: 'OLYMPUS',
+        rarity: 'Mythic',
+        icon: '⚡',
+        iconImg: 'assets/SkillsIcons/WrathOfOlympusSkill.svg',
+        desc: 'Unleash Zeus\'s celestial judgment: calls down sky lightning bolts that blast, stun, and shock enemies so they take bonus damage.',
+        unlockedDefault: false,
+        bossUnlock: 'zeus',
+        hideWhenLocked: true,
+        unlockLabel: 'DEFEAT ZEUS',
+        unlockCost: 0,
+        maxLevel: 5,
+        cooldown: 9.5,
+        masteryLabel: 'OLYMPUS MASTERY',
+        masteryButtonLabel: 'MASTER: OLYMPUS',
+        masteryBadgeText: 'OLYMPUS',
+        masteryTitle: 'Olympian Mastery ⚡',
+        masteryDesc: 'MASTERED WRATH OF OLYMPUS: 9.5s Cooldown, 9 Sky Bolts (340 DMG) + 420 DMG Central Mega-Bolt (165px AoE), 1.5s Stun, and +25% Shock Vulnerability!',
+        levels: {
+            1: {
+                level: 1,
+                upgradeCost: 8500,
+                cooldown: 9.5,
+                strikes: 5,
+                damage: 140,
+                radius: 95,
+                stunDuration: 0.8,
+                shockBonus: 0,
+                shockDuration: 0,
+                targetRadius: 360,
+                stats: [
+                    { label: 'Cooldown', value: '9.5s' },
+                    { label: 'Sky Strikes', value: '5 Bolts (140 DMG)' },
+                    { label: 'Stun & Radius', value: '0.8s (95px AoE)' },
+                    { label: 'Target Range', value: '360px Around Hero' }
+                ]
+            },
+            2: {
+                level: 2,
+                upgradeCost: 11500,
+                cooldown: 9.5,
+                strikes: 6,
+                damage: 180,
+                radius: 105,
+                stunDuration: 0.9,
+                shockBonus: 0.12,
+                shockDuration: 3.5,
+                targetRadius: 380,
+                stats: [
+                    { label: 'Cooldown', value: '9.5s' },
+                    { label: 'Sky Strikes', value: '6 Bolts (180 DMG)' },
+                    { label: 'Stun & Radius', value: '0.9s (105px AoE)' },
+                    { label: 'Shock Amp', value: '+12% Dmg Taken (3.5s)' }
+                ]
+            },
+            3: {
+                level: 3,
+                upgradeCost: 15000,
+                cooldown: 9.5,
+                strikes: 7,
+                damage: 225,
+                radius: 115,
+                stunDuration: 1.1,
+                shockBonus: 0.18,
+                shockDuration: 4.0,
+                targetRadius: 400,
+                stats: [
+                    { label: 'Cooldown', value: '9.5s' },
+                    { label: 'Sky Strikes', value: '7 Bolts (225 DMG)' },
+                    { label: 'Stun & Radius', value: '1.1s (115px AoE)' },
+                    { label: 'Shock Amp', value: '+18% Dmg Taken (4.0s)' }
+                ]
+            },
+            4: {
+                level: 4,
+                upgradeCost: 20000,
+                gemCost: 150,
+                cooldown: 9.5,
+                strikes: 8,
+                damage: 280,
+                radius: 125,
+                stunDuration: 1.3,
+                shockBonus: 0.22,
+                shockDuration: 4.5,
+                targetRadius: 420,
+                isMasteryNext: true,
+                stats: [
+                    { label: 'Cooldown', value: '9.5s' },
+                    { label: 'Sky Strikes', value: '8 Bolts (280 DMG)' },
+                    { label: 'Stun & Radius', value: '1.3s (125px AoE)' },
+                    { label: 'Next Tier', value: '⚡ OLYMPIAN MASTERY' }
+                ]
+            },
+            5: {
+                level: 5,
+                upgradeCost: 0,
+                gemCost: 0,
+                cooldown: 9.5,
+                strikes: 9,
+                damage: 340,
+                radius: 135,
+                megaDamage: 420,
+                megaRadius: 165,
+                stunDuration: 1.5,
+                shockBonus: 0.25,
+                shockDuration: 5.0,
+                targetRadius: 450,
+                isMastered: true,
+                stats: [
+                    { label: 'Cooldown', value: '9.5s' },
+                    { label: 'Barrage', value: '9 Bolts (340 DMG)' },
+                    { label: 'Mega-Bolt', value: '420 DMG (165px AoE)' },
+                    { label: 'Shock & Stun', value: '+25% Dmg & 1.5s Stun' }
+                ]
+            }
+        },
+        stats: [
+            { label: 'Cooldown', value: '9.5s' },
+            { label: 'Sky Strikes', value: '5 Bolts (140 DMG)' },
+            { label: 'Stun & Radius', value: '0.8s (95px AoE)' },
+            { label: 'Mastery', value: 'Mega-Bolt ⚡ (420 DMG)' }
+        ]
     }
 };
 

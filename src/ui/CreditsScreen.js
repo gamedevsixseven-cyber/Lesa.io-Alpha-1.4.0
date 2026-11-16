@@ -77,7 +77,8 @@ class CreditsScreen {
 
     updateSpeedUI(isFast) {
         if (!this.fastBtn) return;
-        this.fastBtn.textContent = isFast ? '⏩ 3x FAST' : '▶ 1x SPEED';
+        const playIc = typeof UiIcons !== 'undefined' ? UiIcons.i('play', 'ui-icon-sm') : '▶';
+        this.fastBtn.innerHTML = isFast ? `${playIc}${playIc} 3x FAST` : `${playIc} 1x SPEED`;
         this.fastBtn.classList.toggle('active', isFast);
     }
 

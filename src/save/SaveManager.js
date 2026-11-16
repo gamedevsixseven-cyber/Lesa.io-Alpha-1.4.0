@@ -19,6 +19,7 @@ class SaveManager {
             window.EventBus.on('heroUnlocked', () => this.requestSave());
             window.EventBus.on('accountXpChanged', () => this.requestSave());
             window.EventBus.on('statsUpdated', () => this.requestSave());
+            window.EventBus.on('materialsUpdated', () => this.requestSave());
             window.EventBus.on('saveRequested', () => this.saveNow());
         }
     }

@@ -216,17 +216,22 @@ class MailManager {
         }
 
         const mailId = mailObj.id || `dev_mail_${mailObj.title ? mailObj.title.replace(/\s+/g, '_') : 'notice'}`;
-        const isClaimed = mailObj.claimed !== undefined ? !!mailObj.claimed : (localStorage.getItem(`lesaio_mail_${mailId}_claimed`) === 'true');
+        const isClaimed = mailObj.claimed !== undefined
+            ? !!mailObj.claimed
+            : (localStorage.getItem(`lesaio_mail_claimed_${mailId}`) === 'true' || localStorage.getItem(`lesaio_mail_${mailId}_claimed`) === 'true');
 
         const gemsVal = parseInt(mailObj.gems !== undefined ? mailObj.gems : (mailObj.giftGems || 0), 10);
         const coinsVal = parseInt(mailObj.coins !== undefined ? mailObj.coins : (mailObj.giftCoins || 0), 10);
+        const bodyText = mailObj.body || mailObj.desc || mailObj.message || 'New news from the development team!';
 
         const customMail = {
             id: mailId,
             title: mailObj.title || 'Developer Update',
+            sender: mailObj.sender || 'PsanasGames Dev Team',
             badge: mailObj.badge || 'DEV NOTICE',
             badgeClass: mailObj.badgeClass || 'badge-alpha11',
-            desc: mailObj.desc || mailObj.body || mailObj.message || 'New news from the development team!',
+            desc: bodyText,
+            body: bodyText,
             gems: gemsVal,
             coins: coinsVal,
             date: mailObj.date || 'Just Now',
@@ -291,11 +296,11 @@ class MailManager {
                 <div class="mail-attachment-box">
                     <div class="attachment-rewards">
                         <span class="att-title">Attached Gift:</span>
-                        ${mail.gems > 0 ? `<span class="att-item" style="color: #2980b9;">💎 +${mail.gems.toLocaleString()} Gems</span>` : ''}
-                        ${mail.coins > 0 ? `<span class="att-item" style="color: #d35400;">🪙 +${mail.coins.toLocaleString()} Coins</span>` : ''}
+                        ${mail.gems > 0 ? `<span class="att-item" style="color: #2980b9;">${typeof UiIcons !== 'undefined' ? UiIcons.i('gem', 'ui-icon-sm') : '💎'} +${mail.gems.toLocaleString()} Gems</span>` : ''}
+                        ${mail.coins > 0 ? `<span class="att-item" style="color: #d35400;">${typeof UiIcons !== 'undefined' ? UiIcons.i('coin', 'ui-icon-sm') : '🪙'} +${mail.coins.toLocaleString()} Coins</span>` : ''}
                     </div>
                     <button id="claim-${mail.id}-btn" class="comic-btn comic-btn-sm ${mail.claimed ? 'quest-btn-claimed' : 'comic-btn-primary'}" ${mail.claimed ? 'disabled' : ''}>
-                        ${mail.claimed ? 'CLAIMED ✅' : 'CLAIM GIFT 🎁'}
+                        ${mail.claimed ? (typeof UiIcons !== 'undefined' ? `CLAIMED ${UiIcons.i('check', 'ui-icon-sm')}` : 'CLAIMED ✅') : (typeof UiIcons !== 'undefined' ? `CLAIM GIFT ${UiIcons.i('gift', 'ui-icon-sm')}` : 'CLAIM GIFT 🎁')}
                     </button>
                 </div>
             ` : '';
@@ -303,10 +308,10 @@ class MailManager {
             card.innerHTML = `
                 <div class="mail-header-row">
                     <div class="mail-title-group">
-                        <span class="mail-badge-tag" style="background: #e67e22;">${mail.badge}</span>
-                        <h3 class="mail-subject">${mail.title}</h3>
+                        <span class="mail-badge-tag" style="background: #e67e22;">${typeof UiIcons !== 'undefined' ? UiIcons.toHtml(mail.badge, 'ui-icon-sm') : mail.badge}</span>
+                        <h3 class="mail-subject">${typeof UiIcons !== 'undefined' ? UiIcons.toHtml(mail.title, 'ui-icon-sm') : UiIcons?.esc?.(mail.title) ?? mail.title}</h3>
                     </div>
-                    <span class="mail-date" title="Auto-deletes after 24 hours">⏳ ${remainingHours}h left</span>
+                    <span class="mail-date" title="Auto-deletes after 24 hours">${typeof UiIcons !== 'undefined' ? UiIcons.i('hourglass', 'ui-icon-sm') : '⏳'} ${remainingHours}h left</span>
                 </div>
                 <div class="mail-sender">From: <strong>${mail.sender}</strong></div>
                 <div class="mail-body-text" style="line-height: 1.6; font-size: 1.05rem;">
@@ -336,7 +341,7 @@ class MailManager {
                         }
 
                         window.soundEngine.playPickup('star');
-                        claimBtn.textContent = 'CLAIMED ✅';
+                        if (typeof UiIcons !== 'undefined') UiIcons.setRichText(claimBtn, 'CLAIMED ✅', 'ui-icon-sm'); else claimBtn.textContent = 'CLAIMED ✅';
                         claimBtn.className = 'comic-btn comic-btn-sm quest-btn-claimed';
                         claimBtn.disabled = true;
 
@@ -399,11 +404,11 @@ class MailManager {
         const claimBubbleBtn = document.getElementById('claim-alpha-bubble-btn');
         if (claimBubbleBtn) {
             if (this.bubbleMailClaimed) {
-                claimBubbleBtn.textContent = 'CLAIMED ✅';
+                if (typeof UiIcons !== 'undefined') UiIcons.setRichText(claimBubbleBtn, 'CLAIMED ✅', 'ui-icon-sm'); else claimBubbleBtn.textContent = 'CLAIMED ✅';
                 claimBubbleBtn.className = 'comic-btn comic-btn-sm quest-btn-claimed';
                 claimBubbleBtn.disabled = true;
             } else {
-                claimBubbleBtn.textContent = 'CLAIM WEAPON 🎁';
+                if (typeof UiIcons !== 'undefined') UiIcons.setRichText(claimBubbleBtn, 'CLAIM WEAPON 🎁', 'ui-icon-sm'); else claimBubbleBtn.textContent = 'CLAIM WEAPON 🎁';
                 claimBubbleBtn.className = 'comic-btn comic-btn-sm comic-btn-primary';
                 claimBubbleBtn.disabled = false;
             }
@@ -412,11 +417,11 @@ class MailManager {
         const claim14Btn = document.getElementById('claim-alpha14-gift-btn');
         if (claim14Btn) {
             if (this.mail14Claimed) {
-                claim14Btn.textContent = 'CLAIMED ✅';
+                if (typeof UiIcons !== 'undefined') UiIcons.setRichText(claim14Btn, 'CLAIMED ✅', 'ui-icon-sm'); else claim14Btn.textContent = 'CLAIMED ✅';
                 claim14Btn.className = 'comic-btn comic-btn-sm quest-btn-claimed';
                 claim14Btn.disabled = true;
             } else {
-                claim14Btn.textContent = 'CLAIM GIFT 🎁';
+                if (typeof UiIcons !== 'undefined') UiIcons.setRichText(claim14Btn, 'CLAIM GIFT 🎁', 'ui-icon-sm'); else claim14Btn.textContent = 'CLAIM GIFT 🎁';
                 claim14Btn.className = 'comic-btn comic-btn-sm comic-btn-primary';
                 claim14Btn.disabled = false;
             }
@@ -425,11 +430,11 @@ class MailManager {
         const claim13Btn = document.getElementById('claim-alpha13-gift-btn');
         if (claim13Btn) {
             if (this.mail13Claimed) {
-                claim13Btn.textContent = 'CLAIMED ✅';
+                if (typeof UiIcons !== 'undefined') UiIcons.setRichText(claim13Btn, 'CLAIMED ✅', 'ui-icon-sm'); else claim13Btn.textContent = 'CLAIMED ✅';
                 claim13Btn.className = 'comic-btn comic-btn-sm quest-btn-claimed';
                 claim13Btn.disabled = true;
             } else {
-                claim13Btn.textContent = 'CLAIM GIFT 🎁';
+                if (typeof UiIcons !== 'undefined') UiIcons.setRichText(claim13Btn, 'CLAIM GIFT 🎁', 'ui-icon-sm'); else claim13Btn.textContent = 'CLAIM GIFT 🎁';
                 claim13Btn.className = 'comic-btn comic-btn-sm comic-btn-primary';
                 claim13Btn.disabled = false;
             }
@@ -438,11 +443,11 @@ class MailManager {
         const claim12Btn = document.getElementById('claim-alpha12-gift-btn');
         if (claim12Btn) {
             if (this.mail12Claimed) {
-                claim12Btn.textContent = 'CLAIMED ✅';
+                if (typeof UiIcons !== 'undefined') UiIcons.setRichText(claim12Btn, 'CLAIMED ✅', 'ui-icon-sm'); else claim12Btn.textContent = 'CLAIMED ✅';
                 claim12Btn.className = 'comic-btn comic-btn-sm quest-btn-claimed';
                 claim12Btn.disabled = true;
             } else {
-                claim12Btn.textContent = 'CLAIM GIFT 🎁';
+                if (typeof UiIcons !== 'undefined') UiIcons.setRichText(claim12Btn, 'CLAIM GIFT 🎁', 'ui-icon-sm'); else claim12Btn.textContent = 'CLAIM GIFT 🎁';
                 claim12Btn.className = 'comic-btn comic-btn-sm comic-btn-primary';
                 claim12Btn.disabled = false;
             }
@@ -451,11 +456,11 @@ class MailManager {
         const claim11Btn = document.getElementById('claim-alpha11-gift-btn');
         if (claim11Btn) {
             if (this.mail11Claimed) {
-                claim11Btn.textContent = 'CLAIMED ✅';
+                if (typeof UiIcons !== 'undefined') UiIcons.setRichText(claim11Btn, 'CLAIMED ✅', 'ui-icon-sm'); else claim11Btn.textContent = 'CLAIMED ✅';
                 claim11Btn.className = 'comic-btn comic-btn-sm quest-btn-claimed';
                 claim11Btn.disabled = true;
             } else {
-                claim11Btn.textContent = 'CLAIM GIFT 🎁';
+                if (typeof UiIcons !== 'undefined') UiIcons.setRichText(claim11Btn, 'CLAIM GIFT 🎁', 'ui-icon-sm'); else claim11Btn.textContent = 'CLAIM GIFT 🎁';
                 claim11Btn.className = 'comic-btn comic-btn-sm comic-btn-primary';
                 claim11Btn.disabled = false;
             }
@@ -464,11 +469,11 @@ class MailManager {
         const claim10Btn = document.getElementById('claim-alpha-gift-btn');
         if (claim10Btn) {
             if (this.mail10Claimed) {
-                claim10Btn.textContent = 'CLAIMED ✅';
+                if (typeof UiIcons !== 'undefined') UiIcons.setRichText(claim10Btn, 'CLAIMED ✅', 'ui-icon-sm'); else claim10Btn.textContent = 'CLAIMED ✅';
                 claim10Btn.className = 'comic-btn comic-btn-sm quest-btn-claimed';
                 claim10Btn.disabled = true;
             } else {
-                claim10Btn.textContent = 'CLAIM GIFT 🎁';
+                if (typeof UiIcons !== 'undefined') UiIcons.setRichText(claim10Btn, 'CLAIM GIFT 🎁', 'ui-icon-sm'); else claim10Btn.textContent = 'CLAIM GIFT 🎁';
                 claim10Btn.className = 'comic-btn comic-btn-sm comic-btn-primary';
                 claim10Btn.disabled = false;
             }

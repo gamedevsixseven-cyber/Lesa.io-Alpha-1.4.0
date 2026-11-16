@@ -348,7 +348,9 @@
     .perk-vault-icon { width: 34px !important; height: 34px !important; font-size: 1.2rem !important; }
     .perk-vault-name { font-size: 0.82rem !important; }
     .perk-vault-desc { font-size: 0.7rem !important; }
-    .perk-buy-btn, .perk-equip-action-btn, .perk-equipped-tag { font-size: 0.7rem !important; padding: 4px 8px !important; }
+    .perk-buy-btn, .perk-equip-action-btn, .perk-equipped-tag, .perk-upgrade-btn { font-size: 0.68rem !important; padding: 4px 7px !important; }
+    .perk-vault-action-col { min-width: 82px !important; gap: 3px !important; }
+    .perk-stash-chip, .perk-req-chip, .perk-cost-pill { font-size: 0.64rem !important; padding: 1px 5px !important; }
 
     /* 12. Game Mode Selection Modal (Mobile Landscape & Portrait) */
     #game-mode-modal.modal-overlay {

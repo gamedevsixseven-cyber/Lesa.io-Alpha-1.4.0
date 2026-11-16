@@ -139,8 +139,8 @@
 }
 
 .mode-slot-dungeons:hover .mode-card-hover-art {
-    transform: translateY(-4px) scale(1.01);
-    filter: brightness(1.1) drop-shadow(0 10px 20px rgba(0, 0, 0, 0.7));
+    transform: translateY(-8px) scale(1.025);
+    filter: brightness(1.08) drop-shadow(0 14px 28px rgba(243, 156, 18, 0.65));
 }
 
 /* Action Button Hitbox inside Card Slot */
@@ -167,12 +167,114 @@
 }
 
 .mode-slot-dungeons:hover .mode-action-hitbox {
-    background: rgba(255, 255, 255, 0.06);
+    background: rgba(255, 255, 255, 0.12);
 }
 
 .mode-action-hitbox:active,
 .mode-card-slot:active {
     transform: scale(0.97);
+}
+
+/* Olympus Ascent Crest Entry Counter Pill */
+.mode-crest-badge {
+    position: absolute;
+    top: 13.8%;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 14;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 11px;
+    background: linear-gradient(180deg, #162442 0%, #0b1326 100%);
+    border: 2.5px solid #ffd32a;
+    border-radius: 999px;
+    box-shadow: 0 3px 0 #070b14, 0 5px 12px rgba(0, 0, 0, 0.55);
+    pointer-events: none;
+    white-space: nowrap;
+}
+
+.mode-crest-icon {
+    width: 18px;
+    height: 18px;
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.6));
+}
+
+.mode-crest-text {
+    font-family: 'Luckiest Guy', cursive, sans-serif;
+    font-size: 0.85rem;
+    letter-spacing: 0.4px;
+    color: #fef08a;
+    text-shadow: 1px 1px 0 #070b14;
+}
+
+.mode-crest-pips {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+}
+
+.crest-pip {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: rgba(148, 163, 184, 0.3);
+    border: 1.5px solid #070b14;
+}
+
+.crest-pip.filled {
+    background: #38bdf8;
+    box-shadow: 0 0 6px rgba(56, 189, 248, 0.85);
+}
+
+.mode-slot-dungeons.is-crest-empty .mode-card-hover-art {
+    filter: grayscale(0.45) brightness(0.84);
+}
+
+.mode-slot-dungeons.is-crest-empty .mode-crest-badge {
+    border-color: #ff6b6b;
+    background: linear-gradient(180deg, #3b121c 0%, #1d090f 100%);
+}
+
+.mode-slot-dungeons.is-crest-empty .mode-crest-text {
+    color: #fecaca;
+}
+
+.mode-crest-notice {
+    position: absolute;
+    top: 67px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 40;
+    background: linear-gradient(180deg, #dc2626 0%, #991b1b 100%);
+    color: #ffffff;
+    border: 3px solid #1a1d2b;
+    border-radius: 999px;
+    padding: 5px 16px;
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.79rem;
+    font-weight: 800;
+    box-shadow: 0 4px 0 #1a1d2b, 0 8px 20px rgba(0, 0, 0, 0.65);
+    white-space: nowrap;
+    max-width: 92%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    pointer-events: none;
+}
+
+.mode-crest-notice.hidden {
+    display: none;
+}
+
+.crest-shake {
+    animation: crestDenyShake 0.42s ease;
+}
+
+@keyframes crestDenyShake {
+    0%, 100% { transform: translateX(0); }
+    20% { transform: translateX(-7px); }
+    45% { transform: translateX(7px); }
+    70% { transform: translateX(-4px); }
 }
 
 /* Co-op Trigger Button Container */

@@ -19,6 +19,7 @@ class HUDController {
         this.dashBadge = document.getElementById('dash-badge');
         this.skillFill = document.getElementById('skill-cooldown-fill');
         this.skillBadge = document.getElementById('skill-badge');
+        this.chronoBadge = document.getElementById('chrono-skip-badge');
         this.weaponIcon = document.getElementById('weapon-icon');
         this.weaponName = document.getElementById('weapon-name');
         this.hudAvatarImg = document.getElementById('hud-avatar-img');
@@ -38,12 +39,24 @@ class HUDController {
                 }
             });
         }
+        if (this.chronoBadge) {
+            this.chronoBadge.addEventListener('click', () => {
+                if (window.gameInstance && window.gameInstance.waveSkipper) {
+                    window.gameInstance.waveSkipper.tryActivate(window.gameInstance);
+                }
+            });
+        }
 
         // Mini-map Canvas
         this.minimapCanvas = document.getElementById('minimap-canvas');
         if (this.minimapCanvas) {
             this.minimapCtx = this.minimapCanvas.getContext('2d');
         }
+        this._hudCache = Object.create(null);
+        this._skillSpan = this.skillBadge ? this.skillBadge.querySelector('span') : null;
+        this._chronoSpan = this.chronoBadge ? this.chronoBadge.querySelector('span') : null;
+        this._cachedFallbackSkill = null;
+        this._hudFrame = 0;
     }
 
     show() {
@@ -59,39 +72,113 @@ class HUDController {
 
     update(player, wave, remainingEnemies = 0, totalEnemies = 0) {
         if (!player) return;
+        const c = this._hudCache || (this._hudCache = Object.create(null));
+        this._hudFrame = (this._hudFrame + 1) | 0;
 
-        const hpPct = Math.max(0, Math.min(100, (player.hp / player.maxHp) * 100));
-        if (this.hpFill) this.hpFill.style.width = `${hpPct}%`;
-        if (this.hpText) this.hpText.textContent = `${Math.ceil(player.hp)} / ${player.maxHp}`;
+        if (this.hpFill) {
+            const hpPct = Math.max(0, Math.min(100, (player.hp / player.maxHp) * 100));
+            if (c.hpPct !== hpPct) {
+                c.hpPct = hpPct;
+                this.hpFill.style.width = `${hpPct}%`;
+            }
+        }
+        if (this.hpText) {
+            const ceilHp = Math.ceil(player.hp);
+            if (c.ceilHp !== ceilHp || c.maxHp !== player.maxHp) {
+                c.ceilHp = ceilHp;
+                c.maxHp = player.maxHp;
+                this.hpText.textContent = `${ceilHp} / ${player.maxHp}`;
+            }
+        }
 
-        const xpPct = Math.min(100, (player.xp / player.xpNeeded) * 100);
-        if (this.xpFill) this.xpFill.style.width = `${xpPct}%`;
-        if (this.levelText) this.levelText.textContent = `LVL ${player.level}`;
+        if (this.xpFill) {
+            const xpPct = Math.min(100, (player.xp / player.xpNeeded) * 100);
+            if (c.xpPct !== xpPct) {
+                c.xpPct = xpPct;
+                this.xpFill.style.width = `${xpPct}%`;
+            }
+        }
+        if (this.levelText && c.level !== player.level) {
+            c.level = player.level;
+            this.levelText.textContent = `LVL ${player.level}`;
+        }
 
-        if (this.scoreText) this.scoreText.textContent = player.score.toLocaleString();
+        if (this.scoreText && c.score !== player.score) {
+            c.score = player.score;
+            this.scoreText.textContent = player.score.toLocaleString();
+        }
         if (this.waveText) {
             const isEndless = (window.gameInstance && window.gameInstance.gameMode === 'endless');
-            this.waveText.textContent = isEndless ? `⚡ ENDLESS ${wave}` : `WAVE ${wave}`;
+            const isDungeon = (window.gameInstance && window.gameInstance.gameMode === 'dungeons');
+            if (isDungeon) {
+                const floorName = (window.gameInstance.waveManager && window.gameInstance.waveManager.dungeonManager) ? window.gameInstance.waveManager.dungeonManager.getCurrentFloorName() : 'OLYMPUS';
+                const waveKey = `d:${wave}:${floorName}`;
+                if (c.waveKey !== waveKey) {
+                    c.waveKey = waveKey;
+                    const txt = `🏛️ F${wave}/5: ${floorName.toUpperCase()}`;
+                    if (typeof UiIcons !== 'undefined') UiIcons.setRichText(this.waveText, txt, 'ui-icon-sm');
+                    else this.waveText.textContent = txt;
+                }
+            } else {
+                const waveKey = isEndless ? `e:${wave}` : `w:${wave}`;
+                if (c.waveKey !== waveKey) {
+                    c.waveKey = waveKey;
+                    const waveTxt = isEndless ? `⚡ ENDLESS ${wave}` : `WAVE ${wave}`;
+                    if (typeof UiIcons !== 'undefined') UiIcons.setRichText(this.waveText, waveTxt, 'ui-icon-sm');
+                    else this.waveText.textContent = waveTxt;
+                }
+            }
         }
 
         if (this.waveEnemyCountText) {
+            const isDungeon = (window.gameInstance && window.gameInstance.gameMode === 'dungeons');
+            const dm = window.gameInstance && window.gameInstance.waveManager && window.gameInstance.waveManager.dungeonManager;
             if (window.gameInstance && window.gameInstance.waveState === 'WAVE_CLEARED') {
-                this.waveEnemyCountText.textContent = 'CLEARED! Next wave incoming...';
-                this.waveEnemyCountText.style.color = '#2ed573';
+                const climbText = (dm && dm.ascentSystem && dm.ascentSystem.stairwayUnlocked)
+                    ? 'FLOOR CLEARED! Walk to North Stairs ▲'
+                    : 'FLOOR CLEARED! Ascending...';
+                const nextTxt = isDungeon ? climbText : 'CLEARED! Next wave incoming...';
+                if (c.enemyTxt !== nextTxt) {
+                    c.enemyTxt = nextTxt;
+                    this.waveEnemyCountText.textContent = nextTxt;
+                }
+                if (c.enemyColor !== '#2ed573') {
+                    c.enemyColor = '#2ed573';
+                    this.waveEnemyCountText.style.color = '#2ed573';
+                }
             } else {
-                this.waveEnemyCountText.textContent = `Enemies: ${remainingEnemies} / ${totalEnemies}`;
-                this.waveEnemyCountText.style.color = '#ff4757';
+                const nextTxt = `Enemies: ${remainingEnemies} / ${totalEnemies}`;
+                if (c.enemyTxt !== nextTxt) {
+                    c.enemyTxt = nextTxt;
+                    this.waveEnemyCountText.textContent = nextTxt;
+                }
+                if (c.enemyColor !== '#ff4757') {
+                    c.enemyColor = '#ff4757';
+                    this.waveEnemyCountText.style.color = '#ff4757';
+                }
             }
         }
 
         if (this.dashFill && this.dashBadge) {
             if (player.dashCooldown > 0) {
                 const dashPct = 100 - (player.dashCooldown / player.maxDashCooldown) * 100;
-                this.dashFill.style.width = `${dashPct}%`;
-                this.dashBadge.classList.add('on-cooldown');
+                if (c.dashPct !== dashPct) {
+                    c.dashPct = dashPct;
+                    this.dashFill.style.width = `${dashPct}%`;
+                }
+                if (c.dashOnCd !== true) {
+                    c.dashOnCd = true;
+                    this.dashBadge.classList.add('on-cooldown');
+                }
             } else {
-                this.dashFill.style.width = '100%';
-                this.dashBadge.classList.remove('on-cooldown');
+                if (c.dashPct !== 100) {
+                    c.dashPct = 100;
+                    this.dashFill.style.width = '100%';
+                }
+                if (c.dashOnCd !== false) {
+                    c.dashOnCd = false;
+                    this.dashBadge.classList.remove('on-cooldown');
+                }
             }
         }
 
@@ -100,23 +187,56 @@ class HUDController {
                 // Active Frenzy Duration: bar depletes with duration and increases with kills
                 const maxFrenzy = player.frappesFrenzyMaxTimer || 300;
                 const durationPct = Math.max(0, Math.min(100, (player.frappesFrenzyTimer / maxFrenzy) * 100));
-                this.skillFill.style.width = `${durationPct}%`;
-                this.skillBadge.classList.add('is-active');
-                this.skillBadge.classList.remove('on-cooldown');
+                if (c.skillPct !== durationPct) {
+                    c.skillPct = durationPct;
+                    this.skillFill.style.width = `${durationPct}%`;
+                }
+                if (c.skillActive !== true) {
+                    c.skillActive = true;
+                    this.skillBadge.classList.add('is-active');
+                }
+                if (c.skillOnCd !== false) {
+                    c.skillOnCd = false;
+                    this.skillBadge.classList.remove('on-cooldown');
+                }
             } else if (player.skillCooldown > 0) {
                 // The moment effect ends, cooldown drops and the skill bar fills up
-                this.skillBadge.classList.remove('is-active');
-                const skillPct = 100 - (player.skillCooldown / player.maxSkillCooldown) * 100;
-                this.skillFill.style.width = `${Math.max(0, Math.min(100, skillPct))}%`;
-                this.skillBadge.classList.add('on-cooldown');
+                if (c.skillActive !== false) {
+                    c.skillActive = false;
+                    this.skillBadge.classList.remove('is-active');
+                }
+                const skillPct = Math.max(0, Math.min(100, 100 - (player.skillCooldown / player.maxSkillCooldown) * 100));
+                if (c.skillPct !== skillPct) {
+                    c.skillPct = skillPct;
+                    this.skillFill.style.width = `${skillPct}%`;
+                }
+                if (c.skillOnCd !== true) {
+                    c.skillOnCd = true;
+                    this.skillBadge.classList.add('on-cooldown');
+                }
             } else {
-                this.skillBadge.classList.remove('is-active');
-                this.skillFill.style.width = '100%';
-                this.skillBadge.classList.remove('on-cooldown');
+                if (c.skillActive !== false) {
+                    c.skillActive = false;
+                    this.skillBadge.classList.remove('is-active');
+                }
+                if (c.skillPct !== 100) {
+                    c.skillPct = 100;
+                    this.skillFill.style.width = '100%';
+                }
+                if (c.skillOnCd !== false) {
+                    c.skillOnCd = false;
+                    this.skillBadge.classList.remove('on-cooldown');
+                }
             }
 
-            const skillSpan = this.skillBadge.querySelector('span');
-            const baseSkill = player.selectedSkill || player.equippedSkill || localStorage.getItem('lesaio_selected_skill') || 'blade_rush';
+            const skillSpan = this._skillSpan || (this._skillSpan = this.skillBadge.querySelector('span'));
+            let baseSkill = player.selectedSkill || player.equippedSkill;
+            if (!baseSkill) {
+                if (this._cachedFallbackSkill === null || (this._hudFrame & 31) === 0) {
+                    this._cachedFallbackSkill = localStorage.getItem('lesaio_selected_skill') || 'blade_rush';
+                }
+                baseSkill = this._cachedFallbackSkill;
+            }
             const isMasteredFrappes = baseSkill === 'frappes' &&
                 (player.hasPagakiaMastery || (typeof PlayerSkills !== 'undefined' && PlayerSkills.getSkillLevel('frappes') >= 5));
             const skillKey = isMasteredFrappes ? 'frappes_plus' : baseSkill;
@@ -129,7 +249,8 @@ class HUDController {
                     'seismic_quake': { img: 'assets/SkillsIcons/SeismicQuakeSkill.png', name: 'SEISMIC QUAKE' },
                     'yaya_scream': { img: 'assets/SkillsIcons/YayaScreamSkill.png', name: 'YAYA SCREAM' },
                     'frappes': { img: 'assets/SkillsIcons/FrappesSkill.png', name: 'FRAPPES' },
-                    'frappes_plus': { img: 'assets/SkillsIcons/FrappesSkill.png', name: 'FRAPPES+' }
+                    'frappes_plus': { img: 'assets/SkillsIcons/FrappesSkill.png', name: 'FRAPPES+' },
+                    'wrath_of_olympus': { img: 'assets/SkillsIcons/WrathOfOlympusSkill.svg', name: 'WRATH OF OLYMPUS' }
                 };
                 const cfg = skillConfigs[skillKey] || skillConfigs['blade_rush'];
                 skillSpan.innerHTML = `<img src="${cfg.img}" class="dash-badge-img" alt="${cfg.name}"> ${cfg.name} (E)`;
@@ -141,16 +262,93 @@ class HUDController {
             'pea': 'Pea Slingshot',
             'watermelon': 'Melon Cannon',
             'bubble': 'Bubble Gun',
-            'pepper': 'Chili Blaster'
+            'pepper': 'Chili Blaster',
+            'money_gun': 'Money Gun',
+            'burger': 'Burger Toss',
+            'lightning': 'Lightning Strike',
+            'carbine': "Kiloumpas's Carbine",
+            'dialtone': 'Dial-Tone Blaster',
+            'zeus_thunderbolt': "Zeus's Thunderbolt"
+        };
+        const weaponKeys = {
+            'pea': 'weapon_pea',
+            'watermelon': 'weapon_watermelon',
+            'bubble': 'weapon_bubble',
+            'pepper': 'weapon_pepper',
+            'money_gun': 'weapon_money_gun',
+            'burger': 'weapon_burger',
+            'lightning': 'weapon_lightning',
+            'carbine': 'weapon_carbine',
+            'dialtone': 'weapon_dialtone',
+            'zeus_thunderbolt': 'weapon_zeus_thunderbolt'
         };
         const weaponIcons = {
             'pea': '🌱',
             'watermelon': '🍉',
             'bubble': '🫧',
-            'pepper': '🌶️'
+            'pepper': '🌶️',
+            'money_gun': '💵',
+            'burger': '🍔',
+            'lightning': '⚡',
+            'carbine': '🔫',
+            'dialtone': '📱',
+            'zeus_thunderbolt': '⚡'
         };
-        if (this.weaponIcon) this.weaponIcon.textContent = weaponIcons[player.weaponType] || '🌱';
-        if (this.weaponName) this.weaponName.textContent = weaponNames[player.weaponType] || 'Pea Slingshot';
+        if (this.weaponIcon) {
+            const wKey = weaponKeys[player.weaponType] || 'weapon_pea';
+            if (c.weaponKey !== wKey) {
+                c.weaponKey = wKey;
+                if (typeof UiIcons !== 'undefined') this.weaponIcon.innerHTML = UiIcons.i(wKey, 'ui-icon-sm');
+                else this.weaponIcon.textContent = weaponIcons[player.weaponType] || '🌱';
+            }
+        }
+        if (this.weaponName) {
+            const baseWName = weaponNames[player.weaponType] || 'Pea Slingshot';
+            const isWepEvo = typeof WeaponEvolutionManager !== 'undefined' && WeaponEvolutionManager.isEvolved(player.weaponType);
+            const wName = isWepEvo ? `${baseWName} ★` : baseWName;
+            if (c.weaponName !== wName) {
+                c.weaponName = wName;
+                this.weaponName.textContent = wName;
+            }
+        }
+
+        if (this.chronoBadge && window.gameInstance) {
+            const isEndless = window.gameInstance.gameMode === 'endless';
+            if (c.chronoHidden !== !isEndless) {
+                c.chronoHidden = !isEndless;
+                this.chronoBadge.classList.toggle('hidden', !isEndless);
+            }
+            if (isEndless) {
+                const cores = player.chronoCores || 0;
+                const skipper = window.gameInstance.waveSkipper;
+                const skipsUsed = skipper ? (skipper.skipsUsed || 0) : 0;
+                const fallbackCost = (typeof WaveSkipperMachine !== 'undefined') ? WaveSkipperMachine.getRequiredCost(skipsUsed) : 3;
+                const info = (typeof WaveSkipperMachine !== 'undefined' && window.gameInstance.waveManager)
+                    ? WaveSkipperMachine.getSkipInfo(wave, window.gameInstance.waveState, 'endless', cores, skipsUsed)
+                    : { canSkip: false, targetWave: null, cost: fallbackCost };
+                const reqCost = info.cost || fallbackCost;
+                const span = this._chronoSpan || (this._chronoSpan = this.chronoBadge.querySelector('span'));
+                if (span) {
+                    const nextChrono = info.canSkip
+                        ? `⚡ SKIP → W${info.targetWave} (${cores}/${reqCost})`
+                        : `⏳ CORES: ${cores}/${reqCost}`;
+                    if (c.chronoTxt !== nextChrono) {
+                        c.chronoTxt = nextChrono;
+                        span.textContent = nextChrono;
+                    }
+                }
+                const ready = !!info.canSkip;
+                if (c.chronoReady !== ready) {
+                    c.chronoReady = ready;
+                    this.chronoBadge.classList.toggle('is-ready', ready);
+                }
+                const readyNear = !!(info.canSkip && skipper && skipper.playerInRange);
+                if (c.chronoReadyNear !== readyNear) {
+                    c.chronoReadyNear = readyNear;
+                    this.chronoBadge.classList.toggle('is-ready-near', readyNear);
+                }
+            }
+        }
 
         this.minimapFrameCount = (this.minimapFrameCount || 0) + 1;
         if (this.minimapFrameCount % 2 === 0 && window.gameInstance) {
@@ -179,9 +377,13 @@ class HUDController {
         for (let i = 0; i < enemies.length; i++) {
             const e = enemies[i];
             if (e.dead) continue;
-            const mx = (e.x + arena.halfWidth) * scaleX;
-            const my = (e.y + arena.halfHeight) * scaleY;
-            if (e.type === 'fatmir') {
+            const mx = (arena.halfWidth ? (e.x + arena.halfWidth) : e.x) * scaleX;
+            const my = (arena.halfHeight ? (e.y + arena.halfHeight) : e.y) * scaleY;
+            if (e.isBoss) {
+                ctx.fillStyle = '#e84118';
+            } else if (e.isCrystal) {
+                ctx.fillStyle = '#00f5ff';
+            } else if (e.type === 'fatmir') {
                 ctx.fillStyle = '#eb4d4b'; // Red for heavy Skatmir
             } else if (e.type === 'skarmogyftos') {
                 ctx.fillStyle = '#9b59b6'; // Purple for sneaky Skarmogyftos
@@ -191,12 +393,30 @@ class HUDController {
                 ctx.fillStyle = '#00b894'; // Green for agile Casillas
             }
             ctx.beginPath();
-            ctx.arc(mx, my, e.type === 'fatmir' ? 3.5 : 2.5, 0, Math.PI * 2);
+            ctx.arc(mx, my, e.isBoss ? 4.5 : (e.isCrystal ? 4.2 : (e.type === 'fatmir' ? 3.5 : 2.5)), 0, Math.PI * 2);
             ctx.fill();
         }
 
-        const px = (player.x + arena.halfWidth) * scaleX;
-        const py = (player.y + arena.halfHeight) * scaleY;
+        if (window.gameInstance && window.gameInstance.coopSession && window.gameInstance.coopSession.remotePlayer) {
+            const rp = window.gameInstance.coopSession.remotePlayer;
+            if (!rp.isDownedDisconnected) {
+                const rpx = (arena.halfWidth ? (rp.x + arena.halfWidth) : rp.x) * scaleX;
+                const rpy = (arena.halfHeight ? (rp.y + arena.halfHeight) : rp.y) * scaleY;
+                ctx.fillStyle = rp.isDowned ? '#ff4757' : '#00cec9';
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.arc(rpx, rpy, 4.0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+            }
+        }
+
+        const px = (arena.halfWidth ? (player.x + arena.halfWidth) : player.x) * scaleX;
+        const py = (arena.halfHeight ? (player.y + arena.halfHeight) : player.y) * scaleY;
+        if (window.gameInstance && window.gameInstance.waveSkipper) {
+            window.gameInstance.waveSkipper.drawMinimapMarker(ctx, arena, w, h);
+        }
         ctx.fillStyle = '#0984e3';
         ctx.strokeStyle = '#ffffff';
         ctx.lineWidth = 1.5;

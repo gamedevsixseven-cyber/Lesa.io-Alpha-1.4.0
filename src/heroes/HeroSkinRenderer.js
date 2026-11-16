@@ -47,7 +47,7 @@ class HeroSkinRenderer {
         }
 
         // 2. Animated Stepping Legs (Bottom Layer)
-        HeroSkinRenderer.drawAnimatedLegs(player, ctx, r, walkCycle, moving, facingLeft, heroType);
+        HeroSkinRenderer.drawAnimatedLegs(player, ctx, r, walkCycle, moving, facingLeft, heroType, flash);
 
         // 3. Torso, Head & Character Likeness (Middle Layer)
         HeroSkinRenderer.drawTorsoAndHead(player, ctx, r, flash, moving, walkCycle, facingLeft, isBack, heroType);
@@ -68,8 +68,15 @@ class HeroSkinRenderer {
     /* ====================================================================
        1. ANIMATED STEPPING LEGS & AUTHENTIC FOOTWEAR
        ==================================================================== */
-    static drawAnimatedLegs(player, ctx, r, walkCycle, moving, facingLeft, heroType) {
+    static drawAnimatedLegs(player, ctx, r, walkCycle, moving, facingLeft, heroType, flash = false) {
         ctx.save();
+
+        const customHero = HeroSkinRenderer.getHeroModule(heroType);
+        if (customHero && typeof customHero.drawLegs === 'function') {
+            customHero.drawLegs(player, ctx, r, walkCycle, moving, facingLeft, flash);
+            ctx.restore();
+            return;
+        }
 
         const feetBaseY = r * 0.35;
         const hipWidth = r * 0.42;
@@ -92,19 +99,20 @@ class HeroSkinRenderer {
             shoeAccent: '#c8d6e5',
             isHighTop: true
         };
+        const legHipWidth = (legConfig && typeof legConfig.hipWidth === 'number') ? legConfig.hipWidth : hipWidth;
 
         // Draw Left Leg & Shoe
-        HeroSkinRenderer.drawSingleLeg(ctx, -hipWidth, feetBaseY, leftStride, leftLift, 
-            legConfig.pantsColor, legConfig.pantsAccent, legConfig.shoePrimary, legConfig.shoeAccent, legConfig.isHighTop, facingLeft);
+        HeroSkinRenderer.drawSingleLeg(ctx, -legHipWidth, feetBaseY, leftStride, leftLift,
+            legConfig.pantsColor, legConfig.pantsAccent, legConfig.shoePrimary, legConfig.shoeAccent, legConfig.isHighTop, facingLeft, legConfig);
 
         // Draw Right Leg & Shoe
-        HeroSkinRenderer.drawSingleLeg(ctx, hipWidth, feetBaseY, rightStride, rightLift, 
-            legConfig.pantsColor, legConfig.pantsAccent, legConfig.shoePrimary, legConfig.shoeAccent, legConfig.isHighTop, facingLeft);
+        HeroSkinRenderer.drawSingleLeg(ctx, legHipWidth, feetBaseY, rightStride, rightLift,
+            legConfig.pantsColor, legConfig.pantsAccent, legConfig.shoePrimary, legConfig.shoeAccent, legConfig.isHighTop, facingLeft, legConfig);
 
         ctx.restore();
     }
 
-    static drawSingleLeg(ctx, hipX, baseY, strideX, liftY, pantsColor, pantsAccent, shoePrimary, shoeAccent, isHighTop, facingLeft) {
+    static drawSingleLeg(ctx, hipX, baseY, strideX, liftY, pantsColor, pantsAccent, shoePrimary, shoeAccent, isHighTop, facingLeft, legConfig = null) {
         ctx.save();
         ctx.translate(hipX, baseY);
 
@@ -120,13 +128,17 @@ class HeroSkinRenderer {
         }
 
         // 1. Pants Leg (Upper thigh to ankle with athletic taper)
+        const thighHalf = (legConfig && typeof legConfig.thighHalf === 'number') ? legConfig.thighHalf : 5;
+        const legTopY = (legConfig && typeof legConfig.legTopY === 'number') ? legConfig.legTopY : -12;
+        ctx.lineJoin = 'round';
+        ctx.lineCap = 'round';
         ctx.fillStyle = pantsColor;
         ctx.strokeStyle = '#0f0f11';
         ctx.lineWidth = 2.4;
 
         ctx.beginPath();
-        ctx.moveTo(-5, -12);
-        ctx.lineTo(5, -12);
+        ctx.moveTo(-thighHalf, legTopY);
+        ctx.lineTo(thighHalf, legTopY);
         ctx.lineTo(footX + 4, footY);
         ctx.lineTo(footX - 4, footY);
         ctx.closePath();
@@ -137,11 +149,11 @@ class HeroSkinRenderer {
         ctx.strokeStyle = pantsAccent;
         ctx.lineWidth = 1.6;
         ctx.beginPath();
-        ctx.moveTo(0, -10);
+        ctx.moveTo(0, legTopY + 2);
         ctx.lineTo(footX, footY - 3);
         ctx.stroke();
 
-        // Ankle Cuff
+        // Ankle Cuff (+ optional white crew sock peeking above high-top collar)
         ctx.fillStyle = pantsAccent;
         ctx.fillRect(footX - 4.5, footY - 2, 9, 3);
 
@@ -149,14 +161,23 @@ class HeroSkinRenderer {
         const shoeDir = facingLeft ? -1 : 1;
         ctx.translate(footX, footY);
 
+        if (legConfig && legConfig.sockColor) {
+            ctx.fillStyle = legConfig.sockColor;
+            ctx.fillRect(-3.6, -4.5, 7.2, 3.2);
+        }
+
         if (isHighTop) {
-            // High-top collar
+            // High-top collar (optional mocha heel flap + black collar)
             ctx.fillStyle = shoePrimary;
             ctx.fillRect(-4.5, -6, 9, 6);
+            if (legConfig && legConfig.shoeQuarter) {
+                ctx.fillStyle = shoeAccent;
+                ctx.fillRect(-4.5 * shoeDir, -5.5, 4.2 * shoeDir, 4.5);
+            }
         }
 
         // Sneaker Upper
-        ctx.fillStyle = shoePrimary;
+        ctx.fillStyle = (legConfig && legConfig.shoeQuarter) ? legConfig.shoeQuarter : shoePrimary;
         ctx.strokeStyle = '#0a0a0c';
         ctx.lineWidth = 1.8;
         ctx.beginPath();
@@ -164,18 +185,38 @@ class HeroSkinRenderer {
         ctx.fill();
         ctx.stroke();
 
-        // Sneaker Swoosh / Accent Panel
-        ctx.fillStyle = shoeAccent;
-        ctx.beginPath();
-        ctx.ellipse(1 * shoeDir, 0, 3.5, 1.8, 0.2 * shoeDir, 0, Math.PI * 2);
-        ctx.fill();
+        if (legConfig && legConfig.shoeQuarter) {
+            // AJ1 Dark Mocha panels: mocha heel counter + black forefoot mudguard & swoosh
+            ctx.fillStyle = shoeAccent;
+            ctx.fillRect(-6 * shoeDir, -2.5, 4.5 * shoeDir, 6);
+            ctx.fillStyle = shoePrimary;
+            ctx.beginPath();
+            ctx.roundRect(1.5 * shoeDir, -1.5, 5.2 * shoeDir, 5, 2);
+            ctx.fill();
+            ctx.strokeStyle = shoePrimary;
+            ctx.lineWidth = 1.6;
+            ctx.beginPath();
+            ctx.moveTo(-3 * shoeDir, 1.2);
+            ctx.quadraticCurveTo(0, 2.2, 3.2 * shoeDir, -0.8);
+            ctx.stroke();
+        } else {
+            // Sneaker Swoosh / Accent Panel
+            ctx.fillStyle = shoeAccent;
+            ctx.beginPath();
+            ctx.ellipse(1 * shoeDir, 0, 3.5, 1.8, 0.2 * shoeDir, 0, Math.PI * 2);
+            ctx.fill();
+        }
 
-        // Sole (Clean crisp white/grey rubber sole)
-        ctx.fillStyle = '#f5f6fa';
+        // Sole (Crisp white/cream midsole + optional dark/mocha outsole)
+        ctx.fillStyle = (legConfig && legConfig.midsoleColor) ? legConfig.midsoleColor : '#f5f6fa';
         ctx.fillRect(-6.5 * shoeDir, 3, 14 * shoeDir, 2.5);
         ctx.strokeStyle = '#2f3542';
         ctx.lineWidth = 1.2;
         ctx.strokeRect(-6.5 * shoeDir, 3, 14 * shoeDir, 2.5);
+        if (legConfig && legConfig.shoeSole) {
+            ctx.fillStyle = legConfig.shoeSole;
+            ctx.fillRect(-6.5 * shoeDir, 5.1, 14 * shoeDir, 1.6);
+        }
 
         ctx.restore();
     }
@@ -223,6 +264,14 @@ class HeroSkinRenderer {
 
         // Arm styling tokens from dedicated hero module
         const heroModule = HeroSkinRenderer.getHeroModule(heroType);
+        if (heroModule && typeof heroModule.drawCustomArmsAndWeapon === 'function') {
+            heroModule.drawCustomArmsAndWeapon(ctx, r, flash, recoil, bladeTimer, player, weaponType);
+            if (bladeTimer > 0) {
+                HeroSkinRenderer.drawBladeRushKnife(ctx, flash, bladeTimer);
+            }
+            ctx.restore();
+            return;
+        }
         const armConfig = heroModule ? heroModule.getArmConfig(flash) : {
             sleeveColor: null,
             cuffColor: '#1e1e24',
@@ -230,10 +279,12 @@ class HeroSkinRenderer {
         };
 
         // 1. Off-Hand / Support Arm (Foregrip Arm reaching under barrel)
-        HeroSkinRenderer.drawSupportArm(ctx, r, armConfig.skinColor, armConfig.sleeveColor, armConfig.cuffColor, flash);
+        HeroSkinRenderer.drawSupportArm(ctx, r, armConfig.skinColor, armConfig.sleeveColor, armConfig.cuffColor, flash, armConfig);
 
         // 2. High-Detail Game Weapon Model
-        if (weaponType === 'watermelon') {
+        if ((weaponType === 'carbine' || weaponType === 'dialtone' || weaponType === 'zeus_thunderbolt') && typeof WeaponSystem !== 'undefined') {
+            WeaponSystem.drawEquippedModel(ctx, weaponType, flash, recoil, player);
+        } else if (weaponType === 'watermelon') {
             HeroSkinRenderer.drawWatermelonCannon(ctx, flash, recoil);
         } else if (weaponType === 'pepper') {
             HeroSkinRenderer.drawChiliBlaster(ctx, flash, recoil);
@@ -250,7 +301,7 @@ class HeroSkinRenderer {
         }
 
         // 3. Main Arm (Trigger Hand firmly wrapped around grip)
-        HeroSkinRenderer.drawTriggerArm(ctx, r, armConfig.skinColor, armConfig.sleeveColor, armConfig.cuffColor, flash);
+        HeroSkinRenderer.drawTriggerArm(ctx, r, armConfig.skinColor, armConfig.sleeveColor, armConfig.cuffColor, flash, armConfig);
 
         // 4. Tactical Blade Rush Bowie Knife in off-hand
         if (bladeTimer > 0) {
@@ -261,34 +312,98 @@ class HeroSkinRenderer {
     }
 
     /**
+     * Optional Striped Tracksuit Sleeve & Ribbed Cuff Trim (used by customized sleeved heroes)
+     */
+    static drawStyledSleeve(ctx, cpx, cpy, endX, endY, cuffX, cuffY, cuffAng, sleeveColor, armConfig, flash) {
+        ctx.lineCap = 'round';
+        ctx.lineWidth = 5.6;
+        ctx.strokeStyle = '#0c1324';
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.quadraticCurveTo(cpx, cpy, endX, endY);
+        ctx.stroke();
+
+        ctx.lineWidth = 3.9;
+        ctx.strokeStyle = sleeveColor;
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.quadraticCurveTo(cpx, cpy, endX, endY);
+        ctx.stroke();
+
+        if (!flash && armConfig.sleevePanelColor) {
+            ctx.lineWidth = 2.0;
+            ctx.strokeStyle = armConfig.sleevePanelColor;
+            ctx.beginPath();
+            ctx.moveTo(0, -0.7);
+            ctx.quadraticCurveTo(cpx, cpy - 0.7, endX, endY - 0.7);
+            ctx.stroke();
+        }
+        if (!flash && armConfig.sleeveStripeColor) {
+            ctx.lineWidth = 1.1;
+            ctx.strokeStyle = armConfig.sleeveStripeColor;
+            ctx.beginPath();
+            ctx.moveTo(0, -0.8);
+            ctx.quadraticCurveTo(cpx, cpy - 0.8, endX, endY - 0.8);
+            ctx.stroke();
+        }
+        if (!flash && armConfig.cuffStripeColor) {
+            ctx.save();
+            ctx.translate(cuffX, cuffY);
+            ctx.rotate(cuffAng);
+            ctx.fillStyle = armConfig.cuffColor || '#0d1b33';
+            ctx.strokeStyle = '#0c1324';
+            ctx.lineWidth = 1.1;
+            ctx.fillRect(-1.8, -2.7, 3.6, 5.4);
+            ctx.strokeRect(-1.8, -2.7, 3.6, 5.4);
+            ctx.fillStyle = armConfig.cuffStripeColor;
+            ctx.fillRect(-1.0, -2.3, 1.1, 4.6);
+            ctx.fillStyle = armConfig.sleeveStripeColor || '#eae3d4';
+            ctx.fillRect(0.4, -2.3, 0.8, 4.6);
+            ctx.restore();
+        }
+    }
+
+    /**
      * Trigger Arm (Right Shoulder -> Pistol Grip -> Hand)
      */
-    static drawTriggerArm(ctx, r, skinColor, sleeveColor, cuffColor, flash) {
+    static drawTriggerArm(ctx, r, skinColor, sleeveColor, cuffColor, flash, armConfig = null) {
         ctx.save();
         ctx.translate(0, 10);
 
-        ctx.lineWidth = 5;
-        ctx.lineCap = 'round';
-        ctx.strokeStyle = sleeveColor || skinColor;
+        if (sleeveColor && armConfig && (armConfig.sleeveStripeColor || armConfig.sleevePanelColor || armConfig.cuffStripeColor)) {
+            HeroSkinRenderer.drawStyledSleeve(ctx, 4, 5, 10, 0, 8.2, 1.2, -0.35, sleeveColor, armConfig, flash);
+        } else {
+            ctx.lineWidth = 5;
+            ctx.lineCap = 'round';
+            ctx.strokeStyle = sleeveColor || skinColor;
 
-        // Arm stroke reaching to pistol grip (x=10, y=0)
-        ctx.beginPath();
-        ctx.moveTo(0, 0);
-        ctx.quadraticCurveTo(4, 5, 10, 0);
-        ctx.stroke();
+            // Arm stroke reaching to pistol grip (x=10, y=0)
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.quadraticCurveTo(4, 5, 10, 0);
+            ctx.stroke();
 
-        // Outline
-        ctx.lineWidth = 1.8;
-        ctx.strokeStyle = '#0f0f11';
-        ctx.beginPath();
-        ctx.moveTo(0, 0);
-        ctx.quadraticCurveTo(4, 5, 10, 0);
-        ctx.stroke();
+            // Outline
+            ctx.lineWidth = 1.8;
+            ctx.strokeStyle = '#0f0f11';
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.quadraticCurveTo(4, 5, 10, 0);
+            ctx.stroke();
 
-        // Wristband for bare arms
-        if (!sleeveColor) {
-            ctx.fillStyle = '#1e1e24';
-            ctx.fillRect(7, -3, 3.5, 6);
+            // Wristband for bare arms when cuffColor is explicitly provided
+            if (!sleeveColor && cuffColor) {
+                ctx.fillStyle = cuffColor;
+                ctx.fillRect(7, -3, 3.5, 6);
+            } else if (!sleeveColor && !flash) {
+                // Subtle biceps/forearm muscle contour on bare athletic arms
+                ctx.strokeStyle = '#a46134';
+                ctx.lineWidth = 1.2;
+                ctx.beginPath();
+                ctx.moveTo(2, 1.5);
+                ctx.quadraticCurveTo(5.5, 3, 8.5, 0.5);
+                ctx.stroke();
+            }
         }
 
         // Hand wrapped around trigger grip
@@ -306,34 +421,38 @@ class HeroSkinRenderer {
     /**
      * Support Arm (Left Shoulder -> Foregrip -> Hand supporting barrel)
      */
-    static drawSupportArm(ctx, r, skinColor, sleeveColor, cuffColor, flash) {
+    static drawSupportArm(ctx, r, skinColor, sleeveColor, cuffColor, flash, armConfig = null) {
         ctx.save();
-        ctx.translate(-4, -12);
+        ctx.translate(-5, -3);
 
-        ctx.lineWidth = 4.8;
-        ctx.lineCap = 'round';
-        ctx.strokeStyle = sleeveColor || skinColor;
+        if (sleeveColor && armConfig && (armConfig.sleeveStripeColor || armConfig.sleevePanelColor || armConfig.cuffStripeColor)) {
+            HeroSkinRenderer.drawStyledSleeve(ctx, 9, 8, 22, 3, 18.8, 3.8, -0.25, sleeveColor, armConfig, flash);
+        } else {
+            ctx.lineWidth = 4.6;
+            ctx.lineCap = 'round';
+            ctx.strokeStyle = sleeveColor || skinColor;
 
-        // Arm reaching across under barrel to foregrip (x=24, y=4)
-        ctx.beginPath();
-        ctx.moveTo(0, 0);
-        ctx.quadraticCurveTo(12, -8, 24, 4);
-        ctx.stroke();
+            // Arm reaching cleanly along chest/under-barrel to foregrip (keeps face/eyes clear)
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.quadraticCurveTo(9, 8, 22, 3);
+            ctx.stroke();
 
-        // Outline
-        ctx.lineWidth = 1.8;
-        ctx.strokeStyle = '#0f0f11';
-        ctx.beginPath();
-        ctx.moveTo(0, 0);
-        ctx.quadraticCurveTo(12, -8, 24, 4);
-        ctx.stroke();
+            // Outline
+            ctx.lineWidth = 1.8;
+            ctx.strokeStyle = '#0f0f11';
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.quadraticCurveTo(9, 8, 22, 3);
+            ctx.stroke();
+        }
 
         // Hand cupping the foregrip
         ctx.fillStyle = skinColor;
         ctx.strokeStyle = '#0f0f11';
         ctx.lineWidth = 1.6;
         ctx.beginPath();
-        ctx.ellipse(24, 4, 4.5, 4, 0.4, 0, Math.PI * 2);
+        ctx.ellipse(22, 3, 4.3, 3.8, 0.25, 0, Math.PI * 2);
         ctx.fill();
         ctx.stroke();
 

@@ -531,9 +531,16 @@ for (const item of Object.values(GEAR_DATA)) {
     }
 }
 
+const ALL_GEAR = Object.values(GEAR_DATA);
+
 if (typeof window !== 'undefined') {
     window.GEAR_DATA = GEAR_DATA;
     window.GEAR_ITEMS = GEAR_ITEMS;
+    window.ALL_GEAR = ALL_GEAR;
+}
+
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = { GEAR_DATA, GEAR_ITEMS, ALL_GEAR };
 }
 
 if (typeof module !== 'undefined' && module.exports) {

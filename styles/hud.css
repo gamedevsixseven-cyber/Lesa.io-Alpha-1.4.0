@@ -240,7 +240,7 @@
     pointer-events: auto;
 }
 
-.weapon-badge, .dash-badge, .skill-badge {
+.weapon-badge, .dash-badge, .skill-badge, .chrono-badge {
     background: var(--comic-panel-bg);
     border: 3.5px solid var(--dark-outline);
     border-radius: 20px;
@@ -297,4 +297,24 @@
     vertical-align: middle;
     margin-right: 4px;
     filter: drop-shadow(1px 1px 0 rgba(0, 0, 0, 0.5));
+}
+
+.chrono-badge {
+    border-color: #0984e3;
+    color: #0984e3;
+    transition: transform 0.15s ease, box-shadow 0.2s ease;
+}
+
+.chrono-badge.is-ready {
+    background: linear-gradient(180deg, #dff9fb 0%, #c7ecee 100%);
+    border-color: #00a8ff;
+    color: #1e272e;
+    box-shadow: 0 0 12px rgba(0, 245, 255, 0.65), var(--shadow-solid);
+}
+
+.chrono-badge.is-ready-near {
+    background: linear-gradient(180deg, #ffeaa7 0%, #fed330 100%);
+    border-color: #1e272e;
+    color: #1e272e;
+    transform: translateY(-2px) scale(1.03);
 }

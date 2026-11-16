@@ -17,7 +17,7 @@ class CoopHostSession {
 
         this.netIdCounter = 1;
         this.snapshotTimer = 0;
-        this.snapshotInterval = 3; // Every 3 frames (~20Hz at 60fps)
+        this.snapshotInterval = 2; // Every 2 frames (~30Hz at 60fps) for crisp responsiveness
 
         this.setupNetworkHandlers();
         this.hookHostInput();
@@ -72,9 +72,12 @@ class CoopHostSession {
 
         if (this.game.bossWarningOverlay) {
             const origBossTrigger = this.game.bossWarningOverlay.trigger.bind(this.game.bossWarningOverlay);
-            this.game.bossWarningOverlay.trigger = (bossName) => {
-                origBossTrigger(bossName);
-                this.net.send('BOSS_TRIGGER', { bossName: bossName || 'KLEANTHIS THE REBETIS' });
+            this.game.bossWarningOverlay.trigger = (bossName, rankName = '') => {
+                origBossTrigger(bossName, rankName);
+                this.net.send('BOSS_TRIGGER', {
+                    bossName: bossName || 'KLEANTHIS THE REBETIS',
+                    rankName: rankName || ''
+                });
             };
         }
 
@@ -188,6 +191,12 @@ class CoopHostSession {
                 d.dead = true;
                 if (payload.type === 'magnet' && typeof this.game.vacuumAllXP === 'function') {
                     this.game.vacuumAllXP();
+                } else if (payload.type === 'chrono_core' && this.game.player) {
+                    if (typeof WaveSkipperMachine !== 'undefined' && typeof WaveSkipperMachine.grantChronoCore === 'function') {
+                        WaveSkipperMachine.grantChronoCore(this.game.player, d.value || 1, this.game.effects, d.x, d.y, this.game);
+                    } else {
+                        this.game.player.chronoCores = (this.game.player.chronoCores || 0) + (d.value || 1);
+                    }
                 }
                 break;
             }
@@ -214,6 +223,13 @@ class CoopHostSession {
         });
 
         if (bData.isChargedBubble) bullet.isChargedBubble = true;
+
+        // Latency compensation: advance bullet by one-way network flight time
+        const latencyMs = (this.net && this.net.latency) ? this.net.latency : 25;
+        const lagFrames = Math.min(6, Math.max(1, Math.round(latencyMs / 16.666)));
+        bullet.x += bullet.vx * lagFrames;
+        bullet.y += bullet.vy * lagFrames;
+
         this.game.bullets.push(bullet);
 
         if (window.soundEngine && typeof window.soundEngine.playShoot === 'function') {
@@ -243,6 +259,23 @@ class CoopHostSession {
                         }
                     } else if (drop.type === 'magnet' && typeof this.game.vacuumAllXP === 'function') {
                         this.game.vacuumAllXP();
+                    } else if (drop.type === 'chrono_core' && p1) {
+                        if (typeof WaveSkipperMachine !== 'undefined' && typeof WaveSkipperMachine.grantChronoCore === 'function') {
+                            WaveSkipperMachine.grantChronoCore(p1, drop.value || 1, this.game.effects, drop.x, drop.y, this.game);
+                        } else {
+                            p1.chronoCores = (p1.chronoCores || 0) + (drop.value || 1);
+                        }
+                    } else if (typeof Drop !== 'undefined' && Drop.MATERIAL_DROP_MAP && Drop.MATERIAL_DROP_MAP[drop.type]) {
+                        const matId = Drop.MATERIAL_DROP_MAP[drop.type];
+                        const gain = Math.max(1, Math.floor(drop.value || 1));
+                        if (typeof window !== 'undefined' && window.inventoryManager && typeof window.inventoryManager.awardBattleMaterials === 'function') {
+                            window.inventoryManager.awardBattleMaterials({ [matId]: gain }, {
+                                game: this.game,
+                                x: drop.x,
+                                y: drop.y,
+                                source: 'arena_drop'
+                            });
+                        }
                     }
                 }
             }
@@ -314,7 +347,7 @@ class CoopHostSession {
             return Number(v.toFixed(decimals));
         };
 
-        // Collect enemies (compact payload)
+        // Collect enemies (compact payload with predictive velocities)
         const enemiesPayload = [];
         for (let i = 0; i < this.game.enemies.length; i++) {
             const e = this.game.enemies[i];
@@ -326,12 +359,15 @@ class CoopHostSession {
                 st: e.subType || '',
                 x: safeInt(e.x),
                 y: safeInt(e.y),
+                vx: safeFloat(e.vx, 2, 0),
+                vy: safeFloat(e.vy, 2, 0),
                 hp: safeInt(e.hp, 0, 1000000, 1),
                 mhp: safeInt(e.maxHp || e.hp, 1, 1000000, 100),
                 r: safeInt(e.radius, 5, 500, 24),
                 a: safeFloat(e.angle, 2, 0),
                 hf: (e.hitFlash > 0) ? 1 : 0,
                 b: e.isBoss ? 1 : (e.isMiniBoss ? 2 : 0),
+                fly: e.isFlying ? 1 : 0,
                 n: e.name || ''
             });
         }
@@ -351,16 +387,18 @@ class CoopHostSession {
             });
         }
 
-        // Collect enemy bullets (soccer balls, police shots, boss projectiles)
+        // Collect enemy bullets (soccer balls, police shots, boss projectiles) with stable IDs & velocities
         const enemyBulletsPayload = [];
         for (let i = 0; i < this.game.bullets.length; i++) {
             const b = this.game.bullets[i];
             if (!b || b.dead || !b.isEnemy) continue;
+            if (!b._netId) b._netId = this.netIdCounter++;
             enemyBulletsPayload.push({
+                id: safeInt(b._netId, 1, 2000000000, 1),
                 x: safeInt(b.x),
                 y: safeInt(b.y),
-                vx: safeFloat(b.vx, 1, 0),
-                vy: safeFloat(b.vy, 1, 0),
+                vx: safeFloat(b.vx, 2, 0),
+                vy: safeFloat(b.vy, 2, 0),
                 r: safeInt(b.radius, 2, 100, 10),
                 t: (typeof b.type === 'string' && b.type) ? b.type : 'soccer'
             });
@@ -374,6 +412,7 @@ class CoopHostSession {
             mapSeed: safeInt(this.mapSeed, 1, 2000000000, 123456),
             deadObs: deadObsArray,
             bWarn: (this.game.bossWarningOverlay && this.game.bossWarningOverlay.active) ? (this.game.bossWarningOverlay.bossName || 'KLEANTHIS THE REBETIS') : '',
+            bWarnRank: (this.game.bossWarningOverlay && this.game.bossWarningOverlay.active) ? (this.game.bossWarningOverlay.rankName || '') : '',
             cutscene: (this.game.cutsceneOverlay && this.game.cutsceneOverlay.active) ? {
                 sub: this.game.cutsceneOverlay.subText || '',
                 spk: this.game.cutsceneOverlay.speaker || '',
@@ -391,6 +430,8 @@ class CoopHostSession {
             host: {
                 x: safeInt(p.x),
                 y: safeInt(p.y),
+                vx: safeFloat(p.vx, 2, 0),
+                vy: safeFloat(p.vy, 2, 0),
                 angle: safeFloat(p.angle, 2, 0),
                 hp: safeInt(p.hp, 0, 100000, 0),
                 maxHp: safeInt(p.maxHp, 1, 100000, 100),
@@ -407,159 +448,22 @@ class CoopHostSession {
         this.net.send('HOST_SNAPSHOT', snapshot);
     }
 
-    playRemoteSkill(remotePlayer, skillData = {}, isHostAuthoritative = false) {
-        if (!remotePlayer) return;
-        const skillId = skillData.skillId || 'blade_rush';
-        const level = skillData.level || 1;
-        const x = Number.isFinite(skillData.x) ? skillData.x : remotePlayer.x;
-        const y = Number.isFinite(skillData.y) ? skillData.y : remotePlayer.y;
-        const angle = Number.isFinite(skillData.angle) ? skillData.angle : (remotePlayer.angle || 0);
-        const fx = this.game.effects;
-        const cam = this.game.camera;
-        const se = window.soundEngine;
-
-        if (skillId === 'seismic_quake') {
-            const radius = 160 + (level - 1) * 15;
-            if (fx) {
-                fx.addComicSplash(x, y - 35, level >= 4 ? 'TITAN QUAKE! 💥' : 'QUAKE! 🪨');
-                if (typeof fx.addGroundCrack === 'function') fx.addGroundCrack(x, y, radius * 1.05, '#1e272e', level >= 4 ? '#f39c12' : '#3498db', 140);
-                fx.addShockwave(x, y, radius, 'rgba(52, 152, 219, 0.85)');
-                fx.addShockwave(x, y, radius * 0.65, 'rgba(41, 128, 185, 0.95)');
-                fx.addDust(x, y, 14, 20);
-                fx.addSparks(x, y, '#3498db', 16);
-            }
-            if (cam && typeof cam.addShake === 'function') cam.addShake(12);
-            if (se) {
-                if (typeof se.playNoiseCrack === 'function') se.playNoiseCrack(0, 0.2, 0.5);
-                if (typeof se.playFatmirSlam === 'function') se.playFatmirSlam();
-            }
-            if (isHostAuthoritative && this.game.enemies) {
-                const baseDamage = 140 + (level - 1) * 30;
-                const stunSec = 2.0 + (level - 1) * 0.25;
-                for (let i = 0; i < this.game.enemies.length; i++) {
-                    const e = this.game.enemies[i];
-                    if (e.dead) continue;
-                    const dx = e.x - x, dy = e.y - y;
-                    const maxR = radius + e.radius;
-                    if (dx * dx + dy * dy <= maxR * maxR) {
-                        const dist = Math.max(1, Math.hypot(dx, dy));
-                        e.x += (dx / dist) * 18;
-                        e.y += (dy / dist) * 18;
-                        e.takeDamage(baseDamage, fx, true);
-                        if (typeof e.applyStun === 'function') e.applyStun(stunSec, fx);
-                        else e.stunTimer = Math.round(stunSec * 60);
-                        if (e.isCharging) { e.isCharging = false; e.chargeWindup = 0; }
-                    }
-                }
-            }
-        } else if (skillId === 'yaya_scream') {
-            const range = 240 + (level - 1) * 20;
-            const shouts = ['ΕΛΑ ΕΔΩΩΩ! 📢', 'ΑΜΑΝ! 📢', 'ΣΤΑΜΑΤΑ! 📢', 'ΠΑΝΑΓΙΑ ΜΟΥ! 📢', 'ΞΥΛΟ ΠΟΥ ΘΑ ΦΑΣ! 📢'];
-            const shout = shouts[Math.floor(Math.random() * shouts.length)];
-            if (fx) {
-                fx.addComicSplash(x + Math.cos(angle) * 50, y + Math.sin(angle) * 50 - 25, shout);
-                fx.addSlash(x, y, angle, range * 0.8, '#9b59b6');
-                fx.addShockwave(x + Math.cos(angle) * (range * 0.45), y + Math.sin(angle) * (range * 0.45), range * 0.55, 'rgba(155, 89, 182, 0.85)');
-                fx.addSparks(x, y, '#9b59b6', 12);
-            }
-            if (cam && typeof cam.addShake === 'function') cam.addShake(9);
-            if (se && typeof se.playBossWarning === 'function') se.playBossWarning();
-            if (isHostAuthoritative) {
-                if (this.game.bullets) {
-                    for (let b = 0; b < this.game.bullets.length; b++) {
-                        const bullet = this.game.bullets[b];
-                        if (!bullet || bullet.dead || !bullet.isEnemy) continue;
-                        const bdx = bullet.x - x, bdy = bullet.y - y;
-                        if (Math.hypot(bdx, bdy) <= range) {
-                            let diff = Math.abs(Math.atan2(bdy, bdx) - angle);
-                            while (diff > Math.PI) diff -= Math.PI * 2;
-                            if (Math.abs(diff) <= Math.PI * 0.55) {
-                                bullet.dead = true;
-                                if (fx) { fx.addSparks(bullet.x, bullet.y, '#9b59b6', 5); fx.addComicSplash(bullet.x, bullet.y - 15, 'CLANG!'); }
-                            }
-                        }
-                    }
-                }
-                if (this.game.enemies) {
-                    const fearSec = 3.0 + (level - 1) * 0.3;
-                    const baseDamage = 110 + (level - 1) * 25;
-                    for (let i = 0; i < this.game.enemies.length; i++) {
-                        const e = this.game.enemies[i];
-                        if (e.dead) continue;
-                        const edx = e.x - x, edy = e.y - y;
-                        if (Math.hypot(edx, edy) <= range + e.radius) {
-                            let diff = Math.abs(Math.atan2(edy, edx) - angle);
-                            while (diff > Math.PI) diff -= Math.PI * 2;
-                            if (Math.abs(diff) <= Math.PI * 0.55) {
-                                e.takeDamage(baseDamage, fx);
-                                if (typeof e.applyFear === 'function') e.applyFear(fearSec, remotePlayer, fx);
-                                else e.fearTimer = Math.round(fearSec * 60);
-                            }
-                        }
-                    }
-                }
-            }
-        } else if (skillId === 'frappes') {
-            const hasPagakia = level >= 5;
-            remotePlayer.frenzyTimer = hasPagakia ? 480 : 300;
-            remotePlayer.hasPagakiaMastery = hasPagakia;
-            if (fx) {
-                fx.addComicSplash(x, y - 35, hasPagakia ? 'FRAPPES+! 🧊' : 'FRAPPES FRENZY! 🥤');
-                fx.addShockwave(x, y, 120, hasPagakia ? 'rgba(0, 206, 201, 0.85)' : 'rgba(243, 156, 18, 0.85)');
-                fx.addSparks(x, y, hasPagakia ? '#00cec9' : '#f39c12', 18);
-            }
-            if (se && typeof se.playPowerup === 'function') se.playPowerup();
-        } else if (skillId === 'nerobalonaki') {
-            const radius = 105 + (level - 1) * 12;
-            const duration = 360 + (level - 1) * 40;
-            const dropX = x + Math.cos(angle) * 45;
-            const dropY = y + Math.sin(angle) * 45;
-            if (fx) {
-                fx.addComicSplash(dropX, dropY - 28, 'SPLASH! 💦');
-                fx.addShockwave(dropX, dropY, radius + 10, 'rgba(0, 210, 211, 0.85)');
-                fx.addSparks(dropX, dropY, '#00d2d3', 14);
-            }
-            if (cam && typeof cam.shake === 'function') cam.shake(5, 7);
-            if (se && typeof se.playWaterSplash === 'function') se.playWaterSplash();
-            if (typeof WaterPuddle !== 'undefined' && this.game) {
-                if (!this.game.hazards) this.game.hazards = [];
-                this.game.hazards.push(new WaterPuddle(dropX, dropY, radius, duration, 0.55, 1.30));
-            }
-        } else {
-            // Blade Rush (default)
-            const reach = 75 + (level - 1) * 8;
-            const slashX = x + Math.cos(angle) * 36;
-            const slashY = y + Math.sin(angle) * 36;
-            if (fx) {
-                fx.addSlash(slashX, slashY, angle, reach + 5, '#00d2d3');
-                fx.addDust(x, y, 6, 8);
-                fx.addComicSplash(slashX, slashY - 26, level >= 3 ? 'CLEAVE!' : 'SWISH!');
-            }
-            if (cam && typeof cam.shake === 'function') cam.shake(6, 8);
-            if (se && typeof se.playBladeSwish === 'function') se.playBladeSwish();
-            if (isHostAuthoritative && this.game.enemies) {
-                const baseDamage = 90 + (level - 1) * 20;
-                const x2 = x + Math.cos(angle) * 210, y2 = y + Math.sin(angle) * 210;
-                const dx = x2 - x, dy = y2 - y, l2 = dx * dx + dy * dy;
-                for (let i = 0; i < this.game.enemies.length; i++) {
-                    const e = this.game.enemies[i];
-                    if (e.dead) continue;
-                    let t = l2 > 0 ? ((e.x - x) * dx + (e.y - y) * dy) / l2 : 0;
-                    t = Math.max(0, Math.min(1, t));
-                    if (Math.hypot(e.x - (x + t * dx), e.y - (y + t * dy)) <= reach + e.radius) {
-                        e.takeDamage(baseDamage, fx);
-                        e.x += Math.cos(angle) * 18;
-                        e.y += Math.sin(angle) * 18;
-                        if (fx) { fx.addSlash(e.x, e.y, angle, reach - 10, '#00d2d3'); fx.addSparks(e.x, e.y, '#00d2d3', 6); }
-                    }
-                }
-            }
+    playRemoteSkill(remotePlayer, skillData = {}, isHostAuthoritative = true) {
+        if (typeof CoopSkillFx !== 'undefined') {
+            CoopSkillFx.playRemoteSkill(this.game, remotePlayer, skillData, isHostAuthoritative);
         }
     }
 
     sendPause(playerName) { this.net.send('NET_PAUSE', { by: playerName }); }
     sendResume() { this.net.send('NET_RESUME', {}); }
-    abortMatch() { this.net.send('HOST_QUIT_MATCH', {}); if (this.net && typeof this.net.disconnect === 'function') this.net.disconnect(); }
+    abortMatch() {
+        if (this.net && typeof this.net.disconnectGracefully === 'function') {
+            this.net.disconnectGracefully('Host left the match');
+        } else if (this.net) {
+            try { this.net.send('HOST_QUIT_MATCH', { reason: 'host_left' }); } catch (e) {}
+            setTimeout(() => { if (this.net) this.net.disconnect(); }, 100);
+        }
+    }
 
     render(ctx, camera) {
         this.remotePlayer.draw(ctx);

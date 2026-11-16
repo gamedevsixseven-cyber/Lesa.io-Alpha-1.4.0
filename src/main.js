@@ -59,6 +59,24 @@ class UIController {
             this.inventoryModalUI.init();
         }
 
+        if (typeof FriendService !== 'undefined') {
+            this.friendService = new FriendService();
+            window.friendService = this.friendService;
+            this.friendService.start();
+            if (typeof FriendsModal !== 'undefined') {
+                this.friendsModal = new FriendsModal(this.friendService);
+                window.friendsModal = this.friendsModal;
+            }
+        }
+        if (typeof LeaderboardModal !== 'undefined') {
+            this.leaderboardModal = new LeaderboardModal();
+            window.leaderboardModal = this.leaderboardModal;
+        }
+        if (typeof ProfileCosmeticsUI !== 'undefined') {
+            ProfileCosmeticsUI.init();
+            ProfileCosmeticsUI.refreshHeaderPreview();
+        }
+
         window.questManager = this.questManager;
         window.skillManager = this.skillManager;
         window.uiController = this;
@@ -181,10 +199,36 @@ class UIController {
                         window.soundEngine.playSelect();
                     }
                 }
-                this.hideGameOverModal();
+                if (window.gameInstance && window.gameInstance.coopSession) {
+                    if (window.gameInstance.coopSession.isHost && typeof window.gameInstance.coopSession.abortMatch === 'function') {
+                        window.gameInstance.coopSession.abortMatch();
+                    } else if (typeof window.gameInstance.coopSession.leaveMatch === 'function') {
+                        window.gameInstance.coopSession.leaveMatch();
+                    }
+                    window.gameInstance.coopSession = null;
+                    window.gameInstance.isCoopGuest = false;
+                }
                 if (window.gameInstance) {
                     const hero = this.gameState ? this.gameState.player.selectedHero : 'psanas';
-                    window.gameInstance.start(hero);
+                    const activeMode = window.gameInstance.gameMode
+                        || (window.gameInstance.waveManager && window.gameInstance.waveManager.gameMode)
+                        || 'story';
+                    if (activeMode === 'dungeons' && window.ascentCrestManager && !window.ascentCrestManager.consumeCrest()) {
+                        if (window.soundEngine && typeof window.soundEngine.playGoBack === 'function') {
+                            window.soundEngine.playGoBack();
+                        }
+                        this.hideGameOverModal();
+                        this.showMenuScreen();
+                        if (this.menuController) {
+                            this.menuController.showGameModeModal();
+                            this.menuController.showCrestShortageNotice();
+                        }
+                        return;
+                    }
+                    this.hideGameOverModal();
+                    window.gameInstance.start(hero, activeMode);
+                } else {
+                    this.hideGameOverModal();
                 }
             });
         }
@@ -246,6 +290,7 @@ class UIController {
         }
         if (this.pauseModal) this.pauseModal.classList.add('hidden');
         if (this.gameOverModal) this.gameOverModal.classList.add('hidden');
+        if (typeof OlympusVictoryModal !== 'undefined') OlympusVictoryModal.hide();
         if (this.storyVictoryModal) this.storyVictoryModal.classList.add('hidden');
         const gameModeModal = document.getElementById('game-mode-modal');
         if (gameModeModal) gameModeModal.classList.add('hidden');
@@ -285,6 +330,9 @@ class UIController {
     }
 
     showGameOverModal(score, highScore, wave, kills, timeStr, earnedCoins = 0, earnedXP = 0) {
+        if (typeof OlympusVictoryModal !== 'undefined' && OlympusVictoryModal.tryShowFromGameOver(score, highScore, wave, kills, timeStr, earnedCoins, earnedXP)) {
+            return;
+        }
         const finalScoreEl = document.getElementById('final-score');
         const highScoreEl = document.getElementById('high-score');
         const statWaveEl = document.getElementById('stat-wave');
@@ -296,7 +344,25 @@ class UIController {
 
         if (finalScoreEl) finalScoreEl.textContent = score.toLocaleString();
         if (highScoreEl) highScoreEl.textContent = highScore.toLocaleString();
-        if (statWaveEl) statWaveEl.textContent = `Wave ${wave}`;
+        const isDungeon = (window.gameInstance && window.gameInstance.gameMode === 'dungeons');
+        if (statWaveEl) {
+            statWaveEl.textContent = isDungeon ? (wave >= 5 ? 'Floor 5/5 (Conquered! 🏛️)' : `Floor ${wave}/5`) : `Wave ${wave}`;
+        }
+        const restartBtnEl = document.getElementById('restart-btn');
+        if (restartBtnEl) {
+            if (isDungeon && window.ascentCrestManager) {
+                if (typeof window.ascentCrestManager.ensureDailyRefill === 'function') {
+                    window.ascentCrestManager.ensureDailyRefill();
+                }
+                const crests = window.ascentCrestManager.getCount();
+                const cap = window.ascentCrestManager.getCap();
+                restartBtnEl.innerHTML = crests > 0
+                    ? '<img src="assets/ui-icons/sync.svg" class="ui-icon ui-icon-sm" alt=""> PLAY AGAIN (1 CREST)'
+                    : `<img src="assets/ui-icons/crest.svg" class="ui-icon ui-icon-sm" alt=""> NEED CREST (0/${cap})`;
+            } else {
+                restartBtnEl.innerHTML = '<img src="assets/ui-icons/sync.svg" class="ui-icon ui-icon-sm" alt=""> PLAY AGAIN';
+            }
+        }
         if (statKillsEl) statKillsEl.textContent = kills.toLocaleString();
         if (statTimeEl) statTimeEl.textContent = timeStr;
         if (statCoinsEarnedEl) statCoinsEarnedEl.textContent = `+${earnedCoins.toLocaleString()}`;
@@ -380,6 +446,16 @@ class UIController {
             window.gameInstance.bullets.length = 0;
             window.gameInstance.drops.length = 0;
             if (window.gameInstance.effects) window.gameInstance.effects.clear();
+
+            if (window.gameInstance.coopSession) {
+                if (window.gameInstance.coopSession.isHost && typeof window.gameInstance.coopSession.abortMatch === 'function') {
+                    window.gameInstance.coopSession.abortMatch();
+                } else if (typeof window.gameInstance.coopSession.leaveMatch === 'function') {
+                    window.gameInstance.coopSession.leaveMatch();
+                }
+                window.gameInstance.coopSession = null;
+            }
+            window.gameInstance.isCoopGuest = false;
         }
         if (window.soundEngine) {
             window.soundEngine.stopBGM();
@@ -393,6 +469,7 @@ class UIController {
         if (this.hud) this.hud.hide();
         if (this.pauseModal) this.pauseModal.classList.add('hidden');
         if (this.gameOverModal) this.gameOverModal.classList.add('hidden');
+        if (typeof OlympusVictoryModal !== 'undefined') OlympusVictoryModal.hide();
         if (this.storyVictoryModal) this.storyVictoryModal.classList.add('hidden');
         if (this.creditsScreen && this.creditsScreen.active) this.creditsScreen.close();
         if (this.menuController && typeof this.menuController.hideGameModeModal === 'function') {
@@ -403,6 +480,22 @@ class UIController {
         if (this.settingsManager) this.settingsManager.hideSettingsModal();
         if (this.heroRoster) this.heroRoster.hideHeroesModal();
         if (this.chestManager) this.chestManager.render();
+        if (typeof BossRewardModalUI !== 'undefined') {
+            BossRewardModalUI.hideInGameDrops();
+            BossRewardModalUI.checkAndShowPending();
+        }
+        if (window.coopLobbyModal && typeof window.coopLobbyModal.hide === 'function') {
+            window.coopLobbyModal.hide();
+        }
+        if (window.friendService) {
+            window.friendService.setPresenceStatus('In Lobby', null);
+        }
+        if (typeof CosmeticManager !== 'undefined') {
+            CosmeticManager.syncUnlocks({ silent: true, syncRemote: false });
+        }
+        if (typeof ProfileCosmeticsUI !== 'undefined') {
+            ProfileCosmeticsUI.refreshHeaderPreview();
+        }
     }
 }
 
@@ -438,6 +531,9 @@ window.addEventListener('DOMContentLoaded', () => {
                         TributeManager.checkAndShow();
                     }
                 }
+                setTimeout(() => {
+                    if (typeof BossRewardModalUI !== 'undefined') BossRewardModalUI.checkAndShowPending();
+                }, 420);
             });
             ui.loadingScreen = loader;
             window.loadingScreen = loader;
@@ -450,4 +546,19 @@ window.addEventListener('DOMContentLoaded', () => {
     } else {
         startLoading();
     }
+
+    // Ensure immediate disconnect message is transmitted if player closes or reloads the tab
+    const handleTabUnload = () => {
+        if (window.gameInstance && window.gameInstance.coopSession) {
+            try {
+                if (window.gameInstance.coopSession.isHost && typeof window.gameInstance.coopSession.abortMatch === 'function') {
+                    window.gameInstance.coopSession.abortMatch();
+                } else if (typeof window.gameInstance.coopSession.leaveMatch === 'function') {
+                    window.gameInstance.coopSession.leaveMatch();
+                }
+            } catch (e) {}
+        }
+    };
+    window.addEventListener('beforeunload', handleTabUnload);
+    window.addEventListener('pagehide', handleTabUnload);
 });

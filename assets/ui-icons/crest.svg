@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <!-- Left Wing -->
+  <path d="M22 25 L6 16 L10 26 L5 29 L13 35 L9 39 L20 41 Z" fill="#fef08a" stroke="#1a1d2b" stroke-width="3.6" stroke-linejoin="round"/>
+  <!-- Right Wing -->
+  <path d="M42 25 L58 16 L54 26 L59 29 L51 35 L55 39 L44 41 Z" fill="#fef08a" stroke="#1a1d2b" stroke-width="3.6" stroke-linejoin="round"/>
+  <!-- Central Crest Medallion -->
+  <path d="M32 10 L47 18 L45 38 C44 47 38 53 32 56 C26 53 20 47 19 38 L17 18 Z" fill="#0ea5e9" stroke="#1a1d2b" stroke-width="4.2" stroke-linejoin="round"/>
+  <!-- Inner Golden Peak & Temple Pillar Motif -->
+  <polygon points="32,17 41,37 23,37" fill="#ffd32a" stroke="#1a1d2b" stroke-width="2.6" stroke-linejoin="round"/>
+  <rect x="25" y="39" width="14" height="5" rx="2" fill="#f39c12" stroke="#1a1d2b" stroke-width="2"/>
+  <circle cx="32" cy="29" r="3" fill="#ffffff" stroke="#1a1d2b" stroke-width="1.8"/>
+</svg>

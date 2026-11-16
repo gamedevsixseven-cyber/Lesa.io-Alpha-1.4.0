@@ -15,17 +15,14 @@ class Player {
         // Apply hero archetype stats
         this.applyHeroArchetype(heroType);
 
-        // Apply equipped weapon from Gear Inventory (if unlocked)
-        const equippedWeapon = (typeof window !== 'undefined' && window.GameState && window.GameState.player && window.GameState.player.weaponType) || (typeof localStorage !== 'undefined' && localStorage.getItem('lesaio_selected_weapon'));
-        if (equippedWeapon === 'bubble') {
-            const isBubbleUnlocked = (typeof window !== 'undefined' && window.GameState && window.GameState.player && window.GameState.player.unlockedWeapons && window.GameState.player.unlockedWeapons.includes('bubble')) || (typeof localStorage !== 'undefined' && localStorage.getItem('lesaio_weapon_bubble_unlocked') === 'true');
-            if (isBubbleUnlocked) {
-                this.weaponType = 'bubble';
-            }
+        // Apply equipped shared unlockable weapon (if unlocked)
+        if (typeof WeaponSystem !== 'undefined') {
+            this.weaponType = WeaponSystem.resolveEquippedWeapon(this.weaponType);
         }
 
         this.level = 1; this.xp = 0; this.xpNeeded = 40; this.score = 0; this.kills = 0;
-        this.fatmirKills = 0; this.casillasKills = 0; this.skarmogyftosKills = 0; this.kleanthisKills = 0;
+        this.fatmirKills = 0; this.casillasKills = 0; this.skarmogyftosKills = 0; this.kleanthisKills = 0; this.kiloumpasKills = 0; this.roufKills = 0;
+        this.endlessMiniBossKills = 0; this.endlessBossKills = 0; this.endlessBossGoldBonus = 0; this.endlessBossXpBonus = 0;
 
         // Permanent Upgrades (Crit Chance, Crit Damage)
         const upgrades = (typeof window !== 'undefined' && window.GameState && window.GameState.player && window.GameState.player.upgrades) || {};
@@ -52,10 +49,9 @@ class Player {
 
         // Active Skill State (Blade Rush / Nerobalonaki / etc.)
         this.selectedSkill = (typeof window !== 'undefined' && window.GameState && window.GameState.player && window.GameState.player.selectedSkill) || localStorage.getItem('lesaio_selected_skill') || 'blade_rush';
-        this.skillName = this.selectedSkill === 'nerobalonaki' ? 'Nerobalonaki' : 'Blade Rush';
         this.skillCooldown = 0;
-        this.maxSkillCooldown = this.selectedSkill === 'nerobalonaki' ? 360 : 480;
         this.isBladeRushing = false; this.bladeRushTimer = 0; this.bladeTimer = 0;
+        this.setSkill(this.selectedSkill);
 
         // Upgrades & Physics Buffs
         this.shieldActive = false; this.frenzyTimer = 0;
@@ -140,6 +136,7 @@ class Player {
         this.damageReduction = Math.min(0.40, (this.baseDamageReduction || 0) + (s.damageReduction || 0) / 100);
         this.maxDashCooldown = Math.max(72, Math.round((this.baseMaxDashCooldown || 180) * (1 - (s.dashCooldown || 0) / 100)));
         this.magnetRadius = (this.baseMagnetRadius || 140) + (s.magnetRadius || 0);
+        if (typeof window !== 'undefined' && window.perkSystem && typeof window.perkSystem.applyPlayerStatModifiers === 'function') window.perkSystem.applyPlayerStatModifiers(this, true);
     }
 
     update(dt = 1, input = null, camera = null, effects = null, arena = null) {
@@ -153,7 +150,8 @@ class Player {
         if (this.invulnerableTimer > 0) this.invulnerableTimer -= dt;
         if (this.recoilOffset > 0) this.recoilOffset *= 0.85;
         if (this.bladeTimer > 0) this.bladeTimer -= dt;
-
+        if (this.espressoHasteTimer > 0) this.espressoHasteTimer = Math.max(0, this.espressoHasteTimer - dt);
+        if (typeof GearPassives !== 'undefined') GearPassives.update(dt, this, window.gameInstance);
         // Frenzy Buff
         if (this.frenzyTimer > 0) {
             this.frenzyTimer -= dt;
@@ -167,10 +165,14 @@ class Player {
             BilliasHero.updateHunger(this, dt, effects);
         }
 
-        // Bubble Gun Right-Click Charge Mechanic
+        // Bubble Gun Charge Mechanic (PC Right-Click & Mobile Charge Button)
         if (this.weaponType === 'bubble' && input) {
+            const touch = (window.gameInstance && window.gameInstance.touchInput) || (input && input.touchInput);
+            const isTouchCharging = touch && touch.isBubbleChargeHeld;
             const isRightHeld = input.mouse && input.mouse.rightDown;
-            if (isRightHeld) {
+            const isChargeHeld = isRightHeld || !!isTouchCharging || !!this.bubbleChargeHeld;
+
+            if (isChargeHeld) {
                 this.isChargingBubble = true;
                 const prev = this.bubbleCharge || 0;
                 this.bubbleCharge = Math.min(1.0, prev + (dt / 45)); // ~0.75s to reach max charge
@@ -193,7 +195,7 @@ class Player {
                     effects.addDust(muzzleX, muzzleY, 1, 3);
                 }
             } else if (this.isChargingBubble) {
-                // Released right click! Fire Big Bubble if charged enough
+                // Released charge! Fire Big Bubble if charged enough
                 if ((this.bubbleCharge || 0) >= 0.35) {
                     this.fireChargedBubble(effects);
                 }
@@ -218,22 +220,14 @@ class Player {
         // Dash & Blade Rush Handling
         if (this.isBladeRushing) {
             this.bladeRushTimer -= dt;
-            this.trailSpawnTimer = (this.trailSpawnTimer || 0) + dt;
-            if (this.trailSpawnTimer >= 1.8) {
-                this.trailSpawnTimer = 0;
-                this.ghostTrails.push({ x: this.x, y: this.y, angle: this.angle, alpha: 0.85, isBlade: true });
-            }
+            if (typeof CombatRenderFX !== 'undefined') CombatRenderFX.recordDashGhost(this, dt);
             if (this.bladeRushTimer <= 0) {
                 this.isBladeRushing = false;
                 this.trailSpawnTimer = 0;
             }
         } else if (this.isDashing) {
             this.dashTimer -= dt;
-            this.trailSpawnTimer = (this.trailSpawnTimer || 0) + dt;
-            if (this.trailSpawnTimer >= 2.0) {
-                this.trailSpawnTimer = 0;
-                this.ghostTrails.push({ x: this.x, y: this.y, angle: this.angle, alpha: 0.6, isBlade: false });
-            }
+            if (typeof CombatRenderFX !== 'undefined') CombatRenderFX.recordDashGhost(this, dt);
             if (this.dashTimer <= 0) {
                 this.isDashing = false;
                 this.trailSpawnTimer = 0;
@@ -266,12 +260,11 @@ class Player {
 
             const { dx, dy } = input.getMovementVector();
             let currentSpeed = (this.frappesFrenzyTimer > 0 ? this.speed * (this.frappesSpeedBuff || 1.65) : (this.frenzyTimer > 0 ? this.speed * 1.35 : this.speed));
-            if (this.secondWindSpeedTimer > 0) {
-                currentSpeed *= 1.25; // Second Wind +25% Speed Boost
-            }
-            if (this.speedDebuffTimer > 0) {
-                currentSpeed *= 0.68; // Drowsy Smoke 32% Slow
-            }
+            const slowImmune = typeof GearPassives !== 'undefined' && GearPassives.isSlowImmune();
+            if (this.secondWindSpeedTimer > 0) currentSpeed *= (this.secondWindSpeedMult || 1.25);
+            if (this.speedDebuffTimer > 0 && !slowImmune) currentSpeed *= 0.68;
+            if (this.olympusZoneMult !== undefined) currentSpeed *= (slowImmune && this.olympusZoneMult < 1 ? 1.0 : this.olympusZoneMult);
+            if (typeof GearPassives !== 'undefined') currentSpeed *= GearPassives.getSpeedMultiplier(this);
             
             this.vx = dx * currentSpeed;
             this.vy = dy * currentSpeed;
@@ -356,12 +349,15 @@ class Player {
             this.y += this.vy * dt;
         }
 
+        if (!this.isDashing && !this.isBladeRushing && typeof CombatRenderFX !== 'undefined') {
+            CombatRenderFX.recordDashGhost(this, dt);
+        }
         // Apply Map Border Collision
         this.applyArenaBounds(arena);
 
         // Ghost trails
         for (let i = this.ghostTrails.length - 1; i >= 0; i--) {
-            this.ghostTrails[i].alpha -= 0.08 * dt;
+            this.ghostTrails[i].alpha -= 0.062 * dt;
             if (this.ghostTrails[i].alpha <= 0) {
                 this.ghostTrails.splice(i, 1);
             }
@@ -371,8 +367,9 @@ class Player {
     applyArenaBounds(arena = null) {
         const ar = arena || (typeof window !== 'undefined' && window.gameInstance ? window.gameInstance.arena : null);
         if (!ar) return;
-        const minX = -ar.halfWidth + this.radius, maxX = ar.halfWidth - this.radius;
-        const minY = -ar.halfHeight + this.radius, maxY = ar.halfHeight - this.radius;
+        const b = ar.dungeonBounds;
+        const minX = (b ? b.minX : -ar.halfWidth) + this.radius, maxX = (b ? b.maxX : ar.halfWidth) - this.radius;
+        const minY = (b ? b.minY : -ar.halfHeight) + this.radius, maxY = (b ? b.maxY : ar.halfHeight) - this.radius;
         if (this.x < minX) { this.x = minX; if (this.vx < 0) this.vx = 0; if (this.knockbackVx < 0) this.knockbackVx = 0; this.isBladeRushing = false; this.isDashing = false; }
         else if (this.x > maxX) { this.x = maxX; if (this.vx > 0) this.vx = 0; if (this.knockbackVx > 0) this.knockbackVx = 0; this.isBladeRushing = false; this.isDashing = false; }
         if (this.y < minY) { this.y = minY; if (this.vy < 0) this.vy = 0; if (this.knockbackVy < 0) this.knockbackVy = 0; this.isBladeRushing = false; this.isDashing = false; }
@@ -387,23 +384,22 @@ class Player {
         this.dashTimer = this.dashDuration;
         this.dashCooldown = this.maxDashCooldown;
         this.invulnerableTimer = this.dashDuration + 4;
+        if (typeof GearPassives !== 'undefined') GearPassives.onDash(this, effects);
+        if (typeof window !== 'undefined' && window.perkSystem && typeof window.perkSystem.onDash === 'function') window.perkSystem.onDash(this, effects);
 
+        const dashSpeed = this.dashSpeed * ((typeof window !== 'undefined' && window.perkSystem && typeof window.perkSystem.getDashSpeedMultiplier === 'function') ? window.perkSystem.getDashSpeedMultiplier() : 1.0);
         if (this.vx !== 0 || this.vy !== 0) {
             const moveLen = Math.hypot(this.vx, this.vy);
-            this.vx = (this.vx / moveLen) * this.dashSpeed;
-            this.vy = (this.vy / moveLen) * this.dashSpeed;
+            this.vx = (this.vx / moveLen) * dashSpeed;
+            this.vy = (this.vy / moveLen) * dashSpeed;
         } else {
-            this.vx = Math.cos(this.angle) * this.dashSpeed;
-            this.vy = Math.sin(this.angle) * this.dashSpeed;
+            this.vx = Math.cos(this.angle) * dashSpeed;
+            this.vy = Math.sin(this.angle) * dashSpeed;
         }
 
-        if (window.soundEngine) {
-            window.soundEngine.playPlayerDash();
-        }
-        if (effects) {
-            effects.addDust(this.x, this.y, 8, 12);
-            effects.addComicSplash(this.x, this.y - 30, 'WHOOSH!');
-        }
+        if (window.soundEngine) window.soundEngine.playPlayerDash();
+        if (typeof CombatRenderFX !== 'undefined') CombatRenderFX.onDashStart(this, effects);
+        else if (effects) { effects.addDust(this.x, this.y, 8, 12); effects.addComicSplash(this.x, this.y - 30, 'WHOOSH!'); }
     }
 
     applyKnockback(vx, vy, duration = 24) {
@@ -445,6 +441,7 @@ class Player {
 
     shoot(effects = null) {
         if (this.stunTimer > 0 || this.isGrabbed || this.isAirborne) return null;
+        if (this.isChargingBubble) return null;
         if (window.gameInstance && window.gameInstance.isCutsceneActive && window.gameInstance.isCutsceneActive()) return null;
         if (typeof WeaponSystem !== 'undefined') {
             const bullets = WeaponSystem.fire(this, effects);
@@ -461,6 +458,7 @@ class Player {
     takeDamage(amount, effects = null, camera = null) {
         if (window.AdminCheats && window.AdminCheats.godMode) return false;
         if (this.invulnerableTimer > 0 || this.hp <= 0) return false;
+        if (typeof GearPassives !== 'undefined' && GearPassives.tryAvoidHit(this, effects)) return false;
 
         if (this.shieldActive) {
             this.shieldActive = false;
@@ -477,6 +475,12 @@ class Player {
         if (this.damageReduction && this.damageReduction > 0) {
             actualDamage = Math.max(1, Math.round(amount * (1 - this.damageReduction)));
         }
+        if (typeof window !== 'undefined' && window.perkSystem && typeof window.perkSystem.interceptPlayerDamage === 'function') {
+            const wardRes = window.perkSystem.interceptPlayerDamage(this, actualDamage, effects, window.gameInstance);
+            if (wardRes && wardRes.blocked) return false;
+            if (wardRes && typeof wardRes.remainingDamage === 'number') actualDamage = wardRes.remainingDamage;
+        }
+        if (typeof GearPassives !== 'undefined') actualDamage = GearPassives.absorbBarrier(this, actualDamage, effects);
 
         this.hp = Math.max(0, this.hp - actualDamage);
         this.hitFlash = 12;
@@ -495,6 +499,7 @@ class Player {
         if (typeof window !== 'undefined' && window.perkSystem) {
             window.perkSystem.onPlayerDamage(this, actualDamage, effects, camera, window.gameInstance);
         }
+        if (typeof GearPassives !== 'undefined') { GearPassives.onPlayerDamaged(this, actualDamage, effects, window.gameInstance); GearPassives.tryPreventFatalHit(this, effects); }
 
         if (this.hp <= 0) {
             window.soundEngine.playGameOver();
@@ -507,7 +512,11 @@ class Player {
         return true;
     }
 
-    heal(amount) { this.hp = Math.min(this.maxHp, this.hp + amount); this.happyTimer = 40; }
+    heal(amount) {
+        const mult = (typeof window !== 'undefined' && window.perkSystem && typeof window.perkSystem.getHealMultiplier === 'function') ? window.perkSystem.getHealMultiplier(this) : 1.0;
+        this.hp = Math.min(this.maxHp, this.hp + Math.round(amount * mult));
+        this.happyTimer = 40;
+    }
     addShield() { this.shieldActive = true; }
     activatePepperFrenzy(durationMs = 7000) { this.frenzyTimer = durationMs / 16.6; }
 
@@ -535,6 +544,7 @@ class Player {
         if (window.effectsManager) {
             window.effectsManager.addConfetti(this.x, this.y, 35);
             window.effectsManager.addComicSplash(this.x, this.y - 40, 'LEVEL UP!');
+            if (typeof window.effectsManager.triggerScreenFlash === 'function') window.effectsManager.triggerScreenFlash('#ffd32a', 0.40, 30);
         }
     }
 
@@ -552,6 +562,13 @@ class Player {
         });
         b.isChargedBubble = true;
         window.gameInstance.bullets.push(b);
+        if (window.gameInstance.coopSession && window.networkManager && window.networkManager.connected) {
+            window.networkManager.send(window.gameInstance.isCoopGuest ? 'GUEST_SHOOT' : 'HOST_SHOOT', {
+                x: Math.round(b.x), y: Math.round(b.y), vx: Number(b.vx.toFixed(2)), vy: Number(b.vy.toFixed(2)),
+                damage: b.damage, speed: b.speed, radius: b.radius, type: b.type,
+                pierce: b.pierce, maxBounces: b.maxBounces, isChargedBubble: true
+            });
+        }
         this.recoilOffset = 16;
         this.fireCooldown = 15;
 
@@ -560,6 +577,7 @@ class Player {
             else window.soundEngine.playShoot('charged_bubble');
         }
         if (effects) {
+            if (typeof effects.addMuzzleFlash === 'function') effects.addMuzzleFlash(muzzleX, muzzleY, shotAngle, 'charged_bubble', 1.3, false);
             effects.addShockwave(muzzleX, muzzleY, 55, 'rgba(0, 206, 201, 0.85)');
             effects.addComicSplash(muzzleX, muzzleY - 26, '🫧 BIG BUBBLE!');
         }

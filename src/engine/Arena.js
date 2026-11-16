@@ -55,6 +55,26 @@ class Arena {
         this.renderGroundCache();
     }
 
+    setDungeonTheme(floorNum) {
+        this.dungeonFloor = floorNum;
+        if (typeof DungeonMapTheme !== 'undefined') {
+            DungeonMapTheme.applyTheme(this, floorNum);
+        }
+    }
+
+    resetNormalTheme() {
+        if (typeof document !== 'undefined') {
+            const m = document.getElementById('olympus-blessing-modal');
+            if (m && m.parentNode) m.parentNode.removeChild(m);
+        }
+        if (!this.dungeonFloor) return;
+        this.dungeonFloor = null;
+        this.dungeonBounds = null;
+        this.generateDecorations();
+        this.generateObstacles();
+        this.renderGroundCache();
+    }
+
     static getFloorTexture1() {
         if (!Arena.floorTexture1 && typeof Image !== 'undefined') {
             Arena.floorTexture1 = new Image();
@@ -96,6 +116,13 @@ class Arena {
     }
 
     renderGroundCache() {
+        if (this.dungeonFloor) {
+            if (typeof DungeonMapTheme !== 'undefined') {
+                DungeonMapTheme.applyTheme(this, this.dungeonFloor);
+            }
+            return;
+        }
+
         // Build an offscreen canvas rendering all static grass, flowers, grid lines
         if (!this.cachedGroundCanvas) {
             this.cachedGroundCanvas = document.createElement('canvas');
@@ -186,63 +213,17 @@ class Arena {
         this.obstacles = [];
         let obsId = 1;
 
-        // Bouncy Mushrooms
-        for (let i = 0; i < 14; i++) {
-            const x = (rng() * 2 - 1) * (this.halfWidth - 250);
-            const y = (rng() * 2 - 1) * (this.halfHeight - 250);
-            if (x * x + y * y > 200 * 200) {
-                const obs = new Obstacle(x, y, 'mushroom');
-                obs.id = obsId++;
-                this.obstacles.push(obs);
-            }
-        }
-
-        // Destructible Crates
-        for (let i = 0; i < 28; i++) {
-            const x = (rng() * 2 - 1) * (this.halfWidth - 250);
-            const y = (rng() * 2 - 1) * (this.halfHeight - 250);
-            if (x * x + y * y > 220 * 220) {
-                const obs = new Obstacle(x, y, 'crate');
-                obs.id = obsId++;
-                this.obstacles.push(obs);
-            }
-        }
-
-        // Explosive Red Barrels (TNT)
-        for (let i = 0; i < 12; i++) {
-            const x = (rng() * 2 - 1) * (this.halfWidth - 260);
-            const y = (rng() * 2 - 1) * (this.halfHeight - 260);
-            if (x * x + y * y > 240 * 240) {
-                const obs = new Obstacle(x, y, 'barrel');
-                obs.id = obsId++;
-                this.obstacles.push(obs);
-            }
-        }
-
-        // Bushes
-        for (let i = 0; i < 20; i++) {
-            const x = (rng() * 2 - 1) * (this.halfWidth - 250);
-            const y = (rng() * 2 - 1) * (this.halfHeight - 250);
-            if (x * x + y * y > 200 * 200) {
-                const obs = new Obstacle(x, y, 'bush');
-                obs.id = obsId++;
-                this.obstacles.push(obs);
-            }
-        }
-
-        // 2.5D Lush Trees - Well-spaced across arena (no overlapping trees)
+        // 1. Place 2.5D Lush Trees FIRST so props can position cleanly around them
         const trees = [];
-        const minTreeDistSq = 350 * 350; // Keep trees well spaced
+        const minTreeDistSq = 340 * 340;
         let treeAttempts = 0;
-        while (trees.length < 18 && treeAttempts < 300) {
+        while (trees.length < 18 && treeAttempts < 350) {
             treeAttempts++;
             const x = (rng() * 2 - 1) * (this.halfWidth - 320);
             const y = (rng() * 2 - 1) * (this.halfHeight - 320);
 
-            // Safe from center player spawn
-            if (x * x + y * y <= 280 * 280) continue;
+            if (x * x + y * y <= 260 * 260) continue; // Safe from player spawn
 
-            // Enforce minimum distance to all existing trees
             let tooClose = false;
             for (let t = 0; t < trees.length; t++) {
                 const dx = x - trees[t].x;
@@ -260,18 +241,110 @@ class Arena {
                 this.obstacles.push(tree);
             }
         }
+
+        // Helper to find non-overlapping positions away from trees, player spawn & existing props
+        const findClearSpot = (minDistTree = 110, minDistProps = 68, boundInset = 250) => {
+            const minTreeSq = minDistTree * minDistTree;
+            const minPropSq = minDistProps * minDistProps;
+            for (let a = 0; a < 45; a++) {
+                const x = (rng() * 2 - 1) * (this.halfWidth - boundInset);
+                const y = (rng() * 2 - 1) * (this.halfHeight - boundInset);
+                if (x * x + y * y <= 220 * 220) continue; // Spawn clearance
+
+                let blocked = false;
+                for (let j = 0; j < this.obstacles.length; j++) {
+                    const other = this.obstacles[j];
+                    const distSq = (x - other.x) * (x - other.x) + (y - other.y) * (y - other.y);
+                    const reqDistSq = other.type === 'tree' ? minTreeSq : minPropSq;
+                    if (distSq < reqDistSq) {
+                        blocked = true;
+                        break;
+                    }
+                }
+                if (!blocked) return { x, y };
+            }
+            return null;
+        };
+
+        // 2. Bouncy Mushrooms
+        for (let i = 0; i < 14; i++) {
+            const pt = findClearSpot(110, 75, 260);
+            if (pt) {
+                const obs = new Obstacle(pt.x, pt.y, 'mushroom');
+                obs.id = obsId++;
+                this.obstacles.push(obs);
+            }
+        }
+
+        // 3. Explosive Red Barrels (TNT)
+        for (let i = 0; i < 12; i++) {
+            const pt = findClearSpot(115, 75, 270);
+            if (pt) {
+                const obs = new Obstacle(pt.x, pt.y, 'barrel');
+                obs.id = obsId++;
+                this.obstacles.push(obs);
+            }
+        }
+
+        // 4. Destructible Crates
+        for (let i = 0; i < 28; i++) {
+            const pt = findClearSpot(110, 68, 250);
+            if (pt) {
+                const obs = new Obstacle(pt.x, pt.y, 'crate');
+                obs.id = obsId++;
+                this.obstacles.push(obs);
+            }
+        }
+
+        // 5. Bushes
+        for (let i = 0; i < 20; i++) {
+            const pt = findClearSpot(100, 64, 250);
+            if (pt) {
+                const obs = new Obstacle(pt.x, pt.y, 'bush');
+                obs.id = obsId++;
+                this.obstacles.push(obs);
+            }
+        }
+    }
+
+    findRespawnCoord() {
+        const p = (typeof window !== 'undefined' && window.gameInstance) ? window.gameInstance.player : null;
+        const b = this.dungeonBounds;
+        const minX = b ? b.minX + 120 : -(this.halfWidth - 300);
+        const maxX = b ? b.maxX - 120 : (this.halfWidth - 300);
+        const minY = b ? b.minY + 140 : -(this.halfHeight - 300);
+        const maxY = b ? b.maxY - 120 : (this.halfHeight - 300);
+        for (let a = 0; a < 30; a++) {
+            const x = minX + Math.random() * (maxX - minX);
+            const y = minY + Math.random() * (maxY - minY);
+            if (p && ((x - p.x) * (x - p.x) + (y - p.y) * (y - p.y) < 280 * 280)) continue;
+
+            let blocked = false;
+            for (let i = 0; i < this.obstacles.length; i++) {
+                const o = this.obstacles[i];
+                const dSq = (x - o.x) * (x - o.x) + (y - o.y) * (y - o.y);
+                const req = o.type === 'tree' ? 110 * 110 : 70 * 70;
+                if (dSq < req) {
+                    blocked = true;
+                    break;
+                }
+            }
+            if (!blocked) return { x, y };
+        }
+        return {
+            x: minX + Math.random() * (maxX - minX),
+            y: minY + Math.random() * (maxY - minY)
+        };
     }
 
     respawnCrate() {
-        const x = (Math.random() * 2 - 1) * (this.halfWidth - 300);
-        const y = (Math.random() * 2 - 1) * (this.halfHeight - 300);
-        this.obstacles.push(new Obstacle(x, y, 'crate'));
+        const pt = this.findRespawnCoord();
+        this.obstacles.push(new Obstacle(pt.x, pt.y, 'crate'));
     }
 
     respawnBarrel() {
-        const x = (Math.random() * 2 - 1) * (this.halfWidth - 300);
-        const y = (Math.random() * 2 - 1) * (this.halfHeight - 300);
-        this.obstacles.push(new Obstacle(x, y, 'barrel'));
+        const pt = this.findRespawnCoord();
+        this.obstacles.push(new Obstacle(pt.x, pt.y, 'barrel'));
     }
 
     update(dt = 1) {
@@ -282,11 +355,16 @@ class Arena {
                 if (obs.id && this.destroyedObsIds) {
                     this.destroyedObsIds.add(obs.id);
                 }
+                const isBarrel = (obs.type === 'barrel');
                 this.obstacles.splice(i, 1);
                 const isCoop = typeof window !== 'undefined' && window.gameInstance && !!window.gameInstance.coopSession;
                 if (!isCoop) {
                     setTimeout(() => {
-                        this.respawnCrate();
+                        if (isBarrel) {
+                            this.respawnBarrel();
+                        } else {
+                            this.respawnCrate();
+                        }
                     }, 8000 + Math.random() * 5000);
                 }
             }
@@ -324,6 +402,10 @@ class Arena {
     }
 
     drawBoundaries(ctx) {
+        if (this.dungeonFloor && typeof DungeonMapTheme !== 'undefined' && DungeonMapTheme.drawBoundaries) {
+            DungeonMapTheme.drawBoundaries(ctx, this);
+            return;
+        }
         ctx.save();
         ctx.lineWidth = 14;
         ctx.strokeStyle = '#b71540';
@@ -338,7 +420,13 @@ class Arena {
 
     draw(ctx, camera) {
         this.drawGround(ctx, camera);
+        if (typeof window !== 'undefined' && window.gameInstance && window.gameInstance.waveManager && window.gameInstance.waveManager.dungeonManager) {
+            window.gameInstance.waveManager.dungeonManager.drawGroundOverlay(ctx, camera, this);
+        }
         this.drawBoundaries(ctx);
+        if (typeof KolossosArenaAtmosphere !== 'undefined') {
+            KolossosArenaAtmosphere.drawWorldGround(ctx, camera, this);
+        }
     }
 
     drawObstacles(ctx) {

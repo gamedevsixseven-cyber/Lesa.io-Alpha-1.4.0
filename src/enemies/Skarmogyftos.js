@@ -310,8 +310,33 @@ class Skarmogyftos extends EnemyBase {
         // Rotate facing direction
         ctx.rotate(this.angle);
 
+        const flash = this.hitFlash > 0;
+        if (typeof SpriteAtlasCache !== 'undefined') {
+            const r = this.radius || 26;
+            const rKey = Math.round(r * 2);
+            const sw = Math.ceil(r * 2.8);
+            const sh = Math.ceil(r * 2.8);
+            const key = `skarmo_b:${rKey}:${flash ? 1 : 0}`;
+            SpriteAtlasCache.drawCached(ctx, key, sw, sh, sw * 0.5, sh * 0.5, (sctx) => {
+                this._drawSkarmogyftosVectorBody(sctx, flash);
+            });
+            ctx.restore();
+            this.drawOverheadHUD(ctx);
+            return;
+        }
+
+        this._drawSkarmogyftosVectorBody(ctx, flash);
+
+        ctx.restore();
+
+        // Overhead health HUD from EnemyBase
+        this.drawOverheadHUD(ctx);
+    }
+
+    _drawSkarmogyftosVectorBody(ctx, flash) {
+
         // Body / Jacket (Teal & Orange Hoodie)
-        ctx.fillStyle = '#006266';
+        ctx.fillStyle = flash ? '#ffffff' : '#006266';
         ctx.strokeStyle = '#1e272e';
         ctx.lineWidth = 3.5;
         ctx.beginPath();
@@ -320,13 +345,13 @@ class Skarmogyftos extends EnemyBase {
         ctx.stroke();
 
         // Orange hoodie trim
-        ctx.fillStyle = '#f39c12';
+        ctx.fillStyle = flash ? '#ffffff' : '#f39c12';
         ctx.beginPath();
         ctx.arc(2, 0, this.radius * 0.45, -Math.PI / 2, Math.PI / 2);
         ctx.fill();
 
         // Head (Warm skin tone)
-        ctx.fillStyle = '#e5b184';
+        ctx.fillStyle = flash ? '#ffffff' : '#e5b184';
         ctx.strokeStyle = '#1e272e';
         ctx.lineWidth = 3;
         ctx.beginPath();
@@ -335,7 +360,7 @@ class Skarmogyftos extends EnemyBase {
         ctx.stroke();
 
         // --- WILD CURLY DARK HAIR AROUND HEAD ---
-        ctx.fillStyle = '#3d2314';
+        ctx.fillStyle = flash ? '#ffffff' : '#3d2314';
         ctx.strokeStyle = '#1e272e';
         ctx.lineWidth = 2.5;
 
@@ -426,10 +451,5 @@ class Skarmogyftos extends EnemyBase {
         ctx.closePath();
         ctx.fill();
         ctx.stroke();
-
-        ctx.restore();
-
-        // Overhead health HUD from EnemyBase
-        this.drawOverheadHUD(ctx);
     }
 }

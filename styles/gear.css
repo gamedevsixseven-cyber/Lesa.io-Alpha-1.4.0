@@ -167,6 +167,18 @@
     border-color: #3498db;
 }
 
+.gear-card-icon-wrap.rarity-epic {
+    background: #f5eef8;
+    border-color: #9b59b6;
+    box-shadow: 0 0 8px rgba(155, 89, 182, 0.35);
+}
+
+.gear-card-icon-wrap.rarity-legendary {
+    background: #fef5e7;
+    border-color: #f39c12;
+    box-shadow: 0 0 10px rgba(243, 156, 18, 0.45);
+}
+
 .gear-card-icon-wrap.rarity-exclusive {
     background: #fdeef4;
     border-color: #e84393;
@@ -350,6 +362,68 @@
     transform: none;
 }
 
+.gear-btn-chest-only {
+    background: linear-gradient(135deg, #6c5ce7 0%, #a55eea 100%);
+    color: #ffffff;
+    border-color: #4834d4;
+}
+
+.gear-btn-chest-only.is-legendary {
+    background: linear-gradient(135deg, #e67e22 0%, #f39c12 100%);
+    color: #ffffff;
+    border-color: #b35900;
+}
+
+.gear-btn-chest-only.is-mythic {
+    background: linear-gradient(135deg, #c0392b 0%, #e74c3c 55%, #f39c12 100%);
+    color: #ffffff;
+    border-color: #7b241c;
+}
+
+/* Signature Passive Pill on Epic / Legendary Gear Cards */
+.gear-passive-pill {
+    margin: 4px 0 8px 0;
+    padding: 5px 8px;
+    border-radius: 10px;
+    font-family: 'Fredoka', sans-serif;
+    font-size: 0.7rem;
+    line-height: 1.28;
+    font-weight: 600;
+    color: #2f3542;
+    background: #f5eef8;
+    border: 1.5px solid #c39bd3;
+    word-break: break-word;
+}
+
+.gear-passive-pill.is-legendary {
+    background: #fef5e7;
+    border-color: #f8c471;
+}
+
+.gear-passive-pill.is-mythic {
+    background: linear-gradient(135deg, #fff5f5, #fef9e7);
+    border-color: #e74c3c;
+    color: #1e272e;
+}
+
+.gear-card.rarity-epic:not(.is-locked) {
+    border-color: #9b59b6;
+}
+
+.gear-card.rarity-legendary:not(.is-locked) {
+    border-color: #f39c12;
+}
+
+.gear-card.rarity-mythic:not(.is-locked) {
+    border-color: #e74c3c;
+    box-shadow: 0 4px 0 #1e272e, 0 0 14px rgba(231, 76, 60, 0.38);
+}
+
+.gear-slot-emoji {
+    font-size: 1.55rem;
+    line-height: 1;
+}
+
 /* Top Equipment Slots Slot Rarity Highlights */
 .gear-slot-card.gear-slot-common {
     border-color: #95a5a6 !important;
@@ -365,9 +439,24 @@
     box-shadow: 0 0 10px rgba(52, 152, 219, 0.4) !important;
 }
 
+.gear-slot-card.gear-slot-epic {
+    border-color: #9b59b6 !important;
+    box-shadow: 0 0 11px rgba(155, 89, 182, 0.48) !important;
+}
+
+.gear-slot-card.gear-slot-legendary {
+    border-color: #f39c12 !important;
+    box-shadow: 0 0 12px rgba(243, 156, 18, 0.55) !important;
+}
+
 .gear-slot-card.gear-slot-exclusive {
     border-color: #e84393 !important;
     box-shadow: 0 0 12px rgba(232, 67, 147, 0.6) !important;
+}
+
+.gear-slot-card.gear-slot-mythic {
+    border-color: #e74c3c !important;
+    box-shadow: 0 0 14px rgba(231, 76, 60, 0.65) !important;
 }
 
 /* Mobile Responsiveness */

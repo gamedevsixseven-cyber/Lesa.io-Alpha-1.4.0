@@ -7,16 +7,17 @@ class Drop {
     constructor(x, y, type = 'xp', value = 10) {
         this.x = x;
         this.y = y;
-        this.type = type; // 'xp', 'heart', 'magnet', 'star', 'shield'
+        this.type = type; // 'xp', 'heart', 'magnet', 'star', 'shield', 'coin_pouch', 'chrono_core', 'mat_*'
         this.value = value;
-        this.radius = type === 'xp' ? 12 : 16;
+        const isMaterial = !!(Drop.MATERIAL_DROP_MAP && Drop.MATERIAL_DROP_MAP[type]);
+        this.radius = type === 'xp' ? 12 : (isMaterial ? 15 : 16);
         this.magnetized = false;
         this.vx = (Math.random() * 2 - 1) * 3;
         this.vy = (Math.random() * 2 - 1) * 3;
         this.age = Math.random() * 100;
         this.bobOffset = Math.random() * Math.PI * 2;
         this.dead = false;
-        this.life = 1200; // Despawn after 20 seconds if not picked
+        this.life = (type === 'chrono_core' || isMaterial) ? 1800 : 1200; // Chrono Cores & Materials persist 30s; standard drops 20s
     }
 
     update(dt = 1, player = null, effects = null) {
@@ -34,18 +35,25 @@ class Drop {
         this.vy *= 0.88;
 
         if (player) {
-            const dist = Math.hypot(player.x - this.x, player.y - this.y);
-            const magDist = player.magnetRadius + (this.type === 'xp' ? 0 : 30);
+            const dx = player.x - this.x;
+            const dy = player.y - this.y;
+            const distSq = dx * dx + dy * dy;
+            const perkMagMult = (typeof window !== 'undefined' && window.perkSystem && typeof window.perkSystem.getMagnetMultiplier === 'function') ? window.perkSystem.getMagnetMultiplier() : 1.0;
+            const magDist = (player.magnetRadius + (this.type === 'xp' ? 0 : 30)) * perkMagMult;
 
-            if (dist < magDist || this.magnetized) {
+            if (distSq < magDist * magDist || this.magnetized) {
                 this.magnetized = true;
-                const angle = Math.atan2(player.y - this.y, player.x - this.x);
+                const dist = Math.sqrt(distSq);
                 const pullSpeed = Math.min(20, 4 + (magDist - dist) * 0.12 + 6);
-                this.x += Math.cos(angle) * pullSpeed * dt;
-                this.y += Math.sin(angle) * pullSpeed * dt;
+                if (dist > 0.0001) {
+                    const step = (pullSpeed * dt) / dist;
+                    this.x += dx * step;
+                    this.y += dy * step;
+                }
 
                 // Picked up!
-                if (dist < player.radius + this.radius) {
+                const pickR = player.radius + this.radius;
+                if (distSq < pickR * pickR) {
                     this.onCollect(player, effects);
                     this.dead = true;
                 }
@@ -59,11 +67,22 @@ class Drop {
             if (window.soundEngine) window.soundEngine.playPickup('xp');
             if (effects) effects.addSparks(this.x, this.y, '#ffd32a', 4);
         } else if (this.type === 'heart') {
-            player.heal(this.value || 30);
-            if (window.soundEngine) window.soundEngine.playPickup('heart');
-            if (effects) {
-                effects.addPopup(this.x, this.y, `+${this.value || 30} HP`, '#2ed573', 24);
-                effects.addSparks(this.x, this.y, '#2ed573', 8);
+            const heartCoins = (player.hp >= player.maxHp && typeof window !== 'undefined' && window.perkSystem && typeof window.perkSystem.getFullHpHeartCoinValue === 'function')
+                ? window.perkSystem.getFullHpHeartCoinValue(player) : 0;
+            if (heartCoins > 0) {
+                player.coins = (player.coins || 0) + heartCoins;
+                if (window.soundEngine) window.soundEngine.playPickup('coin');
+                if (effects) {
+                    effects.addPopup(this.x, this.y, `+${heartCoins} 🪙 ALCHEMIST`, '#f39c12', 22);
+                    effects.addSparks(this.x, this.y, '#f39c12', 8);
+                }
+            } else {
+                player.heal(this.value || 30);
+                if (window.soundEngine) window.soundEngine.playPickup('heart');
+                if (effects) {
+                    effects.addPopup(this.x, this.y, `+${this.value || 30} HP`, '#2ed573', 24);
+                    effects.addSparks(this.x, this.y, '#2ed573', 8);
+                }
             }
         } else if (this.type === 'magnet') {
             if (window.soundEngine) window.soundEngine.playPickup('star');
@@ -80,7 +99,9 @@ class Drop {
             if (window.soundEngine) window.soundEngine.playPickup('star');
             if (effects) effects.addComicSplash(this.x, this.y, 'SHIELD!');
         } else if (this.type === 'coin_pouch') {
-            const coins = this.value || 20;
+            const gearGoldMult = (typeof GearPassives !== 'undefined') ? GearPassives.getGoldMultiplier() : 1.0;
+            const perkGoldMult = (typeof window !== 'undefined' && window.perkSystem && typeof window.perkSystem.getCoinMultiplier === 'function') ? window.perkSystem.getCoinMultiplier() : 1.0;
+            const coins = Math.round((this.value || 20) * gearGoldMult * perkGoldMult);
             if (window.GameState) {
                 window.GameState.addCurrency(coins, 0);
             }
@@ -95,6 +116,38 @@ class Drop {
                 effects.addSparks(this.x, this.y, '#ffd32a', 8);
                 effects.addComicSplash(this.x, this.y - 20, 'GOLD!');
             }
+        } else if (this.type === 'chrono_core') {
+            const gain = this.value || 1;
+            if (typeof WaveSkipperMachine !== 'undefined' && typeof WaveSkipperMachine.grantChronoCore === 'function') {
+                WaveSkipperMachine.grantChronoCore(player, gain, effects, this.x, this.y);
+            } else {
+                player.chronoCores = (player.chronoCores || 0) + gain;
+                if (window.soundEngine) window.soundEngine.playPickup('star');
+                if (effects) {
+                    effects.addPopup(this.x, this.y, `+${gain} CHRONO CORE`, '#00f5ff', 24);
+                    effects.addSparks(this.x, this.y, '#00f5ff', 10);
+                }
+            }
+        } else if (Drop.MATERIAL_DROP_MAP && Drop.MATERIAL_DROP_MAP[this.type]) {
+            const matId = Drop.MATERIAL_DROP_MAP[this.type];
+            const gain = Math.max(1, Math.floor(this.value || 1));
+            const matDef = (typeof MaterialRegistry !== 'undefined') ? MaterialRegistry.get(matId) : null;
+            if (typeof window !== 'undefined' && window.inventoryManager && typeof window.inventoryManager.addMaterial === 'function') {
+                window.inventoryManager.addMaterial(matId, gain, { source: 'arena_drop' });
+            }
+            if (typeof window !== 'undefined' && window.gameInstance) {
+                if (!window.gameInstance.materialsEarnedThisRun) window.gameInstance.materialsEarnedThisRun = {};
+                window.gameInstance.materialsEarnedThisRun[matId] = (window.gameInstance.materialsEarnedThisRun[matId] || 0) + gain;
+            }
+            if (window.soundEngine && typeof window.soundEngine.playPickup === 'function') {
+                window.soundEngine.playPickup(matId === 'ambrosia_spark' || matId === 'olympian_bronze' ? 'diamond' : 'star');
+            }
+            if (effects) {
+                const col = matDef ? matDef.color : '#38bdf8';
+                const label = matDef ? `+${gain} ${matDef.icon} ${matDef.shortName.toUpperCase()}` : `+${gain} MATERIAL`;
+                effects.addPopup(this.x, this.y, label, col, 24);
+                effects.addSparks(this.x, this.y, col, 9);
+            }
         }
 
         if (typeof window !== 'undefined' && window.EventBus) {
@@ -105,36 +158,84 @@ class Drop {
     draw(ctx) {
         const bob = Math.sin((this.age * 0.08) + this.bobOffset) * 4;
         const currentY = this.y + bob;
+        const blinking = (this.life < 180 && ((this.age / 5) | 0) % 2 === 0);
+        const prevAlpha = ctx.globalAlpha;
+        if (blinking) ctx.globalAlpha = prevAlpha * 0.4;
 
-        ctx.save();
-        ctx.translate(this.x, currentY);
+        // Cached Drop Shadow
+        const shadow = Drop._getShadowSprite(this.radius);
+        ctx.drawImage(shadow.canvas, this.x - shadow.halfW, this.y + this.radius * 0.8 - shadow.halfH, shadow.w, shadow.h);
 
-        // Blinking if close to despawn
-        if (this.life < 180 && Math.floor(this.age / 5) % 2 === 0) {
-            ctx.globalAlpha = 0.4;
+        if (this.type === 'chrono_core') {
+            ctx.save();
+            ctx.translate(this.x, currentY);
+            this.drawChronoCore(ctx);
+            ctx.restore();
+        } else {
+            const sprite = Drop._getStaticSprite(this.type, this.radius, this);
+            if (sprite) {
+                ctx.drawImage(sprite.canvas, this.x - sprite.halfW, currentY - sprite.halfH, sprite.w, sprite.h);
+            }
         }
 
-        // Drop Shadow
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
-        ctx.beginPath();
-        ctx.ellipse(0, -bob + this.radius * 0.8, this.radius * 0.8, this.radius * 0.35, 0, 0, Math.PI * 2);
-        ctx.fill();
+        if (blinking) ctx.globalAlpha = prevAlpha;
+    }
 
-        if (this.type === 'xp') {
-            this.drawXpCookie(ctx);
-        } else if (this.type === 'heart') {
-            this.drawHeart(ctx);
-        } else if (this.type === 'magnet') {
-            this.drawMagnet(ctx);
-        } else if (this.type === 'star') {
-            this.drawStar(ctx);
-        } else if (this.type === 'shield') {
-            this.drawShield(ctx);
-        } else if (this.type === 'coin_pouch') {
-            this.drawCoinPouch(ctx);
-        }
+    static _getShadowSprite(radius) {
+        let cache = Drop._shadowCache;
+        if (!cache) cache = Drop._shadowCache = new Map();
+        const hit = cache.get(radius);
+        if (hit) return hit;
 
-        ctx.restore();
+        const dpr = 2;
+        const rx = radius * 0.8;
+        const ry = radius * 0.35;
+        const w = Math.ceil(rx * 2 + 4);
+        const h = Math.ceil(ry * 2 + 4);
+        const c = document.createElement('canvas');
+        c.width = w * dpr;
+        c.height = h * dpr;
+        const sctx = c.getContext('2d');
+        sctx.scale(dpr, dpr);
+        sctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+        sctx.beginPath();
+        sctx.ellipse(w / 2, h / 2, rx, ry, 0, 0, Math.PI * 2);
+        sctx.fill();
+
+        const entry = { canvas: c, w, h, halfW: w / 2, halfH: h / 2 };
+        cache.set(radius, entry);
+        return entry;
+    }
+
+    static _getStaticSprite(type, radius, instance) {
+        let cache = Drop._spriteCache;
+        if (!cache) cache = Drop._spriteCache = new Map();
+        const key = `${type}|${radius}`;
+        const hit = cache.get(key);
+        if (hit) return hit;
+
+        const dpr = 2;
+        const logicalSize = Math.ceil(radius * 3.4) + 12;
+        const half = logicalSize / 2;
+        const c = document.createElement('canvas');
+        c.width = logicalSize * dpr;
+        c.height = logicalSize * dpr;
+        const sctx = c.getContext('2d');
+        sctx.scale(dpr, dpr);
+        sctx.translate(half, half);
+
+        if (type === 'xp') instance.drawXpCookie(sctx);
+        else if (type === 'heart') instance.drawHeart(sctx);
+        else if (type === 'magnet') instance.drawMagnet(sctx);
+        else if (type === 'star') instance.drawStar(sctx);
+        else if (type === 'shield') instance.drawShield(sctx);
+        else if (type === 'coin_pouch') instance.drawCoinPouch(sctx);
+        else if (Drop.MATERIAL_DROP_MAP && Drop.MATERIAL_DROP_MAP[type]) instance.drawMaterial(sctx, Drop.MATERIAL_DROP_MAP[type]);
+        else return null;
+
+        const entry = { canvas: c, w: logicalSize, h: logicalSize, halfW: half, halfH: half };
+        cache.set(key, entry);
+        return entry;
     }
 
     drawXpCookie(ctx) {
@@ -311,4 +412,187 @@ class Drop {
         ctx.arc(0, 3, r * 0.35, 0, Math.PI * 2);
         ctx.stroke();
     }
+
+    drawChronoCore(ctx) {
+        const r = this.radius * 1.15;
+        const spin = this.age * 0.055;
+        const pulse = 0.78 + Math.sin(this.age * 0.14) * 0.22;
+
+        // Soft glowing time-warp halo
+        ctx.fillStyle = `rgba(0, 245, 255, ${0.26 * pulse})`;
+        ctx.beginPath();
+        ctx.arc(0, 0, r * 1.38, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Rotating bronze/gold chrono cog rim
+        ctx.save();
+        ctx.rotate(spin);
+        ctx.fillStyle = '#fed330';
+        ctx.strokeStyle = '#1b1b1b';
+        ctx.lineWidth = 2.2;
+        for (let i = 0; i < 4; i++) {
+            const a = i * (Math.PI / 2);
+            ctx.beginPath();
+            ctx.arc(Math.cos(a) * r * 0.88, Math.sin(a) * r * 0.88, 3.6, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+        }
+        ctx.strokeStyle = '#0984e3';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.arc(0, 0, r * 0.86, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+
+        // Central faceted Chrono Crystal Core
+        ctx.strokeStyle = '#1b1b1b';
+        ctx.lineWidth = 2.5;
+        ctx.fillStyle = '#00d2d3';
+        ctx.beginPath();
+        ctx.moveTo(0, -r * 0.82);
+        ctx.lineTo(r * 0.62, 0);
+        ctx.lineTo(0, r * 0.82);
+        ctx.lineTo(-r * 0.62, 0);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+        // Hourglass highlight glint inside crystal
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.moveTo(-r * 0.24, -r * 0.28);
+        ctx.lineTo(r * 0.24, -r * 0.28);
+        ctx.lineTo(0, 0);
+        ctx.lineTo(r * 0.20, r * 0.26);
+        ctx.lineTo(-r * 0.20, r * 0.26);
+        ctx.closePath();
+        ctx.fill();
+    }
+
+    drawMaterial(ctx, matId) {
+        const r = this.radius * 1.1;
+        const matDef = (typeof MaterialRegistry !== 'undefined') ? MaterialRegistry.get(matId) : null;
+        const col = matDef ? matDef.color : '#38bdf8';
+
+        // Soft glowing rarity backing ring (baked once in sprite cache)
+        ctx.fillStyle = matDef ? matDef.glowColor : 'rgba(56, 189, 248, 0.4)';
+        ctx.beginPath();
+        ctx.arc(0, 0, r * 1.32, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.strokeStyle = '#1a1d2b';
+        ctx.lineWidth = 2.4;
+
+        if (matId === 'armory_shards') {
+            ctx.fillStyle = '#64748b';
+            ctx.beginPath();
+            ctx.moveTo(-r * 0.9, r * 0.2);
+            ctx.lineTo(-r * 0.3, -r * 0.9);
+            ctx.lineTo(r * 0.2, -r * 0.3);
+            ctx.lineTo(-r * 0.2, r * 0.7);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.fillStyle = '#0ea5e9';
+            ctx.beginPath();
+            ctx.moveTo(-r * 0.1, r * 0.85);
+            ctx.lineTo(r * 0.25, -r * 0.5);
+            ctx.lineTo(r * 0.85, -r * 0.1);
+            ctx.lineTo(r * 0.55, r * 0.85);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.fillStyle = '#fef08a';
+            ctx.beginPath();
+            ctx.arc(r * 0.45, -r * 0.45, 3, 0, Math.PI * 2);
+            ctx.fill();
+        } else if (matId === 'mati_crystal') {
+            ctx.fillStyle = '#f59e0b';
+            ctx.beginPath();
+            ctx.arc(0, 0, r * 0.95, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.fillStyle = '#1d4ed8';
+            ctx.beginPath();
+            ctx.arc(0, 0, r * 0.78, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.arc(0, 0, r * 0.46, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.fillStyle = '#38bdf8';
+            ctx.beginPath();
+            ctx.arc(0, 0, r * 0.28, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.fillStyle = '#0f172a';
+            ctx.beginPath();
+            ctx.arc(0, 0, r * 0.14, 0, Math.PI * 2);
+            ctx.fill();
+        } else if (matId === 'olympian_bronze') {
+            ctx.fillStyle = '#d97706';
+            ctx.beginPath();
+            ctx.moveTo(-r * 0.85, r * 0.55);
+            ctx.lineTo(-r * 0.65, -r * 0.55);
+            ctx.lineTo(r * 0.65, -r * 0.55);
+            ctx.lineTo(r * 0.85, r * 0.55);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.fillStyle = '#fbbf24';
+            ctx.beginPath();
+            ctx.moveTo(-r * 0.6, -r * 0.55);
+            ctx.lineTo(r * 0.6, -r * 0.55);
+            ctx.lineTo(r * 0.45, -r * 0.12);
+            ctx.lineTo(-r * 0.45, -r * 0.12);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.fillStyle = '#a855f7';
+            ctx.beginPath();
+            ctx.moveTo(0, -r * 0.05);
+            ctx.lineTo(r * 0.22, r * 0.22);
+            ctx.lineTo(0, r * 0.48);
+            ctx.lineTo(-r * 0.22, r * 0.22);
+            ctx.closePath();
+            ctx.fill();
+        } else {
+            // Ambrosia Spark crystal vial
+            ctx.fillStyle = '#fdf4ff';
+            ctx.beginPath();
+            ctx.moveTo(-r * 0.35, -r * 0.65);
+            ctx.lineTo(r * 0.35, -r * 0.65);
+            ctx.lineTo(r * 0.72, r * 0.15);
+            ctx.lineTo(r * 0.48, r * 0.85);
+            ctx.lineTo(-r * 0.48, r * 0.85);
+            ctx.lineTo(-r * 0.72, r * 0.15);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.fillStyle = col;
+            ctx.fillRect(-r * 0.42, r * 0.05, r * 0.84, r * 0.65);
+            ctx.fillStyle = '#fef08a';
+            ctx.beginPath();
+            ctx.arc(0, -r * 0.72, r * 0.25, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+        }
+    }
 }
+
+Drop.MATERIAL_DROP_MAP = {
+    mat_armory_shards: 'armory_shards',
+    mat_mati_crystal: 'mati_crystal',
+    mat_olympian_bronze: 'olympian_bronze',
+    mat_ambrosia_spark: 'ambrosia_spark'
+};

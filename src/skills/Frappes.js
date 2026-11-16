@@ -107,7 +107,7 @@ class FrappesSkill {
             const auraRadius = player.radius + 35;
             for (let i = 0; i < enemies.length; i++) {
                 const enemy = enemies[i];
-                if (enemy.dead) continue;
+                if (enemy.dead || enemy.isDying || enemy.isAirborneImmune || enemy.isStationary) continue;
 
                 const dx = enemy.x - player.x;
                 const dy = enemy.y - player.y;

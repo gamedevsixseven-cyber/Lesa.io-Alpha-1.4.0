@@ -73,12 +73,41 @@ class PlayerIdentity {
         return isLocalDevPC ? 'gamedevsixseven@gmail.com' : '';
     }
 
+    static normalizeTag(raw) {
+        return (raw || '').toString().trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
+    }
+
+    static getOnlineTag(uid) {
+        if (!uid) return '#GUEST0';
+        const alphabet = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+        let h1 = 2166136261 >>> 0;
+        let h2 = 3735928559 >>> 0;
+        for (let i = 0; i < uid.length; i++) {
+            const c = uid.charCodeAt(i);
+            h1 = Math.imul(h1 ^ c, 16777619) >>> 0;
+            h2 = Math.imul(h2 ^ (c + i), 2654435761) >>> 0;
+        }
+        let code = '';
+        for (let i = 0; i < 6; i++) {
+            const mixed = (i % 2 === 0 ? h1 : h2) + i * 31;
+            code += alphabet[Math.abs(mixed) % alphabet.length];
+            if (i % 2 === 0) h1 = Math.imul(h1 ^ (h1 >>> 13), 1597334677) >>> 0;
+            else h2 = Math.imul(h2 ^ (h2 >>> 15), 2246822519) >>> 0;
+        }
+        return `#${code}`;
+    }
+
     static seedNewPlayerDoc(db, uid) {
         if (!db || !uid) return;
         const isMobile = uid.startsWith('phone_');
+        const pName = localStorage.getItem('lesaio_player_name') || (isMobile ? 'Mobile Survivor' : 'Survivor');
+        const tag = this.getOnlineTag(uid);
         const initial = {
             uid: uid,
-            playerName: localStorage.getItem('lesaio_player_name') || (isMobile ? 'Mobile Survivor' : 'Survivor'),
+            friendTag: tag,
+            friendTagClean: this.normalizeTag(tag),
+            playerName: pName,
+            playerNameLower: pName.toLowerCase(),
             device: isMobile ? 'Mobile Phone' : 'Web Browser',
             coins: parseInt(localStorage.getItem('lesaio_coins') || '1500', 10),
             gold: parseInt(localStorage.getItem('lesaio_coins') || '1500', 10),
@@ -89,6 +118,9 @@ class PlayerIdentity {
             skillLevels: JSON.parse(localStorage.getItem('lesaio_skill_levels') || '{}'),
             selectedHero: localStorage.getItem('lesaio_selected_hero') || 'psanas',
             selectedWeapon: localStorage.getItem('lesaio_selected_weapon') || 'pea',
+            online: true,
+            currentStatus: 'In Lobby',
+            lastSeenAt: Date.now(),
             createdAt: firebase.firestore.FieldValue.serverTimestamp()
         };
         db.collection('players').doc(uid).set(initial, { merge: true }).catch(() => {});

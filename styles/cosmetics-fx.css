@@ -1,0 +1,292 @@
+/* ==========================================================================
+   Lesa.io - Kinetic Animated Banners & 360° Conic Avatar Frames
+   ========================================================================== */
+
+@property --cos-angle {
+    syntax: '<angle>';
+    initial-value: 0deg;
+    inherits: false;
+}
+
+@keyframes cosAngleSpin {
+    0% { --cos-angle: 0deg; }
+    100% { --cos-angle: 360deg; }
+}
+
+@keyframes cosShimmerSweep {
+    0% { background-position: 0% 50%, 0% 0%; }
+    50% { background-position: 100% 50%, 60% 40%; }
+    100% { background-position: 0% 50%, 0% 0%; }
+}
+
+@keyframes cosGleamTrack {
+    0% { background-position: -140% 0%, 0% 50%; }
+    50% { background-position: 140% 0%, 100% 50%; }
+    100% { background-position: -140% 0%, 0% 50%; }
+}
+
+@keyframes cosStarOrbit {
+    0%, 100% { box-shadow: 0 0 0 2px #0f172a, 0 0 12px rgba(253, 224, 71, 0.85), inset 0 0 8px rgba(56, 189, 248, 0.45); }
+    50% { box-shadow: 0 0 0 2px #0f172a, 0 0 22px rgba(56, 189, 248, 0.98), inset 0 0 12px rgba(253, 224, 71, 0.75); }
+}
+
+@keyframes cosPrismaticPulse {
+    0%, 100% { box-shadow: 0 0 0 2px #0f172a, 0 0 14px rgba(34, 211, 238, 0.85), 0 0 24px rgba(236, 72, 153, 0.45); }
+    50% { box-shadow: 0 0 0 2px #0f172a, 0 0 22px rgba(250, 204, 21, 0.95), 0 0 30px rgba(56, 189, 248, 0.7); }
+}
+
+@keyframes cosEmberPulse {
+    0%, 100% { box-shadow: 0 0 0 2px #270914, 0 0 12px rgba(244, 63, 94, 0.7); }
+    50% { box-shadow: 0 0 0 2px #4c0519, 0 0 20px rgba(251, 146, 60, 0.95); }
+}
+
+/* ==================== 16 ANIMATED PROFILE BANNERS ==================== */
+.cos-banner-recruit {
+    background: linear-gradient(135deg, #1e293b 0%, #334155 100%) !important;
+    border-color: #0f172a !important;
+}
+.cos-banner-stormfront {
+    background: linear-gradient(110deg, transparent 35%, rgba(125, 211, 252, 0.24) 50%, transparent 65%),
+                repeating-linear-gradient(-35deg, #0c4a6e 0 14px, #075985 14px 28px),
+                linear-gradient(135deg, #0284c7, #0f172a) !important;
+    background-size: 240% 100%, 100% 100%, 100% 100% !important;
+    animation: cosGleamTrack 5.5s ease-in-out infinite;
+    border-color: #38bdf8 !important;
+}
+.cos-banner-sunset {
+    background: linear-gradient(115deg, transparent 32%, rgba(253, 224, 71, 0.22) 50%, transparent 68%),
+                repeating-linear-gradient(0deg, rgba(244, 63, 94, 0.16) 0 4px, transparent 4px 10px),
+                linear-gradient(135deg, #311042 0%, #be185d 48%, #f59e0b 100%) !important;
+    background-size: 220% 100%, 100% 100%, 160% 160% !important;
+    animation: cosGleamTrack 5s ease-in-out infinite;
+    border-color: #fb7185 !important;
+}
+.cos-banner-rouf {
+    background: linear-gradient(115deg, transparent 30%, rgba(192, 132, 252, 0.3) 50%, transparent 70%),
+                linear-gradient(125deg, #1e1b4b 0%, #581c87 52%, #0f172a 100%) !important;
+    background-size: 240% 100%, 180% 180% !important;
+    animation: cosGleamTrack 4.8s ease-in-out infinite;
+    border-color: #c084fc !important;
+}
+.cos-banner-frost {
+    background: linear-gradient(120deg, transparent 34%, rgba(224, 242, 254, 0.36) 50%, transparent 66%),
+                repeating-linear-gradient(45deg, rgba(103, 232, 249, 0.14) 0 12px, transparent 12px 24px),
+                linear-gradient(135deg, #082f49 0%, #0369a1 50%, #164e63 100%) !important;
+    background-size: 230% 100%, 100% 100%, 160% 160% !important;
+    animation: cosGleamTrack 4.5s ease-in-out infinite;
+    border-color: #67e8f9 !important;
+}
+.cos-banner-cyber {
+    background: linear-gradient(95deg, transparent 36%, rgba(52, 211, 153, 0.35) 50%, transparent 64%),
+                repeating-linear-gradient(90deg, rgba(34, 211, 238, 0.12) 0 2px, transparent 2px 22px),
+                repeating-linear-gradient(0deg, rgba(168, 85, 247, 0.12) 0 2px, transparent 2px 22px),
+                linear-gradient(135deg, #04131c 0%, #0f172a 55%, #3b0764 100%) !important;
+    background-size: 210% 100%, 100% 100%, 100% 100%, 150% 150% !important;
+    animation: cosGleamTrack 3.6s linear infinite;
+    border-color: #22d3ee !important;
+}
+.cos-banner-titan {
+    background: linear-gradient(110deg, transparent 34%, rgba(253, 224, 71, 0.32) 50%, transparent 66%),
+                linear-gradient(135deg, #451a03 0%, #b45309 48%, #78350f 100%) !important;
+    background-size: 220% 100%, 180% 180% !important;
+    animation: cosGleamTrack 4.6s ease-in-out infinite;
+    border-color: #fbbf24 !important;
+}
+.cos-banner-slayer {
+    background: linear-gradient(115deg, transparent 32%, rgba(52, 211, 153, 0.32) 50%, transparent 68%),
+                repeating-linear-gradient(-30deg, rgba(16, 185, 129, 0.14) 0 10px, transparent 10px 22px),
+                linear-gradient(135deg, #022c22 0%, #047857 52%, #064e3b 100%) !important;
+    background-size: 230% 100%, 100% 100%, 170% 170% !important;
+    animation: cosGleamTrack 4.4s ease-in-out infinite;
+    border-color: #34d399 !important;
+}
+.cos-banner-inferno {
+    background: linear-gradient(115deg, transparent 34%, rgba(251, 191, 36, 0.36) 50%, transparent 66%),
+                radial-gradient(circle at 22% 72%, rgba(249, 115, 22, 0.5), transparent 48%),
+                radial-gradient(circle at 82% 24%, rgba(239, 68, 68, 0.45), transparent 50%),
+                linear-gradient(135deg, #1c0505 0%, #9a3412 52%, #450a0a 100%) !important;
+    background-size: 220% 100%, 100% 100%, 100% 100%, 160% 160% !important;
+    animation: cosGleamTrack 3.8s ease-in-out infinite;
+    border-color: #fb923c !important;
+}
+.cos-banner-squad {
+    background: linear-gradient(112deg, transparent 33%, rgba(254, 240, 138, 0.44) 50%, transparent 67%),
+                radial-gradient(rgba(250, 204, 21, 0.24) 2px, transparent 2px),
+                linear-gradient(135deg, #1e1b4b 0%, #1d4ed8 46%, #b45309 100%) !important;
+    background-size: 215% 100%, 12px 12px, 160% 160% !important;
+    animation: cosGleamTrack 4s ease-in-out infinite;
+    border-color: #facc15 !important;
+}
+.cos-banner-mecha-w40 {
+    background: linear-gradient(115deg, transparent 32%, rgba(251, 113, 133, 0.38) 50%, transparent 68%),
+                radial-gradient(circle at 82% 24%, rgba(244, 63, 94, 0.48), transparent 55%),
+                repeating-linear-gradient(-45deg, rgba(190, 18, 60, 0.25) 0 10px, transparent 10px 20px),
+                linear-gradient(135deg, #270914 0%, #7f1d1d 52%, #18181b 100%) !important;
+    background-size: 210% 100%, 100% 100%, 100% 100%, 160% 160% !important;
+    animation: cosGleamTrack 3.4s ease-in-out infinite, cosEmberPulse 3s ease-in-out infinite;
+    border-color: #fb7185 !important;
+}
+.cos-banner-olympus {
+    background: linear-gradient(110deg, transparent 33%, rgba(254, 249, 195, 0.45) 50%, transparent 67%),
+                radial-gradient(circle at 85% 20%, rgba(254, 240, 138, 0.52), transparent 52%),
+                linear-gradient(135deg, #1e3a8a 0%, #0369a1 45%, #b45309 100%) !important;
+    background-size: 215% 100%, 100% 100%, 170% 170% !important;
+    animation: cosGleamTrack 3.8s ease-in-out infinite;
+    border-color: #fde047 !important;
+}
+.cos-banner-astral {
+    background: linear-gradient(115deg, transparent 34%, rgba(254, 240, 138, 0.42) 50%, transparent 66%),
+                radial-gradient(circle at 20% 25%, rgba(250, 204, 21, 0.45), transparent 45%),
+                radial-gradient(circle at 85% 75%, rgba(56, 189, 248, 0.55), transparent 50%),
+                linear-gradient(125deg, #0f172a 0%, #3b0764 42%, #0e7490 78%, #7c2d12 100%) !important;
+    background-size: 220% 100%, 100% 100%, 100% 100%, 180% 180% !important;
+    animation: cosGleamTrack 3.6s ease-in-out infinite, cosStarOrbit 3s ease-in-out infinite;
+    border-color: #fde047 !important;
+}
+.cos-banner-w50 {
+    background: linear-gradient(115deg, transparent 33%, rgba(34, 211, 238, 0.46) 50%, transparent 67%),
+                radial-gradient(circle at 80% 30%, rgba(236, 72, 153, 0.52), transparent 50%),
+                linear-gradient(120deg, #090d16 0%, #4c1d95 38%, #be185d 68%, #0284c7 100%) !important;
+    background-size: 210% 100%, 100% 100%, 190% 190% !important;
+    animation: cosGleamTrack 3.2s ease-in-out infinite, cosPrismaticPulse 3.4s ease-in-out infinite;
+    border-color: #22d3ee !important;
+}
+.cos-banner-monarch {
+    background: linear-gradient(115deg, transparent 34%, rgba(250, 204, 21, 0.48) 50%, transparent 66%),
+                repeating-linear-gradient(30deg, rgba(250, 204, 21, 0.14) 0 8px, transparent 8px 18px),
+                linear-gradient(135deg, #09090b 0%, #3f2e09 48%, #713f12 78%, #18181b 100%) !important;
+    background-size: 210% 100%, 100% 100%, 170% 170% !important;
+    animation: cosGleamTrack 3.5s ease-in-out infinite;
+    border-color: #facc15 !important;
+}
+.cos-banner-nexus {
+    background: linear-gradient(110deg, transparent 32%, rgba(255, 255, 255, 0.42) 50%, transparent 68%),
+                radial-gradient(circle at 18% 50%, rgba(34, 211, 238, 0.55), transparent 48%),
+                radial-gradient(circle at 82% 45%, rgba(244, 114, 182, 0.55), transparent 48%),
+                linear-gradient(135deg, #090d1a 0%, #1e1b4b 34%, #0f766e 68%, #831843 100%) !important;
+    background-size: 195% 100%, 100% 100%, 100% 100%, 200% 200% !important;
+    animation: cosGleamTrack 2.9s ease-in-out infinite, cosPrismaticPulse 3s ease-in-out infinite;
+    border-color: #f472b6 !important;
+}
+
+/* Readability safety on all banner surfaces */
+#menu-player-profile .player-name-text,
+.profile-header-card .prof-name,
+.profile-header-card[class*="cos-banner-"] .prof-name-text,
+.profile-header-card[class*="cos-banner-"] .prof-xp-text,
+.pub-banner-hero .pub-name,
+.lb-item .lb-player-name,
+.friend-card .friend-name {
+    color: #ffffff;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.92);
+}
+
+/* ==================== 14 KINETIC AVATAR FRAMES ==================== */
+.player-avatar-frame-menu[class*="cos-frame-"],
+.prof-avatar-wrap[class*="cos-frame-"],
+.pub-avatar-wrap[class*="cos-frame-"],
+.lb-avatar-wrap[class*="cos-frame-"],
+.friend-avatar-wrap[class*="cos-frame-"],
+.cos-frame-demo[class*="cos-frame-"] {
+    border-radius: 14px;
+    background-origin: border-box !important;
+    background-clip: padding-box, border-box !important;
+    transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.prof-avatar-wrap[class*="cos-frame-"] > img,
+.player-avatar-frame-menu[class*="cos-frame-"] > img,
+.pub-avatar-wrap[class*="cos-frame-"] > img,
+.lb-avatar-wrap[class*="cos-frame-"] > img,
+.friend-avatar-wrap[class*="cos-frame-"] > img,
+.cos-frame-demo[class*="cos-frame-"] > img {
+    border-radius: 10px;
+    transform: none;
+    display: block;
+}
+
+.player-avatar-frame-menu .avatar-crown,
+.prof-avatar-wrap .prof-crown-badge,
+.friend-avatar-wrap .friend-presence-dot,
+.lb-avatar-wrap .lb-online-dot {
+    z-index: 2;
+}
+
+.cos-frame-rookie {
+    border: 3px solid #1e272e !important;
+    background: #1e272e !important;
+    box-shadow: 0 2px 0 rgba(0, 0, 0, 0.45);
+}
+.cos-frame-bronze {
+    border: 3.5px solid transparent !important;
+    background-image: linear-gradient(#0f172a, #0f172a), conic-gradient(from var(--cos-angle), #0284c7, #7dd3fc, #0369a1, #38bdf8, #0284c7) !important;
+    animation: cosAngleSpin 5s linear infinite;
+    box-shadow: 0 0 12px rgba(56, 189, 248, 0.55) !important;
+}
+.cos-frame-frost {
+    border: 3.5px solid transparent !important;
+    background-image: linear-gradient(#082f49, #082f49), conic-gradient(from var(--cos-angle), #67e8f9, #e0f2fe, #0284c7, #a5f3fc, #67e8f9) !important;
+    animation: cosAngleSpin 4s linear infinite;
+    box-shadow: 0 0 14px rgba(103, 232, 249, 0.72) !important;
+}
+.cos-frame-neon {
+    border: 3.5px solid transparent !important;
+    background-image: linear-gradient(#1e1b4b, #1e1b4b), conic-gradient(from var(--cos-angle), #c084fc, #22d3ee, #f472b6, #9333ea, #c084fc) !important;
+    animation: cosAngleSpin 3.4s linear infinite;
+    box-shadow: 0 0 15px rgba(192, 132, 252, 0.78) !important;
+}
+.cos-frame-ember {
+    border: 3.5px solid transparent !important;
+    background-image: linear-gradient(#1c0505, #1c0505), conic-gradient(from var(--cos-angle), #f97316, #fde047, #dc2626, #fb923c, #f97316) !important;
+    animation: cosAngleSpin 3s linear infinite, cosEmberPulse 2.6s ease-in-out infinite;
+}
+.cos-frame-radar {
+    border: 3.5px solid transparent !important;
+    background-image: linear-gradient(#04131c, #04131c), conic-gradient(from var(--cos-angle), #064e3b 0deg, #34d399 45deg, #22d3ee 95deg, #064e3b 170deg, #34d399 240deg, #064e3b 360deg) !important;
+    animation: cosAngleSpin 2.2s linear infinite;
+    box-shadow: 0 0 15px rgba(52, 211, 153, 0.75) !important;
+}
+.cos-frame-laurel {
+    border: 3.5px solid transparent !important;
+    background-image: linear-gradient(#1c1917, #1c1917), conic-gradient(from var(--cos-angle), #fbbf24, #fef08a, #b45309, #fde047, #fbbf24) !important;
+    animation: cosAngleSpin 4.2s linear infinite;
+    box-shadow: 0 0 16px rgba(251, 191, 36, 0.75) !important;
+}
+.cos-frame-venom {
+    border: 3.5px solid transparent !important;
+    background-image: linear-gradient(#022c22, #022c22), conic-gradient(from var(--cos-angle), #a3e635, #10b981, #bef264, #047857, #a3e635) !important;
+    animation: cosAngleSpin 2.8s linear infinite;
+    box-shadow: 0 0 16px rgba(163, 230, 53, 0.78) !important;
+}
+.cos-frame-zeus {
+    border: 3.5px solid transparent !important;
+    background-image: linear-gradient(#082f49, #082f49), conic-gradient(from var(--cos-angle), #fef08a, #38bdf8, #ffffff, #0284c7, #fde047, #fef08a) !important;
+    animation: cosAngleSpin 2.5s linear infinite;
+    box-shadow: 0 0 18px rgba(56, 189, 248, 0.9) !important;
+}
+.cos-frame-mecha {
+    border: 3.5px solid transparent !important;
+    background-image: linear-gradient(#18181b, #18181b), conic-gradient(from var(--cos-angle), #f43f5e, #fb923c, #4c0519, #fb7185, #f43f5e) !important;
+    animation: cosAngleSpin 2.4s linear infinite, cosEmberPulse 2.2s ease-in-out infinite;
+}
+.cos-frame-eclipse {
+    border: 3.5px solid transparent !important;
+    background-image: linear-gradient(#09090b, #09090b), conic-gradient(from var(--cos-angle), #d946ef, #3b0764, #a855f7, #09090b, #f0abfc, #d946ef) !important;
+    animation: cosAngleSpin 2.3s linear infinite;
+    box-shadow: 0 0 18px rgba(217, 70, 239, 0.85) !important;
+}
+.cos-frame-star {
+    border: 4px solid transparent !important;
+    background-image: linear-gradient(#0f172a, #0f172a), conic-gradient(from var(--cos-angle), #fde047, #ffffff, #38bdf8, #f59e0b, #fef08a, #fde047) !important;
+    animation: cosAngleSpin 2.2s linear infinite, cosStarOrbit 2.6s ease-in-out infinite;
+}
+.cos-frame-omega {
+    border: 4px solid transparent !important;
+    background-image: linear-gradient(#090d16, #090d16), conic-gradient(from var(--cos-angle), #22d3ee, #ec4899, #facc15, #a855f7, #34d399, #22d3ee) !important;
+    animation: cosAngleSpin 1.9s linear infinite, cosPrismaticPulse 2.8s ease-in-out infinite;
+}
+.cos-frame-chrono {
+    border: 4px solid transparent !important;
+    background-image: linear-gradient(#0f172a, #0f172a), conic-gradient(from var(--cos-angle), #facc15, #38bdf8, #f472b6, #ffffff, #f59e0b, #22d3ee, #facc15) !important;
+    animation: cosAngleSpin 1.7s linear infinite, cosPrismaticPulse 2.4s ease-in-out infinite;
+}

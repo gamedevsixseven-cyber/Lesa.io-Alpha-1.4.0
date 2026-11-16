@@ -1,19 +1,22 @@
 /**
  * Lesa.io - Admin & Playtesting Panel Controller
- * Handles UI interactions, tab switching, live telemetry updates,
- * and hotkey activations (F1 / ~).
+ * Handles UI interactions, tab switching, temporary testing launcher pill,
+ * live telemetry updates, and hotkeys (F1 / ~ / Esc).
  */
 
 class AdminPanelController {
     constructor() {
         this.modal = null;
+        this.launchBtn = null;
         this.activeTab = 'cheats';
         this.telemetryInterval = null;
+        this.toastTimer = null;
         this.fpsHistory = [];
         this.lastFrameTime = performance.now();
         this.currentFps = 60;
 
         this.initDOM();
+        this.initTestingLauncher();
         this.initHotkeys();
     }
 
@@ -21,18 +24,18 @@ class AdminPanelController {
         this.modal = document.getElementById('admin-modal');
         if (!this.modal) return;
 
-        // Close button
-        const closeBtn = this.modal.querySelector('.modal-close-x-btn') || this.modal.querySelector('#close-admin-btn');
-        if (closeBtn) {
-            closeBtn.addEventListener('click', () => this.close());
-        }
+        // Close buttons & backdrop click
+        this.modal.querySelectorAll('.modal-close-x-btn, #close-admin-btn').forEach(btn => {
+            btn.addEventListener('click', () => this.close());
+        });
+        this.modal.addEventListener('click', (e) => {
+            if (e.target === this.modal) this.close();
+        });
 
-        // Tab buttons
-        const tabBtns = this.modal.querySelectorAll('.admin-tab-btn');
-        tabBtns.forEach(btn => {
+        // Tabs
+        this.modal.querySelectorAll('.admin-tab-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
-                const target = e.currentTarget.getAttribute('data-tab');
-                this.switchTab(target);
+                this.switchTab(e.currentTarget.getAttribute('data-tab'));
             });
         });
 
@@ -43,23 +46,41 @@ class AdminPanelController {
         this.bindAdminManagement();
     }
 
+    /**
+     * Dynamically injects a launcher pill ONLY while AdminAuth.TESTING_OPEN_ACCESS is true.
+     * Setting TESTING_OPEN_ACCESS = false hides/removes both access and this pill automatically.
+     */
+    initTestingLauncher() {
+        const enabled = !!(window.AdminAuth && typeof window.AdminAuth.isTestingOverrideEnabled === 'function' && window.AdminAuth.isTestingOverrideEnabled());
+        if (!enabled || document.getElementById('temp-admin-launch-btn')) return;
+
+        const btn = document.createElement('button');
+        btn.id = 'temp-admin-launch-btn';
+        btn.type = 'button';
+        btn.className = 'temp-admin-launch-btn';
+        btn.title = 'Open Dev Cheats Console (F1 / ~)';
+        btn.innerHTML = '<img src="assets/ui-icons/wrench.svg" class="ui-icon ui-icon-sm" alt=""> DEV CHEATS';
+        btn.addEventListener('click', () => this.toggle());
+        document.body.appendChild(btn);
+        this.launchBtn = btn;
+    }
+
     initHotkeys() {
         window.addEventListener('keydown', async (e) => {
-            // F1 or Tilde (~) secretly opens/closes Admin Panel ONLY for verified Firebase Admins
+            const isOpen = this.modal && !this.modal.classList.contains('hidden');
+            if (e.key === 'Escape' && isOpen) {
+                e.preventDefault();
+                this.close();
+                return;
+            }
             if (e.key === 'F1' || e.key === '`' || e.key === '~') {
-                // If panel is already open, allow pressing F1/~ to close it
-                if (this.modal && !this.modal.classList.contains('hidden')) {
+                if (isOpen) {
                     e.preventDefault();
                     this.close();
                     return;
                 }
-
-                // Check Firebase authorization completely silently
                 const authResult = await window.AdminAuth.verifyAdminAccess();
-                if (!authResult || !authResult.authorized) {
-                    // 100% SILENT: Do absolutely nothing! No sound, no alert, no clue that admin exists.
-                    return;
-                }
+                if (!authResult || !authResult.authorized) return;
 
                 e.preventDefault();
                 await this.open();
@@ -67,34 +88,35 @@ class AdminPanelController {
         });
     }
 
+    showToast(msg, variant = 'ok') {
+        const el = document.getElementById('admin-status-toast');
+        if (!el) return;
+        el.textContent = msg;
+        el.className = 'admin-status-toast' + (variant === 'warn' ? ' is-warn' : variant === 'error' ? ' is-error' : '');
+        clearTimeout(this.toastTimer);
+        this.toastTimer = setTimeout(() => el.classList.add('hidden'), 3200);
+    }
+
     async toggle() {
         if (!this.modal) this.modal = document.getElementById('admin-modal');
-        if (this.modal && !this.modal.classList.contains('hidden')) {
-            this.close();
-        } else {
-            await this.open();
-        }
+        if (this.modal && !this.modal.classList.contains('hidden')) this.close();
+        else await this.open();
     }
 
     async open() {
         if (!this.modal) this.modal = document.getElementById('admin-modal');
         if (!this.modal) return;
 
-        // Strict Firebase Authorization Check (100% Silent for Non-Admins)
         const authResult = await window.AdminAuth.verifyAdminAccess();
+        if (!authResult || !authResult.authorized) return;
 
-        if (!authResult || !authResult.authorized) {
-            // 100% SILENT: Return immediately without any alerts or sounds
-            return;
-        }
-
-        // 2. Authorized -> Open Panel & Show user identity
         this.modal.classList.remove('hidden');
         if (window.soundEngine) window.soundEngine.playSelect();
 
         const adminEmailTag = document.getElementById('admin-current-user-email');
         if (adminEmailTag && authResult.user) {
-            adminEmailTag.textContent = `Logged in as: ${authResult.user.email || authResult.user.uid} (Verified Admin 🛡️)`;
+            const badge = authResult.isTestingOverride ? 'Testing Access (Temp)' : 'Verified Admin';
+            adminEmailTag.textContent = `${authResult.user.email || authResult.user.uid} (${badge})`;
         }
 
         this.startTelemetry();
@@ -109,75 +131,59 @@ class AdminPanelController {
 
     switchTab(tabName) {
         this.activeTab = tabName;
-        const tabs = this.modal.querySelectorAll('.admin-tab-content');
-        tabs.forEach(t => t.classList.add('hidden'));
-
+        this.modal.querySelectorAll('.admin-tab-content').forEach(t => t.classList.add('hidden'));
         const targetTab = this.modal.querySelector(`#admin-tab-${tabName}`);
         if (targetTab) targetTab.classList.remove('hidden');
 
-        const tabBtns = this.modal.querySelectorAll('.admin-tab-btn');
-        tabBtns.forEach(b => {
-            if (b.getAttribute('data-tab') === tabName) {
-                b.classList.add('active');
-            } else {
-                b.classList.remove('active');
-            }
+        this.modal.querySelectorAll('.admin-tab-btn').forEach(b => {
+            b.classList.toggle('active', b.getAttribute('data-tab') === tabName);
         });
-
         if (window.soundEngine) window.soundEngine.playSelect();
     }
 
+    _bindToggle(id, prop, labelOn, labelOff) {
+        const btn = document.getElementById(id);
+        if (!btn) return;
+        btn.addEventListener('click', () => {
+            window.AdminCheats[prop] = !window.AdminCheats[prop];
+            this.updateToggleButton(btn, window.AdminCheats[prop], labelOn, labelOff);
+            this.showToast(`${labelOn.replace(': ON', '')}: ${window.AdminCheats[prop] ? 'ENABLED' : 'DISABLED'}`);
+        });
+    }
+
     bindCheatControls() {
-        // God Mode
-        const godBtn = document.getElementById('admin-toggle-godmode');
-        if (godBtn) {
-            godBtn.addEventListener('click', () => {
-                window.AdminCheats.godMode = !window.AdminCheats.godMode;
-                this.updateToggleButton(godBtn, window.AdminCheats.godMode, 'GOD MODE: ON 🛡️', 'GOD MODE: OFF');
-            });
-        }
+        this._bindToggle('admin-toggle-godmode', 'godMode', 'GOD MODE: ON', 'GOD MODE: OFF');
+        this._bindToggle('admin-toggle-inf-dash', 'infiniteDash', 'INF DASH: ON', 'INF DASH: OFF');
+        this._bindToggle('admin-toggle-inf-skill', 'noSkillCooldown', '0s SKILL CD: ON', '0s SKILL CD: OFF');
+        this._bindToggle('admin-toggle-dmg-boost', 'damageBoost', '10x DMG + CRIT: ON', '10x DMG + CRIT: OFF');
+        this._bindToggle('admin-toggle-instakill', 'instaKillEnemies', '1-HIT AURA: ON', '1-HIT AURA: OFF');
 
-        // Infinite Dash
-        const dashBtn = document.getElementById('admin-toggle-inf-dash');
-        if (dashBtn) {
-            dashBtn.addEventListener('click', () => {
-                window.AdminCheats.infiniteDash = !window.AdminCheats.infiniteDash;
-                this.updateToggleButton(dashBtn, window.AdminCheats.infiniteDash, 'INF DASH: ON ⚡', 'INF DASH: OFF');
-            });
-        }
+        const bindBtn = (id, fn) => {
+            const el = document.getElementById(id);
+            if (el) el.addEventListener('click', fn);
+        };
 
-        // 0s Skill Cooldown
-        const skillBtn = document.getElementById('admin-toggle-inf-skill');
-        if (skillBtn) {
-            skillBtn.addEventListener('click', () => {
-                window.AdminCheats.noSkillCooldown = !window.AdminCheats.noSkillCooldown;
-                this.updateToggleButton(skillBtn, window.AdminCheats.noSkillCooldown, '0s SKILL CD: ON ⏱️', '0s SKILL CD: OFF');
-            });
-        }
+        bindBtn('admin-btn-full-heal', () => {
+            const ok = window.AdminCheats.fullHeal(window.gameInstance);
+            this.showToast(ok ? 'Hero restored to full HP & cooldowns cleared.' : 'Start a run first.', ok ? 'ok' : 'warn');
+        });
+        bindBtn('admin-btn-level-up', () => {
+            const lvl = window.AdminCheats.levelUpPlayer(window.gameInstance, 1);
+            this.showToast(lvl ? `Hero leveled up to Level ${lvl}!` : 'Start a run first.', lvl ? 'ok' : 'warn');
+        });
+        bindBtn('admin-btn-nuke', () => {
+            const killed = window.AdminCheats.nukeArena(window.gameInstance);
+            this.showToast(`Nuke detonated! Hit ${killed} active enemies.`);
+        });
+        bindBtn('admin-btn-magnet', () => {
+            const count = window.AdminCheats.magnetizeDrops(window.gameInstance);
+            this.showToast(`Pulled ${count} drops straight to hero.`);
+        });
+        bindBtn('admin-btn-clear-drops', () => {
+            const count = window.AdminCheats.clearDrops(window.gameInstance);
+            this.showToast(`Cleared ${count} arena drops.`);
+        });
 
-        // Nuke Arena
-        const nukeBtn = document.getElementById('admin-btn-nuke');
-        if (nukeBtn) {
-            nukeBtn.addEventListener('click', () => {
-                if (window.gameInstance) {
-                    const killed = window.AdminCheats.nukeArena(window.gameInstance);
-                    alert(`💥 Nuke detonated! Obliterated ${killed} enemies.`);
-                }
-            });
-        }
-
-        // Magnetize Drops
-        const magnetBtn = document.getElementById('admin-btn-magnet');
-        if (magnetBtn) {
-            magnetBtn.addEventListener('click', () => {
-                if (window.gameInstance) {
-                    const count = window.AdminCheats.magnetizeDrops(window.gameInstance);
-                    alert(`🧲 Pulled ${count} drops to hero.`);
-                }
-            });
-        }
-
-        // Speed Multipliers
         const speedBtns = this.modal.querySelectorAll('.admin-speed-btn');
         speedBtns.forEach(btn => {
             btn.addEventListener('click', (e) => {
@@ -185,109 +191,148 @@ class AdminPanelController {
                 window.AdminCheats.gameSpeed = spd;
                 speedBtns.forEach(b => b.classList.remove('active'));
                 e.currentTarget.classList.add('active');
+                this.showToast(`Simulation speed set to ${spd}x.`);
             });
         });
     }
 
     bindWaveControls() {
-        // Warp to Wave
-        const warpBtn = document.getElementById('admin-btn-warp-wave');
         const waveInput = document.getElementById('admin-input-wave');
+        const warp = (mode, target) => {
+            if (!window.gameInstance) return;
+            window.AdminCheats.warpMode(window.gameInstance, mode, target);
+            this.close();
+        };
+
+        const warpBtn = document.getElementById('admin-btn-warp-wave');
         if (warpBtn && waveInput) {
             warpBtn.addEventListener('click', () => {
-                if (window.gameInstance) {
-                    const w = parseInt(waveInput.value, 10) || 1;
-                    window.AdminCheats.jumpToWave(window.gameInstance, w);
-                    this.close();
-                }
+                const w = parseInt(waveInput.value, 10) || 1;
+                const mode = (window.gameInstance && window.gameInstance.state === 'PLAYING' && window.gameInstance.gameMode !== 'dungeons')
+                    ? window.gameInstance.gameMode : 'story';
+                warp(mode, w);
             });
         }
-
-        // Jump directly to Wave 10 (Boss Kleanthis)
+        const warpEndlessBtn = document.getElementById('admin-btn-warp-endless');
+        if (warpEndlessBtn && waveInput) {
+            warpEndlessBtn.addEventListener('click', () => warp('endless', parseInt(waveInput.value, 10) || 1));
+        }
         const bossJumpBtn = document.getElementById('admin-btn-jump-wave10');
         if (bossJumpBtn) {
-            bossJumpBtn.addEventListener('click', () => {
-                if (window.gameInstance) {
-                    window.AdminCheats.jumpToWave(window.gameInstance, 10);
-                    this.close();
-                }
-            });
+            bossJumpBtn.addEventListener('click', () => warp('story', 10));
         }
 
-        // Boss Actions
-        const bossActionBtns = this.modal.querySelectorAll('.admin-boss-action-btn');
-        bossActionBtns.forEach(btn => {
+        this.modal.querySelectorAll('.admin-warp-preset-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const mode = e.currentTarget.getAttribute('data-mode') || 'story';
+                const target = parseInt(e.currentTarget.getAttribute('data-target'), 10) || 1;
+                warp(mode, target);
+            });
+        });
+
+        this.modal.querySelectorAll('.admin-boss-action-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const action = e.currentTarget.getAttribute('data-action');
-                if (window.gameInstance) {
-                    const success = window.AdminCheats.forceBossAction(window.gameInstance, action);
-                    if (!success) {
-                        alert('⚠️ Boss Kleanthis is not currently active in the arena! Spawn him first or jump to Wave 10.');
-                    }
-                }
+                const ok = window.AdminCheats.forceBossAction(window.gameInstance, action);
+                this.showToast(
+                    ok ? `Triggered boss action: ${action}` : 'Requires matching active boss in arena!',
+                    ok ? 'ok' : 'warn'
+                );
             });
         });
     }
 
     bindSpawnerControls() {
-        const spawnBtns = this.modal.querySelectorAll('.admin-spawn-btn');
-        spawnBtns.forEach(btn => {
+        this.modal.querySelectorAll('.admin-spawn-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const type = e.currentTarget.getAttribute('data-type');
                 const count = parseInt(e.currentTarget.getAttribute('data-count'), 10) || 1;
-                if (window.gameInstance) {
-                    window.AdminCheats.spawnEntity(window.gameInstance, type, count);
-                }
+                const spawned = window.AdminCheats.spawnEntity(window.gameInstance, type, count);
+                this.showToast(spawned ? `Spawned ${spawned}x ${type}!` : `Could not spawn ${type}.`, spawned ? 'ok' : 'warn');
             });
         });
 
-        const dropBtns = this.modal.querySelectorAll('.admin-drop-btn');
-        dropBtns.forEach(btn => {
+        this.modal.querySelectorAll('.admin-drop-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const dropType = e.currentTarget.getAttribute('data-drop');
-                if (window.gameInstance && window.gameInstance.player && typeof Drop !== 'undefined') {
-                    const p = window.gameInstance.player;
-                    for (let i = 0; i < 5; i++) {
-                        const rx = p.x + (Math.random() * 80 - 40);
-                        const ry = p.y + (Math.random() * 80 - 40);
-                        window.gameInstance.drops.push(new Drop(rx, ry, dropType, 30));
-                    }
-                    if (window.soundEngine) window.soundEngine.playPickup('star');
-                }
+                const qty = window.AdminCheats.spawnDrop(window.gameInstance, dropType, 5);
+                this.showToast(qty ? `Spawned ${qty}x ${dropType} drops.` : 'Start a run first.', qty ? 'ok' : 'warn');
             });
         });
     }
 
     bindEconomyControls() {
-        const coinBtns = this.modal.querySelectorAll('.admin-add-coins-btn');
-        coinBtns.forEach(btn => {
+        this.modal.querySelectorAll('.admin-add-coins-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const amt = parseInt(e.currentTarget.getAttribute('data-amount'), 10) || 1000;
                 window.AdminCheats.addCurrency('coins', amt);
+                this.showToast(`Added +${amt.toLocaleString()} Coins.`);
             });
         });
-
-        const gemBtns = this.modal.querySelectorAll('.admin-add-gems-btn');
-        gemBtns.forEach(btn => {
+        this.modal.querySelectorAll('.admin-add-gems-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const amt = parseInt(e.currentTarget.getAttribute('data-amount'), 10) || 100;
                 window.AdminCheats.addCurrency('gems', amt);
+                this.showToast(`Added +${amt.toLocaleString()} Gems.`);
+            });
+        });
+        this.modal.querySelectorAll('.admin-add-mat-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const mat = e.currentTarget.getAttribute('data-mat');
+                const qty = parseInt(e.currentTarget.getAttribute('data-qty'), 10) || 10;
+                const ok = window.AdminCheats.addMaterial(mat, qty);
+                this.showToast(ok ? `Added +${qty} ${mat}.` : 'Inventory manager not ready.', ok ? 'ok' : 'warn');
             });
         });
 
-        const maxSkillsBtn = document.getElementById('admin-btn-max-skills');
-        if (maxSkillsBtn) {
-            maxSkillsBtn.addEventListener('click', () => {
-                window.AdminCheats.maxAllSkills();
-                alert('⭐ All skills upgraded to MAX Level 3!');
-            });
+        const simpleActions = [
+            ['admin-btn-add-crests', () => {
+                const count = window.AdminCheats.addAscentCrests(3);
+                this.showToast(`Ascent Crests set to ${count}.`);
+            }],
+            ['admin-btn-add-stones', () => {
+                const total = window.AdminCheats.addStarStones(5);
+                this.showToast(`Olympian Star Stones: ${total}.`);
+            }],
+            ['admin-btn-add-evo-stones', () => {
+                const total = window.AdminCheats.addEvolutionStones(5);
+                this.showToast(`Evolution Stones: ${total}.`);
+            }],
+            ['admin-btn-add-xp', () => {
+                window.AdminCheats.addAccountXP(1000);
+                this.showToast('Added +1,000 Account XP.');
+            }],
+            ['admin-btn-unlock-heroes', () => {
+                const n = window.AdminCheats.unlockAllHeroes();
+                this.showToast(`Unlocked all ${n} heroes!`);
+            }],
+            ['admin-btn-unlock-weapons', () => {
+                const n = window.AdminCheats.unlockAllWeapons();
+                this.showToast(`Unlocked all ${n} weapons!`);
+            }],
+            ['admin-btn-max-skills', () => {
+                const n = window.AdminCheats.maxAllSkills();
+                this.showToast(`Unlocked & maxed all ${n} skills!`);
+            }],
+            ['admin-btn-unlock-gear', () => {
+                const n = window.AdminCheats.unlockAllGear();
+                this.showToast(`Unlocked ${n} armory gear items!`);
+            }],
+            ['admin-btn-unlock-perks', () => {
+                const n = window.AdminCheats.unlockAllPerksAndFeats(true);
+                this.showToast(`Unlocked & maxed all ${n} perks + boss feats!`);
+            }]
+        ];
+        for (const [id, fn] of simpleActions) {
+            const el = document.getElementById(id);
+            if (el) el.addEventListener('click', fn);
         }
 
-        const unlockHeroesBtn = document.getElementById('admin-btn-unlock-heroes');
-        if (unlockHeroesBtn) {
-            unlockHeroesBtn.addEventListener('click', () => {
-                window.AdminCheats.unlockAllHeroes();
-                alert('👑 All heroes (Psanas, Petros, Psogas) unlocked!');
+        const resetAccBtn = document.getElementById('admin-btn-reset-account');
+        if (resetAccBtn) {
+            resetAccBtn.addEventListener('click', async () => {
+                const ok = await window.AdminCheats.resetAccount();
+                if (ok) this.showToast('Account reset to Level 1! Reloading...', 'warn');
             });
         }
     }
@@ -295,56 +340,53 @@ class AdminPanelController {
     bindAdminManagement() {
         const addAdminBtn = document.getElementById('admin-btn-add-admin');
         const addAdminInput = document.getElementById('admin-input-new-admin');
+        if (!addAdminBtn || !addAdminInput) return;
 
-        if (addAdminBtn && addAdminInput) {
-            addAdminBtn.addEventListener('click', async () => {
-                const target = addAdminInput.value.trim();
-                if (!target) return alert('Please enter an email or UID.');
-
-                try {
-                    addAdminBtn.disabled = true;
-                    addAdminBtn.textContent = 'SAVING TO FIREBASE...';
-                    await window.AdminAuth.grantAdminPrivilege(target);
-                    alert(`✅ Successfully granted Admin access in Firebase Firestore to:\n${target}`);
-                    addAdminInput.value = '';
-                } catch (err) {
-                    alert(`❌ Failed to grant admin: ${err.message}`);
-                } finally {
-                    addAdminBtn.disabled = false;
-                    addAdminBtn.textContent = 'GRANT ADMIN ACCESS 🛡️';
-                }
-            });
-        }
+        addAdminBtn.addEventListener('click', async () => {
+            const target = addAdminInput.value.trim();
+            if (!target) {
+                this.showToast('Enter a target Google Email or UID first.', 'warn');
+                return;
+            }
+            try {
+                addAdminBtn.disabled = true;
+                addAdminBtn.textContent = 'SAVING...';
+                await window.AdminAuth.grantAdminPrivilege(target);
+                addAdminInput.value = '';
+                this.showToast(`Granted Firebase Admin access to ${target}.`);
+            } catch (err) {
+                this.showToast(`Grant failed: ${err.message}`, 'error');
+            } finally {
+                addAdminBtn.disabled = false;
+                addAdminBtn.textContent = 'GRANT ADMIN ACCESS';
+            }
+        });
     }
 
     updateToggleButton(btn, isOn, textOn, textOff) {
-        if (isOn) {
-            btn.textContent = textOn;
-            btn.style.background = '#2ed573';
-            btn.style.color = '#ffffff';
-        } else {
-            btn.textContent = textOff;
-            btn.style.background = '#dfe4ea';
-            btn.style.color = '#2f3542';
-        }
+        btn.textContent = isOn ? textOn : textOff;
+        btn.classList.toggle('is-on', !!isOn);
     }
 
     syncUIStates() {
-        const godBtn = document.getElementById('admin-toggle-godmode');
-        if (godBtn) this.updateToggleButton(godBtn, window.AdminCheats.godMode, 'GOD MODE: ON 🛡️', 'GOD MODE: OFF');
-
-        const dashBtn = document.getElementById('admin-toggle-inf-dash');
-        if (dashBtn) this.updateToggleButton(dashBtn, window.AdminCheats.infiniteDash, 'INF DASH: ON ⚡', 'INF DASH: OFF');
-
-        const skillBtn = document.getElementById('admin-toggle-inf-skill');
-        if (skillBtn) this.updateToggleButton(skillBtn, window.AdminCheats.noSkillCooldown, '0s SKILL CD: ON ⏱️', '0s SKILL CD: OFF');
+        const ac = window.AdminCheats;
+        const map = [
+            ['admin-toggle-godmode', ac.godMode, 'GOD MODE: ON', 'GOD MODE: OFF'],
+            ['admin-toggle-inf-dash', ac.infiniteDash, 'INF DASH: ON', 'INF DASH: OFF'],
+            ['admin-toggle-inf-skill', ac.noSkillCooldown, '0s SKILL CD: ON', '0s SKILL CD: OFF'],
+            ['admin-toggle-dmg-boost', ac.damageBoost, '10x DMG + CRIT: ON', '10x DMG + CRIT: OFF'],
+            ['admin-toggle-instakill', ac.instaKillEnemies, '1-HIT AURA: ON', '1-HIT AURA: OFF']
+        ];
+        for (const [id, state, onTxt, offTxt] of map) {
+            const el = document.getElementById(id);
+            if (el) this.updateToggleButton(el, state, onTxt, offTxt);
+        }
     }
 
     startTelemetry() {
         this.stopTelemetry();
-        this.telemetryInterval = setInterval(() => {
-            this.updateTelemetry();
-        }, 200);
+        this.updateTelemetry();
+        this.telemetryInterval = setInterval(() => this.updateTelemetry(), 200);
     }
 
     stopTelemetry() {
@@ -361,32 +403,46 @@ class AdminPanelController {
         const now = performance.now();
         const delta = now - this.lastFrameTime;
         this.lastFrameTime = now;
-        const instantFps = Math.round(1000 / (delta || 16.6));
+        const instantFps = Math.round(1000 / Math.max(1, delta));
         this.fpsHistory.push(instantFps);
         if (this.fpsHistory.length > 10) this.fpsHistory.shift();
         this.currentFps = Math.round(this.fpsHistory.reduce((a, b) => a + b, 0) / this.fpsHistory.length);
 
-        const elFps = document.getElementById('telem-fps');
-        if (elFps) elFps.textContent = `${this.currentFps} FPS`;
+        const setTxt = (id, txt) => {
+            const el = document.getElementById(id);
+            if (el) el.textContent = txt;
+        };
+        setTxt('telem-fps', `${this.currentFps} FPS`);
+        setTxt('telem-enemies', `${g.enemies ? g.enemies.length : 0}`);
+        setTxt('telem-bullets', `${g.bullets ? g.bullets.length : 0}`);
+        setTxt('telem-drops', `${g.drops ? g.drops.length : 0}`);
 
-        const elEnemies = document.getElementById('telem-enemies');
-        if (elEnemies) elEnemies.textContent = `${g.enemies ? g.enemies.length : 0}`;
+        const mode = g.gameMode || 'story';
+        const dm = g.waveManager && g.waveManager.dungeonManager;
+        if (mode === 'dungeons' && dm) {
+            setTxt('telem-wave', `Olympus Floor ${dm.floor}/5 (${g.state})`);
+        } else if (g.waveManager) {
+            setTxt('telem-wave', `${mode.toUpperCase()} Wave ${g.waveManager.wave} (${g.waveManager.waveState})`);
+        }
 
-        const elBullets = document.getElementById('telem-bullets');
-        if (elBullets) elBullets.textContent = `${g.bullets ? g.bullets.length : 0}`;
+        if (g.player) {
+            const lvl = g.player.level || 1;
+            const dmgMult = (g.player.damageMultiplier || 1).toFixed(2);
+            setTxt('telem-player', `HP ${Math.round(g.player.hp)}/${g.player.maxHp} | Lv.${lvl} | DMG x${dmgMult}`);
+        }
 
-        const elDrops = document.getElementById('telem-drops');
-        if (elDrops) elDrops.textContent = `${g.drops ? g.drops.length : 0}`;
-
-        const elWave = document.getElementById('telem-wave');
-        if (elWave && g.waveManager) elWave.textContent = `Wave ${g.waveManager.wave} (${g.waveManager.waveState})`;
-
-        const elPlayer = document.getElementById('telem-player');
-        if (elPlayer && g.player) {
-            elPlayer.textContent = `HP: ${Math.round(g.player.hp)}/${g.player.maxHp} | Pos: (${Math.round(g.player.x)}, ${Math.round(g.player.y)})`;
+        const zeus = (typeof ZeusBoss !== 'undefined' && Array.isArray(g.enemies))
+            ? g.enemies.find(e => e && !e.dead && e instanceof ZeusBoss) : null;
+        const boss = zeus || (Array.isArray(g.enemies) ? g.enemies.find(e => e && !e.dead && e.isBoss) : null);
+        if (zeus) {
+            const crystalsAlive = Array.isArray(zeus.crystals) ? zeus.crystals.filter(c => c && !c.dead && c.hp > 0).length : 0;
+            setTxt('telem-boss', `Zeus HP ${Math.round(zeus.hp)}/${zeus.maxHp} | SkyShield:${zeus.isFlying ? 'ON' : 'OFF'} (Crystals:${crystalsAlive}) | Minions:${zeus.totalMinionsSpawned}/${zeus.maxTotalMinionsSpawned}`);
+        } else if (boss) {
+            setTxt('telem-boss', `${boss.name || 'Boss'} HP ${Math.round(boss.hp)}/${boss.maxHp}`);
+        } else {
+            setTxt('telem-boss', 'None Active');
         }
     }
 }
 
-// Global Singleton
 window.AdminPanel = new AdminPanelController();

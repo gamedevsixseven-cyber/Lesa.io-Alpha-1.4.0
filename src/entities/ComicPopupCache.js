@@ -13,7 +13,7 @@
 class ComicTextCache {
     constructor() {
         this.cache = new Map();
-        this.MAX_ENTRIES = 80;
+        this.MAX_ENTRIES = 420;
     }
 
     /**
@@ -75,6 +75,8 @@ class ComicThrottler {
         this.lastSplashTimes = new Map();
         this.MAX_ACTIVE_COMIC = 6;  // Capped to 6 punchy, readable popups
         this.MAX_ACTIVE_DAMAGE = 14; // Capped to 14 damage numbers
+        this._lastMegaKoMs = 0;
+        this._lastUtilityMs = 0;
     }
 
     /**
@@ -89,15 +91,29 @@ class ComicThrottler {
         }
 
         const now = performance.now();
+        if (activeCount >= 5 && (type === 'CLANG!' || type === '😱 FLEE!')) {
+            if (now - this._lastUtilityMs < 55) return null;
+            this._lastUtilityMs = now;
+        }
 
         // 1. Cluster Kill Combos ("K.O!" -> "DOUBLE K.O!" -> "MEGA K.O!")
         if (type === 'K.O!' || type === 'K.O') {
-            this.recentKills = this.recentKills.filter(t => now - t < 550);
-            this.recentKills.push(now);
+            const kills = this.recentKills;
+            let w = 0;
+            for (let i = 0; i < kills.length; i++) {
+                if (now - kills[i] < 550) kills[w++] = kills[i];
+            }
+            kills.length = w;
+            kills.push(now);
 
-            if (this.recentKills.length === 2) {
+            if (kills.length === 2) {
                 return { text: 'DOUBLE K.O! 💀', color: '#ff4757', isCrit: true };
-            } else if (this.recentKills.length >= 3) {
+            } else if (kills.length >= 3) {
+                // During simultaneous mass-kill sweeps (e.g. Yaya Scream), avoid redrawing all 16 slots in 1ms.
+                if (kills.length >= 4 && (now - this._lastMegaKoMs < 85)) {
+                    return null;
+                }
+                this._lastMegaKoMs = now;
                 return { text: 'MEGA K.O! 💥', color: '#fed330', isCrit: true };
             }
             return { text: 'K.O! 💥', color: '#ff4757', isCrit: false };

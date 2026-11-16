@@ -15,9 +15,22 @@ class ModalManager {
         this.inventoryModal = document.getElementById('inventory-modal');
         this.talentsModal = document.getElementById('talents-modal');
 
+        if (typeof window !== 'undefined') {
+            window.modalManager = this;
+        }
+
         this.initEvents();
         if (typeof GearModalUI !== 'undefined') {
             GearModalUI.init();
+        }
+        if (typeof window !== 'undefined' && window.EventBus) {
+            const refreshGearIfOpen = () => {
+                if (this.weaponsModal && !this.weaponsModal.classList.contains('hidden')) {
+                    this.updateGearScreen();
+                }
+            };
+            window.EventBus.on('currencyChanged', refreshGearIfOpen);
+            window.EventBus.on('currencyUpdated', refreshGearIfOpen);
         }
     }
 
@@ -64,21 +77,21 @@ class ModalManager {
 
         // Weapon Cards Click to Equip
         document.querySelectorAll('#weapons-modal .weapon-card').forEach((card) => {
-            card.addEventListener('click', () => {
+            card.addEventListener('click', (e) => {
+                if (e.target && e.target.closest('[data-weapon-evolve]')) return;
                 const wt = card.getAttribute('data-weapon');
                 if (wt) {
-                    if (wt === 'bubble') {
-                        const isBubbleUnlocked = (window.GameState && window.GameState.player && window.GameState.player.unlockedWeapons && window.GameState.player.unlockedWeapons.includes('bubble')) || localStorage.getItem('lesaio_weapon_bubble_unlocked') === 'true';
-                        if (!isBubbleUnlocked) {
-                            if (window.soundEngine && typeof window.soundEngine.playBuzzer === 'function') {
-                                window.soundEngine.playBuzzer();
-                            }
-                            return;
+                    const isShared = typeof WeaponSystem !== 'undefined' && WeaponSystem.SHARED_UNLOCKABLE_IDS.includes(wt);
+                    if (isShared && !WeaponSystem.isWeaponUnlocked(wt)) {
+                        if (window.soundEngine && typeof window.soundEngine.playBuzzer === 'function') {
+                            window.soundEngine.playBuzzer();
                         }
+                        return;
                     }
 
                     if (window.GameState && window.GameState.player) {
                         window.GameState.player.weaponType = wt;
+                        window.GameState.player.selectedWeapon = wt;
                     }
                     localStorage.setItem('lesaio_selected_weapon', wt);
                     this.updateGearScreen();
@@ -148,14 +161,53 @@ class ModalManager {
         if (window.soundEngine.menuMusic) {
             window.soundEngine.menuMusic.volume = newMuted ? 0 : window.soundEngine.bgmVolume;
         }
+        if (window.soundEngine.creditsMusic) {
+            window.soundEngine.creditsMusic.volume = newMuted ? 0 : window.soundEngine.bgmVolume;
+        }
 
         this.showQuickToast(newMuted ? '🔇 Audio Muted [M]' : '🔊 Audio Enabled [M]');
     }
 
     /**
+     * Render unified dark summary pills (Coins, Gems, progress counters) into a tab modal bar
+     */
+    static renderTabSummaryBar(containerEl, pills = []) {
+        if (!containerEl) return;
+        containerEl.innerHTML = pills.map((pill) => {
+            const iconHtml = pill.iconKey && typeof UiIcons !== 'undefined'
+                ? UiIcons.i(pill.iconKey)
+                : (typeof UiIcons !== 'undefined' ? UiIcons.toHtml(pill.icon || '') : (pill.icon || ''));
+            return `
+            <div class="tab-summary-pill ${pill.cls || ''}">
+                <span class="tab-pill-icon">${iconHtml}</span>
+                <span class="tab-pill-label">${pill.label}:</span>
+                <span class="tab-pill-val">${pill.val}</span>
+            </div>
+        `;
+        }).join('');
+    }
+
+    /**
+     * Play soft warning tone, show floating toast, and gently shake the target card
+     */
+    static notifyInsufficient(message, cardEl = null) {
+        if (window.soundEngine && typeof window.soundEngine.playGoBack === 'function') {
+            window.soundEngine.playGoBack();
+        }
+        if (window.modalManager && typeof window.modalManager.showQuickToast === 'function') {
+            window.modalManager.showQuickToast(message, 1900);
+        }
+        if (cardEl && cardEl.classList) {
+            cardEl.classList.remove('tab-card-shake');
+            void cardEl.offsetWidth;
+            cardEl.classList.add('tab-card-shake');
+        }
+    }
+
+    /**
      * QoL Quick Floating Toast
      */
-    showQuickToast(message) {
+    showQuickToast(message, durationMs = 1400) {
         let toast = document.getElementById('qol-floating-toast');
         if (!toast) {
             toast = document.createElement('div');
@@ -178,7 +230,11 @@ class ModalManager {
             document.body.appendChild(toast);
         }
 
-        toast.textContent = message;
+        if (typeof UiIcons !== 'undefined') {
+            UiIcons.setRichText(toast, message);
+        } else {
+            toast.textContent = message;
+        }
         toast.style.opacity = '1';
         toast.style.transform = 'translateX(-50%) translateY(0)';
 
@@ -186,7 +242,7 @@ class ModalManager {
         this._toastTimer = setTimeout(() => {
             toast.style.opacity = '0';
             toast.style.transform = 'translateX(-50%) translateY(10px)';
-        }, 1400);
+        }, durationMs);
     }
 
     // Gear & Equipment Modal (Survivor.io Style)
@@ -222,6 +278,11 @@ class ModalManager {
         const totalAtk = document.getElementById('gear-total-atk');
         const totalHp = document.getElementById('gear-total-hp');
         const totalDef = document.getElementById('gear-total-def');
+        const gearCoinsEl = document.getElementById('gear-coins-val');
+        if (gearCoinsEl) {
+            const coins = (window.GameState && window.GameState.player && window.GameState.player.coins) || 0;
+            gearCoinsEl.textContent = coins.toLocaleString();
+        }
 
         if (heroAvatar) heroAvatar.src = heroData.avatar || 'assets/HeroesIcons/PsanasAvatar.png';
         if (heroName) heroName.textContent = (heroData.name || heroKey).toUpperCase();
@@ -241,14 +302,15 @@ class ModalManager {
             .filter(([k]) => k !== heroKey)
             .map(([_, w]) => w);
 
-        let weaponType = (typeof window !== 'undefined' && window.GameState && window.GameState.player && window.GameState.player.weaponType) || localStorage.getItem('lesaio_selected_weapon') || currentHeroWeapon;
+        let weaponType = (typeof window !== 'undefined' && window.GameState && window.GameState.player && (window.GameState.player.selectedWeapon || window.GameState.player.weaponType)) || localStorage.getItem('lesaio_selected_weapon') || currentHeroWeapon;
 
-        // If equipped weapon belongs to another hero or is locked bubble gun, reset to current hero's weapon
-        const isBubbleUnlocked = (window.GameState && window.GameState.player && window.GameState.player.unlockedWeapons && window.GameState.player.unlockedWeapons.includes('bubble')) || localStorage.getItem('lesaio_weapon_bubble_unlocked') === 'true';
-        if (otherHeroWeapons.includes(weaponType) || (weaponType === 'bubble' && !isBubbleUnlocked)) {
+        // If equipped weapon belongs to another hero or is a locked shared weapon, reset to current hero's weapon
+        const isLockedShared = typeof WeaponSystem !== 'undefined' && WeaponSystem.SHARED_UNLOCKABLE_IDS.includes(weaponType) && !WeaponSystem.isWeaponUnlocked(weaponType);
+        if (otherHeroWeapons.includes(weaponType) || isLockedShared) {
             weaponType = currentHeroWeapon;
             if (window.GameState && window.GameState.player) {
                 window.GameState.player.weaponType = weaponType;
+                window.GameState.player.selectedWeapon = weaponType;
             }
             localStorage.setItem('lesaio_selected_weapon', weaponType);
         }
@@ -261,7 +323,10 @@ class ModalManager {
         const baseHeroHp = typeof heroData.hp === 'number' ? heroData.hp : ((heroData.stats && heroData.stats.hp) || 100);
         const calculatedHp = baseHeroHp + maxHealthBonus + armorHp;
 
-        const weaponData = (typeof WEAPONS !== 'undefined' && WEAPONS[weaponType]) || (window.WEAPONS && window.WEAPONS[weaponType]) || {};
+        const rawWeaponData = (typeof WEAPONS !== 'undefined' && WEAPONS[weaponType]) || (window.WEAPONS && window.WEAPONS[weaponType]) || {};
+        const weaponData = (typeof WeaponEvolutionManager !== 'undefined')
+            ? WeaponEvolutionManager.getEffectiveConfig(weaponType, rawWeaponData)
+            : rawWeaponData;
         const baseWeaponAtk = typeof weaponData.baseDamage === 'number' ? weaponData.baseDamage : ((heroData.stats && heroData.stats.atk) || 25);
         const bonusAtk = Math.round(baseWeaponAtk * ((gearStats.bulletDamage || 0) / 100));
         const calculatedAtk = baseWeaponAtk + bonusAtk;
@@ -279,7 +344,10 @@ class ModalManager {
             bubble: 'Bubble Gun',
             money_gun: 'Money Gun',
             burger: 'Burger Toss',
-            lightning: 'Lightning Strike'
+            lightning: 'Lightning Strike',
+            carbine: "Kiloumpas's Carbine",
+            dialtone: "Rouf's Dial-Tone Blaster",
+            zeus_thunderbolt: "Zeus's Master Thunderbolt"
         };
         const weaponImages = {
             pea: 'assets/WeaponIcons/PeaSlingshot.png',
@@ -288,13 +356,21 @@ class ModalManager {
             bubble: 'assets/WeaponIcons/BubbleGun.png',
             money_gun: 'assets/WeaponIcons/MoneyGun.png',
             burger: 'assets/WeaponIcons/BurgerToss.png',
-            lightning: 'assets/WeaponIcons/LightningStrike.png'
+            lightning: 'assets/WeaponIcons/LightningStrike.png',
+            carbine: 'assets/WeaponIcons/KiloumpasCarbine.png',
+            dialtone: 'assets/WeaponIcons/RoufBlaster.png',
+            zeus_thunderbolt: 'assets/WeaponIcons/ZeusThunderbolt.png'
         };
 
         const weaponNameEl = document.getElementById('gear-equipped-weapon-name');
         const weaponImgEl = document.getElementById('gear-slot-weapon-img');
         const weaponEmojiEl = document.getElementById('gear-slot-weapon-emoji');
-        if (weaponNameEl) weaponNameEl.textContent = weaponNames[weaponType] || 'Pea Slingshot';
+        const resolvedWepName = weaponNames[weaponType] || 'Pea Slingshot';
+        if (typeof WeaponEvolutionManager !== 'undefined') {
+            WeaponEvolutionManager.updateWeaponSlotUI(weaponType, resolvedWepName);
+        } else if (weaponNameEl) {
+            weaponNameEl.textContent = resolvedWepName;
+        }
         if (weaponImgEl) weaponImgEl.src = weaponImages[weaponType] || 'assets/WeaponIcons/PeaSlingshot.png';
         if (weaponEmojiEl) weaponEmojiEl.textContent = '';
 
@@ -305,26 +381,37 @@ class ModalManager {
             const wt = card.getAttribute('data-weapon');
             if (otherHeroWeapons.includes(wt)) {
                 card.style.display = 'none';
-                card.classList.remove('active-weapon');
+                card.classList.remove('active-weapon', 'weapon-locked');
                 return;
             }
 
-            // If player doesn't own this weapon, remove it and don't show it in the Gear Inventory
-            if (wt === 'bubble' && !isBubbleUnlocked) {
+            const wData = (typeof WEAPONS !== 'undefined' && WEAPONS[wt]) || (window.WEAPONS && window.WEAPONS[wt]) || {};
+            const isShared = typeof WeaponSystem !== 'undefined' && WeaponSystem.SHARED_UNLOCKABLE_IDS.includes(wt);
+            const unlocked = !isShared || WeaponSystem.isWeaponUnlocked(wt);
+
+            if (!unlocked && wData.hideWhenLocked !== false) {
                 card.style.display = 'none';
-                card.classList.remove('active-weapon');
+                card.classList.remove('active-weapon', 'weapon-locked');
                 return;
             }
 
             card.style.display = '';
-            visibleCount++;
+            card.classList.toggle('weapon-locked', !unlocked);
+            if (unlocked) visibleCount++;
 
             const badge = card.querySelector('.weapon-badge');
+            const isWepEvolved = unlocked && typeof WeaponEvolutionManager !== 'undefined' && WeaponEvolutionManager.isEvolved(wt);
 
-            if (wt === weaponType) {
+            if (!unlocked) {
+                card.classList.remove('active-weapon');
+                if (badge) {
+                    badge.textContent = `🔒 ${wData.unlockLabel || 'LOCKED'}`;
+                    badge.className = 'weapon-badge badge-locked';
+                }
+            } else if (wt === weaponType) {
                 card.classList.add('active-weapon');
                 if (badge) {
-                    badge.textContent = 'EQUIPPED';
+                    badge.textContent = isWepEvolved ? 'EQUIPPED ★' : 'EQUIPPED';
                     badge.className = 'weapon-badge badge-equipped';
                 }
             } else {
@@ -337,14 +424,17 @@ class ModalManager {
                     else if (wt === 'burger') { badge.textContent = 'BILLIAS GEAR'; badge.className = 'weapon-badge badge-billias'; }
                     else if (wt === 'lightning') { badge.textContent = 'KITSOS GEAR'; badge.className = 'weapon-badge badge-kitsos'; }
                     else {
-                        const wData = (window.WEAPONS && window.WEAPONS[wt]) || {};
                         const rName = wData.rarity || 'Exclusive';
-                        badge.textContent = rName.toUpperCase();
+                        badge.textContent = isWepEvolved ? `${rName.toUpperCase()} ★` : rName.toUpperCase();
                         badge.className = `weapon-badge badge-${rName.toLowerCase()}`;
                     }
                 }
             }
         });
+
+        if (typeof WeaponEvolutionManager !== 'undefined') {
+            WeaponEvolutionManager.renderWeaponCardsUI();
+        }
 
         const invBadge = document.getElementById('gear-inv-badge-count') || document.querySelector('.gear-inv-badge');
         if (invBadge && (typeof GearModalUI === 'undefined' || GearModalUI.currentTab === 'weapon')) {
@@ -401,9 +491,15 @@ class ModalManager {
      * Show Feature Announcement or Preview Modal
      */
     showFeatureModal(title, desc, content) {
-        if (this.featureTitle) this.featureTitle.textContent = title;
+        if (this.featureTitle) {
+            if (typeof UiIcons !== 'undefined') UiIcons.setRichText(this.featureTitle, title, 'ui-icon-title');
+            else this.featureTitle.textContent = title;
+        }
         if (this.featureDesc) this.featureDesc.textContent = desc;
-        if (this.featureContent) this.featureContent.textContent = content;
+        if (this.featureContent) {
+            if (typeof UiIcons !== 'undefined') UiIcons.setRichText(this.featureContent, content);
+            else this.featureContent.textContent = content;
+        }
         if (this.featureModal) this.featureModal.classList.remove('hidden');
     }
 
@@ -421,6 +517,10 @@ class ModalManager {
         if (ui.profileManager && ui.profileManager.firstTimeNameModal && !ui.profileManager.firstTimeNameModal.classList.contains('hidden')) {
             return; // Must submit name first time
         }
+        const bossRewardModal = document.getElementById('boss-reward-claim-modal');
+        if (bossRewardModal && !bossRewardModal.classList.contains('hidden')) {
+            return; // Must claim or equip boss drops first
+        }
 
         const chestModal = document.getElementById('chest-action-modal');
         if (chestModal && !chestModal.classList.contains('hidden')) {
@@ -429,6 +529,19 @@ class ModalManager {
             } else {
                 chestModal.classList.add('hidden');
             }
+            return;
+        }
+
+        const pubProf = document.getElementById('public-profile-modal');
+        if (pubProf && !pubProf.classList.contains('hidden')) {
+            if (typeof PublicProfileModal !== 'undefined') PublicProfileModal.hide();
+            else pubProf.classList.add('hidden');
+            return;
+        }
+        const lbModal = document.getElementById('leaderboard-modal');
+        if (lbModal && !lbModal.classList.contains('hidden')) {
+            if (window.leaderboardModal) window.leaderboardModal.hide();
+            else lbModal.classList.add('hidden');
             return;
         }
 
@@ -456,6 +569,13 @@ class ModalManager {
             ui.hideDailyQuestsModal();
         } else if (ui.settingsManager && ui.settingsManager.settingsModal && !ui.settingsManager.settingsModal.classList.contains('hidden')) {
             ui.settingsManager.hideSettingsModal();
+        } else if (ui.coopLobbyModal && ui.coopLobbyModal.modal && !ui.coopLobbyModal.modal.classList.contains('hidden')) {
+            ui.coopLobbyModal.hide();
+            if (window.networkManager && (!window.gameInstance || !window.gameInstance.coopSession)) {
+                window.networkManager.disconnect();
+            }
+        } else if (ui.menuController && ui.menuController.dungeonsModal && !ui.menuController.dungeonsModal.classList.contains('hidden')) {
+            ui.menuController.hideDungeonsModal();
         } else if (this.featureModal && !this.featureModal.classList.contains('hidden')) {
             if (window.soundEngine) window.soundEngine.playGoBack();
             this.hideFeatureModal();
