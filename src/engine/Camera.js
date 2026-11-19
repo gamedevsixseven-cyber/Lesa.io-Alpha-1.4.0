@@ -135,8 +135,11 @@ class Camera {
     }
 
     isVisible(worldX, worldY, radius = 60) {
-        const halfW = (this.canvas.width / 2) / this.zoom + radius;
-        const halfH = (this.canvas.height / 2) / this.zoom + radius;
+        const effZoom = (typeof MobilePerf !== 'undefined' && MobilePerf.isMobile)
+            ? Math.max(0.1, this.zoom * (this.dpr || 1))
+            : this.zoom;
+        const halfW = (this.canvas.width / 2) / effZoom + radius;
+        const halfH = (this.canvas.height / 2) / effZoom + radius;
         return Math.abs(worldX - this.x) <= halfW && Math.abs(worldY - this.y) <= halfH;
     }
 }

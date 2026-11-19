@@ -112,19 +112,19 @@ class Game {
     }
 
     resize() {
+        if (typeof MobilePerf !== 'undefined') {
+            MobilePerf.applyCanvasSettings(this);
+            return;
+        }
         const dpr = Math.min(window.devicePixelRatio || 1, 2);
         this.dpr = dpr;
         this.canvas.width = Math.floor(window.innerWidth * dpr);
         this.canvas.height = Math.floor(window.innerHeight * dpr);
         this.canvas.style.width = window.innerWidth + 'px';
         this.canvas.style.height = window.innerHeight + 'px';
-        if (this.ctx) {
-            this.ctx.imageSmoothingEnabled = true;
-            this.ctx.imageSmoothingQuality = 'high';
-        }
+        if (this.ctx) { this.ctx.imageSmoothingEnabled = true; this.ctx.imageSmoothingQuality = 'high'; }
         if (this.camera) {
-            this.camera.dpr = dpr;
-            this.camera.zoomPunch = 0;
+            this.camera.dpr = dpr; this.camera.zoomPunch = 0;
             this.camera.targetZoom = this.camera.computeAdaptiveZoom();
             this.camera.zoom = this.camera.targetZoom;
         }
@@ -587,7 +587,7 @@ class Game {
             this.lastTime = currentTime;
 
             this.update(dt);
-            this.render();
+            if (typeof MobilePerf === 'undefined' || !MobilePerf.shouldSkipRender(this)) this.render();
         } catch (err) {
             console.error("Game loop error caught:", err);
         } finally {

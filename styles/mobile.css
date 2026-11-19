@@ -585,3 +585,10 @@ html, body {
     #game-over-modal .modal-actions { gap: 8px !important; margin-top: 4px !important; }
     #game-over-modal .modal-actions .comic-btn { padding: 6px 16px !important; font-size: 0.92rem !important; border-width: 2.5px !important; }
 }
+
+/* Mobile-only iOS Safari GPU compositor relief: avoid backdrop-filter stalls over live canvas */
+@media (pointer: coarse) {
+    .modal-overlay, #mobile-rotate-overlay { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
+    .mobile-joystick-knob, .mobile-aim-knob { will-change: transform; }
+    #game-hud { contain: layout style; }
+}

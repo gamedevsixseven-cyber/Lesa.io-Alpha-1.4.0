@@ -43,9 +43,10 @@ class EffectsManager {
         this.groundCracks = [];
         this.lightningBeams = [];
 
-        // Concurrency budget caps (AAA engine throttling)
-        this.MAX_POPUPS = 16;
-        this.MAX_PARTICLES = 50;
+        // Concurrency budget caps (AAA engine throttling; tighter budget on mobile)
+        const isMob = (typeof MobilePerf !== 'undefined' && MobilePerf.isMobile);
+        this.MAX_POPUPS = isMob ? 10 : 16;
+        this.MAX_PARTICLES = isMob ? 22 : 50;
 
         // Settings toggles
         this.showPopups = localStorage.getItem('lesaio_popups') !== 'false'; // default true

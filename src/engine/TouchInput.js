@@ -74,6 +74,9 @@ class TouchInput {
         this.dashRing = this.dashBtn ? this.dashBtn.querySelector('.dash-ring') : null;
         this.skillRing = this.skillBtn ? this.skillBtn.querySelector('.skill-ring') : null;
         this.bubbleRing = this.bubbleBtn ? this.bubbleBtn.querySelector('.bubble-charge-ring') : null;
+        this._skillImgEl = this.skillBtn ? (this.skillBtn.querySelector('.btn-skill-img-icon') || this.skillBtn.querySelector('#mobile-skill-img')) : null;
+        this._skillLabelEl = this.skillBtn ? this.skillBtn.querySelector('.btn-label') : null;
+        this._uiCache = Object.create(null);
 
         this.updateAutoFireState();
 
@@ -427,91 +430,86 @@ class TouchInput {
     updateCooldowns() {
         const player = this.game.player;
         if (!player) return;
+        const c = this._uiCache || (this._uiCache = Object.create(null));
 
-        // Dash Cooldown & Circular Ring
+        // Dash Cooldown & Circular Ring (dirty-checked + quantized to avoid 60fps iOS SVG repaints)
         if (this.dashBtn) {
-            const maxDash = player.maxDashCooldown || 1;
-            if (player.dashCooldown > 0) {
-                const ratio = Math.max(0, Math.min(1, 1 - (player.dashCooldown / maxDash)));
-                if (this.dashRing) this.dashRing.style.strokeDashoffset = (226.2 * (1 - ratio)).toFixed(1);
-                this.dashBtn.classList.add('on-cooldown');
-                this.dashBtn.classList.remove('is-ready');
-            } else {
-                if (this.dashRing) this.dashRing.style.strokeDashoffset = '0';
-                this.dashBtn.classList.remove('on-cooldown');
-                this.dashBtn.classList.add('is-ready');
+            const onCd = player.dashCooldown > 0;
+            const dashOff = onCd ? Math.round(226.2 * Math.max(0, Math.min(1, player.dashCooldown / (player.maxDashCooldown || 1)))) : 0;
+            if (this.dashRing && c.dashOff !== dashOff) {
+                c.dashOff = dashOff;
+                this.dashRing.style.strokeDashoffset = String(dashOff);
+            }
+            if (c.dashOnCd !== onCd) {
+                c.dashOnCd = onCd;
+                this.dashBtn.classList.toggle('on-cooldown', onCd);
+                this.dashBtn.classList.toggle('is-ready', !onCd);
             }
         }
 
         // Skill Cooldown & Circular Ring
         if (this.skillBtn) {
-            const maxSkill = player.maxSkillCooldown || 1;
+            let state = 0; // 0=ready, 1=cd, 2=active
+            let skillOff = 0;
             if (player.frappesFrenzyTimer > 0) {
-                // Active Frenzy Duration: ring depletes with duration and increases with kills
-                const maxFrenzy = player.frappesFrenzyMaxTimer || 300;
-                const ratio = Math.max(0, Math.min(1, player.frappesFrenzyTimer / maxFrenzy));
-                if (this.skillRing) this.skillRing.style.strokeDashoffset = (226.2 * (1 - ratio)).toFixed(1);
-                this.skillBtn.classList.add('is-active');
-                this.skillBtn.classList.remove('on-cooldown');
-                this.skillBtn.classList.remove('is-ready');
+                state = 2;
+                const r = Math.max(0, Math.min(1, player.frappesFrenzyTimer / (player.frappesFrenzyMaxTimer || 300)));
+                skillOff = Math.round(226.2 * (1 - r));
             } else if (player.skillCooldown > 0) {
-                // The moment effect ends, cooldown drops and ring fills up
-                this.skillBtn.classList.remove('is-active');
-                const ratio = Math.max(0, Math.min(1, 1 - (player.skillCooldown / maxSkill)));
-                if (this.skillRing) this.skillRing.style.strokeDashoffset = (226.2 * (1 - ratio)).toFixed(1);
-                this.skillBtn.classList.add('on-cooldown');
-                this.skillBtn.classList.remove('is-ready');
-            } else {
-                this.skillBtn.classList.remove('is-active');
-                if (this.skillRing) this.skillRing.style.strokeDashoffset = '0';
-                this.skillBtn.classList.remove('on-cooldown');
-                this.skillBtn.classList.add('is-ready');
+                state = 1;
+                skillOff = Math.round(226.2 * Math.max(0, Math.min(1, player.skillCooldown / (player.maxSkillCooldown || 1))));
+            }
+            if (this.skillRing && c.skillOff !== skillOff) {
+                c.skillOff = skillOff;
+                this.skillRing.style.strokeDashoffset = String(skillOff);
+            }
+            if (c.skillState !== state) {
+                c.skillState = state;
+                this.skillBtn.classList.toggle('is-active', state === 2);
+                this.skillBtn.classList.toggle('on-cooldown', state === 1);
+                this.skillBtn.classList.toggle('is-ready', state === 0);
             }
 
-            // Sync skill icon and water theme based on equipped skill
-            const baseSkill = player.selectedSkill || player.equippedSkill || localStorage.getItem('lesaio_selected_skill') || 'blade_rush';
-            const isMasteredFrappes = baseSkill === 'frappes' &&
-                (player.hasPagakiaMastery || (typeof PlayerSkills !== 'undefined' && PlayerSkills.getSkillLevel('frappes') >= 5));
+            const baseSkill = player.selectedSkill || player.equippedSkill || c.fallbackSkill || (c.fallbackSkill = localStorage.getItem('lesaio_selected_skill') || 'blade_rush');
+            const isMasteredFrappes = baseSkill === 'frappes' && (player.hasPagakiaMastery || (typeof PlayerSkills !== 'undefined' && PlayerSkills.getSkillLevel('frappes') >= 5));
             const skillKey = isMasteredFrappes ? 'frappes_plus' : baseSkill;
-            const skillImg = this.skillBtn.querySelector('.btn-skill-img-icon') || this.skillBtn.querySelector('#mobile-skill-img');
-            const skillLabel = this.skillBtn.querySelector('.btn-label');
-
             if (this.currentSkillKey !== skillKey) {
                 this.currentSkillKey = skillKey;
                 const mobileSkills = {
-                    'nerobalonaki': { img: 'assets/SkillsIcons/NerobalonakiSkill.png', label: 'WATER', isWater: true },
-                    'blade_rush': { img: 'assets/SkillsIcons/BladeRushSkill.png', label: 'BLADE', isWater: false },
-                    'seismic_quake': { img: 'assets/SkillsIcons/SeismicQuakeSkill.png', label: 'QUAKE', isWater: false },
-                    'yaya_scream': { img: 'assets/SkillsIcons/YayaScreamSkill.png', label: 'SCREAM', isWater: false },
-                    'frappes': { img: 'assets/SkillsIcons/FrappesSkill.png', label: 'FRAPPES', isWater: false },
-                    'frappes_plus': { img: 'assets/SkillsIcons/FrappesSkill.png', label: 'FRAPPES+', isWater: false }
+                    nerobalonaki: { img: 'assets/SkillsIcons/NerobalonakiSkill.png', label: 'WATER', isWater: true },
+                    blade_rush: { img: 'assets/SkillsIcons/BladeRushSkill.png', label: 'BLADE', isWater: false },
+                    seismic_quake: { img: 'assets/SkillsIcons/SeismicQuakeSkill.png', label: 'QUAKE', isWater: false },
+                    yaya_scream: { img: 'assets/SkillsIcons/YayaScreamSkill.png', label: 'SCREAM', isWater: false },
+                    frappes: { img: 'assets/SkillsIcons/FrappesSkill.png', label: 'FRAPPES', isWater: false },
+                    frappes_plus: { img: 'assets/SkillsIcons/FrappesSkill.png', label: 'FRAPPES+', isWater: false },
+                    wrath_of_olympus: { img: 'assets/SkillsIcons/WrathOfOlympusSkill.svg', label: 'ZEUS', isWater: false }
                 };
-                const mcfg = mobileSkills[skillKey] || mobileSkills['blade_rush'];
-                if (skillImg) skillImg.src = mcfg.img;
-                if (skillLabel) skillLabel.textContent = mcfg.label;
-                if (mcfg.isWater) {
-                    this.skillBtn.classList.add('skill-water');
-                } else {
-                    this.skillBtn.classList.remove('skill-water');
-                }
+                const mcfg = mobileSkills[skillKey] || mobileSkills.blade_rush;
+                if (this._skillImgEl) this._skillImgEl.src = mcfg.img;
+                if (this._skillLabelEl) this._skillLabelEl.textContent = mcfg.label;
+                this.skillBtn.classList.toggle('skill-water', mcfg.isWater);
             }
         }
 
         // Big Bubble Button Visibility & Charge Ring (Bubble Gun Exclusive)
         if (this.bubbleBtn) {
-            if (player.weaponType === 'bubble') {
-                this.bubbleBtn.classList.remove('hidden');
+            const showBubble = player.weaponType === 'bubble';
+            if (c.showBubble !== showBubble) {
+                c.showBubble = showBubble;
+                this.bubbleBtn.classList.toggle('hidden', !showBubble);
+            }
+            if (showBubble) {
                 const charge = player.bubbleCharge || 0;
-                if (this.bubbleRing) {
-                    this.bubbleRing.style.strokeDashoffset = (226.2 * (1 - charge)).toFixed(1);
+                const bOff = Math.round(226.2 * (1 - charge));
+                if (this.bubbleRing && c.bubbleOff !== bOff) {
+                    c.bubbleOff = bOff;
+                    this.bubbleRing.style.strokeDashoffset = String(bOff);
                 }
-                if (charge >= 1.0) {
-                    this.bubbleBtn.classList.add('is-ready');
-                } else {
-                    this.bubbleBtn.classList.remove('is-ready');
+                const bReady = charge >= 1.0;
+                if (c.bubbleReady !== bReady) {
+                    c.bubbleReady = bReady;
+                    this.bubbleBtn.classList.toggle('is-ready', bReady);
                 }
-            } else {
-                this.bubbleBtn.classList.add('hidden');
             }
         }
     }

@@ -182,10 +182,12 @@ class DungeonManager {
 
     initSnowParticles(targetCount) {
         this.snowflakes = [];
+        const isMob = (typeof MobilePerf !== 'undefined' && MobilePerf.isMobile);
+        const count = isMob ? Math.min(targetCount, 42) : targetCount;
         const w = (typeof window !== 'undefined') ? window.innerWidth : 1920;
         const h = (typeof window !== 'undefined') ? window.innerHeight : 1080;
 
-        for (let i = 0; i < targetCount; i++) {
+        for (let i = 0; i < count; i++) {
             this.snowflakes.push({
                 x: Math.random() * w,
                 y: Math.random() * h,
@@ -508,15 +510,29 @@ class DungeonManager {
             ctx.restore();
         }
 
-        // 2. Falling Snowflakes (Screen Space)
+        // 2. Falling Snowflakes (Screen Space — batched by alpha bucket on mobile)
         if (this.snowflakes.length > 0) {
             ctx.save();
-            for (let i = 0; i < this.snowflakes.length; i++) {
-                const flake = this.snowflakes[i];
-                ctx.fillStyle = `rgba(255, 255, 255, ${flake.alpha})`;
-                ctx.beginPath();
-                ctx.arc(flake.x, flake.y, flake.radius, 0, Math.PI * 2);
-                ctx.fill();
+            if (typeof MobilePerf !== 'undefined' && MobilePerf.isMobile) {
+                for (let b = 0; b < 2; b++) {
+                    ctx.fillStyle = b === 0 ? 'rgba(255, 255, 255, 0.48)' : 'rgba(255, 255, 255, 0.82)';
+                    ctx.beginPath();
+                    for (let i = 0; i < this.snowflakes.length; i++) {
+                        const fl = this.snowflakes[i];
+                        if ((fl.alpha > 0.62 ? 1 : 0) !== b) continue;
+                        ctx.moveTo(fl.x + fl.radius, fl.y);
+                        ctx.arc(fl.x, fl.y, fl.radius, 0, Math.PI * 2);
+                    }
+                    ctx.fill();
+                }
+            } else {
+                for (let i = 0; i < this.snowflakes.length; i++) {
+                    const flake = this.snowflakes[i];
+                    ctx.fillStyle = `rgba(255, 255, 255, ${flake.alpha})`;
+                    ctx.beginPath();
+                    ctx.arc(flake.x, flake.y, flake.radius, 0, Math.PI * 2);
+                    ctx.fill();
+                }
             }
             ctx.restore();
         }

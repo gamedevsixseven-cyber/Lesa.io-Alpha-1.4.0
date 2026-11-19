@@ -144,8 +144,10 @@ class OlympusIceRenderer {
 
             // Glowing predator eye + fierce brow
             ctx.fillStyle = '#00f5ff';
-            ctx.shadowColor = '#00d2d3';
-            ctx.shadowBlur = 6;
+            if (!(typeof MobilePerf !== 'undefined' && MobilePerf.isMobile)) {
+                ctx.shadowColor = '#00d2d3';
+                ctx.shadowBlur = 6;
+            }
             ctx.beginPath();
             ctx.ellipse(4, -2.5, 2.6, 1.8, -0.2, 0, Math.PI * 2);
             ctx.fill();
@@ -252,8 +254,10 @@ class OlympusIceRenderer {
             ctx.save();
             ctx.translate(0, -r * 0.08);
             ctx.rotate((golem.age || 0) * 0.04);
-            ctx.shadowColor = '#00f5ff';
-            ctx.shadowBlur = 10;
+            if (!(typeof MobilePerf !== 'undefined' && MobilePerf.isMobile)) {
+                ctx.shadowColor = '#00f5ff';
+                ctx.shadowBlur = 10;
+            }
             this.drawCrystal(ctx, [[0, -10], [9, 0], [0, 10], [-9, 0]], '#81ecec', '#00a8ff', false);
             ctx.shadowBlur = 0;
             ctx.restore();
@@ -268,8 +272,10 @@ class OlympusIceRenderer {
             ctx.fillStyle = '#0c1824';
             ctx.fillRect(-10, -8, 22, 6);
             ctx.fillStyle = '#00f5ff';
-            ctx.shadowColor = '#00f5ff';
-            ctx.shadowBlur = 7;
+            if (!(typeof MobilePerf !== 'undefined' && MobilePerf.isMobile)) {
+                ctx.shadowColor = '#00f5ff';
+                ctx.shadowBlur = 7;
+            }
             ctx.beginPath();
             ctx.arc(-3, -5, 2.8, 0, Math.PI * 2);
             ctx.arc(7, -5, 2.8, 0, Math.PI * 2);

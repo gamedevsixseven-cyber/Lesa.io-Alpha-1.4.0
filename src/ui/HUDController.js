@@ -351,7 +351,8 @@ class HUDController {
         }
 
         this.minimapFrameCount = (this.minimapFrameCount || 0) + 1;
-        if (this.minimapFrameCount % 2 === 0 && window.gameInstance) {
+        const minimapEvery = (typeof MobilePerf !== 'undefined' && MobilePerf.isMobile) ? 6 : 2;
+        if (this.minimapFrameCount % minimapEvery === 0 && window.gameInstance) {
             this.drawMinimap(player, window.gameInstance.enemies, window.gameInstance.arena);
         }
     }

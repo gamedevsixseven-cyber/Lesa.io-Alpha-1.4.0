@@ -101,11 +101,18 @@ class OlympusAssets {
         const tileW = Math.max(128, Math.round(img.naturalWidth * scale));
         const tileH = Math.max(128, Math.round(img.naturalHeight * scale));
 
-        const patternCanvas = (typeof document !== 'undefined') ? document.createElement('canvas') : null;
+        const useShared = (typeof MobilePerf !== 'undefined' && MobilePerf.isMobile);
+        let patternCanvas = null;
+        if (typeof document !== 'undefined') {
+            patternCanvas = useShared
+                ? (OlympusAssets._sharedPatternCanvas || (OlympusAssets._sharedPatternCanvas = document.createElement('canvas')))
+                : document.createElement('canvas');
+        }
         if (patternCanvas) {
             patternCanvas.width = tileW;
             patternCanvas.height = tileH;
             const pCtx = patternCanvas.getContext('2d');
+            pCtx.clearRect(0, 0, tileW, tileH);
             pCtx.drawImage(img, 0, 0, tileW, tileH);
             const pattern = gCtx.createPattern(patternCanvas, 'repeat');
             if (pattern) {

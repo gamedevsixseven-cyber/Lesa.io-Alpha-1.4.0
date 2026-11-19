@@ -243,8 +243,10 @@ class OlympusBossRenderer {
             ctx.fill();
 
             ctx.fillStyle = '#e056fd';
-            ctx.shadowColor = '#e056fd';
-            ctx.shadowBlur = 8;
+            if (!(typeof MobilePerf !== 'undefined' && MobilePerf.isMobile)) {
+                ctx.shadowColor = '#e056fd';
+                ctx.shadowBlur = 8;
+            }
             ctx.beginPath();
             ctx.arc(-2, -1, 2.8, 0, Math.PI * 2);
             ctx.arc(10, -1, 2.8, 0, Math.PI * 2);
@@ -358,8 +360,10 @@ class OlympusBossRenderer {
             ctx.lineWidth = 2.4;
             ctx.strokeRect(-r * 0.42, -r * 0.34, r * 0.84, r * 0.14);
             ctx.fillStyle = '#81ecec';
-            ctx.shadowColor = '#00cec9';
-            ctx.shadowBlur = 10;
+            if (!(typeof MobilePerf !== 'undefined' && MobilePerf.isMobile)) {
+                ctx.shadowColor = '#00cec9';
+                ctx.shadowBlur = 10;
+            }
             ctx.beginPath();
             ctx.arc(0, 0, r * 0.2, 0, Math.PI * 2);
             ctx.fill();
@@ -386,8 +390,10 @@ class OlympusBossRenderer {
 
         if (!flash) {
             ctx.fillStyle = '#00f5ff';
-            ctx.shadowColor = '#00f5ff';
-            ctx.shadowBlur = 7;
+            if (!(typeof MobilePerf !== 'undefined' && MobilePerf.isMobile)) {
+                ctx.shadowColor = '#00f5ff';
+                ctx.shadowBlur = 7;
+            }
             ctx.beginPath();
             ctx.arc(-5, -3, 3, 0, Math.PI * 2);
             ctx.arc(7, -3, 3, 0, Math.PI * 2);

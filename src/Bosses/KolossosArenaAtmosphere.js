@@ -89,8 +89,9 @@ class KolossosArenaAtmosphere {
     }
 
     static _initParticles() {
+        const isMob = (typeof MobilePerf !== 'undefined' && MobilePerf.isMobile);
         if (!this._fogClouds) {
-            this._fogClouds = Array.from({ length: 24 }, (_, i) => ({
+            this._fogClouds = Array.from({ length: isMob ? 10 : 24 }, (_, i) => ({
                 x: ((i % 6) - 2.5) * 480 + (Math.random() - 0.5) * 160,
                 y: (Math.floor(i / 6) - 1.5) * 680 + (Math.random() - 0.5) * 180,
                 r: 260 + Math.random() * 170,
@@ -101,7 +102,7 @@ class KolossosArenaAtmosphere {
             }));
         }
         if (!this._embers) {
-            this._embers = Array.from({ length: 30 }, () => ({
+            this._embers = Array.from({ length: isMob ? 12 : 30 }, () => ({
                 x: (Math.random() - 0.5) * 1800,
                 y: (Math.random() - 0.5) * 1400,
                 vx: (Math.random() - 0.5) * 0.65,

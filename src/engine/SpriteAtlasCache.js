@@ -31,12 +31,15 @@ class SpriteAtlasCache {
     }
 
     static _createPage() {
-        if (SpriteAtlasCache._pages.length >= SpriteAtlasCache.MAX_PAGES) {
+        const cfg = (typeof MobilePerf !== 'undefined') ? MobilePerf.getAtlasConfig() : null;
+        const maxPages = cfg ? cfg.maxPages : SpriteAtlasCache.MAX_PAGES;
+        const pageSize = cfg ? cfg.pageSize : SpriteAtlasCache.PAGE_SIZE;
+        if (SpriteAtlasCache._pages.length >= maxPages) {
             return null;
         }
         const canvas = document.createElement('canvas');
-        canvas.width = SpriteAtlasCache.PAGE_SIZE;
-        canvas.height = SpriteAtlasCache.PAGE_SIZE;
+        canvas.width = pageSize;
+        canvas.height = pageSize;
         const ctx = canvas.getContext('2d');
         const page = {
             canvas,
@@ -50,7 +53,8 @@ class SpriteAtlasCache {
     }
 
     static _allocateRect(w, h) {
-        const size = SpriteAtlasCache.PAGE_SIZE;
+        const cfg = (typeof MobilePerf !== 'undefined') ? MobilePerf.getAtlasConfig() : null;
+        const size = cfg ? cfg.pageSize : SpriteAtlasCache.PAGE_SIZE;
         const g = SpriteAtlasCache.GUTTER;
         if (w + g * 2 > size || h + g * 2 > size) return null;
 
@@ -93,7 +97,9 @@ class SpriteAtlasCache {
         const existing = SpriteAtlasCache._entries.get(key);
         if (existing) return existing;
 
-        const dpr = (opts && opts.dpr) || 1.25;
+        const cfg = (typeof MobilePerf !== 'undefined') ? MobilePerf.getAtlasConfig() : null;
+        const rawDpr = (opts && opts.dpr) || 1.25;
+        const dpr = cfg ? Math.min(rawDpr, cfg.dprCap) : rawDpr;
         const sw = Math.max(1, Math.ceil(logicalW * dpr));
         const sh = Math.max(1, Math.ceil(logicalH * dpr));
         const actualW = sw / dpr;

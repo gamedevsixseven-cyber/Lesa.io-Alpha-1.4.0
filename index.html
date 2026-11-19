@@ -40,8 +40,7 @@
     <link rel="stylesheet" href="styles/inventory.css?v=1.5.27">
     <link rel="stylesheet" href="styles/tabs-shared.css?v=1.5.12">
     <link rel="stylesheet" href="styles/loading.css">
-    <link rel="stylesheet" href="styles/mobile.css">
-    <link rel="stylesheet" href="styles/mobile-modals.css">
+    <link rel="stylesheet" href="styles/mobile.css?v=1.5.51">
     <link rel="stylesheet" href="styles/mobile-modals.css?v=1.5.34">
     <link rel="stylesheet" href="src/admin/admin.css?v=1.5.40">
     <link rel="stylesheet" href="styles/credits.css?v=1.4.0">
@@ -52,8 +51,6 @@
     <link rel="stylesheet" href="styles/olympus-altar.css?v=1.5.13">
     <link rel="stylesheet" href="styles/olympus-victory.css?v=1.5.41">
     <link rel="stylesheet" href="styles/boss-rewards.css?v=1.5.31">
-    <link rel="stylesheet" href="styles/cosmetics.css?v=1.5.49">
-    <link rel="stylesheet" href="styles/cosmetics-fx.css?v=1.5.49">
     <link rel="stylesheet" href="styles/cosmetics.css?v=1.5.49">
     <link rel="stylesheet" href="styles/cosmetics-fx.css?v=1.5.49">
     <!-- Google Fonts -->
@@ -834,76 +831,82 @@
                 </div>
 
                 <div id="prof-stats-section">
-                <div class="prof-section-title"><img src="assets/ui-icons/chart.svg" class="ui-icon ui-icon-sm" alt="">
-                    CAREER STATS</div>
+                    <div class="prof-section-title"><img src="assets/ui-icons/chart.svg" class="ui-icon ui-icon-sm"
+                            alt="">
+                        CAREER STATS</div>
 
-                <!-- Career Stats Grid -->
-                <div class="profile-stats-grid">
-                    <div class="prof-stat-box">
-                        <div class="stat-icon"><img src="assets/ui-icons/swords.svg" class="ui-icon ui-icon-box" alt="">
+                    <!-- Career Stats Grid -->
+                    <div class="profile-stats-grid">
+                        <div class="prof-stat-box">
+                            <div class="stat-icon"><img src="assets/ui-icons/swords.svg" class="ui-icon ui-icon-box"
+                                    alt="">
+                            </div>
+                            <div class="stat-data">
+                                <span class="stat-lbl">Total Kills</span>
+                                <span id="prof-total-kills" class="stat-val">0</span>
+                            </div>
                         </div>
-                        <div class="stat-data">
-                            <span class="stat-lbl">Total Kills</span>
-                            <span id="prof-total-kills" class="stat-val">0</span>
+                        <div class="prof-stat-box">
+                            <div class="stat-icon"><img src="assets/ui-icons/wave.svg" class="ui-icon ui-icon-box"
+                                    alt="">
+                            </div>
+                            <div class="stat-data">
+                                <span class="stat-lbl">Max Wave</span>
+                                <span id="prof-max-wave" class="stat-val">Wave 1</span>
+                            </div>
+                        </div>
+                        <div class="prof-stat-box">
+                            <div class="stat-icon"><img src="assets/ui-icons/trophy.svg" class="ui-icon ui-icon-box"
+                                    alt="">
+                            </div>
+                            <div class="stat-data">
+                                <span class="stat-lbl">High Score</span>
+                                <span id="prof-high-score" class="stat-val">0</span>
+                            </div>
+                        </div>
+                        <div class="prof-stat-box">
+                            <div class="stat-icon"><img src="assets/ui-icons/boxing_glove.svg"
+                                    class="ui-icon ui-icon-box" alt=""></div>
+                            <div class="stat-data">
+                                <span class="stat-lbl">Skatmirs Bonked</span>
+                                <span id="prof-fatmirs" class="stat-val">0</span>
+                            </div>
+                        </div>
+                        <div class="prof-stat-box">
+                            <div class="stat-icon"><img src="assets/ui-icons/soccer.svg" class="ui-icon ui-icon-box"
+                                    alt="">
+                            </div>
+                            <div class="stat-data">
+                                <span class="stat-lbl">Casillases Outplayed</span>
+                                <span id="prof-casillas" class="stat-val">0</span>
+                            </div>
+                        </div>
+                        <div class="prof-stat-box">
+                            <div class="stat-icon"><img src="assets/ui-icons/gamepad.svg" class="ui-icon ui-icon-box"
+                                    alt=""></div>
+                            <div class="stat-data">
+                                <span class="stat-lbl">Matches Played</span>
+                                <span id="prof-matches" class="stat-val">0</span>
+                            </div>
+                        </div>
+                        <div class="prof-stat-box">
+                            <div class="stat-icon"><img src="assets/ui-icons/timer.svg" class="ui-icon ui-icon-box"
+                                    alt="">
+                            </div>
+                            <div class="stat-data">
+                                <span class="stat-lbl">Total Time</span>
+                                <span id="prof-time" class="stat-val">0m 00s</span>
+                            </div>
+                        </div>
+                        <div class="prof-stat-box">
+                            <div class="stat-icon"><img src="assets/icons/icon_heroes.png" class="ui-icon ui-icon-box"
+                                    alt=""></div>
+                            <div class="stat-data">
+                                <span class="stat-lbl">Favorite Hero</span>
+                                <span id="prof-fav-hero" class="stat-val">Psanas</span>
+                            </div>
                         </div>
                     </div>
-                    <div class="prof-stat-box">
-                        <div class="stat-icon"><img src="assets/ui-icons/wave.svg" class="ui-icon ui-icon-box" alt="">
-                        </div>
-                        <div class="stat-data">
-                            <span class="stat-lbl">Max Wave</span>
-                            <span id="prof-max-wave" class="stat-val">Wave 1</span>
-                        </div>
-                    </div>
-                    <div class="prof-stat-box">
-                        <div class="stat-icon"><img src="assets/ui-icons/trophy.svg" class="ui-icon ui-icon-box" alt="">
-                        </div>
-                        <div class="stat-data">
-                            <span class="stat-lbl">High Score</span>
-                            <span id="prof-high-score" class="stat-val">0</span>
-                        </div>
-                    </div>
-                    <div class="prof-stat-box">
-                        <div class="stat-icon"><img src="assets/ui-icons/boxing_glove.svg" class="ui-icon ui-icon-box"
-                                alt=""></div>
-                        <div class="stat-data">
-                            <span class="stat-lbl">Skatmirs Bonked</span>
-                            <span id="prof-fatmirs" class="stat-val">0</span>
-                        </div>
-                    </div>
-                    <div class="prof-stat-box">
-                        <div class="stat-icon"><img src="assets/ui-icons/soccer.svg" class="ui-icon ui-icon-box" alt="">
-                        </div>
-                        <div class="stat-data">
-                            <span class="stat-lbl">Casillases Outplayed</span>
-                            <span id="prof-casillas" class="stat-val">0</span>
-                        </div>
-                    </div>
-                    <div class="prof-stat-box">
-                        <div class="stat-icon"><img src="assets/ui-icons/gamepad.svg" class="ui-icon ui-icon-box"
-                                alt=""></div>
-                        <div class="stat-data">
-                            <span class="stat-lbl">Matches Played</span>
-                            <span id="prof-matches" class="stat-val">0</span>
-                        </div>
-                    </div>
-                    <div class="prof-stat-box">
-                        <div class="stat-icon"><img src="assets/ui-icons/timer.svg" class="ui-icon ui-icon-box" alt="">
-                        </div>
-                        <div class="stat-data">
-                            <span class="stat-lbl">Total Time</span>
-                            <span id="prof-time" class="stat-val">0m 00s</span>
-                        </div>
-                    </div>
-                    <div class="prof-stat-box">
-                        <div class="stat-icon"><img src="assets/icons/icon_heroes.png" class="ui-icon ui-icon-box"
-                                alt=""></div>
-                        <div class="stat-data">
-                            <span class="stat-lbl">Favorite Hero</span>
-                            <span id="prof-fav-hero" class="stat-val">Psanas</span>
-                        </div>
-                    </div>
-                </div>
                 </div>
 
                 <div id="prof-cosmetics-section" class="prof-cosmetics-section hidden"></div>
@@ -2103,19 +2106,24 @@
                     </div>
 
                     <div class="admin-section">
-                        <div class="admin-section-title"><img src="assets/ui-icons/swords.svg" class="ui-icon ui-icon-sm"
-                                alt=""> Instant Arena Actions</div>
+                        <div class="admin-section-title"><img src="assets/ui-icons/swords.svg"
+                                class="ui-icon ui-icon-sm" alt=""> Instant Arena Actions</div>
                         <div class="admin-btn-grid">
                             <button id="admin-btn-full-heal" class="admin-control-btn btn-success"><img
-                                    src="assets/GearUIIcons/HP.png" class="ui-icon ui-icon-sm" alt=""> FULL HEAL</button>
+                                    src="assets/GearUIIcons/HP.png" class="ui-icon ui-icon-sm" alt=""> FULL
+                                HEAL</button>
                             <button id="admin-btn-level-up" class="admin-control-btn btn-info"><img
-                                    src="assets/ui-icons/rocket.svg" class="ui-icon ui-icon-sm" alt=""> +1 LEVEL</button>
+                                    src="assets/ui-icons/rocket.svg" class="ui-icon ui-icon-sm" alt=""> +1
+                                LEVEL</button>
                             <button id="admin-btn-nuke" class="admin-control-btn btn-danger"><img
-                                    src="assets/ui-icons/boom.svg" class="ui-icon ui-icon-sm" alt=""> NUKE ARENA</button>
+                                    src="assets/ui-icons/boom.svg" class="ui-icon ui-icon-sm" alt=""> NUKE
+                                ARENA</button>
                             <button id="admin-btn-magnet" class="admin-control-btn btn-warning"><img
-                                    src="assets/ui-icons/magnet.svg" class="ui-icon ui-icon-sm" alt=""> MAGNET DROPS</button>
+                                    src="assets/ui-icons/magnet.svg" class="ui-icon ui-icon-sm" alt=""> MAGNET
+                                DROPS</button>
                             <button id="admin-btn-clear-drops" class="admin-control-btn"><img
-                                    src="assets/ui-icons/cross.svg" class="ui-icon ui-icon-sm" alt=""> CLEAR DROPS</button>
+                                    src="assets/ui-icons/cross.svg" class="ui-icon ui-icon-sm" alt=""> CLEAR
+                                DROPS</button>
                         </div>
                     </div>
 
@@ -2141,30 +2149,42 @@
                             <input type="number" id="admin-input-wave" value="10" min="1" max="500"
                                 class="admin-text-input" style="max-width: 85px;">
                             <button id="admin-btn-warp-wave" class="admin-control-btn btn-success"><img
-                                    src="assets/ui-icons/bolt.svg" class="ui-icon ui-icon-sm" alt=""> WARP CURRENT</button>
+                                    src="assets/ui-icons/bolt.svg" class="ui-icon ui-icon-sm" alt=""> WARP
+                                CURRENT</button>
                             <button id="admin-btn-warp-endless" class="admin-control-btn btn-info"><img
-                                    src="assets/ui-icons/hourglass.svg" class="ui-icon ui-icon-sm" alt=""> WARP ENDLESS</button>
+                                    src="assets/ui-icons/hourglass.svg" class="ui-icon ui-icon-sm" alt=""> WARP
+                                ENDLESS</button>
                             <button id="admin-btn-jump-wave10" class="admin-control-btn btn-danger"><img
-                                    src="assets/ui-icons/crown.svg" class="ui-icon ui-icon-sm" alt=""> STORY W10 KLEANTHIS</button>
+                                    src="assets/ui-icons/crown.svg" class="ui-icon ui-icon-sm" alt=""> STORY W10
+                                KLEANTHIS</button>
                         </div>
                         <div class="admin-btn-grid">
-                            <button class="admin-control-btn admin-warp-preset-btn" data-mode="story" data-target="15">Story W15 (Kiloumpas)</button>
-                            <button class="admin-control-btn admin-warp-preset-btn" data-mode="story" data-target="20">Story W20 (Rouf)</button>
-                            <button class="admin-control-btn admin-warp-preset-btn btn-info" data-mode="endless" data-target="25">Endless W25</button>
-                            <button class="admin-control-btn admin-warp-preset-btn btn-danger" data-mode="endless" data-target="40">Endless W40 (Mecha)</button>
+                            <button class="admin-control-btn admin-warp-preset-btn" data-mode="story"
+                                data-target="15">Story W15 (Kiloumpas)</button>
+                            <button class="admin-control-btn admin-warp-preset-btn" data-mode="story"
+                                data-target="20">Story W20 (Rouf)</button>
+                            <button class="admin-control-btn admin-warp-preset-btn btn-info" data-mode="endless"
+                                data-target="25">Endless W25</button>
+                            <button class="admin-control-btn admin-warp-preset-btn btn-danger" data-mode="endless"
+                                data-target="40">Endless W40 (Mecha)</button>
                         </div>
                     </div>
 
                     <div class="admin-section">
-                        <div class="admin-section-title"><img src="assets/ui-icons/temple.svg" class="ui-icon ui-icon-sm"
-                                alt=""> Mount Olympus Ascent Floors (Instant Teleport)</div>
+                        <div class="admin-section-title"><img src="assets/ui-icons/temple.svg"
+                                class="ui-icon ui-icon-sm" alt=""> Mount Olympus Ascent Floors (Instant Teleport)</div>
                         <div class="admin-btn-grid">
-                            <button class="admin-control-btn btn-olympus admin-warp-preset-btn" data-mode="dungeons" data-target="1">Floor 1 (Casillas)</button>
-                            <button class="admin-control-btn btn-olympus admin-warp-preset-btn" data-mode="dungeons" data-target="2">Floor 2 (Ravine)</button>
-                            <button class="admin-control-btn btn-olympus admin-warp-preset-btn" data-mode="dungeons" data-target="3">Floor 3 (Frost Titan)</button>
-                            <button class="admin-control-btn btn-olympus admin-warp-preset-btn" data-mode="dungeons" data-target="4">Floor 4 (Berserker)</button>
-                            <button class="admin-control-btn btn-olympus btn-danger admin-warp-preset-btn" data-mode="dungeons" data-target="5"><img
-                                    src="assets/ui-icons/bolt.svg" class="ui-icon ui-icon-sm" alt=""> Floor 5 (ZEUS)</button>
+                            <button class="admin-control-btn btn-olympus admin-warp-preset-btn" data-mode="dungeons"
+                                data-target="1">Floor 1 (Casillas)</button>
+                            <button class="admin-control-btn btn-olympus admin-warp-preset-btn" data-mode="dungeons"
+                                data-target="2">Floor 2 (Ravine)</button>
+                            <button class="admin-control-btn btn-olympus admin-warp-preset-btn" data-mode="dungeons"
+                                data-target="3">Floor 3 (Frost Titan)</button>
+                            <button class="admin-control-btn btn-olympus admin-warp-preset-btn" data-mode="dungeons"
+                                data-target="4">Floor 4 (Berserker)</button>
+                            <button class="admin-control-btn btn-olympus btn-danger admin-warp-preset-btn"
+                                data-mode="dungeons" data-target="5"><img src="assets/ui-icons/bolt.svg"
+                                    class="ui-icon ui-icon-sm" alt=""> Floor 5 (ZEUS)</button>
                         </div>
                     </div>
 
@@ -2172,26 +2192,36 @@
                         <div class="admin-section-title"><img src="assets/ui-icons/crown.svg" class="ui-icon ui-icon-sm"
                                 alt=""> Active Boss & Zeus Controls</div>
                         <div class="admin-btn-grid">
-                            <button class="admin-control-btn btn-olympus admin-boss-action-btn" data-action="land_zeus"><img
-                                    src="assets/ui-icons/bolt.svg" class="ui-icon ui-icon-sm" alt=""> Land Zeus / Break Crystals</button>
-                            <button class="admin-control-btn btn-olympus admin-boss-action-btn" data-action="zeus_storm"><img
-                                    src="assets/ui-icons/siren.svg" class="ui-icon ui-icon-sm" alt=""> Zeus Thunderstorm</button>
-                            <button class="admin-control-btn btn-warning admin-boss-action-btn" data-action="zeus_wrath"><img
-                                    src="assets/ui-icons/flame.svg" class="ui-icon ui-icon-sm" alt=""> Zeus 50% Wrath</button>
-                            <button class="admin-control-btn btn-danger admin-boss-action-btn" data-action="slay_boss"><img
-                                    src="assets/ui-icons/boom.svg" class="ui-icon ui-icon-sm" alt=""> Slay Active Boss</button>
+                            <button class="admin-control-btn btn-olympus admin-boss-action-btn"
+                                data-action="land_zeus"><img src="assets/ui-icons/bolt.svg" class="ui-icon ui-icon-sm"
+                                    alt=""> Land Zeus / Break Crystals</button>
+                            <button class="admin-control-btn btn-olympus admin-boss-action-btn"
+                                data-action="zeus_storm"><img src="assets/ui-icons/siren.svg" class="ui-icon ui-icon-sm"
+                                    alt=""> Zeus Thunderstorm</button>
+                            <button class="admin-control-btn btn-warning admin-boss-action-btn"
+                                data-action="zeus_wrath"><img src="assets/ui-icons/flame.svg" class="ui-icon ui-icon-sm"
+                                    alt=""> Zeus 50% Wrath</button>
+                            <button class="admin-control-btn btn-danger admin-boss-action-btn"
+                                data-action="slay_boss"><img src="assets/ui-icons/boom.svg" class="ui-icon ui-icon-sm"
+                                    alt=""> Slay Active Boss</button>
                             <button class="admin-control-btn admin-boss-action-btn" data-action="drink"><img
-                                    src="assets/ui-icons/sparkle.svg" class="ui-icon ui-icon-sm" alt=""> Kleanthis Sip</button>
+                                    src="assets/ui-icons/sparkle.svg" class="ui-icon ui-icon-sm" alt=""> Kleanthis
+                                Sip</button>
                             <button class="admin-control-btn admin-boss-action-btn" data-action="drunk"><img
-                                    src="assets/ui-icons/swirl.svg" class="ui-icon ui-icon-sm" alt=""> Kleanthis Drunk</button>
+                                    src="assets/ui-icons/swirl.svg" class="ui-icon ui-icon-sm" alt=""> Kleanthis
+                                Drunk</button>
                             <button class="admin-control-btn admin-boss-action-btn" data-action="kick"><img
-                                    src="assets/ui-icons/boxing_glove.svg" class="ui-icon ui-icon-sm" alt=""> Karate Kick</button>
+                                    src="assets/ui-icons/boxing_glove.svg" class="ui-icon ui-icon-sm" alt=""> Karate
+                                Kick</button>
                             <button class="admin-control-btn admin-boss-action-btn" data-action="rage"><img
-                                    src="assets/ui-icons/flame.svg" class="ui-icon ui-icon-sm" alt=""> Force Enrage</button>
+                                    src="assets/ui-icons/flame.svg" class="ui-icon ui-icon-sm" alt=""> Force
+                                Enrage</button>
                             <button class="admin-control-btn admin-boss-action-btn" data-action="summon"><img
-                                    src="assets/ui-icons/music.svg" class="ui-icon ui-icon-sm" alt=""> Summon Minions</button>
+                                    src="assets/ui-icons/music.svg" class="ui-icon ui-icon-sm" alt=""> Summon
+                                Minions</button>
                             <button class="admin-control-btn admin-boss-action-btn" data-action="volley"><img
-                                    src="assets/ui-icons/boom.svg" class="ui-icon ui-icon-sm" alt=""> Shatter Volley</button>
+                                    src="assets/ui-icons/boom.svg" class="ui-icon ui-icon-sm" alt=""> Shatter
+                                Volley</button>
                         </div>
                     </div>
                 </div>
@@ -2202,28 +2232,43 @@
                         <div class="admin-section-title"><img src="assets/ui-icons/target.svg"
                                 class="ui-icon ui-icon-sm" alt=""> Enemy & Ice Mob Spawner</div>
                         <div class="admin-btn-grid">
-                            <button class="admin-control-btn admin-spawn-btn" data-type="fatmir" data-count="1">1x Fatmir</button>
-                            <button class="admin-control-btn admin-spawn-btn" data-type="fatmir" data-count="5">5x Fatmir</button>
-                            <button class="admin-control-btn admin-spawn-btn" data-type="casillas" data-count="5">5x Casillas</button>
-                            <button class="admin-control-btn admin-spawn-btn" data-type="skarmogyftos" data-count="5">5x Skarmo</button>
-                            <button class="admin-control-btn admin-spawn-btn" data-type="astynomos" data-count="3">3x Astynomos</button>
-                            <button class="admin-control-btn admin-spawn-btn" data-type="mat" data-count="3">3x MAT Officer</button>
-                            <button class="admin-control-btn admin-spawn-btn btn-info" data-type="frost_wolf" data-count="3">3x Frost Wolf</button>
-                            <button class="admin-control-btn admin-spawn-btn btn-info" data-type="ice_golem" data-count="2">2x Ice Golem</button>
+                            <button class="admin-control-btn admin-spawn-btn" data-type="fatmir" data-count="1">1x
+                                Fatmir</button>
+                            <button class="admin-control-btn admin-spawn-btn" data-type="fatmir" data-count="5">5x
+                                Fatmir</button>
+                            <button class="admin-control-btn admin-spawn-btn" data-type="casillas" data-count="5">5x
+                                Casillas</button>
+                            <button class="admin-control-btn admin-spawn-btn" data-type="skarmogyftos" data-count="5">5x
+                                Skarmo</button>
+                            <button class="admin-control-btn admin-spawn-btn" data-type="astynomos" data-count="3">3x
+                                Astynomos</button>
+                            <button class="admin-control-btn admin-spawn-btn" data-type="mat" data-count="3">3x MAT
+                                Officer</button>
+                            <button class="admin-control-btn admin-spawn-btn btn-info" data-type="frost_wolf"
+                                data-count="3">3x Frost Wolf</button>
+                            <button class="admin-control-btn admin-spawn-btn btn-info" data-type="ice_golem"
+                                data-count="2">2x Ice Golem</button>
                         </div>
                     </div>
 
                     <div class="admin-section">
-                        <div class="admin-section-title"><img src="assets/ui-icons/crown.svg"
-                                class="ui-icon ui-icon-sm" alt=""> Boss Spawner (Story, Endless & Olympus)</div>
+                        <div class="admin-section-title"><img src="assets/ui-icons/crown.svg" class="ui-icon ui-icon-sm"
+                                alt=""> Boss Spawner (Story, Endless & Olympus)</div>
                         <div class="admin-btn-grid">
-                            <button class="admin-control-btn admin-spawn-btn btn-danger" data-type="kleanthis" data-count="1">Kleanthis</button>
-                            <button class="admin-control-btn admin-spawn-btn btn-danger" data-type="kiloumpas" data-count="1">Kiloumpas</button>
-                            <button class="admin-control-btn admin-spawn-btn btn-danger" data-type="rouf" data-count="1">Rouf</button>
-                            <button class="admin-control-btn admin-spawn-btn btn-olympus" data-type="zeus" data-count="1">Zeus (Olympus)</button>
-                            <button class="admin-control-btn admin-spawn-btn btn-warning" data-type="souvlaki_brawler" data-count="1">Souvlaki Brawler</button>
-                            <button class="admin-control-btn admin-spawn-btn btn-warning" data-type="frappe_baron" data-count="1">Frappe Baron</button>
-                            <button class="admin-control-btn admin-spawn-btn btn-danger" data-type="mecha_kolossos" data-count="1">Mecha Kolossos</button>
+                            <button class="admin-control-btn admin-spawn-btn btn-danger" data-type="kleanthis"
+                                data-count="1">Kleanthis</button>
+                            <button class="admin-control-btn admin-spawn-btn btn-danger" data-type="kiloumpas"
+                                data-count="1">Kiloumpas</button>
+                            <button class="admin-control-btn admin-spawn-btn btn-danger" data-type="rouf"
+                                data-count="1">Rouf</button>
+                            <button class="admin-control-btn admin-spawn-btn btn-olympus" data-type="zeus"
+                                data-count="1">Zeus (Olympus)</button>
+                            <button class="admin-control-btn admin-spawn-btn btn-warning" data-type="souvlaki_brawler"
+                                data-count="1">Souvlaki Brawler</button>
+                            <button class="admin-control-btn admin-spawn-btn btn-warning" data-type="frappe_baron"
+                                data-count="1">Frappe Baron</button>
+                            <button class="admin-control-btn admin-spawn-btn btn-danger" data-type="mecha_kolossos"
+                                data-count="1">Mecha Kolossos</button>
                         </div>
                     </div>
 
@@ -2232,19 +2277,26 @@
                                 alt=""> Drop & Crafting Material Spawner</div>
                         <div class="admin-btn-grid">
                             <button class="admin-control-btn admin-drop-btn" data-drop="xp"><img
-                                    src="assets/ui-icons/cookie.svg" class="ui-icon ui-icon-sm" alt=""> 5x XP Cookies</button>
+                                    src="assets/ui-icons/cookie.svg" class="ui-icon ui-icon-sm" alt=""> 5x XP
+                                Cookies</button>
                             <button class="admin-control-btn admin-drop-btn" data-drop="heart"><img
-                                    src="assets/GearUIIcons/HP.png" class="ui-icon ui-icon-sm" alt=""> 5x Hearts</button>
+                                    src="assets/GearUIIcons/HP.png" class="ui-icon ui-icon-sm" alt=""> 5x
+                                Hearts</button>
                             <button class="admin-control-btn admin-drop-btn" data-drop="star"><img
-                                    src="assets/ui-icons/star.svg" class="ui-icon ui-icon-sm" alt=""> 5x Power Stars</button>
+                                    src="assets/ui-icons/star.svg" class="ui-icon ui-icon-sm" alt=""> 5x Power
+                                Stars</button>
                             <button class="admin-control-btn admin-drop-btn" data-drop="coin_pouch"><img
-                                    src="assets/ui-icons/bag_gold.svg" class="ui-icon ui-icon-sm" alt=""> 5x Coin Pouches</button>
+                                    src="assets/ui-icons/bag_gold.svg" class="ui-icon ui-icon-sm" alt=""> 5x Coin
+                                Pouches</button>
                             <button class="admin-control-btn admin-drop-btn btn-info" data-drop="chrono_core"><img
-                                    src="assets/ui-icons/hourglass.svg" class="ui-icon ui-icon-sm" alt=""> Chrono Cores</button>
+                                    src="assets/ui-icons/hourglass.svg" class="ui-icon ui-icon-sm" alt=""> Chrono
+                                Cores</button>
                             <button class="admin-control-btn admin-drop-btn" data-drop="mat_armory_shards"><img
-                                    src="assets/ui-icons/mat_armory_shards.svg" class="ui-icon ui-icon-sm" alt=""> Armory Shards</button>
+                                    src="assets/ui-icons/mat_armory_shards.svg" class="ui-icon ui-icon-sm" alt="">
+                                Armory Shards</button>
                             <button class="admin-control-btn admin-drop-btn" data-drop="mat_mati_crystal"><img
-                                    src="assets/ui-icons/mat_mati_crystal.svg" class="ui-icon ui-icon-sm" alt=""> Mati Crystals</button>
+                                    src="assets/ui-icons/mat_mati_crystal.svg" class="ui-icon ui-icon-sm" alt=""> Mati
+                                Crystals</button>
                         </div>
                     </div>
                 </div>
@@ -2255,33 +2307,44 @@
                         <div class="admin-section-title"><img src="assets/ui-icons/coin.svg" class="ui-icon ui-icon-sm"
                                 alt=""> Gold Coins & Gems</div>
                         <div class="admin-btn-grid">
-                            <button class="admin-control-btn admin-add-coins-btn" data-amount="10000">+10,000 Coins</button>
-                            <button class="admin-control-btn admin-add-coins-btn" data-amount="100000">+100,000 Coins</button>
+                            <button class="admin-control-btn admin-add-coins-btn" data-amount="10000">+10,000
+                                Coins</button>
+                            <button class="admin-control-btn admin-add-coins-btn" data-amount="100000">+100,000
+                                Coins</button>
                             <button class="admin-control-btn admin-add-gems-btn" data-amount="1000">+1,000 Gems</button>
-                            <button class="admin-control-btn admin-add-gems-btn" data-amount="10000">+10,000 Gems</button>
+                            <button class="admin-control-btn admin-add-gems-btn" data-amount="10000">+10,000
+                                Gems</button>
                         </div>
                     </div>
 
                     <div class="admin-section">
-                        <div class="admin-section-title"><img src="assets/ui-icons/mat_ambrosia_spark.svg" class="ui-icon ui-icon-sm"
-                                alt=""> Crafting Materials, Crests & XP</div>
+                        <div class="admin-section-title"><img src="assets/ui-icons/mat_ambrosia_spark.svg"
+                                class="ui-icon ui-icon-sm" alt=""> Crafting Materials, Crests & XP</div>
                         <div class="admin-btn-grid">
-                            <button class="admin-control-btn admin-add-mat-btn" data-mat="armory_shards" data-qty="100"><img
-                                    src="assets/ui-icons/mat_armory_shards.svg" class="ui-icon ui-icon-sm" alt=""> +100 Shards</button>
-                            <button class="admin-control-btn admin-add-mat-btn" data-mat="mati_crystal" data-qty="25"><img
-                                    src="assets/ui-icons/mat_mati_crystal.svg" class="ui-icon ui-icon-sm" alt=""> +25 Mati Crystal</button>
-                            <button class="admin-control-btn admin-add-mat-btn" data-mat="olympian_bronze" data-qty="25"><img
-                                    src="assets/ui-icons/mat_olympian_bronze.svg" class="ui-icon ui-icon-sm" alt=""> +25 Olym. Bronze</button>
-                            <button class="admin-control-btn admin-add-mat-btn btn-olympus" data-mat="ambrosia_spark" data-qty="10"><img
-                                    src="assets/ui-icons/mat_ambrosia_spark.svg" class="ui-icon ui-icon-sm" alt=""> +10 Ambrosia Spark</button>
+                            <button class="admin-control-btn admin-add-mat-btn" data-mat="armory_shards"
+                                data-qty="100"><img src="assets/ui-icons/mat_armory_shards.svg"
+                                    class="ui-icon ui-icon-sm" alt=""> +100 Shards</button>
+                            <button class="admin-control-btn admin-add-mat-btn" data-mat="mati_crystal"
+                                data-qty="25"><img src="assets/ui-icons/mat_mati_crystal.svg" class="ui-icon ui-icon-sm"
+                                    alt=""> +25 Mati Crystal</button>
+                            <button class="admin-control-btn admin-add-mat-btn" data-mat="olympian_bronze"
+                                data-qty="25"><img src="assets/ui-icons/mat_olympian_bronze.svg"
+                                    class="ui-icon ui-icon-sm" alt=""> +25 Olym. Bronze</button>
+                            <button class="admin-control-btn admin-add-mat-btn btn-olympus" data-mat="ambrosia_spark"
+                                data-qty="10"><img src="assets/ui-icons/mat_ambrosia_spark.svg"
+                                    class="ui-icon ui-icon-sm" alt=""> +10 Ambrosia Spark</button>
                             <button id="admin-btn-add-crests" class="admin-control-btn btn-olympus"><img
-                                    src="assets/ui-icons/crest.svg" class="ui-icon ui-icon-sm" alt=""> Refill 3 Crests</button>
+                                    src="assets/ui-icons/crest.svg" class="ui-icon ui-icon-sm" alt=""> Refill 3
+                                Crests</button>
                             <button id="admin-btn-add-stones" class="admin-control-btn btn-warning"><img
-                                    src="assets/ui-icons/star.svg" class="ui-icon ui-icon-sm" alt=""> +5 Star Stones</button>
+                                    src="assets/ui-icons/star.svg" class="ui-icon ui-icon-sm" alt=""> +5 Star
+                                Stones</button>
                             <button id="admin-btn-add-evo-stones" class="admin-control-btn btn-olympus"><img
-                                    src="assets/ui-icons/evolution_stone.svg" class="ui-icon ui-icon-sm" alt=""> +5 Evolution Stones</button>
+                                    src="assets/ui-icons/evolution_stone.svg" class="ui-icon ui-icon-sm" alt=""> +5
+                                Evolution Stones</button>
                             <button id="admin-btn-add-xp" class="admin-control-btn btn-info"><img
-                                    src="assets/ui-icons/rocket.svg" class="ui-icon ui-icon-sm" alt=""> +1,000 Account XP</button>
+                                    src="assets/ui-icons/rocket.svg" class="ui-icon ui-icon-sm" alt=""> +1,000 Account
+                                XP</button>
                         </div>
                     </div>
 
@@ -2290,15 +2353,20 @@
                                 alt=""> Roster, Arsenal, Gear & Perks Overrides</div>
                         <div class="admin-btn-grid">
                             <button id="admin-btn-unlock-heroes" class="admin-control-btn btn-success"><img
-                                    src="assets/ui-icons/crown.svg" class="ui-icon ui-icon-sm" alt=""> Unlock All 6 Heroes</button>
+                                    src="assets/ui-icons/crown.svg" class="ui-icon ui-icon-sm" alt=""> Unlock All 6
+                                Heroes</button>
                             <button id="admin-btn-unlock-weapons" class="admin-control-btn btn-success"><img
-                                    src="assets/ui-icons/swords.svg" class="ui-icon ui-icon-sm" alt=""> Unlock All 10 Weapons</button>
+                                    src="assets/ui-icons/swords.svg" class="ui-icon ui-icon-sm" alt=""> Unlock All 10
+                                Weapons</button>
                             <button id="admin-btn-max-skills" class="admin-control-btn btn-warning"><img
-                                    src="assets/ui-icons/star.svg" class="ui-icon ui-icon-sm" alt=""> Max All 6 Skills</button>
+                                    src="assets/ui-icons/star.svg" class="ui-icon ui-icon-sm" alt=""> Max All 6
+                                Skills</button>
                             <button id="admin-btn-unlock-gear" class="admin-control-btn btn-info"><img
-                                    src="assets/ui-icons/gear_cog.svg" class="ui-icon ui-icon-sm" alt=""> Unlock All Gear</button>
+                                    src="assets/ui-icons/gear_cog.svg" class="ui-icon ui-icon-sm" alt=""> Unlock All
+                                Gear</button>
                             <button id="admin-btn-unlock-perks" class="admin-control-btn btn-olympus"><img
-                                    src="assets/ui-icons/book.svg" class="ui-icon ui-icon-sm" alt=""> Unlock & Max 20 Perks</button>
+                                    src="assets/ui-icons/book.svg" class="ui-icon ui-icon-sm" alt=""> Unlock & Max 20
+                                Perks</button>
                         </div>
                     </div>
 
@@ -2307,7 +2375,8 @@
                                 alt=""> Account Playtesting Reset</div>
                         <div class="admin-btn-grid">
                             <button id="admin-btn-reset-account" class="admin-control-btn btn-danger"><img
-                                    src="assets/ui-icons/sync.svg" class="ui-icon ui-icon-sm" alt=""> Reset Account (Lv.1 Playtest)</button>
+                                    src="assets/ui-icons/sync.svg" class="ui-icon ui-icon-sm" alt=""> Reset Account
+                                (Lv.1 Playtest)</button>
                         </div>
                     </div>
                 </div>
@@ -2499,7 +2568,8 @@
                 </div>
                 <h2 class="modal-title olympus-victory-title"><img src="assets/ui-icons/crown.svg"
                         class="ui-icon ui-icon-title" alt=""> OLYMPUS ASCENDED!</h2>
-                <p class="modal-subtitle olympus-victory-subtitle">You defeated Zeus atop Mount Olympus and Ascended as an Olympian Legend!</p>
+                <p class="modal-subtitle olympus-victory-subtitle">You defeated Zeus atop Mount Olympus and Ascended as
+                    an Olympian Legend!</p>
 
                 <div id="olympus-victory-boss-banner" class="olympus-victory-boss-banner hidden">
                     <img src="assets/ui-icons/trophy.svg" class="ui-icon ui-icon-sm" alt="">
@@ -2538,8 +2608,8 @@
                         style="grid-column: span 2; background: rgba(52, 152, 219, 0.14); border: 2px solid #0284c7;">
                         <span style="color: #0369a1; font-weight: 800;"><img src="assets/ui-icons/bolt.svg"
                                 class="ui-icon ui-icon-sm" alt=""> XP Earned:</span>
-                        <span id="olympus-victory-xp" class="stat-value"
-                            style="color: #0369a1; font-weight: 900;">+0 XP</span>
+                        <span id="olympus-victory-xp" class="stat-value" style="color: #0369a1; font-weight: 900;">+0
+                            XP</span>
                     </div>
                     <div class="olympus-victory-spoils-box">
                         <span class="olympus-victory-spoils-title">MOUNT OLYMPUS SPOILS</span>
@@ -2549,7 +2619,8 @@
 
                 <div class="modal-actions olympus-victory-actions">
                     <button id="olympus-victory-restart-btn" class="comic-btn comic-btn-primary"><img
-                            src="assets/ui-icons/sync.svg" class="ui-icon ui-icon-sm" alt=""> ASCEND AGAIN (1 CREST)</button>
+                            src="assets/ui-icons/sync.svg" class="ui-icon ui-icon-sm" alt=""> ASCEND AGAIN (1
+                        CREST)</button>
                     <button id="olympus-victory-menu-btn" class="comic-btn"><img src="assets/ui-icons/home.svg"
                             class="ui-icon ui-icon-sm" alt=""> MAIN MENU</button>
                 </div>
@@ -2620,18 +2691,17 @@
     <script src="src/data/materials.js?v=1.5.36"></script>
     <script src="src/data/bossRanks.js?v=1.5.16"></script>
     <script src="src/data/profile_cosmetics.js?v=1.5.49"></script>
-    <script src="src/data/profile_cosmetics.js?v=1.5.49"></script>
     <script src="src/data/creditsData.js?v=1.4.1"></script>
 
     <!-- 2. CORE MESSAGING & CANONICAL STATE -->
     <script src="src/core/EventBus.js?v=1.2.2"></script>
+    <script src="src/core/MobilePerf.js?v=1.5.51"></script>
     <script src="src/core/GameState.js?v=1.5.48"></script>
     <script src="src/progression/PerkProgression.js?v=1.5.36"></script>
     <script src="src/progression/CosmeticManager.js?v=1.5.49"></script>
-    <script src="src/progression/CosmeticManager.js?v=1.5.49"></script>
     <script src="src/dungeons/AscentCrestManager.js?v=1.5.14"></script>
     <script src="src/core/CharacterSprites.js?v=1.5.26"></script>
-    <script src="src/engine/SpriteAtlasCache.js?v=1.5.26"></script>
+    <script src="src/engine/SpriteAtlasCache.js?v=1.5.51"></script>
     <script src="src/save/SaveSerializer.js?v=1.5.48"></script>
     <script src="src/save/SaveManager.js?v=1.5.27"></script>
     <script src="src/save/AccountSyncManager.js?v=1.5.48"></script>
@@ -2642,21 +2712,21 @@
 
     <!-- 3. AUDIO & SYNTHESIS -->
     <script src="src/engine/ProceduralSynth.js?v=1.5.29"></script>
-    <script src="src/audio.js?v=1.5.26"></script>
+    <script src="src/audio.js?v=1.5.51"></script>
 
     <!-- 4. ENGINE SUBSYSTEMS -->
     <script src="src/engine/Input.js?v=1.2.2"></script>
-    <script src="src/engine/Camera.js?v=1.5.12"></script>
-    <script src="src/engine/Arena.js?v=1.5.43"></script>
+    <script src="src/engine/Camera.js?v=1.5.51"></script>
+    <script src="src/engine/Arena.js?v=1.5.51"></script>
     <script src="src/engine/WaveManager.js?v=1.5.34"></script>
     <script src="src/engine/EndlessWaveDirector.js?v=1.5.43"></script>
-    <script src="src/dungeons/OlympusAssets.js?v=1.5.4"></script>
+    <script src="src/dungeons/OlympusAssets.js?v=1.5.51"></script>
     <script src="src/dungeons/OlympusLayouts.js?v=1.5.4"></script>
     <script src="src/dungeons/OlympusAltarUI.js?v=1.5.13"></script>
     <script src="src/dungeons/OlympusClimbTransition.js?v=1.5.14"></script>
-    <script src="src/dungeons/OlympusAscentSystem.js?v=1.5.14"></script>
-    <script src="src/dungeons/DungeonMapTheme.js?v=1.5.4"></script>
-    <script src="src/dungeons/DungeonManager.js?v=1.5.41"></script>
+    <script src="src/dungeons/OlympusAscentSystem.js?v=1.5.51"></script>
+    <script src="src/dungeons/DungeonMapTheme.js?v=1.5.51"></script>
+    <script src="src/dungeons/DungeonManager.js?v=1.5.51"></script>
     <script src="src/progression/BossRewardManager.js?v=1.5.44"></script>
     <script src="src/engine/CollisionSystem.js?v=1.5.35"></script>
     <script src="src/engine/NameValidator.js?v=1.2.2"></script>
@@ -2667,10 +2737,10 @@
 
     <!-- 5. ENTITIES & HERO RENDERING -->
     <script src="src/entities/ParticleEffect.js?v=1.5.26"></script>
-    <script src="src/entities/ComicPopupCache.js?v=1.5.26"></script>
+    <script src="src/entities/ComicPopupCache.js?v=1.5.51"></script>
     <script src="src/entities/CombatRenderFX.js?v=1.5.29"></script>
-    <script src="src/entities/CombatJuiceFX.js?v=1.5.29"></script>
-    <script src="src/entities/Effects.js?v=1.5.43"></script>
+    <script src="src/entities/CombatJuiceFX.js?v=1.5.51"></script>
+    <script src="src/entities/Effects.js?v=1.5.51"></script>
     <script src="src/entities/Bullet.js?v=1.5.29"></script>
     <script src="src/entities/Drop.js?v=1.5.36"></script>
     <script src="src/entities/FoliageRenderer.js?v=1.5.26"></script>
@@ -2706,7 +2776,7 @@
     <script src="src/enemies/DimotikiEnforcerRenderer.js?v=1.5.26"></script>
     <script src="src/enemies/EndlessEnemyRenderer.js?v=1.5.26"></script>
     <script src="src/enemies/EndlessEnemies.js?v=1.5.16"></script>
-    <script src="src/dungeons/OlympusIceRenderer.js?v=1.5.7"></script>
+    <script src="src/dungeons/OlympusIceRenderer.js?v=1.5.51"></script>
     <script src="src/dungeons/IceEnemies.js?v=1.5.12"></script>
 
     <!-- 6.5. BOSSES -->
@@ -2725,19 +2795,19 @@
     <script src="src/Bosses/ButcherGoliathRenderer.js?v=1.5.18"></script>
     <script src="src/Bosses/DimarchosBossRenderer.js?v=1.5.18"></script>
     <script src="src/Bosses/SyndicateCapoRenderer.js?v=1.5.20"></script>
-    <script src="src/Bosses/KolossosArenaAtmosphere.js?v=1.5.43"></script>
+    <script src="src/Bosses/KolossosArenaAtmosphere.js?v=1.5.51"></script>
     <script src="src/Bosses/KolossosDrone.js?v=1.5.43"></script>
     <script src="src/Bosses/KolossosAttackSystem.js?v=1.5.43"></script>
     <script src="src/Bosses/MechaKolossosRenderer.js?v=1.5.43"></script>
     <script src="src/Bosses/EndlessBossRenderer.js?v=1.5.20"></script>
     <script src="src/Bosses/EndlessMiniBosses.js?v=1.5.16"></script>
     <script src="src/Bosses/EndlessMainBosses.js?v=1.5.43"></script>
-    <script src="src/dungeons/OlympusBossRenderer.js?v=1.5.7"></script>
+    <script src="src/dungeons/OlympusBossRenderer.js?v=1.5.51"></script>
     <script src="src/dungeons/OlympusEarlyBosses.js?v=1.5.14"></script>
     <script src="src/dungeons/DungeonBosses.js?v=1.5.14"></script>
     <script src="src/dungeons/ZeusCrystal.js?v=1.5.28"></script>
     <script src="src/dungeons/ZeusSkyPhase.js?v=1.5.38"></script>
-    <script src="src/dungeons/ZeusBoss.js?v=1.5.38"></script>
+    <script src="src/dungeons/ZeusBoss.js?v=1.5.51"></script>
 
     <!-- 7. PROGRESSION & PROFILE -->
     <script src="src/ui/UiIcons.js?v=1.5.41"></script>
@@ -2755,7 +2825,7 @@
     <script src="src/ui/PublicProfileModal.js?v=1.5.48"></script>
     <script src="src/ui/LeaderboardModal.js?v=1.5.48"></script>
     <script src="src/ui/ModalManager.js?v=1.5.48"></script>
-    <script src="src/ui/HUDController.js?v=1.5.29"></script>
+    <script src="src/ui/HUDController.js?v=1.5.51"></script>
     <script src="src/ui/ProfileManager.js?v=1.5.48"></script>
     <script src="src/ui/HeroRoster.js?v=1.5.10"></script>
     <script src="src/ui/SkillManager.js?v=1.5.32"></script>
@@ -2780,7 +2850,7 @@
     <script src="src/admin/AdminPanel.js?v=1.5.46"></script>
 
     <!-- 8.7. MOBILE TOUCH SUBSYSTEM -->
-    <script src="src/engine/TouchInput.js?v=1.5.1"></script>
+    <script src="src/engine/TouchInput.js?v=1.5.51"></script>
 
     <!-- 8.8. MULTIPLAYER CO-OP SUBSYSTEM (PLAYTEST) -->
     <script src="src/libs/peerjs.min.js"></script>
@@ -2796,7 +2866,7 @@
 
     <!-- 9. GAME COORDINATOR & BOOTSTRAP -->
     <script src="src/engine/WaveSkipperMachine.js?v=1.5.23"></script>
-    <script src="src/engine/Game.js?v=1.5.35"></script>
+    <script src="src/engine/Game.js?v=1.5.51"></script>
     <script src="src/main.js?v=1.5.48"></script>
 </body>
 

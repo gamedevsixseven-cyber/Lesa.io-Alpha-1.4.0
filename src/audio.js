@@ -310,6 +310,9 @@ class SoundEngine {
 
     playClonedAudio(audioEl, volumeMult = 1, onError = null) {
         if (!audioEl) return false;
+        if (typeof MobilePerf !== 'undefined' && MobilePerf.isMobile) {
+            return MobilePerf.playMobileAudio(this, audioEl, volumeMult, onError);
+        }
         try {
             const snd = audioEl.cloneNode ? audioEl.cloneNode() : audioEl;
             snd.volume = Math.max(0, Math.min(1, this.masterVolume * volumeMult));
@@ -327,9 +330,12 @@ class SoundEngine {
     playSfx(key, volumeMult = 1.0, minIntervalMs = 0) {
         if (this.muted || this.masterVolume <= 0) return false;
         this.init();
-        if (minIntervalMs > 0) {
+        const effInterval = (typeof MobilePerf !== 'undefined' && MobilePerf.isMobile && key !== 'select' && key !== 'goBack')
+            ? Math.max(minIntervalMs, 55)
+            : minIntervalMs;
+        if (effInterval > 0) {
             const now = performance.now();
-            if (now - (this._lastKeyMs[key] || 0) < minIntervalMs) return false;
+            if (now - (this._lastKeyMs[key] || 0) < effInterval) return false;
             this._lastKeyMs[key] = now;
         }
         const item = this.sounds[key];

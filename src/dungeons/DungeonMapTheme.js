@@ -26,10 +26,17 @@ class DungeonMapTheme {
             }
         }
 
+        const cacheScale = (typeof MobilePerf !== 'undefined') ? MobilePerf.getGroundCacheScale() : 1.0;
+        const targetW = Math.max(256, Math.round(arena.width * cacheScale));
+        const targetH = Math.max(256, Math.round(arena.height * cacheScale));
+        arena.groundCacheScale = cacheScale;
+
         if (!arena.cachedGroundCanvas && typeof document !== 'undefined') {
             arena.cachedGroundCanvas = document.createElement('canvas');
-            arena.cachedGroundCanvas.width = arena.width;
-            arena.cachedGroundCanvas.height = arena.height;
+        }
+        if (arena.cachedGroundCanvas && (arena.cachedGroundCanvas.width !== targetW || arena.cachedGroundCanvas.height !== targetH)) {
+            arena.cachedGroundCanvas.width = targetW;
+            arena.cachedGroundCanvas.height = targetH;
         }
 
         if (arena.cachedGroundCanvas) {
@@ -45,14 +52,19 @@ class DungeonMapTheme {
         const ctx = gCtx || arena.cachedGroundCanvas.getContext('2d');
         if (!ctx) return;
 
+        const scale = arena.groundCacheScale || (arena.cachedGroundCanvas.width / Math.max(1, arena.width));
+        ctx.save();
+        ctx.setTransform(scale, 0, 0, scale, 0, 0);
         if (typeof OlympusLayouts !== 'undefined') {
             OlympusLayouts.renderGroundCanvas(ctx, arena, floorNum);
+            ctx.restore();
             return;
         }
 
         // Minimal fallback if OlympusLayouts isn't loaded
         ctx.fillStyle = floorNum >= 3 ? '#7c92ac' : '#4a5d3b';
         ctx.fillRect(0, 0, arena.width, arena.height);
+        ctx.restore();
     }
 
     static drawBoundaries(ctx, arena) {

@@ -7,14 +7,15 @@ class CombatJuiceFX {
     constructor(effectsManager = null) {
         this.effects = effectsManager;
 
-        this.MAX_MUZZLES = 24;
+        const isMob = (typeof MobilePerf !== 'undefined' && MobilePerf.isMobile);
+        this.MAX_MUZZLES = isMob ? 10 : 24;
         this.muzzlePool = Array.from({ length: this.MAX_MUZZLES }, () => ({
             active: false, x: 0, y: 0, angle: 0, type: 'pea',
             scale: 1, life: 0, maxLife: 6, isEnemy: false, seed: 0
         }));
         this.muzzleCursor = 0;
 
-        this.MAX_SPLATS = 28;
+        this.MAX_SPLATS = isMob ? 10 : 28;
         this.splatPool = Array.from({ length: this.MAX_SPLATS }, () => ({
             active: false, x: 0, y: 0, type: 'pea', rotation: 0,
             radius: 14, life: 0, maxLife: 42, isCrit: false, isEnemy: false,
@@ -23,7 +24,7 @@ class CombatJuiceFX {
         }));
         this.splatCursor = 0;
 
-        this.MAX_POOFS = 24;
+        this.MAX_POOFS = isMob ? 10 : 24;
         this.poofPool = Array.from({ length: this.MAX_POOFS }, () => ({
             active: false, x: 0, y: 0, radius: 24, color: '#2ed573',
             life: 0, maxLife: 22, isBoss: false, seed: 0, puffCount: 0,

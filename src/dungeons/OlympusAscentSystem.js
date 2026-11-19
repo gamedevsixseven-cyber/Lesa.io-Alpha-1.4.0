@@ -325,8 +325,10 @@ class OlympusAscentSystem {
                 ctx.font = 'bold 12px "Outfit", sans-serif';
                 ctx.textAlign = 'center';
                 ctx.fillStyle = '#fef08a';
-                ctx.shadowColor = '#000';
-                ctx.shadowBlur = 4;
+                if (!(typeof MobilePerf !== 'undefined' && MobilePerf.isMobile)) {
+                    ctx.shadowColor = '#000';
+                    ctx.shadowBlur = 4;
+                }
                 ctx.fillText('CLIMB ▲', ix, iy + 26);
                 ctx.restore();
             }

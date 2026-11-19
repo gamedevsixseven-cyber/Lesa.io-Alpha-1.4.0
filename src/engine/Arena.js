@@ -28,15 +28,32 @@ class Arena {
 
         // Cached Offscreen Canvas for high performance ground rendering
         this.cachedGroundCanvas = null;
+        this.groundCacheScale = 1.0;
 
         // Auto re-render ground cache once textures finish loading
+        const isMobile = (typeof MobilePerf !== 'undefined' && MobilePerf.isMobile);
         const tex1 = Arena.getFloorTexture1();
-        const tex2 = Arena.getFloorTextureGrass2();
-        if (tex1 && !tex1.complete) {
-            tex1.addEventListener('load', () => this.renderGroundCache());
+        if (tex1) {
+            const onTex1Ready = () => this.renderGroundCache();
+            if (!tex1.complete || tex1.naturalWidth === 0) {
+                tex1.addEventListener('load', onTex1Ready);
+                if (isMobile) {
+                    tex1.addEventListener('error', () => {
+                        const fb = Arena.getFloorTextureGrass2();
+                        if (fb && !fb.complete) fb.addEventListener('load', onTex1Ready);
+                        else this.renderGroundCache();
+                    }, { once: true });
+                }
+            }
+            if (isMobile && typeof tex1.decode === 'function') {
+                tex1.decode().then(onTex1Ready).catch(() => {});
+            }
         }
-        if (tex2 && !tex2.complete) {
-            tex2.addEventListener('load', () => this.renderGroundCache());
+        if (!isMobile) {
+            const tex2 = Arena.getFloorTextureGrass2();
+            if (tex2 && !tex2.complete) {
+                tex2.addEventListener('load', () => this.renderGroundCache());
+            }
         }
 
         const rng = (seed !== null && seed !== undefined) ? createArenaRng(seed) : Math.random;
@@ -70,6 +87,11 @@ class Arena {
         if (!this.dungeonFloor) return;
         this.dungeonFloor = null;
         this.dungeonBounds = null;
+        if (typeof MobilePerf !== 'undefined' && MobilePerf.isMobile && this.cachedGroundCanvas) {
+            MobilePerf.releaseCanvas(this.cachedGroundCanvas);
+            this.cachedGroundCanvas = null;
+            this.groundCacheScale = 1.0;
+        }
         this.generateDecorations();
         this.generateObstacles();
         this.renderGroundCache();
@@ -120,6 +142,10 @@ class Arena {
             if (typeof DungeonMapTheme !== 'undefined') {
                 DungeonMapTheme.applyTheme(this, this.dungeonFloor);
             }
+            return;
+        }
+        if (typeof MobilePerf !== 'undefined' && MobilePerf.isMobile) {
+            MobilePerf.buildMobileGroundTile(this);
             return;
         }
 
@@ -372,6 +398,14 @@ class Arena {
     }
 
     drawGround(ctx, camera) {
+        if (typeof MobilePerf !== 'undefined' && MobilePerf.isMobile) {
+            if (this.dungeonFloor) {
+                if (MobilePerf.drawScaledCachedGround(ctx, camera, this)) return;
+            } else {
+                MobilePerf.drawMobileArenaGround(ctx, camera, this);
+                return;
+            }
+        }
         // High-Performance Integer-Aligned Viewport Slicing for arena ground
         if (this.cachedGroundCanvas && camera) {
             const halfVW = (camera.canvas.width / 2) / camera.zoom + 80;
