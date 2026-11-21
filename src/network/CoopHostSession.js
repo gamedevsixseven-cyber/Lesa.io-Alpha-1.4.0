@@ -10,11 +10,15 @@ class CoopHostSession {
         this.isHost = true;
         this.mapSeed = mapSeed;
 
+        guestInfo = guestInfo || (networkManager && networkManager.peerUserData) || null;
         const name = (guestInfo && guestInfo.name) || 'Player 2';
         const heroType = (guestInfo && guestInfo.heroType) || 'petros';
         this.remotePlayer = new RemotePlayer(game.player.x + 60, game.player.y, heroType, name);
         this.remotePlayer.applyHeroStats(heroType, guestInfo);
         this.remotePlayer.isHost = false;
+        this.remotePlayer.onShieldConsumed = () => {
+            if (this.net) this.net.send('GUEST_DROP_EFFECT', { type: 'shield_break' });
+        };
 
         this.netIdCounter = 1;
         this.snapshotTimer = 0;
@@ -193,52 +197,11 @@ class CoopHostSession {
     }
 
     _awardSquadDrop(drop, collectorIsGuest = false) {
-        const p1 = this.game.player;
-        const p2 = this.remotePlayer;
-        if (!drop) return;
-        if (drop.type === 'xp') {
-            const val = Math.max(1, Math.min(200, Math.round(drop.value || 15)));
-            if (p1 && p1.hp > 0) p1.addXP(val);
-            this.net.send('XP_SHARE', { val });
-        } else if (drop.type === 'coin_pouch') {
-            const coins = Math.max(1, Math.min(250, Math.round(drop.value || 20)));
-            if (typeof window !== 'undefined' && window.GameState) window.GameState.addCurrency(coins, 0);
-            this.game.coinsEarnedThisRun = (this.game.coinsEarnedThisRun || 0) + coins;
-            this.net.send('COIN_SHARE', { coins });
-        } else if (drop.type === 'heart') {
-            const target = collectorIsGuest ? p2 : p1;
-            if (target && !target.isDowned) {
-                target.hp = Math.min(target.maxHp, target.hp + (drop.value || 30));
-                if (this.game.effects) this.game.effects.addComicSplash(target.x, target.y - 25, '+HP 💚');
-            }
-        } else if (drop.type === 'magnet' && typeof this.game.vacuumAllXP === 'function') {
-            this.game.vacuumAllXP();
-        } else if (drop.type === 'chrono_core' && p1) {
-            if (typeof WaveSkipperMachine !== 'undefined' && typeof WaveSkipperMachine.grantChronoCore === 'function') {
-                WaveSkipperMachine.grantChronoCore(p1, drop.value || 1, this.game.effects, drop.x, drop.y, this.game);
-            } else {
-                p1.chronoCores = (p1.chronoCores || 0) + (drop.value || 1);
-            }
-        } else if (typeof Drop !== 'undefined' && Drop.MATERIAL_DROP_MAP && Drop.MATERIAL_DROP_MAP[drop.type]) {
-            const matId = Drop.MATERIAL_DROP_MAP[drop.type];
-            const gain = Math.max(1, Math.min(10, Math.floor(drop.value || 1)));
-            if (typeof window !== 'undefined' && window.inventoryManager && typeof window.inventoryManager.awardBattleMaterials === 'function') {
-                window.inventoryManager.awardBattleMaterials({ [matId]: gain }, { game: this.game, x: drop.x, y: drop.y, source: 'arena_drop' });
-            }
-        }
+        if (typeof CoopDropSync !== 'undefined') CoopDropSync.awardSquadDrop(this, drop, collectorIsGuest);
     }
 
     handleGuestCollectDrop(payload) {
-        if (!payload || typeof payload.id !== 'number' || !this.remotePlayer || this.remotePlayer.isDowned || this.remotePlayer.isDownedDisconnected) return;
-        for (let i = 0; i < this.game.drops.length; i++) {
-            const d = this.game.drops[i];
-            if (d && !d.dead && d._netId === payload.id) {
-                if (Math.hypot(this.remotePlayer.x - d.x, this.remotePlayer.y - d.y) > 420 && !d.magnetized) return;
-                d.dead = true;
-                this._awardSquadDrop(d, true);
-                break;
-            }
-        }
+        if (typeof CoopDropSync !== 'undefined') CoopDropSync.handleGuestCollectDrop(this, payload);
     }
 
     handleGuestShoot(bData) {
@@ -295,19 +258,6 @@ class CoopHostSession {
 
         // 1. Update remote partner interpolation
         p2.update(dt);
-
-        // 1.5. Check drops collected by remote guest player on host
-        if (p2 && !p2.isDowned && !p2.isDownedDisconnected) {
-            for (let i = 0; i < this.game.drops.length; i++) {
-                const drop = this.game.drops[i];
-                if (!drop || drop.dead) continue;
-                const dist = Math.hypot(p2.x - drop.x, p2.y - drop.y);
-                if (dist < p2.radius + drop.radius) {
-                    drop.dead = true;
-                    this._awardSquadDrop(drop, true);
-                }
-            }
-        }
 
         // 2. Intelligent Enemy Target Distribution
         // Assign each enemy's target to the closer of (local host player vs remote guest player)
@@ -411,7 +361,8 @@ class CoopHostSession {
                 t: (typeof d.type === 'string' && d.type) ? d.type : 'xp',
                 x: safeInt(d.x),
                 y: safeInt(d.y),
-                v: safeInt(d.value, 1, 1000, 1)
+                v: safeInt(d.value, 1, 1000, 1),
+                m: (d._magTarget === 'host') ? 1 : (d._magTarget === 'guest' ? 2 : 0)
             });
         }
 
@@ -468,6 +419,7 @@ class CoopHostSession {
                 isDashing: !!p.isDashing
             },
             guestHp: safeInt(this.remotePlayer.hp, 0, 100000, 0),
+            guestMaxHp: safeInt(this.remotePlayer.maxHp, 25, 100000, 100),
             sq: {
                 sc: safeInt(p.score, 0, 200000000, 0),
                 kl: safeInt(p.kills, 0, 1000000, 0),
@@ -526,6 +478,10 @@ class CoopHostSession {
             try { this.net.send('HOST_QUIT_MATCH', { reason: 'host_left' }); } catch (e) {}
             setTimeout(() => { if (this.net) this.net.disconnect(); }, 100);
         }
+    }
+
+    updateDrops(dt) {
+        if (typeof CoopDropSync !== 'undefined') CoopDropSync.updateHostDrops(this, dt);
     }
 
     render(ctx, camera) {

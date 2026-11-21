@@ -12,6 +12,7 @@ class Drop {
         const isMaterial = !!(Drop.MATERIAL_DROP_MAP && Drop.MATERIAL_DROP_MAP[type]);
         this.radius = type === 'xp' ? 12 : (isMaterial ? 15 : 16);
         this.magnetized = false;
+        this.pickupDelay = 12;
         this.vx = (Math.random() * 2 - 1) * 3;
         this.vy = (Math.random() * 2 - 1) * 3;
         this.age = Math.random() * 100;
@@ -22,17 +23,13 @@ class Drop {
 
     update(dt = 1, player = null, effects = null) {
         this.age += dt;
-        this.life -= dt;
-        if (this.life <= 0) {
-            this.dead = true;
-            return;
+        if (!this._isNetSynced) {
+            this.life -= dt;
+            if (this.life <= 0) { this.dead = true; return; }
+            this.x += this.vx * dt; this.y += this.vy * dt;
+            this.vx *= 0.88; this.vy *= 0.88;
         }
-
-        // Friction on initial burst
-        this.x += this.vx * dt;
-        this.y += this.vy * dt;
-        this.vx *= 0.88;
-        this.vy *= 0.88;
+        if (this.pickupDelay > 0) { this.pickupDelay -= dt; if (!this.magnetized) return; }
 
         if (player) {
             const dx = player.x - this.x;
@@ -69,29 +66,29 @@ class Drop {
             if (window.soundEngine) window.soundEngine.playPickup('xp');
             if (effects) effects.addSparks(this.x, this.y, '#ffd32a', 4);
         } else if (this.type === 'heart') {
+            const g = (typeof window !== 'undefined') ? window.gameInstance : null;
+            const rp = (g && !g.isCoopGuest && g.coopSession && g.coopSession.remotePlayer && !g.coopSession.remotePlayer.isDowned && !g.coopSession.remotePlayer.isDownedDisconnected) ? g.coopSession.remotePlayer : null;
             const heartCoins = (player.hp >= player.maxHp && typeof window !== 'undefined' && window.perkSystem && typeof window.perkSystem.getFullHpHeartCoinValue === 'function')
                 ? window.perkSystem.getFullHpHeartCoinValue(player) : 0;
             if (heartCoins > 0) {
                 player.coins = (player.coins || 0) + heartCoins;
                 if (window.soundEngine) window.soundEngine.playPickup('coin');
-                if (effects) {
-                    effects.addPopup(this.x, this.y, `+${heartCoins} 🪙 ALCHEMIST`, '#f39c12', 22);
-                    effects.addSparks(this.x, this.y, '#f39c12', 8);
-                }
+                if (effects) { effects.addPopup(this.x, this.y, `+${heartCoins} 🪙 ALCHEMIST`, '#f39c12', 22); effects.addSparks(this.x, this.y, '#f39c12', 8); }
+            } else if (player.hp >= player.maxHp && rp && rp.hp < rp.maxHp) {
+                const healAmt = this.value || 30;
+                rp.hp = Math.min(rp.maxHp, rp.hp + healAmt);
+                if (window.soundEngine) window.soundEngine.playPickup('heart');
+                if (effects) { effects.addPopup(rp.x, rp.y, `+${healAmt} HP`, '#2ed573', 24); effects.addSparks(rp.x, rp.y, '#2ed573', 8); }
+                if (g.coopSession && g.coopSession.net) g.coopSession.net.send('GUEST_DROP_EFFECT', { type: 'heart', amt: healAmt, hp: Math.round(rp.hp), maxHp: Math.round(rp.maxHp) });
             } else {
                 player.heal(this.value || 30);
                 if (window.soundEngine) window.soundEngine.playPickup('heart');
-                if (effects) {
-                    effects.addPopup(this.x, this.y, `+${this.value || 30} HP`, '#2ed573', 24);
-                    effects.addSparks(this.x, this.y, '#2ed573', 8);
-                }
+                if (effects) { effects.addPopup(this.x, this.y, `+${this.value || 30} HP`, '#2ed573', 24); effects.addSparks(this.x, this.y, '#2ed573', 8); }
             }
         } else if (this.type === 'magnet') {
             if (window.soundEngine) window.soundEngine.playPickup('star');
             if (effects) effects.addComicSplash(this.x, this.y, 'MAGNET!');
-            if (window.gameInstance) {
-                window.gameInstance.vacuumAllXP();
-            }
+            if (window.gameInstance) window.gameInstance.vacuumAllXP();
         } else if (this.type === 'star') {
             player.activatePepperFrenzy(7000);
             if (window.soundEngine) window.soundEngine.playPickup('star');

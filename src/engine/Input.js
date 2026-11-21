@@ -60,12 +60,6 @@ class InputManager {
 
         // Mouse Listeners (bound to window so aiming and shooting are never blocked)
         window.addEventListener('mousemove', (e) => {
-            if (typeof VirtualLandscape !== 'undefined' && VirtualLandscape.isActive()) {
-                const pt = VirtualLandscape.toLocalPoint(e.clientX, e.clientY);
-                this.mouse.x = pt.x;
-                this.mouse.y = pt.y;
-                return;
-            }
             const rect = this.canvas.getBoundingClientRect();
             this.mouse.x = e.clientX - rect.left;
             this.mouse.y = e.clientY - rect.top;

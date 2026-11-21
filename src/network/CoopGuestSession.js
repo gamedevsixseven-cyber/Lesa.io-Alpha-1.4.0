@@ -19,6 +19,8 @@ class CoopGuestSession {
         this.inputSyncTimer = 0;
         this.lastSnapshotTime = performance.now();
         this.collectedDropIds = new Set();
+        this._pendingHealUntil = 0;
+        this._preHealHp = 0;
 
         if (this.game.cutsceneOverlay) {
             this.game.cutsceneOverlay.totalPlayers = 2;
@@ -125,12 +127,18 @@ class CoopGuestSession {
                 }
             } else if (type === 'BOSS_REWARD_UNLOCK' && payload && payload.bossId && typeof BossRewardManager !== 'undefined') {
                 BossRewardManager.queueBossDrops(payload.bossId, { effects: this.game && this.game.effects, syncCoop: false, bossName: payload.bossName });
+            } else if (type === 'GUEST_DROP_EFFECT' && payload) {
+                this.handleDropEffect(payload);
             }
         };
 
         this.net.onDisconnectedCallback = (reason) => {
             this.handleHostQuit();
         };
+    }
+
+    handleDropEffect(payload) {
+        if (typeof CoopDropSync !== 'undefined') CoopDropSync.handleGuestDropEffect(this, payload);
     }
 
     handleHostShoot(bData) {
@@ -275,13 +283,8 @@ class CoopGuestSession {
                         if (obs.type === 'barrel') {
                             obs.explode(this.game.effects, this.game);
                         } else if (obs.type === 'crate') {
-                            if (window.soundEngine && typeof window.soundEngine.playCrateBreak === 'function') {
-                                window.soundEngine.playCrateBreak();
-                            }
-                            if (this.game.effects) {
-                                this.game.effects.addDust(obs.x, obs.y, 8, 14);
-                                this.game.effects.addSparks(obs.x, obs.y, '#e58e26', 8);
-                            }
+                            if (window.soundEngine && typeof window.soundEngine.playCrateBreak === 'function') window.soundEngine.playCrateBreak();
+                            if (this.game.effects) { this.game.effects.addDust(obs.x, obs.y, 8, 14); this.game.effects.addSparks(obs.x, obs.y, '#e58e26', 8); }
                         }
                         break;
                     }
@@ -295,25 +298,23 @@ class CoopGuestSession {
         }
 
         // 2. Sync Local Guest Health from Host Authority
+        if (typeof data.guestMaxHp === 'number' && data.guestMaxHp >= 25) this.game.player.maxHp = data.guestMaxHp;
         if (typeof data.guestHp === 'number') {
-            const wasDowned = this.game.player.hp <= 0;
-            if (data.guestHp < this.game.player.hp) {
-                this.game.player.hitFlash = 12;
-                if (this.game.effects) {
-                    const dmg = this.game.player.hp - data.guestHp;
-                    this.game.effects.addDamage(this.game.player.x, this.game.player.y, dmg, false, false);
-                    this.game.effects.addSparks(this.game.player.x, this.game.player.y, '#ff4757', 6);
+            const p = this.game.player, wasDowned = p.hp <= 0;
+            const pendingHeal = performance.now() < (this._pendingHealUntil || 0);
+            if (data.guestHp > (this._preHealHp || 0)) this._pendingHealUntil = 0;
+            if (!(pendingHeal && data.guestHp >= (this._preHealHp || 0) && data.guestHp < p.hp)) {
+                if (data.guestHp < p.hp) {
+                    p.hitFlash = 12;
+                    if (this.game.effects) {
+                        this.game.effects.addDamage(p.x, p.y, p.hp - data.guestHp, false, false);
+                        this.game.effects.addSparks(p.x, p.y, '#ff4757', 6);
+                    }
+                    if (window.soundEngine && typeof window.soundEngine.playHit === 'function') window.soundEngine.playHit(false, true);
+                    if (this.game.camera && typeof this.game.camera.addShake === 'function') this.game.camera.addShake(8);
                 }
-                if (window.soundEngine && typeof window.soundEngine.playHit === 'function') {
-                    window.soundEngine.playHit(false, true);
-                }
-                if (this.game.camera && typeof this.game.camera.addShake === 'function') {
-                    this.game.camera.addShake(8);
-                }
-            }
-            this.game.player.hp = data.guestHp;
-            if (wasDowned && data.guestHp > 0) {
-                if (this.game.ui) this.game.ui.addKillfeed('🤝 YOU WERE REVIVED!');
+                p.hp = data.guestHp;
+                if (wasDowned && data.guestHp > 0 && this.game.ui) this.game.ui.addKillfeed('🤝 YOU WERE REVIVED!');
             }
         }
 
@@ -469,49 +470,8 @@ class CoopGuestSession {
         }
 
         // 4.6. Synchronize Drops (XP, Hearts, Stars, Magnets)
-        if (Array.isArray(data.drops)) {
-            if (!Array.isArray(this.game.drops)) this.game.drops = [];
-            const incomingDropIds = new Set();
-            const existingDropMap = new Map();
-            for (let i = 0; i < this.game.drops.length; i++) {
-                const d = this.game.drops[i];
-                if (d._netId) existingDropMap.set(d._netId, d);
-            }
-
-            for (let i = 0; i < data.drops.length; i++) {
-                const dNet = data.drops[i];
-                if (!dNet || typeof dNet.id !== 'number') continue;
-                incomingDropIds.add(dNet.id);
-
-                // If this drop was already collected by local guest, never re-spawn it!
-                if (this.collectedDropIds.has(dNet.id)) continue;
-
-                let drop = existingDropMap.get(dNet.id);
-                if (!drop && typeof Drop !== 'undefined') {
-                    drop = new Drop(dNet.x, dNet.y, dNet.t || 'xp', dNet.v || 1);
-                    drop._netId = dNet.id;
-                    const origCollect = drop.onCollect.bind(drop);
-                    drop.onCollect = (player, effects) => {
-                        if (player && player.hp <= 0) return;
-                        const dtType = dNet.t || 'xp';
-                        if (dtType === 'heart' || dtType === 'star' || dtType === 'shield') origCollect(player, effects);
-                        else if (window.soundEngine) window.soundEngine.playPickup(dtType === 'coin_pouch' ? 'coin' : 'xp');
-                        this.collectedDropIds.add(dNet.id);
-                        this.net.send('GUEST_COLLECT_DROP', { id: dNet.id });
-                    };
-                    this.game.drops.push(drop);
-                } else if (drop && drop.magnetized) {
-                    // Update magnetized lerping from host
-                    drop.x += (dNet.x - drop.x) * 0.35;
-                    drop.y += (dNet.y - drop.y) * 0.35;
-                }
-            }
-
-            for (let i = this.game.drops.length - 1; i >= 0; i--) {
-                const d = this.game.drops[i];
-                if (d._netId && (!incomingDropIds.has(d._netId) || this.collectedDropIds.has(d._netId))) this.game.drops.splice(i, 1);
-            }
-            for (const id of this.collectedDropIds) { if (!incomingDropIds.has(id)) this.collectedDropIds.delete(id); }
+        if (Array.isArray(data.drops) && typeof CoopDropSync !== 'undefined') {
+            CoopDropSync.applyGuestDrops(this, data.drops);
         }
 
         // 5. Double KO check

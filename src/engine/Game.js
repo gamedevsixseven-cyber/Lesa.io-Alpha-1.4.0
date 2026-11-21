@@ -428,14 +428,18 @@ class Game {
         }
 
         // Drops Compaction
-        let dWrite = 0;
-        const canPickDrops = !(this.coopSession && this.player && this.player.hp <= 0);
-        for (let i = 0; i < this.drops.length; i++) {
-            const drop = this.drops[i];
-            if (canPickDrops) drop.update(dt, this.player, this.effects); else drop.age += dt;
-            if (!drop.dead) this.drops[dWrite++] = drop;
+        if (this.coopSession && this.coopSession.isHost && typeof this.coopSession.updateDrops === 'function') {
+            this.coopSession.updateDrops(dt);
+        } else {
+            let dWrite = 0;
+            const canPickDrops = !(this.coopSession && this.player && this.player.hp <= 0);
+            for (let i = 0; i < this.drops.length; i++) {
+                const drop = this.drops[i];
+                drop.update(dt, canPickDrops ? this.player : null, this.effects);
+                if (!drop.dead) this.drops[dWrite++] = drop;
+            }
+            this.drops.length = dWrite;
         }
-        this.drops.length = dWrite;
 
         // Hazards Compaction (Water Puddles from Nerobalonaki, etc.)
         if (this.hazards) {
@@ -492,28 +496,20 @@ class Game {
         if (this.hazards) {
             for (let i = 0; i < this.hazards.length; i++) {
                 const h = this.hazards[i];
-                if (this.camera.isVisible(h.x, h.y, h.radius + 30)) {
-                    h.draw(ctx);
-                }
+                if (this.camera.isVisible(h.x, h.y, h.radius + 30)) h.draw(ctx);
             }
         }
 
         // 1.55. Ground Cracks & Seismic Fissures (Viewport Culled)
-        if (this.effects && typeof this.effects.drawGround === 'function') {
-            this.effects.drawGround(ctx);
-        }
+        if (this.effects && typeof this.effects.drawGround === 'function') this.effects.drawGround(ctx);
 
         // 1.6. Battle Perks Visuals (Hot Foot Flame Pools & Counter-Blast Projectiles)
-        if (typeof window !== 'undefined' && window.perkSystem) {
-            window.perkSystem.draw(ctx, this.camera);
-        }
+        if (typeof window !== 'undefined' && window.perkSystem) window.perkSystem.draw(ctx, this.camera);
 
         // 2. Drops (XP Cookies, Hearts, Diamonds - Viewport Culled)
         for (let i = 0; i < this.drops.length; i++) {
             const drop = this.drops[i];
-            if (this.camera.isVisible(drop.x, drop.y, drop.radius + 20)) {
-                drop.draw(ctx);
-            }
+            if (this.camera.isVisible(drop.x, drop.y, drop.radius + 20)) drop.draw(ctx);
         }
 
         // 3. Obstacles (Mushrooms, Crates, Barrels, Bushes, Trees & Buildings behind player)

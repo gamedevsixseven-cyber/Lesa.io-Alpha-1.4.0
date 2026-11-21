@@ -176,9 +176,9 @@ class MobilePerf {
      */
     static applyCanvasSettings(game) {
         if (!game || !game.canvas) return;
-        const vl = (typeof VirtualLandscape !== 'undefined') ? VirtualLandscape.sync() : null;
-        const cssW = vl ? vl.width : Math.max(1, Math.round(window.innerWidth));
-        const cssH = vl ? vl.height : Math.max(1, Math.round(window.innerHeight));
+        const vv = (this.isMobile && typeof window !== 'undefined') ? window.visualViewport : null;
+        const cssW = Math.max(1, Math.round((vv && vv.width) ? vv.width : window.innerWidth));
+        const cssH = Math.max(1, Math.round((vv && vv.height) ? vv.height : window.innerHeight));
         const dpr = this.getCanvasDpr(cssW, cssH);
 
         game.dpr = dpr;

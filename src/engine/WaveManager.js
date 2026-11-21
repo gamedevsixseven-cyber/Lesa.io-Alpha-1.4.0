@@ -284,19 +284,20 @@ class WaveManager {
 
         // Spawn bonus celebration drops (Extra lavish rewards for Boss/Mini-Boss/Rouf)
         const dropCount = isRoufWave ? 14 : (isBossWave ? 10 : (isMiniBoss ? 8 : 4));
+        const heartOff = game.coopSession ? 95 : 25;
         for (let i = 0; i < dropCount; i++) {
-            const rx = game.player.x + (Math.random() * 200 - 100);
-            const ry = game.player.y + (Math.random() * 200 - 100);
+            const rx = game.player.x + (Math.random() * 220 - 110);
+            const ry = game.player.y + (Math.random() * 220 - 110);
             game.drops.push(new Drop(rx, ry, 'xp', isSpecialWave ? 50 : 30));
         }
         if (isSpecialWave || Math.random() < 0.7) {
-            game.drops.push(new Drop(game.player.x + 25, game.player.y + 25, 'heart', 50));
-            if (isRoufWave) {
-                game.drops.push(new Drop(game.player.x - 30, game.player.y + 25, 'heart', 50));
+            game.drops.push(new Drop(game.player.x + heartOff, game.player.y + 45, 'heart', 50));
+            if (isRoufWave || game.coopSession) {
+                game.drops.push(new Drop(game.player.x - heartOff, game.player.y + 45, 'heart', 50));
             }
         }
         if (isSpecialWave || Math.random() < 0.4) {
-            game.drops.push(new Drop(game.player.x - 25, game.player.y - 25, 'star', isRoufWave ? 8 : (isBossWave ? 5 : (isMiniBoss ? 3 : 1))));
+            game.drops.push(new Drop(game.player.x - heartOff, game.player.y - 45, 'star', isRoufWave ? 8 : (isBossWave ? 5 : (isMiniBoss ? 3 : 1))));
         }
     }
 

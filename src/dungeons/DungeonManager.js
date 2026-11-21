@@ -337,8 +337,10 @@ class DungeonManager {
             }
         }
         if (typeof Drop !== 'undefined') {
-            game.drops.push(new Drop(game.player.x + 30, game.player.y + 20, 'heart', 60));
-            game.drops.push(new Drop(game.player.x - 30, game.player.y + 20, 'star', isSummit ? 10 : 3));
+            const off = game.coopSession ? 95 : 30;
+            game.drops.push(new Drop(game.player.x + off, game.player.y + 45, 'heart', 60));
+            if (game.coopSession) game.drops.push(new Drop(game.player.x - off, game.player.y + 45, 'heart', 60));
+            game.drops.push(new Drop(game.player.x - off, game.player.y - 45, 'star', isSummit ? 10 : 3));
         }
 
         if (typeof window !== 'undefined' && window.GameState) {

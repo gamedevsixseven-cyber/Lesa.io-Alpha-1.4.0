@@ -37,7 +37,18 @@ class RemotePlayer {
         this.invulnerableTimer = 0;
         this.speedDebuffTimer = 0;
         this.damageReduction = 0;
+        this.magnetRadius = 140;
+        this.starBlessed = false;
+        this._starReviveUsed = false;
+        this._shieldBrokenUntil = 0;
+        this.onShieldConsumed = null;
         this.isBladeRushing = false;
+        this.knockbackVx = 0;
+        this.knockbackVy = 0;
+        this.knockbackTimer = 0;
+        this.airVz = 0;
+        this.airRotation = 0;
+        this.landingDamage = 0;
 
         this.applyHeroStats(heroType);
     }
@@ -63,17 +74,32 @@ class RemotePlayer {
             if (opts.heroStyle !== undefined) this.heroStyle = opts.heroStyle;
             if (typeof opts.starBlessed === 'boolean') this.starBlessed = opts.starBlessed;
             if (typeof opts.maxHp === 'number' && Number.isFinite(opts.maxHp)) {
-                this.maxHp = Math.max(60, Math.min(1200, Math.round(opts.maxHp)));
+                this.maxHp = Math.max(25, Math.min(1200, Math.round(opts.maxHp)));
             }
             if (typeof opts.damageReduction === 'number' && Number.isFinite(opts.damageReduction)) {
                 this.damageReduction = Math.max(0, Math.min(0.70, opts.damageReduction));
+            }
+            if (typeof opts.magnetRadius === 'number' && Number.isFinite(opts.magnetRadius)) {
+                this.magnetRadius = Math.max(80, Math.min(400, Math.round(opts.magnetRadius)));
             }
         }
         if (wasFull || this.hp > this.maxHp) this.hp = this.maxHp;
     }
 
     takeDamage(amount, effects = null, camera = null) {
-        if (this.invulnerableTimer > 0 || this.hp <= 0) return false;
+        if (this.invulnerableTimer > 0 || this.isDashing || this.isBladeRushing || this.hp <= 0) return false;
+        if (this.shieldActive) {
+            this.shieldActive = false;
+            this.invulnerableTimer = 30;
+            this._shieldBrokenUntil = performance.now() + 350;
+            if (typeof this.onShieldConsumed === 'function') this.onShieldConsumed();
+            if (window.soundEngine) window.soundEngine.playHit(false, true);
+            if (effects) {
+                effects.addComicSplash(this.x, this.y, 'BLOCKED!');
+                effects.addShockwave(this.x, this.y, 80, 'rgba(112, 161, 255, 0.9)');
+            }
+            return false;
+        }
         const mult = (this.damageReduction && this.damageReduction > 0) ? (1 - this.damageReduction) : 1;
         const actualDamage = Math.max(1, Math.round(amount * mult));
         this.hp = Math.max(0, this.hp - actualDamage);
@@ -85,6 +111,18 @@ class RemotePlayer {
             effects.addSparks(this.x, this.y, '#ff4757', 6);
         }
 
+        if (this.hp <= 0 && this.starBlessed && !this._starReviveUsed) {
+            this._starReviveUsed = true;
+            this.hp = Math.max(1, Math.round(this.maxHp * 0.50));
+            this.shieldActive = true;
+            this.invulnerableTimer = 120;
+            if (effects) {
+                effects.addComicSplash(this.x, this.y - 38, '🌟 STAR REVIVE!');
+                effects.addShockwave(this.x, this.y, 130, 'rgba(250, 204, 21, 0.92)');
+            }
+            return true;
+        }
+
         if (this.hp <= 0) {
             this.isDowned = true;
             if (effects) {
@@ -92,6 +130,30 @@ class RemotePlayer {
             }
         }
         return true;
+    }
+
+    applyKnockback(vx, vy, duration = 20) {
+        this.knockbackVx = vx || 0;
+        this.knockbackVy = vy || 0;
+        this.knockbackTimer = duration || 20;
+    }
+
+    launchAirborne(vx, vy, vz = 17.5, damage = 38) {
+        this.isGrabbed = false;
+        this.isAirborne = true;
+        this.knockbackVx = vx || 0;
+        this.knockbackVy = vy || 0;
+        this.airVz = vz || 17.5;
+        this.airZ = 24;
+        this.landingDamage = damage || 38;
+        setTimeout(() => {
+            if (!this.isAirborne) return;
+            this.isAirborne = false;
+            this.airZ = 0;
+            this.airVz = 0;
+            if (this.landingDamage > 0 && !this.isDowned) this.takeDamage(this.landingDamage);
+            this.landingDamage = 0;
+        }, 700);
     }
 
     setTargetState(data) {
@@ -115,16 +177,19 @@ class RemotePlayer {
             this.isDowned = (this.hp <= 0);
         }
         if (typeof data.maxHp === 'number' && Number.isFinite(data.maxHp)) {
-            this.maxHp = Math.max(60, Math.min(1200, Math.round(data.maxHp)));
+            this.maxHp = Math.max(25, Math.min(1200, Math.round(data.maxHp)));
         }
         if (typeof data.isMoving === 'boolean') this.isMoving = data.isMoving;
-        if (typeof data.shieldActive === 'boolean') this.shieldActive = data.shieldActive;
+        if (typeof data.shieldActive === 'boolean' && performance.now() >= (this._shieldBrokenUntil || 0)) {
+            this.shieldActive = data.shieldActive;
+        }
         if (typeof data.isDashing === 'boolean') this.isDashing = data.isDashing;
         if (typeof data.weaponType === 'string' && data.weaponType) this.weaponType = data.weaponType;
         if (typeof data.heroSkin === 'string') this.heroSkin = data.heroSkin;
         if (typeof data.starBlessed === 'boolean') this.starBlessed = data.starBlessed;
         if (data.heroType && data.heroType !== this.heroType) {
-            this.applyHeroStats(data.heroType, data);
+            const preserved = { maxHp: this.maxHp, damageReduction: this.damageReduction, magnetRadius: this.magnetRadius, starBlessed: this.starBlessed, ...data };
+            this.applyHeroStats(data.heroType, preserved);
         }
     }
 

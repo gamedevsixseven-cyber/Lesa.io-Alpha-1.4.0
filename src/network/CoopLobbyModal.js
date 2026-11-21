@@ -34,13 +34,24 @@ class CoopLobbyModal {
         const upgrades = (gs && gs.player && gs.player.upgrades) || {};
         maxHp += (upgrades.maxHealth || 0) * 6;
         let damageReduction = (typeof HEROES !== 'undefined' && HEROES[heroType] && HEROES[heroType].damageReduction) || 0;
+        let magnetRadius = 140;
         if (typeof GearManager !== 'undefined') {
             const eq = GearManager.getEquippedTotalStats();
             maxHp += (eq.maxHp || 0);
             damageReduction = Math.min(0.55, damageReduction + (eq.damageReduction || 0) / 100);
+            magnetRadius += (eq.magnetRadius || 0);
+        }
+        if (typeof PerkSystem !== 'undefined' && PerkSystem.hasPerk && PerkSystem.hasPerk('zeus_storm_crown')) {
+            const st = PerkSystem.getRankStats ? PerkSystem.getRankStats('zeus_storm_crown') : {};
+            maxHp = Math.max(25, Math.round(maxHp * (1 - (st.maxHpPenalty || 0.25))));
         }
         if (starBlessed) maxHp = Math.round(maxHp * 1.10);
-        return { name, heroType, weaponType, heroSkin, heroStyle, starBlessed, maxHp: Math.min(1200, Math.round(maxHp)), damageReduction };
+        return {
+            name, heroType, weaponType, heroSkin, heroStyle, starBlessed,
+            maxHp: Math.min(1200, Math.round(maxHp)),
+            damageReduction,
+            magnetRadius: Math.max(80, Math.min(400, Math.round(magnetRadius)))
+        };
     }
 
     ensureModalMarkup() {

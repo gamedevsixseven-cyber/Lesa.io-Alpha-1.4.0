@@ -296,7 +296,7 @@ class EpicPerkEffects {
     }
 
     _advanceTavliCounter(x, y, game) {
-        if (!game || !game.drops || typeof Drop === 'undefined') return;
+        if (!game || game.isCoopGuest || !game.drops || typeof Drop === 'undefined') return;
         const st = this._stats('tavli_double_sixes');
         const everyN = Math.max(1, st.rollInterval || 6);
         this.tavliCounter++;

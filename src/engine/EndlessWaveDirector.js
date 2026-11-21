@@ -302,16 +302,18 @@ class EndlessWaveDirector {
         }
 
         const xpCount = isBoss ? 12 : (isMini ? 8 : 4);
+        const dropOff = game.coopSession ? 95 : 25;
         for (let i = 0; i < xpCount; i++) {
-            const rx = game.player.x + (Math.random() * 200 - 100);
-            const ry = game.player.y + (Math.random() * 200 - 100);
+            const rx = game.player.x + (Math.random() * 220 - 110);
+            const ry = game.player.y + (Math.random() * 220 - 110);
             game.drops.push(new Drop(rx, ry, 'xp', encounter ? 50 : 30));
         }
         if (encounter || Math.random() < 0.7) {
-            game.drops.push(new Drop(game.player.x + 25, game.player.y + 25, 'heart', 55));
+            game.drops.push(new Drop(game.player.x + dropOff, game.player.y + 45, 'heart', 55));
+            if (game.coopSession) game.drops.push(new Drop(game.player.x - dropOff, game.player.y + 45, 'heart', 55));
         }
         if (encounter || Math.random() < 0.45) {
-            game.drops.push(new Drop(game.player.x - 25, game.player.y - 25, 'star', isBoss ? 6 : (isMini ? 3 : 1)));
+            game.drops.push(new Drop(game.player.x - dropOff, game.player.y - 45, 'star', isBoss ? 6 : (isMini ? 3 : 1)));
         }
     }
 

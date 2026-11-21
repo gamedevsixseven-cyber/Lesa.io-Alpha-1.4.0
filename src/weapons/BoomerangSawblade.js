@@ -312,7 +312,8 @@ class BoomerangSawblade extends WeaponBase {
         if (b._hitObstacles.has(obs)) return true;
         b._hitObstacles.add(obs);
 
-        const destroyed = obs.takeDamage(b.damage, effects, game);
+        const isGuest = !!(game && game.isCoopGuest);
+        const destroyed = !isGuest ? obs.takeDamage(b.damage, effects, game) : false;
         if (destroyed && obs.type === 'crate' && game) {
             game.drops.push(new Drop(obs.x, obs.y, 'xp', 20));
             if (Math.random() < 0.35) game.drops.push(new Drop(obs.x, obs.y, 'heart', 25));

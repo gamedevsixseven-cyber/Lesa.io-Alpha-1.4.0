@@ -71,6 +71,7 @@ class Obstacle {
         const activeGame = game || (typeof window !== 'undefined' ? window.gameInstance : null);
         if (activeGame) {
             if (activeGame.camera) activeGame.camera.addShake(16);
+            if (activeGame.isCoopGuest) return;
 
             const blastRadius = 175;
             const blastRadiusSq = blastRadius * blastRadius;
@@ -92,12 +93,20 @@ class Obstacle {
                 }
             }
 
-            // Damage player if standing too close
+            // Damage player & co-op partner if standing too close
             if (activeGame.player && activeGame.player.hp > 0) {
                 const pdx = activeGame.player.x - this.x;
                 const pdy = activeGame.player.y - this.y;
                 if (pdx * pdx + pdy * pdy <= 110 * 110) {
                     activeGame.player.takeDamage(25, effects, activeGame.camera);
+                }
+            }
+            const rp = activeGame.coopSession && activeGame.coopSession.remotePlayer;
+            if (rp && !rp.isDowned && !rp.isDownedDisconnected) {
+                const rdx = rp.x - this.x;
+                const rdy = rp.y - this.y;
+                if (rdx * rdx + rdy * rdy <= 110 * 110) {
+                    rp.takeDamage(25, effects, activeGame.camera);
                 }
             }
 

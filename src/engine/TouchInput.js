@@ -50,9 +50,6 @@ class TouchInput {
     }
 
     _mapClientPoint(e) {
-        if (typeof VirtualLandscape !== 'undefined' && VirtualLandscape.isActive()) {
-            return VirtualLandscape.toLocalPoint(e.clientX, e.clientY);
-        }
         return { x: e.clientX, y: e.clientY };
     }
 
