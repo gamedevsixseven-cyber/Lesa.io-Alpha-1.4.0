@@ -142,6 +142,10 @@ class Player {
         this.magnetRadius = (this.baseMagnetRadius || 140) + (s.magnetRadius || 0);
         if (typeof window !== 'undefined' && window.perkSystem && typeof window.perkSystem.applyPlayerStatModifiers === 'function') window.perkSystem.applyPlayerStatModifiers(this, true);
         if (typeof HeroUltimates !== 'undefined') HeroUltimates.reapplyActiveBuffs(this); if (typeof HeroStarBlessing !== 'undefined') HeroStarBlessing.applyPlayerBlessing(this);
+        const armorEq = (typeof GearManager !== 'undefined' && typeof GearManager.getEquipped === 'function') ? GearManager.getEquipped('armor') : null;
+        this.equippedArmorId = armorEq ? armorEq.id : null;
+        this.armorEvolved = !!(this.equippedArmorId && typeof HeroArmorRenderer !== 'undefined' && HeroArmorRenderer.isEvolved(this.equippedArmorId));
+        this.weaponEvolved = !!(typeof WeaponEvolutionManager !== 'undefined' && WeaponEvolutionManager.isEvolved(this.weaponType));
     }
 
     update(dt = 1, input = null, camera = null, effects = null, arena = null) {
@@ -564,11 +568,9 @@ class Player {
         b.isChargedBubble = true;
         window.gameInstance.bullets.push(b);
         if (window.gameInstance.coopSession && window.networkManager && window.networkManager.connected) {
-            window.networkManager.send(window.gameInstance.isCoopGuest ? 'GUEST_SHOOT' : 'HOST_SHOOT', {
-                x: Math.round(b.x), y: Math.round(b.y), vx: Number(b.vx.toFixed(2)), vy: Number(b.vy.toFixed(2)),
-                damage: b.damage, speed: b.speed, radius: b.radius, type: b.type,
-                pierce: b.pierce, maxBounces: b.maxBounces, isChargedBubble: true
-            });
+            const msg = window.gameInstance.isCoopGuest ? 'GUEST_SHOOT' : 'HOST_SHOOT';
+            if (typeof CoopCombatFx !== 'undefined') CoopCombatFx.emitBullets(window.networkManager, msg, [b]);
+            else window.networkManager.send(msg, { x: Math.round(b.x), y: Math.round(b.y), vx: Number(b.vx.toFixed(2)), vy: Number(b.vy.toFixed(2)), damage: b.damage, speed: b.speed, radius: b.radius, type: b.type, pierce: b.pierce, maxBounces: b.maxBounces, range: b.maxRange, isChargedBubble: true });
         }
         this.recoilOffset = 16;
         this.fireCooldown = 15;

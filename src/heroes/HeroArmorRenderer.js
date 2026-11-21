@@ -38,8 +38,11 @@ class HeroArmorRenderer {
         return null;
     }
 
-    static isEvolved(armorId) {
-        return !!(armorId && typeof GearUpgradeManager !== 'undefined' &&
+    static isEvolved(armorId, player = null) {
+        if (!armorId) return false;
+        if (typeof RemotePlayer !== 'undefined' && player instanceof RemotePlayer) return !!player.armorEvolved;
+        if (player && player.armorEvolved !== undefined) return !!player.armorEvolved;
+        return !!(typeof GearUpgradeManager !== 'undefined' &&
             ((typeof GearUpgradeManager.isEvolved === 'function' && GearUpgradeManager.isEvolved(armorId)) ||
              (typeof GearUpgradeManager.isAscended === 'function' && GearUpgradeManager.isAscended(armorId))));
     }
@@ -94,7 +97,7 @@ class HeroArmorRenderer {
         if (!id) return;
 
         ctx.save();
-        const evolved = this.isEvolved(id);
+        const evolved = this.isEvolved(id, player);
         if (typeof HeroArmorEndgame !== 'undefined' && HeroArmorEndgame.drawArmor(id, ctx, r, flash, isBack, evolved)) {
             ctx.restore();
             return;

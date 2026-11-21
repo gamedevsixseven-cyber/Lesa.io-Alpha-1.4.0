@@ -302,6 +302,11 @@ class HeliosOmegaCannon extends WeaponBase {
         if (this._beams.length >= 3) this._beams.shift();
         this._beams.push(beam);
 
+        const gBeam = game || (typeof window !== 'undefined' ? window.gameInstance : null);
+        if (!player._isRemoteBeam && gBeam && gBeam.coopSession && gBeam.coopSession.net && player === gBeam.player && typeof CoopCombatFx !== 'undefined') {
+            CoopCombatFx.relayBeam(gBeam.coopSession.net, player, aimAngle, baseDmg, isEvolved);
+        }
+
         if (effects) {
             effects.addShockwave(player.x, player.y, 110, 'rgba(254, 211, 48, 0.90)');
             effects.addSparks(player.x + Math.cos(aimAngle) * 44, player.y + Math.sin(aimAngle) * 44, '#ff2e4c', 12);

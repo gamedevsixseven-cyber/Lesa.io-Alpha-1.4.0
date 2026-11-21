@@ -326,6 +326,7 @@ class SymbioteLauncher extends WeaponBase {
             const biteDmg = Math.max(4, Math.round(finalDmg * 0.25));
             if (typeof e.takeDamage === 'function') {
                 e.takeDamage(biteDmg, effects, false, false);
+                if (game && game.isCoopGuest) e.dead = false;
             }
             if (effects) effects.addSparks(e.x, e.y, '#ff2e63', 4);
         } else {
@@ -359,6 +360,7 @@ class SymbioteLauncher extends WeaponBase {
         const mirrored = Math.max(4, Math.round(finalDmg * this.MIRROR_RATIO));
         if (typeof host.takeDamage === 'function') {
             host.takeDamage(mirrored, effects, false, false);
+            if (game && game.isCoopGuest) host.dead = false;
         }
         if (this._tethers.length < 14) {
             this._tethers.push({

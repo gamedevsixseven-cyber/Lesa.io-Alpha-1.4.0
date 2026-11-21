@@ -307,6 +307,11 @@ class CombatRenderFX {
             proxy.vy = ghost.vy || 0;
             proxy.heroType = player.heroType;
             proxy.weaponType = player.weaponType;
+            proxy.heroSkin = player.heroSkin;
+            proxy.heroStyle = player.heroStyle;
+            proxy.equippedArmorId = player.equippedArmorId;
+            proxy.armorEvolved = player.armorEvolved;
+            proxy.weaponEvolved = player.weaponEvolved;
             proxy.recoilOffset = 0;
             proxy.bladeTimer = ghost.isBlade ? 12 : 0;
             proxy.bubbleCharge = 0;

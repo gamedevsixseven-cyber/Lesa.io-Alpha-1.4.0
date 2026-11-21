@@ -161,7 +161,8 @@ class WeaponSystem {
      * Draw shared unlockable weapon model when held by any hero.
      */
     static drawEquippedModel(ctx, weaponType, flash, recoil = 0, player = null) {
-        const isEvolved = typeof WeaponEvolutionManager !== 'undefined' && WeaponEvolutionManager.isEvolved(weaponType);
+        const isRemote = (typeof RemotePlayer !== 'undefined' && player instanceof RemotePlayer);
+        const isEvolved = isRemote ? !!player.weaponEvolved : (player && player.weaponEvolved !== undefined ? !!player.weaponEvolved : (typeof WeaponEvolutionManager !== 'undefined' && WeaponEvolutionManager.isEvolved(weaponType)));
         if (weaponType === 'm4_carbine' && typeof M4Carbine !== 'undefined') {
             M4Carbine.drawWeapon(ctx, flash, recoil);
             return true;

@@ -316,6 +316,7 @@ class ChronoRifle extends WeaponBase {
 
         if (!e.dead && typeof e.takeDamage === 'function') {
             e.takeDamage(shatterDmg, effects, true, true);
+            if (game && game.isCoopGuest) e.dead = false;
         }
         if (enemies) {
             const splashR = (e.radius || 22) + 115;
@@ -328,6 +329,7 @@ class ChronoRifle extends WeaponBase {
                 const dy = other.y - e.y;
                 if (dx * dx + dy * dy <= splashR2 && typeof other.takeDamage === 'function') {
                     other.takeDamage(aoeDmg, effects, false, false);
+                    if (game && game.isCoopGuest) other.dead = false;
                 }
             }
         }

@@ -129,6 +129,10 @@ class CoopGuestSession {
                 BossRewardManager.queueBossDrops(payload.bossId, { effects: this.game && this.game.effects, syncCoop: false, bossName: payload.bossName });
             } else if (type === 'GUEST_DROP_EFFECT' && payload) {
                 this.handleDropEffect(payload);
+            } else if (type === 'HELIOS_BEAM' && typeof CoopCombatFx !== 'undefined') {
+                CoopCombatFx.handleRemoteBeam(this, payload, false);
+            } else if (type === 'COOP_FX' && typeof CoopCombatFx !== 'undefined') {
+                CoopCombatFx.handleRemoteFx(this, payload);
             }
         };
 
@@ -142,30 +146,7 @@ class CoopGuestSession {
     }
 
     handleHostShoot(bData) {
-        if (!bData || this.remotePlayer.isDowned) return;
-        if (typeof Bullet === 'undefined') return;
-
-        const bullet = new Bullet({
-            x: bData.x,
-            y: bData.y,
-            vx: bData.vx,
-            vy: bData.vy,
-            damage: bData.damage || 25,
-            speed: bData.speed || 14,
-            radius: bData.radius || 7,
-            type: bData.type || 'pea',
-            isEnemy: false,
-            pierce: bData.pierce || 1,
-            maxBounces: bData.maxBounces || 0,
-            shooter: this.remotePlayer
-        });
-
-        if (bData.isChargedBubble) bullet.isChargedBubble = true;
-        this.game.bullets.push(bullet);
-
-        if (window.soundEngine && typeof window.soundEngine.playShoot === 'function') {
-            window.soundEngine.playShoot(bData.type || 'pea');
-        }
+        if (typeof CoopCombatFx !== 'undefined') CoopCombatFx.spawnRemoteBullet(this, bData, false);
     }
 
     handleHostQuit(reason = 'Host left the game') {
@@ -218,23 +199,8 @@ class CoopGuestSession {
         this.game.player.shoot = (effects) => {
             if (this.game.player.hp <= 0 || (this.game.isCutsceneActive && this.game.isCutsceneActive())) return null;
             const bullets = origShoot(effects);
-            if (bullets && bullets.length > 0) {
-                for (let i = 0; i < bullets.length; i++) {
-                    const b = bullets[i];
-                    this.net.send('GUEST_SHOOT', {
-                        x: Math.round(b.x),
-                        y: Math.round(b.y),
-                        vx: Number(b.vx.toFixed(2)),
-                        vy: Number(b.vy.toFixed(2)),
-                        damage: b.damage,
-                        speed: b.speed,
-                        radius: b.radius,
-                        type: b.type,
-                        pierce: b.pierce,
-                        maxBounces: b.maxBounces,
-                        isChargedBubble: !!b.isChargedBubble
-                    });
-                }
+            if (bullets && bullets.length > 0 && typeof CoopCombatFx !== 'undefined') {
+                CoopCombatFx.emitBullets(this.net, 'GUEST_SHOOT', bullets);
             }
             return bullets;
         };
@@ -417,10 +383,21 @@ class CoopGuestSession {
                 }
             }
 
-            // Remove enemies no longer present on host
+            // Remove enemies no longer present on host (triggering death pop & weapon death FX)
             for (let i = this.game.enemies.length - 1; i >= 0; i--) {
                 const e = this.game.enemies[i];
                 if (e._netId && !incomingIds.has(e._netId)) {
+                    e.dead = true;
+                    if (!e._deathPopped && this.game.effects && typeof this.game.effects.addDeathPop === 'function') {
+                        e._deathPopped = true;
+                        this.game.effects.addDeathPop(e.x, e.y, e.radius, e.color, e.isBoss || e.isMiniBoss);
+                    }
+                    if (e._chronoStasisTimer > 0 && typeof ChronoRifle !== 'undefined' && typeof ChronoRifle._shatter === 'function') {
+                        e._chronoStasisTimer = 0; ChronoRifle._shatter(e, this.game);
+                    }
+                    if ((e._symbioteHost || e._symbioteTimer > 0) && typeof SymbioteLauncher !== 'undefined') {
+                        SymbioteLauncher.onEnemyDeath(e, this.game);
+                    }
                     this.game.enemies.splice(i, 1);
                 }
             }
@@ -488,7 +465,11 @@ class CoopGuestSession {
                 x: Math.round(p.x), y: Math.round(p.y),
                 vx: Number((p.vx || 0).toFixed(2)), vy: Number((p.vy || 0).toFixed(2)),
                 angle: Number((p.angle || 0).toFixed(2)),
-                isMoving: !!p.isMoving, shieldActive: !!p.shieldActive, isDashing: !!p.isDashing, heroType: p.heroType
+                isMoving: !!p.isMoving, shieldActive: !!p.shieldActive, isDashing: !!p.isDashing, heroType: p.heroType,
+                weaponType: p.weaponType, equippedArmorId: p.equippedArmorId || null,
+                armorEvolved: !!p.armorEvolved, weaponEvolved: !!p.weaponEvolved,
+                heroSkin: p.heroSkin || 'default', starBlessed: !!p._starBlessed,
+                bubbleCharge: p.isChargingBubble ? Number((p.bubbleCharge || 0).toFixed(2)) : 0
             });
         }
     }

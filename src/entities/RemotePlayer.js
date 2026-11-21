@@ -37,6 +37,8 @@ class RemotePlayer {
         this.invulnerableTimer = 0;
         this.speedDebuffTimer = 0;
         this.damageReduction = 0;
+        this.equippedArmorId = null; this.armorEvolved = false; this.weaponEvolved = false;
+        this.recoilOffset = 0; this.bubbleCharge = 0;
         this.magnetRadius = 140;
         this.starBlessed = false;
         this._starReviveUsed = false;
@@ -70,6 +72,9 @@ class RemotePlayer {
         }
         if (opts) {
             if (typeof opts.weaponType === 'string' && opts.weaponType) this.weaponType = opts.weaponType;
+            if ('equippedArmorId' in opts) this.equippedArmorId = opts.equippedArmorId || null;
+            if (typeof opts.armorEvolved === 'boolean') this.armorEvolved = opts.armorEvolved;
+            if (typeof opts.weaponEvolved === 'boolean') this.weaponEvolved = opts.weaponEvolved;
             if (typeof opts.heroSkin === 'string') this.heroSkin = opts.heroSkin;
             if (opts.heroStyle !== undefined) this.heroStyle = opts.heroStyle;
             if (typeof opts.starBlessed === 'boolean') this.starBlessed = opts.starBlessed;
@@ -185,10 +190,14 @@ class RemotePlayer {
         }
         if (typeof data.isDashing === 'boolean') this.isDashing = data.isDashing;
         if (typeof data.weaponType === 'string' && data.weaponType) this.weaponType = data.weaponType;
+        if ('equippedArmorId' in data) this.equippedArmorId = data.equippedArmorId || null;
+        if (typeof data.armorEvolved === 'boolean') this.armorEvolved = data.armorEvolved;
+        if (typeof data.weaponEvolved === 'boolean') this.weaponEvolved = data.weaponEvolved;
+        if (typeof data.bubbleCharge === 'number') this.bubbleCharge = data.bubbleCharge;
         if (typeof data.heroSkin === 'string') this.heroSkin = data.heroSkin;
         if (typeof data.starBlessed === 'boolean') this.starBlessed = data.starBlessed;
         if (data.heroType && data.heroType !== this.heroType) {
-            const preserved = { maxHp: this.maxHp, damageReduction: this.damageReduction, magnetRadius: this.magnetRadius, starBlessed: this.starBlessed, ...data };
+            const preserved = { maxHp: this.maxHp, damageReduction: this.damageReduction, magnetRadius: this.magnetRadius, starBlessed: this.starBlessed, equippedArmorId: this.equippedArmorId, armorEvolved: this.armorEvolved, weaponEvolved: this.weaponEvolved, ...data };
             this.applyHeroStats(data.heroType, preserved);
         }
     }
@@ -229,6 +238,10 @@ class RemotePlayer {
         }
         if (this.stunTimer > 0) {
             this.stunTimer -= (dt || 1.0);
+        }
+        if (this.recoilOffset > 0) {
+            this.recoilOffset *= Math.pow(0.85, normDt);
+            if (this.recoilOffset < 0.1) this.recoilOffset = 0;
         }
     }
 

@@ -130,17 +130,11 @@ class GearPassives {
                     s.aegisShieldTimer = 0;
                     player.aegisBarrier = barrierCap;
                     if (effects) {
-                        effects.addShockwave(
-                            player.x,
-                            player.y,
-                            awakenedStorm ? 98 : (hasStormBarrier ? 85 : 70),
-                            awakenedStorm ? 'rgba(251, 191, 36, 0.9)' : (hasStormBarrier ? 'rgba(0, 245, 255, 0.85)' : 'rgba(243, 156, 18, 0.75)')
-                        );
-                        effects.addComicSplash(
-                            player.x,
-                            player.y - 36,
-                            awakenedStorm ? '⚡ AWAKENED BARRIER +75!' : (hasStormBarrier ? '⚡ STORM BARRIER +45!' : '🛡️ AEGIS +30!')
-                        );
+                        const rCol = awakenedStorm ? 'rgba(251, 191, 36, 0.9)' : (hasStormBarrier ? 'rgba(0, 245, 255, 0.85)' : 'rgba(243, 156, 18, 0.75)');
+                        const rMsg = awakenedStorm ? '⚡ AWAKENED BARRIER +75!' : (hasStormBarrier ? '⚡ STORM BARRIER +45!' : '🛡️ AEGIS +30!');
+                        effects.addShockwave(player.x, player.y, awakenedStorm ? 98 : (hasStormBarrier ? 85 : 70), rCol);
+                        effects.addComicSplash(player.x, player.y - 36, rMsg);
+                        if (typeof CoopCombatFx !== 'undefined') CoopCombatFx.relayRing(player, awakenedStorm ? 98 : (hasStormBarrier ? 85 : 70), rCol, rMsg);
                     }
                 }
             }
@@ -172,6 +166,7 @@ class GearPassives {
         // Seismic Step: landing a dash triggers quake stomp stunning enemies for 0.8s
         if (s.wasDashing && !player.isDashing && this.has('seismic_step')) {
             this._triggerRadialStomp(player, enemies, effects, 160, 32 * (player.damageMultiplier || 1), 48, '🥾 SEISMIC STEP!', '#e67e22');
+            if (typeof CoopCombatFx !== 'undefined') CoopCombatFx.relayRing(player, 160, '#e67e22', '🥾 SEISMIC STEP!');
         }
         s.wasDashing = !!player.isDashing;
 
@@ -193,6 +188,7 @@ class GearPassives {
                 }
                 if (scorchedAny && effects) {
                     effects.addShockwave(player.x, player.y, 155, 'rgba(255, 107, 53, 0.45)');
+                    if (typeof CoopCombatFx !== 'undefined') CoopCombatFx.relayRing(player, 155, 'rgba(255, 107, 53, 0.45)', '', '#ff6b35', 6);
                 }
             }
         }
@@ -214,6 +210,7 @@ class GearPassives {
         if (this.has('double_sixes') && s.dashCount % 6 === 0) {
             const game = typeof window !== 'undefined' ? window.gameInstance : null;
             this._triggerRadialStomp(player, game ? game.enemies : [], effects, 165, 30 * (player.damageMultiplier || 1), 50, '🎲 DOUBLE SIXES!', '#9b59b6');
+            if (typeof CoopCombatFx !== 'undefined') CoopCombatFx.relayRing(player, 165, '#9b59b6', '🎲 DOUBLE SIXES!');
         }
     }
 
@@ -343,6 +340,7 @@ class GearPassives {
                 effects.addLightningChain(player ? player.x : targetEnemy.x, (player ? player.y : targetEnemy.y) - 40, targetEnemy.x, targetEnemy.y, '#f39c12');
                 effects.addComicSplash(targetEnemy.x, targetEnemy.y - 32, '👑 CRIT BOLT!');
             }
+            if (typeof CoopCombatFx !== 'undefined') CoopCombatFx.relayChain(bullet.shooter, player ? player.x : targetEnemy.x, (player ? player.y : targetEnemy.y) - 40, targetEnemy.x, targetEnemy.y, '#f39c12');
         }
 
         // Chain Shock: 15% chance on hit to arc lightning to 2 nearby enemies for 40% dmg
@@ -363,6 +361,7 @@ class GearPassives {
                 if (typeof best.takeDamage === 'function') best.takeDamage(Math.max(4, Math.round(damageDealt * 0.40)), effects, false);
                 if (game && game.isCoopGuest) best.dead = false;
                 if (effects) effects.addLightningChain(lastX, lastY, best.x, best.y, '#feca57');
+                if (typeof CoopCombatFx !== 'undefined') CoopCombatFx.relayChain(bullet.shooter, lastX, lastY, best.x, best.y, '#feca57');
                 lastX = best.x; lastY = best.y;
             }
             if (jumps > 0 && effects) effects.addComicSplash(targetEnemy.x, targetEnemy.y - 26, '⚡ CHAIN SHOCK!');
@@ -376,6 +375,7 @@ class GearPassives {
                 if (!e || e.dead || e.isDying || e.isAirborneImmune || e === targetEnemy) continue;
                 if (Math.hypot(e.x - bullet.x, e.y - bullet.y) <= 95 + (e.radius || 20)) {
                     if (typeof e.takeDamage === 'function') e.takeDamage(blastDmg, effects, false);
+                    if (game && game.isCoopGuest) e.dead = false;
                 }
             }
             if (effects) {

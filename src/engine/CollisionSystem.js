@@ -71,7 +71,7 @@ class CollisionSystem {
                                 e.applyIceSlow(3.0, 0.50, effects);
                             }
                             if (b.type === 'lightning' && Math.random() < 0.10) {
-                                CollisionSystem.triggerLightningChain(e, finalDmg, enemies, effects, game);
+                                CollisionSystem.triggerLightningChain(e, finalDmg, enemies, effects, game, b.shooter);
                             }
                             if (b.type === 'dialtone' && !b.isEnemy && typeof e.applySonicSlow === 'function') {
                                 e.applySonicSlow(1.5, 0.70, effects);
@@ -537,7 +537,7 @@ class CollisionSystem {
      * Kitsos 10% Chain Lightning Mechanic:
      * Chains up to 4 enemies max, dealing shock damage and drawing electric chain arcs
      */
-    static triggerLightningChain(startEnemy, baseDamage, enemies, effects, game) {
+    static triggerLightningChain(startEnemy, baseDamage, enemies, effects, game, shooter = null) {
         if (!startEnemy || !enemies || !effects) return;
 
         const maxChained = 4;
@@ -569,6 +569,7 @@ class CollisionSystem {
             if (game && game.isCoopGuest) closest.dead = false;
 
             effects.addLightningChain(lastX, lastY, closest.x, closest.y, '#00d2d3');
+            if (shooter && typeof CoopCombatFx !== 'undefined') CoopCombatFx.relayChain(shooter, lastX, lastY, closest.x, closest.y, '#00d2d3');
             lastX = closest.x;
             lastY = closest.y;
         }

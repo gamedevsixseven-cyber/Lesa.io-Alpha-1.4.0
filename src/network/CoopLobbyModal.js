@@ -29,6 +29,10 @@ class CoopLobbyModal {
         const heroSkin = (typeof HeroSkinSystem !== 'undefined') ? HeroSkinSystem.getActiveSkin(heroType) : 'default';
         const heroStyle = (heroType === 'psgiannhs' && typeof PsgiannhsHero !== 'undefined') ? PsgiannhsHero.getActiveStyle() : null;
         const starBlessed = (typeof HeroStarBlessing !== 'undefined' && HeroStarBlessing.isBlessed) ? !!HeroStarBlessing.isBlessed(heroType) : false;
+        const armorEq = (typeof GearManager !== 'undefined' && typeof GearManager.getEquipped === 'function') ? GearManager.getEquipped('armor') : null;
+        const equippedArmorId = armorEq ? armorEq.id : null;
+        const armorEvolved = !!(equippedArmorId && typeof HeroArmorRenderer !== 'undefined' && HeroArmorRenderer.isEvolved(equippedArmorId));
+        const weaponEvolved = !!(typeof WeaponEvolutionManager !== 'undefined' && WeaponEvolutionManager.isEvolved(weaponType));
 
         let maxHp = (typeof HEROES !== 'undefined' && HEROES[heroType] && HEROES[heroType].hp) || 100;
         const upgrades = (gs && gs.player && gs.player.upgrades) || {};
@@ -48,6 +52,7 @@ class CoopLobbyModal {
         if (starBlessed) maxHp = Math.round(maxHp * 1.10);
         return {
             name, heroType, weaponType, heroSkin, heroStyle, starBlessed,
+            equippedArmorId, armorEvolved, weaponEvolved,
             maxHp: Math.min(1200, Math.round(maxHp)),
             damageReduction,
             magnetRadius: Math.max(80, Math.min(400, Math.round(magnetRadius)))

@@ -35,23 +35,8 @@ class CoopHostSession {
         this.game.player.shoot = (effects) => {
             if (this.game.player.hp <= 0) return null;
             const bullets = origShoot(effects);
-            if (bullets && bullets.length > 0) {
-                for (let i = 0; i < bullets.length; i++) {
-                    const b = bullets[i];
-                    this.net.send('HOST_SHOOT', {
-                        x: Math.round(b.x),
-                        y: Math.round(b.y),
-                        vx: Number((b.vx || 0).toFixed(2)),
-                        vy: Number((b.vy || 0).toFixed(2)),
-                        damage: b.damage || 25,
-                        speed: b.speed || 14,
-                        radius: b.radius || 7,
-                        type: b.type || 'pea',
-                        pierce: b.pierce || 1,
-                        maxBounces: b.maxBounces || 0,
-                        isChargedBubble: !!b.isChargedBubble
-                    });
-                }
+            if (bullets && bullets.length > 0 && typeof CoopCombatFx !== 'undefined') {
+                CoopCombatFx.emitBullets(this.net, 'HOST_SHOOT', bullets);
             }
             return bullets;
         };
@@ -175,6 +160,10 @@ class CoopHostSession {
                 this.handleGuestCollectDrop(payload);
             } else if (type === 'GUEST_CUTSCENE_ADVANCE' || type === 'GUEST_CUTSCENE_READY') {
                 this.handleCutsceneAdvance('guest');
+            } else if (type === 'HELIOS_BEAM' && typeof CoopCombatFx !== 'undefined') {
+                CoopCombatFx.handleRemoteBeam(this, payload, true);
+            } else if (type === 'COOP_FX' && typeof CoopCombatFx !== 'undefined') {
+                CoopCombatFx.handleRemoteFx(this, payload);
             }
         };
 
@@ -205,51 +194,7 @@ class CoopHostSession {
     }
 
     handleGuestShoot(bData) {
-        if (!bData || !this.remotePlayer || this.remotePlayer.isDowned || this.remotePlayer.isDownedDisconnected) return;
-        if (!this.game || this.game.state !== 'PLAYING' || (this.game.isCutsceneActive && this.game.isCutsceneActive())) return;
-        if (typeof Bullet === 'undefined') return;
-
-        // Sliding window burst limit against packet flooding (max 24 pellets / 200ms)
-        const now = performance.now();
-        this._guestShootBurst = this._guestShootBurst.filter(t => (now - t) < 200);
-        if (this._guestShootBurst.length >= 24) return;
-        this._guestShootBurst.push(now);
-
-        let bx = Number.isFinite(bData.x) ? bData.x : this.remotePlayer.x;
-        let by = Number.isFinite(bData.y) ? bData.y : this.remotePlayer.y;
-        if (Math.hypot(bx - this.remotePlayer.x, by - this.remotePlayer.y) > 120) {
-            bx = this.remotePlayer.x;
-            by = this.remotePlayer.y;
-        }
-        let vx = Number.isFinite(bData.vx) ? bData.vx : 12;
-        let vy = Number.isFinite(bData.vy) ? bData.vy : 0;
-        const mag = Math.hypot(vx, vy);
-        if (mag > 42) { vx = (vx / mag) * 42; vy = (vy / mag) * 42; }
-        const damage = Math.max(1, Math.min(450, Number(bData.damage) || 25));
-        const speed = Math.max(1, Math.min(42, Number(bData.speed) || 14));
-        const radius = Math.max(3, Math.min(40, Number(bData.radius) || 7));
-        const pierce = Math.max(1, Math.min(10, Math.round(Number(bData.pierce) || 1)));
-        const maxBounces = Math.max(0, Math.min(5, Math.round(Number(bData.maxBounces) || 0)));
-
-        const bullet = new Bullet({
-            x: bx, y: by, vx, vy, damage, speed, radius,
-            type: typeof bData.type === 'string' ? bData.type : 'pea',
-            isEnemy: false, pierce, maxBounces, shooter: this.remotePlayer
-        });
-
-        if (bData.isChargedBubble) bullet.isChargedBubble = true;
-
-        // Latency compensation: advance bullet by one-way network flight time
-        const latencyMs = (this.net && this.net.latency) ? this.net.latency : 25;
-        const lagFrames = Math.min(6, Math.max(1, Math.round(latencyMs / 16.666)));
-        bullet.x += bullet.vx * lagFrames;
-        bullet.y += bullet.vy * lagFrames;
-
-        this.game.bullets.push(bullet);
-
-        if (window.soundEngine && typeof window.soundEngine.playShoot === 'function') {
-            window.soundEngine.playShoot(bData.type || 'pea');
-        }
+        if (typeof CoopCombatFx !== 'undefined') CoopCombatFx.spawnRemoteBullet(this, bData, true);
     }
 
     update(dt) {
@@ -416,7 +361,15 @@ class CoopHostSession {
                 maxHp: safeInt(p.maxHp, 1, 100000, 100),
                 isMoving: !!p.isMoving,
                 shieldActive: !!p.shieldActive,
-                isDashing: !!p.isDashing
+                isDashing: !!p.isDashing,
+                heroType: p.heroType,
+                weaponType: p.weaponType,
+                equippedArmorId: p.equippedArmorId || null,
+                armorEvolved: !!p.armorEvolved,
+                weaponEvolved: !!p.weaponEvolved,
+                heroSkin: p.heroSkin || 'default',
+                starBlessed: !!p._starBlessed,
+                bubbleCharge: p.isChargingBubble ? Number((p.bubbleCharge || 0).toFixed(2)) : 0
             },
             guestHp: safeInt(this.remotePlayer.hp, 0, 100000, 0),
             guestMaxHp: safeInt(this.remotePlayer.maxHp, 25, 100000, 100),

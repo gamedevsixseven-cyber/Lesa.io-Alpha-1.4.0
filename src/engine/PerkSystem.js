@@ -304,6 +304,7 @@ class PerkSystem {
                     effects.addShockwave(player.x, player.y, 90, 'rgba(52, 152, 219, 0.85)');
                     effects.addSparks(player.x, player.y, '#3498db', 14);
                 }
+                if (typeof CoopCombatFx !== 'undefined') CoopCombatFx.relayRing(player, 90, 'rgba(52, 152, 219, 0.85)', '⚡ SECOND WIND!', '#3498db', 10);
             }
         }
 
@@ -332,6 +333,7 @@ class PerkSystem {
                 effects.addShockwave(player.x, player.y, 85, 'rgba(230, 126, 34, 0.85)');
                 effects.addComicSplash(player.x, player.y - 30, '💥 BLAST!');
             }
+            if (typeof CoopCombatFx !== 'undefined') CoopCombatFx.relayRing(player, 85, 'rgba(230, 126, 34, 0.85)', '💥 BLAST!');
             if (window.soundEngine && typeof window.soundEngine.playHitmarker === 'function') {
                 window.soundEngine.playHitmarker(true);
             }
