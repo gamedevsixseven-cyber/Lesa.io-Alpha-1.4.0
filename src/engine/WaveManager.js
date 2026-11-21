@@ -51,6 +51,40 @@ class WaveManager {
         return this.gameMode === 'story' && waveNum === 20;
     }
 
+    _findSafeBossSpawn(player, desiredDist = 420, margin = 95) {
+        const arena = (typeof window !== 'undefined' && window.gameInstance) ? window.gameInstance.arena : null;
+        const b = arena && arena.dungeonBounds;
+        const minX = (b ? b.minX : -(arena ? arena.halfWidth : 1500)) + margin;
+        const maxX = (b ? b.maxX : (arena ? arena.halfWidth : 1500)) - margin;
+        const minY = (b ? b.minY : -(arena ? arena.halfHeight : 1500)) + margin;
+        const maxY = (b ? b.maxY : (arena ? arena.halfHeight : 1500)) - margin;
+
+        const inwardAngle = (Math.abs(player.x) > 120 || Math.abs(player.y) > 120)
+            ? Math.atan2(-player.y, -player.x) + (Math.random() - 0.5) * 0.9
+            : Math.random() * Math.PI * 2;
+
+        const offsets = [0, 0.55, -0.55, 1.1, -1.1, Math.PI * 0.5, -Math.PI * 0.5, Math.PI];
+        for (let i = 0; i < offsets.length; i++) {
+            const ang = inwardAngle + offsets[i];
+            const tx = player.x + Math.cos(ang) * desiredDist;
+            const ty = player.y + Math.sin(ang) * desiredDist;
+            if (tx >= minX && tx <= maxX && ty >= minY && ty <= maxY) {
+                if (!arena || !arena._hitsBuilding || !arena._hitsBuilding(tx, ty, 52)) {
+                    return { x: tx, y: ty };
+                }
+            }
+        }
+
+        let cx = Math.max(minX, Math.min(maxX, player.x + Math.cos(inwardAngle) * desiredDist));
+        let cy = Math.max(minY, Math.min(maxY, player.y + Math.sin(inwardAngle) * desiredDist));
+        if (Math.hypot(cx - player.x, cy - player.y) < 220) {
+            const dirC = Math.atan2(-player.y, -player.x);
+            cx = Math.max(minX, Math.min(maxX, player.x + Math.cos(dirC) * 280));
+            cy = Math.max(minY, Math.min(maxY, player.y + Math.sin(dirC) * 280));
+        }
+        return { x: cx, y: cy };
+    }
+
     startWave(waveNum, player, enemies, effects) {
         if (this.gameMode === 'dungeons' && this.dungeonManager) {
             this.dungeonManager.startFloor(waveNum, player, enemies, effects);
@@ -86,11 +120,8 @@ class WaveManager {
                 window.gameInstance.bossWarningOverlay.trigger('KLEANTHIS THE REBETIS', 'NORMAL BOSS');
             }
 
-            // Spawn Boss at arena distance
-            const spawnDist = 480;
-            const spawnAngle = Math.random() * Math.PI * 2;
-            const bx = player.x + Math.cos(spawnAngle) * spawnDist;
-            const by = player.y + Math.sin(spawnAngle) * spawnDist;
+            // Spawn Boss strictly inside arena bounds even if player stands at an edge
+            const { x: bx, y: by } = this._findSafeBossSpawn(player, 460);
 
             if (typeof Kleanthis !== 'undefined') {
                 enemies.push(new Kleanthis(bx, by, waveMult));
@@ -109,11 +140,8 @@ class WaveManager {
             this.waveTotalEnemies = 1;
             this.waveAnnouncementText = '';
             this.waveAnnouncementTimer = 0;
-            // Spawn Kiloumpas at arena distance (he approaches with cutscene)
-            const spawnDist = 420;
-            const spawnAngle = Math.random() * Math.PI * 2;
-            const kx = player.x + Math.cos(spawnAngle) * spawnDist;
-            const ky = player.y + Math.sin(spawnAngle) * spawnDist;
+            // Spawn Kiloumpas cleanly inside arena bounds (never outside in the perimeter road)
+            const { x: kx, y: ky } = this._findSafeBossSpawn(player, 400);
 
             if (typeof Kiloumpas !== 'undefined') {
                 enemies.push(new Kiloumpas(kx, ky, waveMult));
@@ -133,10 +161,7 @@ class WaveManager {
                 window.gameInstance.bossWarningOverlay.trigger('ROUF THE INFORMANT', 'HARD BOSS');
             }
 
-            const spawnDist = 440;
-            const spawnAngle = Math.random() * Math.PI * 2;
-            const rx = player.x + Math.cos(spawnAngle) * spawnDist;
-            const ry = player.y + Math.sin(spawnAngle) * spawnDist;
+            const { x: rx, y: ry } = this._findSafeBossSpawn(player, 420);
 
             if (typeof Rouf !== 'undefined') {
                 enemies.push(new Rouf(rx, ry, waveMult));

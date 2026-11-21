@@ -192,7 +192,7 @@ class Rouf extends EnemyBase {
 
         // Handle Cutscene State
         if (this.cutsceneState !== 'COMBAT') {
-            this.updateCutscene(dt, player, effects);
+            this.updateCutscene(dt, player, effects, arena);
             return;
         }
 
@@ -200,7 +200,7 @@ class Rouf extends EnemyBase {
         this.updateCombat(dt, player, enemies, bullets, effects, arena);
     }
 
-    updateCutscene(dt, player, effects) {
+    updateCutscene(dt, player, effects, arena = null) {
         if (!player || player.hp <= 0) return;
 
         const dx = player.x - this.x;
@@ -263,16 +263,18 @@ class Rouf extends EnemyBase {
         }
 
         if (this.cutsceneState === 'WALK_IN') {
-            // Walk slowly towards player with phone against ear
+            this.walkInElapsed = (this.walkInElapsed || 0) + dt;
+            // Walk towards player with phone against ear & clamp strictly inside arena
             this.angle = Math.atan2(dy, dx);
-            this.vx = (dx / dist) * 2.0;
-            this.vy = (dy / dist) * 2.0;
+            this.vx = (dx / dist) * 2.2;
+            this.vy = (dy / dist) * 2.2;
             this.x += this.vx * dt;
             this.y += this.vy * dt;
             this.walkCycle += 0.15 * dt;
+            this.applyArenaBounds(arena || (typeof window !== 'undefined' && window.gameInstance ? window.gameInstance.arena : null));
 
-            // Stop at speaking distance (~190px)
-            if (dist <= 190) {
+            // Stop at speaking distance (~190px) or failsafe timeout so cutscene never soft-locks
+            if (dist <= 190 || this.walkInElapsed >= 190) {
                 this.cutsceneState = 'INTRO_DIALOGUE';
                 this.vx = 0;
                 this.vy = 0;

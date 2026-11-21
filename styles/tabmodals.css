@@ -367,10 +367,20 @@
 .badge-epic { background: #9b59b6; color: #ffffff; }
 .badge-legendary { background: #f39c12; color: #ffffff; }
 .badge-mythic { background: #e74c3c; color: #ffffff; }
+.badge-apex { background: linear-gradient(135deg, #ff2e4c 0%, #ff6b2b 52%, #fed330 100%); color: #ffffff; border-color: #fed330; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.85); box-shadow: 0 0 10px rgba(255, 46, 76, 0.75); }
 .badge-exotic { background: #00cec9; color: #111111; text-shadow: 0 0 4px rgba(255, 255, 255, 0.6); }
 .badge-exclusive { background: linear-gradient(135deg, #fd79a8, #e84393); color: #ffffff; box-shadow: 0 0 10px rgba(232, 67, 147, 0.6); }
 .badge-special { background: #f1c40f; color: #2d3436; }
 .badge-dev { background: #111111; color: #00ff88; border-color: #00ff88; box-shadow: 0 0 10px rgba(0, 255, 136, 0.7); }
+
+/* APEX Endgame Relic Card Look */
+.weapon-card.rarity-apex { background: linear-gradient(155deg, #1b1f2a 0%, #2a1420 55%, #14141c 100%); border-color: #fed330; box-shadow: 0 0 0 2px #ff2e4c, 0 5px 0 #141418, 0 10px 22px rgba(255, 46, 76, 0.42); position: relative; overflow: hidden; }
+.weapon-card.rarity-apex.active-weapon { border-color: #2ed573; box-shadow: 0 0 0 2px #fed330, 0 5px 0 #141418, 0 10px 24px rgba(46, 213, 115, 0.5); }
+.weapon-card.rarity-apex .weapon-name { color: #fed330; text-shadow: 0 2px 4px rgba(0, 0, 0, 0.65); }
+.weapon-card.rarity-apex .weapon-icon-wrap { border-radius: 14px; background: radial-gradient(circle, rgba(255, 46, 76, 0.36) 0%, rgba(254, 211, 48, 0.12) 60%, transparent 100%); }
+.weapon-card.rarity-apex .weapon-stat-row { background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(254, 211, 48, 0.24); color: #f8fafc; }
+.weapon-card.rarity-apex .weapon-stat-row .stat-key { color: #cbd5e1; }
+.weapon-card.rarity-apex .weapon-stat-row .stat-val { color: #ffffff; }
 
 .weapon-stats-list {
     display: flex;

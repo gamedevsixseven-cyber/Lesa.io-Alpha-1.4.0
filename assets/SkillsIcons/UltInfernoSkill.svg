@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <defs>
+    <radialGradient id="infBg" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#ff9f1a"/>
+      <stop offset="62%" stop-color="#d63031"/>
+      <stop offset="100%" stop-color="#3b0d11"/>
+    </radialGradient>
+    <linearGradient id="chiliBody" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#ff5e57"/>
+      <stop offset="55%" stop-color="#e82127"/>
+      <stop offset="100%" stop-color="#7f1d1d"/>
+    </linearGradient>
+  </defs>
+  <circle cx="64" cy="64" r="59" fill="url(#infBg)" stroke="#18181b" stroke-width="5"/>
+  <!-- Swirling 360 Inferno Cyclone Rings -->
+  <path d="M22 72 C14 42, 42 18, 78 24 C106 28, 114 64, 96 86" fill="none" stroke="#fff200" stroke-width="7" stroke-linecap="round" opacity="0.9"/>
+  <path d="M32 96 C62 114, 108 98, 108 62" fill="none" stroke="#ff9f1a" stroke-width="8" stroke-linecap="round"/>
+  <path d="M18 52 C18 86, 48 112, 86 102" fill="none" stroke="#ff3838" stroke-width="5" stroke-linecap="round"/>
+  <!-- Outer Flame Tongues -->
+  <path d="M36 92 C24 68, 36 38, 60 20 C60 36, 72 34, 80 18 C98 38, 102 72, 86 94 Z" fill="#ffa502" stroke="#18181b" stroke-width="3.5" stroke-linejoin="round"/>
+  <!-- Spicy Chili Pepper Core -->
+  <g stroke="#18181b" stroke-width="3.8" stroke-linejoin="round" stroke-linecap="round">
+    <path d="M78 36 C86 30, 94 32, 96 38" fill="none" stroke="#2ed573" stroke-width="5"/>
+    <path d="M62 42 C68 32, 82 32, 86 42 C92 60, 72 90, 36 96 C48 82, 54 62, 62 42 Z" fill="url(#chiliBody)"/>
+    <!-- Gloss & Stem Cap -->
+    <path d="M60 40 C66 34, 80 34, 86 42 C78 46, 68 46, 60 40 Z" fill="#20bf6b"/>
+    <path d="M66 54 C64 66, 56 76, 48 84" fill="none" stroke="#ffb8b8" stroke-width="3" opacity="0.85"/>
+  </g>
+</svg>

@@ -238,6 +238,18 @@ class BossTelegraphFX {
         ctx.moveTo(0, -r * 0.32); ctx.lineTo(0, -7);
         ctx.moveTo(0, 7); ctx.lineTo(0, r * 0.32);
         ctx.stroke();
+
+        // Descending Orbital Targeting Sky-Laser Pillar in final 38% of countdown
+        if (p > 0.62) {
+            const beamA = Math.min(1, (p - 0.62) / 0.38);
+            const g = ctx.createLinearGradient(0, -260, 0, 0);
+            g.addColorStop(0, 'rgba(255, 46, 76, 0)');
+            g.addColorStop(1, `rgba(255, 71, 87, ${0.55 * beamA})`);
+            ctx.fillStyle = g;
+            ctx.fillRect(-10 * beamA, -260, 20 * beamA, 260);
+            ctx.fillStyle = `rgba(255, 255, 255, ${0.75 * beamA})`;
+            ctx.fillRect(-2.5 * beamA, -260, 5 * beamA, 260);
+        }
     }
 
     static drawVenomRune(ctx, r, p, t) {

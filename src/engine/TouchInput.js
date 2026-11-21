@@ -49,6 +49,13 @@ class TouchInput {
         this.bindEvents();
     }
 
+    _mapClientPoint(e) {
+        if (typeof VirtualLandscape !== 'undefined' && VirtualLandscape.isActive()) {
+            return VirtualLandscape.toLocalPoint(e.clientX, e.clientY);
+        }
+        return { x: e.clientX, y: e.clientY };
+    }
+
     detectTouchDevice() {
         const isCoarse = typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
         const isFine = typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(pointer: fine)').matches;
@@ -71,12 +78,16 @@ class TouchInput {
         this.aimKnob = document.querySelector('.mobile-aim-knob');
         this.dashBtn = document.getElementById('mobile-dash-btn');
         this.skillBtn = document.getElementById('mobile-skill-btn');
+        this.ultBtn = document.getElementById('mobile-ult-btn');
         this.bubbleBtn = document.getElementById('mobile-bubble-charge-btn');
         this.dashRing = this.dashBtn ? this.dashBtn.querySelector('.dash-ring') : null;
         this.skillRing = this.skillBtn ? this.skillBtn.querySelector('.skill-ring') : null;
+        this.ultRing = this.ultBtn ? this.ultBtn.querySelector('.ult-ring') : null;
         this.bubbleRing = this.bubbleBtn ? this.bubbleBtn.querySelector('.bubble-charge-ring') : null;
         this._skillImgEl = this.skillBtn ? (this.skillBtn.querySelector('.btn-skill-img-icon') || this.skillBtn.querySelector('#mobile-skill-img')) : null;
         this._skillLabelEl = this.skillBtn ? this.skillBtn.querySelector('.btn-label') : null;
+        this._ultImgEl = this.ultBtn ? (this.ultBtn.querySelector('.btn-ult-img-icon') || this.ultBtn.querySelector('#mobile-ult-img')) : null;
+        this._ultLabelEl = this.ultBtn ? this.ultBtn.querySelector('.btn-label') : null;
         this._uiCache = Object.create(null);
 
         this.updateAutoFireState();
@@ -174,25 +185,27 @@ class TouchInput {
             this.joystickPointerId = e.pointerId;
             try { this.joystickZone.setPointerCapture(e.pointerId); } catch {}
 
-            this.joystickOrigin = { x: e.clientX, y: e.clientY };
-            this.joystickCurrent = { x: e.clientX, y: e.clientY };
+            const pt = this._mapClientPoint(e);
+            this.joystickOrigin = { x: pt.x, y: pt.y };
+            this.joystickCurrent = { x: pt.x, y: pt.y };
 
             // Position visual joystick base
             if (this.joystickBase) {
-                this.joystickBase.style.left = `${e.clientX}px`;
-                this.joystickBase.style.top = `${e.clientY}px`;
+                this.joystickBase.style.left = `${pt.x}px`;
+                this.joystickBase.style.top = `${pt.y}px`;
                 this.joystickBase.classList.add('active');
             }
             if (this.joystickKnob) {
                 this.joystickKnob.style.transform = `translate(0px, 0px)`;
             }
 
-            this.updateJoystick(e.clientX, e.clientY);
+            this.updateJoystick(pt.x, pt.y);
         });
 
         this.joystickZone.addEventListener('pointermove', (e) => {
             if (e.pointerId !== this.joystickPointerId) return;
-            this.updateJoystick(e.clientX, e.clientY);
+            const pt = this._mapClientPoint(e);
+            this.updateJoystick(pt.x, pt.y);
         });
 
         const releaseJoystick = (e) => {
@@ -222,23 +235,25 @@ class TouchInput {
 
                 this.aimPointerId = e.pointerId;
                 try { this.aimZone.setPointerCapture(e.pointerId); } catch {}
-                this.aimOrigin = { x: e.clientX, y: e.clientY };
+                const pt = this._mapClientPoint(e);
+                this.aimOrigin = { x: pt.x, y: pt.y };
 
                 if (this.aimBase) {
-                    this.aimBase.style.left = `${e.clientX}px`;
-                    this.aimBase.style.top = `${e.clientY}px`;
+                    this.aimBase.style.left = `${pt.x}px`;
+                    this.aimBase.style.top = `${pt.y}px`;
                     this.aimBase.classList.add('active');
                 }
                 if (this.aimKnob) {
                     this.aimKnob.style.transform = `translate(0px, 0px)`;
                 }
 
-                this.updateAim(e.clientX, e.clientY);
+                this.updateAim(pt.x, pt.y);
             });
 
             this.aimZone.addEventListener('pointermove', (e) => {
                 if (e.pointerId !== this.aimPointerId) return;
-                this.updateAim(e.clientX, e.clientY);
+                const pt = this._mapClientPoint(e);
+                this.updateAim(pt.x, pt.y);
             });
 
             const releaseAim = (e) => {
@@ -294,6 +309,22 @@ class TouchInput {
             const releaseSkill = () => this.skillBtn.classList.remove('pressed');
             this.skillBtn.addEventListener('pointerup', releaseSkill);
             this.skillBtn.addEventListener('pointercancel', releaseSkill);
+        }
+
+        // 4.5. Ultimate Button (Q)
+        if (this.ultBtn) {
+            this.ultBtn.addEventListener('pointerdown', (e) => {
+                if (e.pointerType && e.pointerType !== 'touch') return;
+                e.stopPropagation();
+                this.vibrate(35);
+                this.ultBtn.classList.add('pressed');
+                if (this.game && this.game.input && this.game.input.onUltCallback) {
+                    this.game.input.onUltCallback();
+                }
+            });
+            const releaseUlt = () => this.ultBtn.classList.remove('pressed');
+            this.ultBtn.addEventListener('pointerup', releaseUlt);
+            this.ultBtn.addEventListener('pointercancel', releaseUlt);
         }
 
         // 5. Big Bubble Charge Button (Mobile)
@@ -507,6 +538,7 @@ class TouchInput {
         if (this.bubbleBtn) this.bubbleBtn.classList.remove('pressed');
         if (this.dashBtn) this.dashBtn.classList.remove('pressed');
         if (this.skillBtn) this.skillBtn.classList.remove('pressed');
+        if (this.ultBtn) this.ultBtn.classList.remove('pressed');
         this.joystickPointerId = null;
         this.aimPointerId = null;
         this.isBubbleChargeHeld = false;

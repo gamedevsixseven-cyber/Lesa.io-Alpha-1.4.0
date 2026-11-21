@@ -166,7 +166,7 @@ class MobilePerf {
         try {
             canvas.width = 0;
             canvas.height = 0;
-        } catch (_) {}
+        } catch (_) { }
     }
 
     /**
@@ -176,9 +176,9 @@ class MobilePerf {
      */
     static applyCanvasSettings(game) {
         if (!game || !game.canvas) return;
-        const vv = (this.isMobile && typeof window !== 'undefined') ? window.visualViewport : null;
-        const cssW = Math.max(1, Math.round((vv && vv.width) ? vv.width : window.innerWidth));
-        const cssH = Math.max(1, Math.round((vv && vv.height) ? vv.height : window.innerHeight));
+        const vl = (typeof VirtualLandscape !== 'undefined') ? VirtualLandscape.sync() : null;
+        const cssW = vl ? vl.width : Math.max(1, Math.round(window.innerWidth));
+        const cssH = vl ? vl.height : Math.max(1, Math.round(window.innerHeight));
         const dpr = this.getCanvasDpr(cssW, cssH);
 
         game.dpr = dpr;
@@ -441,7 +441,7 @@ class MobilePerf {
                     gain.connect(ctx.destination);
                     source.start(0);
                     return true;
-                } catch (_) {}
+                } catch (_) { }
             } else if (!this._audioLoading.has(src) && typeof fetch === 'function' && !src.startsWith('file:')) {
                 this._audioLoading.add(src);
                 fetch(src)
@@ -450,7 +450,7 @@ class MobilePerf {
                     .then((buf) => {
                         if (buf) this._audioBuffers.set(src, buf);
                     })
-                    .catch(() => {})
+                    .catch(() => { })
                     .finally(() => this._audioLoading.delete(src));
             }
         }
@@ -525,9 +525,18 @@ class MobilePerf {
 
     static setGraphicsQuality(level, game = null) {
         const clean = (level === 'low' || level === 'medium' || level === 'high') ? level : 'medium';
-        try { localStorage.setItem('lesaio_mobile_graphics', clean); } catch (_) {}
+        try { localStorage.setItem('lesaio_mobile_graphics', clean); } catch (_) { }
         if (!this.isMobile) return clean;
-        if (typeof Obstacle !== 'undefined') Obstacle._scaledTreeCanvas = null;
+        if (typeof Obstacle !== 'undefined') {
+            Obstacle._scaledTreeCanvas = null;
+            Obstacle._charredTreeCanvas = null;
+        }
+        if (typeof EndlessBuildingRenderer !== 'undefined' && EndlessBuildingRenderer._cache) {
+            EndlessBuildingRenderer._cache.clear();
+        }
+        if (typeof EndlessMapEvolution !== 'undefined') {
+            EndlessMapEvolution._motes = null;
+        }
         if (typeof SpriteAtlasCache !== 'undefined' && typeof SpriteAtlasCache.clearCache === 'function') {
             SpriteAtlasCache.clearCache();
         }

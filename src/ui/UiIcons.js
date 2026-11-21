@@ -33,9 +33,11 @@ class UiIcons {
         weapon_spas12: 'assets/WeaponIcons/Spas12.png',
         weapon_boomerang_saw: 'assets/WeaponIcons/BoomerangSawblade.png',
         weapon_chrono_rifle: 'assets/WeaponIcons/ChronoRifle.png',
+        weapon_symbiote: 'assets/WeaponIcons/SymbioteLauncher.png',
         weapon_carbine: 'assets/WeaponIcons/KiloumpasCarbine.png',
         weapon_dialtone: 'assets/WeaponIcons/RoufBlaster.png',
         weapon_zeus_thunderbolt: 'assets/WeaponIcons/ZeusThunderbolt.png',
+        weapon_helios_cannon: 'assets/WeaponIcons/HeliosOmegaCannon.png',
 
         // Custom Comic SVG Icons
         coin: 'assets/ui-icons/coin.svg',

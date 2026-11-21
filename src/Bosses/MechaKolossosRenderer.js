@@ -14,12 +14,14 @@ class MechaKolossosRenderer {
         const aimAngle = b.angle || 0;
         const facingLeft = Math.cos(aimAngle) < 0;
         const isBack = Math.sin(aimAngle) < -0.68;
-        const beamCharging = !!b.omegaBeam;
+        const beamCharging = !!(b.omegaBeam || b.solarNova);
         const orbitalGlow = (b.orbitalCooldown || 999) <= 22 || beamCharging || !!b.criticalTriggered;
+        const venting = (b.solarVentTimer || 0) > 0;
         const sweepRecoil = (b.sweepCooldown || 999) <= 9 ? 0.14 : 0;
         const trembleX = b.isDying ? (Math.random() - 0.5) * 9 : 0;
         const trembleY = b.isDying ? (Math.random() - 0.5) * 9 : 0;
-        const bob = Math.sin(b.walkCycle || age * 0.10) * 2.5;
+        const lift = b.jumpLift || 0;
+        const bob = lift > 1 ? 0 : Math.sin(b.walkCycle || age * 0.10) * 2.5;
 
         if (typeof KolossosAttackSystem !== 'undefined') {
             KolossosAttackSystem.drawWorldHazards(ctx, b);
@@ -27,13 +29,30 @@ class MechaKolossosRenderer {
         EndlessBossRenderer.drawTelegraphs(ctx, b.telegraphs);
 
         ctx.save();
-        EndlessBossRenderer.drawShadow(ctx, b.x, b.y, r * 1.15, b.isEnraged, true);
+        const shadowScale = Math.max(0.45, 1.15 - (lift / 280));
+        EndlessBossRenderer.drawShadow(ctx, b.x, b.y, r * shadowScale, b.isEnraged, true);
 
-        if (!flash) {
+        if (!flash && lift < 25) {
             MechaKolossosRenderer.drawReactorAura(ctx, b.x, b.y + r * 0.78, r, age, b.isEnraged, orbitalGlow, b.criticalTriggered);
         }
 
-        ctx.translate(b.x + trembleX, b.y + bob + trembleY);
+        ctx.translate(b.x + trembleX, b.y + bob - lift + trembleY);
+        if (lift > 4 && !flash) {
+            // Blazing jet-thruster flames beneath piston boots while airborne!
+            for (const side of [-1, 1]) {
+                const fx = side * r * 0.42;
+                const fy = r * 0.84;
+                const flameH = r * (0.55 + Math.sin(age * 0.8 + side) * 0.14);
+                ctx.fillStyle = '#ff2e4c';
+                ctx.beginPath();
+                ctx.moveTo(fx - 9, fy); ctx.lineTo(fx, fy + flameH); ctx.lineTo(fx + 9, fy);
+                ctx.closePath(); ctx.fill();
+                ctx.fillStyle = '#fed330';
+                ctx.beginPath();
+                ctx.moveTo(fx - 4.5, fy); ctx.lineTo(fx, fy + flameH * 0.65); ctx.lineTo(fx + 4.5, fy);
+                ctx.closePath(); ctx.fill();
+            }
+        }
         ctx.lineWidth = 3.2;
         ctx.strokeStyle = '#141418';
 
@@ -52,6 +71,32 @@ class MechaKolossosRenderer {
         EndlessBossRenderer.drawAimedLayer(ctx, aimAngle, anchorX, r * 0.04, () => {
             MechaKolossosRenderer.drawSiegeCannons(ctx, r, age, b.isEnraged, sweepRecoil, flash);
         });
+
+        // Reactor exhaust vent flare during post-Solar-Nova punish window
+        if (venting) {
+            const vPulse = 0.65 + 0.35 * Math.sin(age * 0.45);
+            const vFade = Math.min(1, (b.solarVentTimer || 0) / 28);
+            ctx.save();
+            ctx.globalAlpha = 0.72 * vFade * vPulse;
+            const ventGrad = ctx.createRadialGradient(0, 0, r * 0.15, 0, 0, r * 1.15);
+            ventGrad.addColorStop(0, 'rgba(255, 244, 190, 0.9)');
+            ventGrad.addColorStop(0.5, 'rgba(255, 130, 35, 0.55)');
+            ventGrad.addColorStop(1, 'rgba(255, 55, 20, 0)');
+            ctx.fillStyle = ventGrad;
+            ctx.beginPath();
+            ctx.arc(0, 0, r * 1.15, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = `rgba(255, 220, 120, ${0.85 * vFade})`;
+            ctx.lineWidth = Math.max(2, r * 0.055);
+            for (let k = 0; k < 4; k++) {
+                const va = Math.PI * 0.25 + k * Math.PI * 0.5;
+                ctx.beginPath();
+                ctx.moveTo(Math.cos(va) * r * 0.55, Math.sin(va) * r * 0.55);
+                ctx.lineTo(Math.cos(va) * r * (1.05 + 0.18 * vPulse), Math.sin(va) * r * (1.05 + 0.18 * vPulse));
+                ctx.stroke();
+            }
+            ctx.restore();
+        }
 
         EndlessBossRenderer.endBody(ctx, b);
 

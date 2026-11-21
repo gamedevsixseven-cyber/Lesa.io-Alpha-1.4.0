@@ -147,6 +147,35 @@ class MobileAimAssist {
             }
         }
 
+        if (ti.ultBtn) {
+            const ultState = (typeof HeroUltimates !== 'undefined') ? HeroUltimates.getHUDState(player) : null;
+            const showUlt = !!ultState;
+            if (c.showUlt !== showUlt) {
+                c.showUlt = showUlt;
+                ti.ultBtn.classList.toggle('hidden', !showUlt);
+            }
+            if (ultState) {
+                const uOff = Math.round(226.2 * (1 - ultState.pct / 100));
+                if (ti.ultRing && c.ultOff !== uOff) {
+                    c.ultOff = uOff;
+                    ti.ultRing.style.strokeDashoffset = String(uOff);
+                }
+                const uMode = ultState.active ? 2 : (ultState.ready ? 0 : 1);
+                if (c.ultMode !== uMode) {
+                    c.ultMode = uMode;
+                    ti.ultBtn.classList.toggle('is-active', uMode === 2);
+                    ti.ultBtn.classList.toggle('is-ready', uMode === 0);
+                    ti.ultBtn.classList.toggle('on-cooldown', uMode === 1);
+                }
+                if (c.ultHero !== ultState.cfg.id) {
+                    c.ultHero = ultState.cfg.id;
+                    if (ti._ultImgEl) ti._ultImgEl.src = ultState.cfg.icon;
+                    if (ti._ultLabelEl) ti._ultLabelEl.textContent = ultState.cfg.mobileLabel;
+                    ti.ultBtn.classList.toggle('ult-vf185', ultState.cfg.id === 'vf185');
+                }
+            }
+        }
+
         if (ti.bubbleBtn) {
             const showBubble = player.weaponType === 'bubble';
             if (c.showBubble !== showBubble) {

@@ -1,0 +1,83 @@
+/* =========================================================================
+   LESA.IO - VIRTUAL AUTO-LANDSCAPE FOR IPHONE / PORTRAIT MOBILE BROWSERS
+   Forces 90deg rotated widescreen layout when Safari / WebKit keeps portrait,
+   hiding the "ROTATE DEVICE" block so players can play straight away for free.
+   ========================================================================= */
+
+html.vl-active,
+html.vl-active body {
+    overflow: hidden !important;
+    width: 100% !important;
+    height: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+/* Hide portrait rotate gate whenever virtual landscape is engaged */
+html.vl-active #mobile-rotate-overlay {
+    display: none !important;
+}
+
+/* Rotate entire game root 90deg clockwise into landscape across exact physical screen */
+html.vl-active #game-container {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: var(--vl-w, 100vh) !important;
+    height: var(--vl-h, 100vw) !important;
+    transform-origin: top left !important;
+    transform: rotate(90deg) translateY(-100%) !important;
+    overflow: hidden !important;
+}
+
+html.vl-active #game-canvas {
+    width: 100% !important;
+    height: 100% !important;
+}
+
+/* Force 100vw / 100vh overlays inside rotated #game-container to fill the virtual landscape box */
+html.vl-active #dev-intro-screen,
+html.vl-active #loading-screen,
+html.vl-active #menu-screen,
+html.vl-active #credits-overlay,
+html.vl-active #boss-warning-overlay,
+html.vl-active #cutscene-overlay,
+html.vl-active .modal-overlay {
+    width: 100% !important;
+    height: 100% !important;
+    max-width: none !important;
+    max-height: none !important;
+}
+
+/* Constrain modal panels against logical landscape dimensions (--vl-w x --vl-h) */
+html.vl-active .modal-panel,
+html.vl-active #olympus-victory-modal .olympus-victory-panel {
+    max-width: min(calc(var(--vl-w, 844px) * 0.96), 760px) !important;
+    max-height: calc(var(--vl-h, 390px) * 0.94) !important;
+}
+
+html.vl-active #game-over-modal .modal-panel {
+    max-width: min(calc(var(--vl-w, 844px) * 0.92), 540px) !important;
+    max-height: calc(var(--vl-h, 390px) * 0.94) !important;
+}
+
+html.vl-active .altar-temple-panel {
+    max-height: calc(var(--vl-h, 390px) - 18px) !important;
+}
+
+/* Swap notch/home-indicator safe-area insets to match 90deg CW rotated edges:
+   Physical Bottom (Home Bar) -> Visual Left | Physical Top (Dynamic Island) -> Visual Right */
+html.vl-active #game-hud {
+    padding-left: max(12px, env(safe-area-inset-bottom, 0px)) !important;
+    padding-right: max(12px, env(safe-area-inset-top, 0px)) !important;
+}
+
+html.vl-active #menu-screen:not(.hidden) {
+    padding-left: max(16px, env(safe-area-inset-bottom, 0px)) !important;
+    padding-right: max(16px, env(safe-area-inset-top, 0px)) !important;
+}
+
+html.vl-active #mobile-actions-zone {
+    bottom: 6px !important;
+    right: max(6px, env(safe-area-inset-top, 0px)) !important;
+}

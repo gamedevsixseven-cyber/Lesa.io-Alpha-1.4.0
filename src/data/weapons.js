@@ -182,6 +182,25 @@ const WEAPONS = {
         unlockLabel: 'CHEST DROP',
         hideWhenLocked: true
     },
+    symbiote: {
+        id: 'symbiote',
+        name: 'Symbiote Launcher',
+        rarity: 'Mythic',
+        icon: '🦠',
+        baseDelay: 14,
+        baseDamage: 28,
+        radius: 9,
+        extraPierce: 0,
+        maxBounces: 0,
+        speedMultiplier: 1.52,
+        critChanceBonus: 0.10,
+        range: 960,
+        color: '#ff2e63',
+        image: 'assets/WeaponIcons/SymbioteLauncher.png',
+        unlockSource: 'chest_drop',
+        unlockLabel: 'CHEST DROP',
+        hideWhenLocked: true
+    },
     carbine: {
         id: 'carbine',
         name: "Kiloumpas's Carbine",
@@ -257,6 +276,40 @@ const WEAPONS = {
                 damage: '62 Awakened',
                 fireDelay: 'Awakened (0.22s)',
                 trait: '+18% Crit • +3 Pierces • 4th Sky-Bolt • Chains 3'
+            }
+        }
+    },
+    helios_cannon: {
+        id: 'helios_cannon',
+        name: 'Helios Omega Cannon',
+        rarity: 'Apex',
+        icon: '☀️',
+        baseDelay: 12,
+        baseDamage: 52,
+        radius: 11,
+        extraPierce: 3,
+        maxBounces: 0,
+        speedMultiplier: 1.60,
+        critChanceBonus: 0.16,
+        range: 1020,
+        singularityEveryNShots: 4,
+        beamEveryNShots: 8,
+        color: '#ff9f43',
+        image: 'assets/WeaponIcons/HeliosOmegaCannon.png',
+        unlockSource: 'boss_kolossos',
+        unlockLabel: 'W40 KOLOSSOS',
+        hideWhenLocked: true,
+        evolved: {
+            baseDamage: 72,
+            baseDelay: 10,
+            extraPierce: 4,
+            critChanceBonus: 0.22,
+            singularityEveryNShots: 4,
+            beamEveryNShots: 6,
+            uiStats: {
+                damage: '72 Awakened',
+                fireDelay: 'Awakened (0.17s)',
+                trait: '+22% Crit • 4th Singularity • 6th Omega + Star-Lances'
             }
         }
     }

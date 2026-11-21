@@ -22,6 +22,10 @@ class BossRewardManager {
                 { category: 'gear', id: 'zeus_aegis_cuirass' },
                 { category: 'skill', id: 'wrath_of_olympus' }
             ]
+        },
+        mecha_kolossos: {
+            bossName: 'Endless Wave 40: Kolossos MK-IV',
+            items: [{ category: 'weapon', id: 'helios_cannon' }]
         }
     };
 
@@ -153,6 +157,7 @@ class BossRewardManager {
             if (id === 'carbine') lines.push({ label: 'Perk', val: '+15% Crit • Pierces 2' });
             else if (id === 'dialtone') lines.push({ label: 'Perk', val: '4th 3-Way • -30% Slow' });
             else if (id === 'zeus_thunderbolt') lines.push({ label: 'Perk', val: 'Forked Arc • 5th Sky-Bolt' });
+            else if (id === 'helios_cannon') lines.push({ label: 'Perk', val: '4th Singularity • 8th Omega Beam' });
             return {
                 category,
                 id,

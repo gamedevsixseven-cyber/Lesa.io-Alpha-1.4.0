@@ -160,8 +160,8 @@ class Obstacle {
         ctx.save();
         ctx.translate(this.x, this.y);
 
-        // Shadow (trees and bushes draw their own tailored 2.5D ground shadow)
-        if (!this.isOlympianPillar && this.type !== 'tree' && this.type !== 'bush') {
+        // Shadow (trees, bushes, and buildings draw their own tailored 2.5D ground shadow)
+        if (!this.isOlympianPillar && this.type !== 'tree' && this.type !== 'bush' && this.type !== 'building') {
             ctx.fillStyle = 'rgba(0, 0, 0, 0.22)';
             ctx.beginPath();
             ctx.ellipse(0, this.radius * 0.75, this.radius * 0.9, this.radius * 0.35, 0, 0, Math.PI * 2);
@@ -175,6 +175,8 @@ class Obstacle {
 
         if (this.isOlympianPillar) {
             this.drawOlympianPillar(ctx);
+        } else if (this.type === 'building') {
+            this.drawBuilding(ctx);
         } else if (this.type === 'crate') {
             this.drawCrate(ctx);
             if (this.isSnowy) this.drawSnowCap(ctx, this.radius * 1.6);
@@ -237,10 +239,10 @@ class Obstacle {
         if (typeof OlympusAssets === 'undefined') return false;
         const specs = {
             olive_tree: { key: 'olive_tree', w: 210, h: 210, anchorY: 0.72, sx: 0.36, sy: 0.12, syOff: 12 },
-            snow_pine:  { key: 'snow_pine',  w: 205, h: 215, anchorY: 0.76, sx: 0.35, sy: 0.12, syOff: 10 },
-            pillar:     { key: 'olympus_pillar', w: 132, h: 176, anchorY: 0.80, sx: 0.32, sy: 0.11, syOff: 8 },
-            boulder:    { key: 'olympus_boulder', w: 126, h: 118, anchorY: 0.62, sx: 0.42, sy: 0.16, syOff: 12 },
-            brazier:    { key: 'olympus_brazier', w: 112, h: 128, anchorY: 0.72, sx: 0.34, sy: 0.12, syOff: 8 }
+            snow_pine: { key: 'snow_pine', w: 205, h: 215, anchorY: 0.76, sx: 0.35, sy: 0.12, syOff: 10 },
+            pillar: { key: 'olympus_pillar', w: 132, h: 176, anchorY: 0.80, sx: 0.32, sy: 0.11, syOff: 8 },
+            boulder: { key: 'olympus_boulder', w: 126, h: 118, anchorY: 0.62, sx: 0.42, sy: 0.16, syOff: 12 },
+            brazier: { key: 'olympus_brazier', w: 112, h: 128, anchorY: 0.72, sx: 0.34, sy: 0.12, syOff: 8 }
         };
         const s = specs[this.olympusStyle];
         if (!s) return false;
@@ -407,6 +409,7 @@ class Obstacle {
 
     static treeImage = null;
     static _scaledTreeCanvas = null;
+    static _charredTreeCanvas = null;
     static getTreeImage() {
         if (!Obstacle.treeImage && typeof Image !== 'undefined') {
             Obstacle.treeImage = new Image();
@@ -434,6 +437,56 @@ class Obstacle {
         return c;
     }
 
+    static getCharredTreeSprite() {
+        const base = Obstacle.getScaledTreeSprite();
+        if (!base) return null;
+        if (Obstacle._charredTreeCanvas && Obstacle._charredTreeCanvas.width === base.width) {
+            return Obstacle._charredTreeCanvas;
+        }
+        const c = document.createElement('canvas');
+        c.width = base.width;
+        c.height = base.height;
+        const tctx = c.getContext('2d');
+        tctx.drawImage(base, 0, 0);
+        tctx.globalCompositeOperation = 'source-atop';
+        tctx.fillStyle = 'rgba(72, 22, 12, 0.72)';
+        tctx.fillRect(0, 0, c.width, c.height);
+        tctx.globalCompositeOperation = 'source-over';
+        Obstacle._charredTreeCanvas = c;
+        return c;
+    }
+
+    hitTestCircle(cx, cy, cr) {
+        if (this.type === 'building' && typeof EndlessBuildingRenderer !== 'undefined') {
+            return EndlessBuildingRenderer.intersectCircle(this, cx, cy, cr);
+        }
+        const odx = cx - this.x;
+        const ody = cy - this.y;
+        const radSum = cr + this.radius;
+        if (odx * odx + ody * ody >= radSum * radSum) return null;
+        const dist = Math.hypot(odx, ody) || 1;
+        const nx = odx / dist;
+        const ny = ody / dist;
+        return { pushX: this.x + nx * radSum, pushY: this.y + ny * radSum, nx, ny };
+    }
+
+    isPlayerBehind(player) {
+        if (this.type === 'building') {
+            const hw = (this.halfW || 68) + 22;
+            const rh = (this.roofHeight || 105) + 18;
+            return Math.abs(player.x - this.x) < hw && player.y < this.y && player.y > this.y - rh;
+        }
+        const dx = player.x - this.x;
+        const dy = player.y - (this.y - 70);
+        return (dx * dx + dy * dy < 85 * 85);
+    }
+
+    drawBuilding(ctx) {
+        if (typeof EndlessBuildingRenderer !== 'undefined') {
+            EndlessBuildingRenderer.draw(this, ctx);
+        }
+    }
+
     drawTree(ctx) {
         const sprite = Obstacle.getScaledTreeSprite();
         // 2.5D Scale: 215px wide by 210px tall
@@ -442,6 +495,10 @@ class Obstacle {
         // Align bottom trunk center with this.x, this.y
         const drawX = -w * 0.5;
         const drawY = -h * 0.86;
+        const burn = (typeof EndlessMapEvolution !== 'undefined' && !this.isOlympianPillar && !this.olympusStyle)
+            ? EndlessMapEvolution.getTreeBurnRatio()
+            : 0;
+        const onFire = (typeof EndlessMapEvolution !== 'undefined' && EndlessMapEvolution.isTreeOnFire(this));
 
         // Soft natural ground shadow under trunk base (richer soft canopy penumbra in High mobile mode)
         if (typeof MobilePerf !== 'undefined' && MobilePerf.isHighGraphics()) {
@@ -450,16 +507,32 @@ class Obstacle {
             ctx.ellipse(0, 8, 66, 22, 0, 0, Math.PI * 2);
             ctx.fill();
         }
-        ctx.fillStyle = 'rgba(20, 45, 15, 0.30)';
+        ctx.fillStyle = burn > 0.3 ? 'rgba(26, 16, 14, 0.36)' : 'rgba(20, 45, 15, 0.30)';
         ctx.beginPath();
         ctx.ellipse(0, 4, 38, 14, 0, 0, Math.PI * 2);
         ctx.fill();
 
         if (sprite) {
             ctx.drawImage(sprite, drawX, drawY, w, h);
+            if (burn > 0.05) {
+                const charred = Obstacle.getCharredTreeSprite();
+                if (charred) {
+                    ctx.save();
+                    ctx.globalAlpha = Math.min(1, burn);
+                    ctx.drawImage(charred, drawX, drawY, w, h);
+                    ctx.restore();
+                }
+            }
         } else if (typeof FoliageRenderer !== 'undefined') {
             // Crisp procedural tree fallback while image finishes loading
             FoliageRenderer.drawSmallTree(this, ctx, 1.85);
+        }
+
+        if (onFire && typeof EndlessBuildingRenderer !== 'undefined') {
+            const now = (typeof Date !== 'undefined' ? Date.now() : 0) * 0.001;
+            const fireLvl = EndlessMapEvolution.fireLevel || 0.6;
+            EndlessBuildingRenderer.drawComicFireCluster(ctx, -28, -96, 22 * (0.7 + fireLvl * 0.35), now + this.x * 0.02);
+            EndlessBuildingRenderer.drawComicFireCluster(ctx, 22, -118, 20 * (0.7 + fireLvl * 0.35), now * 1.12 + this.y * 0.02);
         }
     }
 }

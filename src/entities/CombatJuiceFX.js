@@ -290,6 +290,18 @@ class CombatJuiceFX {
             ctx.beginPath(); ctx.moveTo(0, -4.5); ctx.lineTo(25, 0); ctx.lineTo(0, 4.5); ctx.closePath(); ctx.fill();
             ctx.fillStyle = '#00f5ff';
             ctx.beginPath(); ctx.moveTo(0, -2); ctx.lineTo(16, 0); ctx.lineTo(0, 2); ctx.closePath(); ctx.fill();
+        } else if (m.type === 'symbiote') {
+            ctx.fillStyle = '#9b59b6';
+            ctx.beginPath(); ctx.moveTo(0, -5); ctx.lineTo(22, -2); ctx.lineTo(15, 0); ctx.lineTo(22, 2); ctx.lineTo(0, 5); ctx.closePath(); ctx.fill();
+            ctx.fillStyle = '#ff2e63';
+            ctx.beginPath(); ctx.arc(7, 0, 4.2, 0, Math.PI * 2); ctx.fill();
+        } else if (m.type === 'helios_cannon') {
+            ctx.fillStyle = '#ff2e4c';
+            ctx.beginPath(); ctx.moveTo(0, -6.5); ctx.lineTo(26, 0); ctx.lineTo(0, 6.5); ctx.closePath(); ctx.fill();
+            ctx.fillStyle = '#fed330';
+            ctx.beginPath(); ctx.moveTo(2, -3); ctx.lineTo(18, 0); ctx.lineTo(2, 3); ctx.closePath(); ctx.fill();
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath(); ctx.arc(5, 0, 3.6, 0, Math.PI * 2); ctx.fill();
         } else if (m.type === 'dialtone' || m.type === 'soundwave') {
             ctx.strokeStyle = '#00d2d3';
             ctx.lineWidth = 2.4;
@@ -345,6 +357,9 @@ class CombatJuiceFX {
             spas12: ['#ff6348', '#ffd32a'],
             boomerang_saw: ['#ff9f43', '#00f5ff'],
             chrono_rifle: ['#a55eea', '#00f5ff'],
+            symbiote: ['#ff2e63', '#9b59b6'],
+            symbiote_tendril: ['#9b59b6', '#ff2e63'],
+            helios_cannon: ['#ff2e4c', '#fed330'],
             dialtone: ['#00d2d3', '#fed330'],
             soundwave: ['#00d2d3', '#fed330'],
             ice_spike: ['rgba(116, 185, 255, 0.75)', '#ffffff']

@@ -147,7 +147,7 @@
     }
 }
 
-@media (max-height: 500px) and (orientation: landscape) {
+@media (max-height: 500px) and (orientation: landscape), (pointer: coarse) and (orientation: portrait) {
     #olympus-victory-modal .olympus-victory-panel {
         max-width: min(94vw, 660px);
         max-height: 92vh;

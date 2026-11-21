@@ -329,7 +329,8 @@ class EndlessWaveDirector {
             dozer_foreman: typeof DozerForeman !== 'undefined' ? DozerForeman : null,
             dimarchos_boss: typeof DimarchosBoss !== 'undefined' ? DimarchosBoss : null,
             mecha_kolossos: typeof MechaKolossos !== 'undefined' ? MechaKolossos : null,
-            kolossos_drone: typeof KolossosDrone !== 'undefined' ? KolossosDrone : null
+            kolossos_drone: typeof KolossosDrone !== 'undefined' ? KolossosDrone : null,
+            kolossos_trooper: typeof KolossosTrooper !== 'undefined' ? KolossosTrooper : null
         };
         const Ctor = map[type];
         return Ctor ? new Ctor(x, y, waveMult) : null;
@@ -365,6 +366,12 @@ class EndlessWaveDirector {
                     game.ui.addKillfeed(`📦 ${heroName} conquered ${enemy.name}! Earned ${crateName}!`);
                 }
             }
+            if (enemy.type === 'mecha_kolossos' && !game.isCoopGuest && typeof BossRewardManager !== 'undefined') {
+                const q = BossRewardManager.queueBossDrops('mecha_kolossos', { effects: game.effects, x: enemy.x, y: enemy.y, game });
+                if (q.queued.length > 0 && game.ui && typeof game.ui.addKillfeed === 'function') {
+                    game.ui.addKillfeed(`☀️ Boss Drop: Helios Omega Cannon (Claim in Menu)!`);
+                }
+            }
             if (!enemy.materialsAwarded && !game.isCoopGuest && typeof MaterialRegistry !== 'undefined' && typeof window !== 'undefined' && window.inventoryManager) {
                 enemy.materialsAwarded = true;
                 const wNum = game.waveManager ? game.waveManager.wave : 5;
@@ -388,7 +395,8 @@ class EndlessWaveDirector {
             kafeneio_tank: { score: 360, msg: `${heroName} cracked Kafeneio Tank! 🛡️`, starChance: 0.35 },
             ouzo_bomber: { score: 320, msg: `${heroName} extinguished Ouzo Bomber! 🔥`, starChance: 0.35 },
             dimotiki_enforcer: { score: 440, msg: `${heroName} outgunned Dimotiki Enforcer! ⚡`, starChance: 0.45 },
-            kolossos_drone: { score: 220, msg: `${heroName} shot down Kolossos Drone! 🤖`, starChance: 0.15 }
+            kolossos_drone: { score: 220, msg: `${heroName} shot down Kolossos Drone! 🤖`, starChance: 0.15 },
+            kolossos_trooper: { score: 420, msg: `${heroName} dismantled Helios Trooper! 🤖`, starChance: 0.25 }
         };
         const info = regularInfo[enemy.type];
         if (!info) return false;

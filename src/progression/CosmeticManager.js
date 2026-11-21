@@ -151,7 +151,8 @@ class CosmeticManager {
             matchesPlayed: stats.matchesPlayed || featSnap.matchesPlayed || parseInt(typeof localStorage !== 'undefined' ? (localStorage.getItem('lesaio_matches_played') || '0') : '0', 10) || 0,
             accountLevel: p.accountLevel || parseInt(typeof localStorage !== 'undefined' ? (localStorage.getItem('lesaio_account_level') || '1') : '1', 10) || 1,
             olympianStarStones: p.olympianStarStones || parseInt(typeof localStorage !== 'undefined' ? (localStorage.getItem('lesaio_olympian_star_stones') || '0') : '0', 10) || 0,
-            unlockedHeroesCount: Array.isArray(p.unlockedHeroes) ? p.unlockedHeroes.length : 1
+            unlockedHeroesCount: Array.isArray(p.unlockedHeroes) ? p.unlockedHeroes.length : 1,
+            unlockedWeaponsCount: Array.isArray(p.unlockedWeapons) ? p.unlockedWeapons.length : 1
         };
     }
 
@@ -278,12 +279,14 @@ class CosmeticManager {
         if (!el) return;
         for (const cls of this._bannerClasses()) el.classList.remove(cls);
         el.classList.add(this.getBannerDef(bannerId).cssClass);
+        if (typeof CosmeticEffectsEngine !== 'undefined') CosmeticEffectsEngine.syncElementDecorators(el);
     }
 
     static applyFrameClass(el, frameId) {
         if (!el) return;
         for (const cls of this._frameClasses()) el.classList.remove(cls);
         el.classList.add(this.getFrameDef(frameId).cssClass);
+        if (typeof CosmeticEffectsEngine !== 'undefined') CosmeticEffectsEngine.syncElementDecorators(el);
     }
 
     static _coinGlyphSvg(glyph) {
@@ -307,6 +310,9 @@ class CosmeticManager {
     static renderCoinMedallionHtml(coinOrId, sizeClass = 'sm', locked = false) {
         const coin = (typeof coinOrId === 'string') ? this.getCoinDef(coinOrId) : coinOrId;
         if (!coin) return '';
+        if (typeof CosmeticEffectsEngine !== 'undefined') {
+            return CosmeticEffectsEngine.buildCoinHtml(coin, sizeClass, locked, (g) => this._coinGlyphSvg(g));
+        }
         const rar = this.getRarityMeta(coin.rarity);
         const title = `${coin.name} [${rar.label}] — ${coin.desc}`;
         return `

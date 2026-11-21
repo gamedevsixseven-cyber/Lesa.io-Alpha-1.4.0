@@ -55,6 +55,7 @@ class CollisionSystem {
                             if (typeof GearPassives !== 'undefined') dmgMult *= GearPassives.getDamageMultiplier(p, e, b.isCrit);
                             const finalDmg = b.damage * dmgMult;
                             e.takeDamage(finalDmg, effects, b.isCrit);
+                            if (typeof HeroUltimates !== 'undefined') HeroUltimates.onDamageDealt(p, finalDmg);
                             if (game.isCoopGuest) e.dead = false;
                             if (b.isChargedBubble) {
                                 if (e.isBoss || e.isMiniBoss || e.isStationary) {
@@ -94,17 +95,18 @@ class CollisionSystem {
                     }
                 }
 
-                // Player Bullet vs Crates, Barrels & Trees
+                // Player Bullet vs Crates, Barrels, Trees & Buildings
                 if (!b.dead) {
                     for (let oi = 0; oi < obstacles.length; oi++) {
                         const obs = obstacles[oi];
                         if (obs.dead) continue;
-                        if (obs.type === 'crate' || obs.type === 'barrel' || obs.type === 'tree') {
+                        if (obs.type === 'crate' || obs.type === 'barrel' || obs.type === 'tree' || obs.type === 'building') {
                             const odx = b.x - obs.x;
                             const ody = b.y - obs.y;
                             const radSum = b.radius + obs.radius;
                             if (Math.abs(odx) <= radSum && Math.abs(ody) <= radSum) {
-                                if (odx * odx + ody * ody < radSum * radSum) {
+                                const hit = obs.hitTestCircle ? obs.hitTestCircle(b.x, b.y, b.radius) : null;
+                                if (hit) {
                                     if (typeof WeaponSystem !== 'undefined' && WeaponSystem.onObstacleHit(b, obs, effects, game)) { break; }
                                     const destroyed = obs.takeDamage(b.damage, effects, game);
                                     if (destroyed && obs.type === 'crate') {
@@ -113,17 +115,15 @@ class CollisionSystem {
                                     }
 
                                     if (b.bouncesLeft > 0) {
-                                        const dist = Math.hypot(odx, ody) || 1;
-                                        const nx = odx / dist;
-                                        const ny = ody / dist;
-                                        const dot = b.vx * nx + b.vy * ny;
-                                        b.vx -= 2 * dot * nx;
-                                        b.vy -= 2 * dot * ny;
+                                        const dot = b.vx * hit.nx + b.vy * hit.ny;
+                                        b.vx -= 2 * dot * hit.nx;
+                                        b.vy -= 2 * dot * hit.ny;
                                         b.bouncesLeft--;
                                         if (b.hitEntities) b.hitEntities.clear();
                                         b.rotation = Math.atan2(b.vy, b.vx);
                                         if (effects) effects.addSparks(b.x, b.y, '#34c759', 4);
                                     } else {
+                                        if (obs.type === 'building' && effects) effects.addSparks(b.x, b.y, '#ffd32a', 4);
                                         b.explode(effects);
                                         b.dead = true;
                                     }
@@ -134,18 +134,21 @@ class CollisionSystem {
                     }
                 }
             } else {
-                // Enemy Bullet vs Obstacles (Crates, Barrels, Mushrooms, Trees block enemy projectiles)
+                // Enemy Bullet vs Obstacles (Crates, Barrels, Mushrooms, Trees & Buildings)
                 for (let oi = 0; oi < obstacles.length; oi++) {
                     const obs = obstacles[oi];
                     if (obs.dead) continue;
-                    if (obs.type === 'crate' || obs.type === 'barrel' || obs.type === 'mushroom' || obs.type === 'tree') {
+                    if (obs.type === 'crate' || obs.type === 'barrel' || obs.type === 'mushroom' || obs.type === 'tree' || obs.type === 'building') {
                         const odx = b.x - obs.x;
                         const ody = b.y - obs.y;
                         const radSum = b.radius + obs.radius;
                         if (Math.abs(odx) <= radSum && Math.abs(ody) <= radSum) {
-                            if (odx * odx + ody * ody < radSum * radSum) {
+                            const hit = obs.hitTestCircle ? obs.hitTestCircle(b.x, b.y, b.radius) : null;
+                            if (hit) {
                                 if (obs.type === 'crate' || obs.type === 'barrel') {
                                     obs.takeDamage(b.damage * 0.7, effects, game);
+                                } else if (obs.type === 'building' && effects) {
+                                    effects.addSparks(b.x, b.y, '#ffa502', 3);
                                 }
                                 b.explode(effects);
                                 b.dead = true;
@@ -205,10 +208,12 @@ class CollisionSystem {
             if (e.dead || e.isDying || e.bubbleTrappedTimer > 0 || e.isAirborneImmune) continue;
             const edx = e.x - p.x;
             const edy = e.y - p.y;
-            const hitDist = p.isBladeRushing ? (e.radius + p.radius + 35) : (e.radius + p.radius);
+            const hitDist = p.isBladeRushing ? (e.radius + p.radius + 35) : (p.vf185Active ? (e.radius + p.radius + 26) : (e.radius + p.radius));
             if (Math.abs(edx) <= hitDist && Math.abs(edy) <= hitDist) {
                 if (edx * edx + edy * edy < hitDist * hitDist) {
-                    if (p.isBladeRushing) {
+                    if (p.vf185Active && typeof HeroUltimates !== 'undefined') {
+                        HeroUltimates.onVF185RamEnemy(p, e, effects, game);
+                    } else if (p.isBladeRushing) {
                         // Slicing through enemy during Blade Rush!
                         if (!p.bladeRushHitEnemies) p.bladeRushHitEnemies = new Set();
                         if (!p.bladeRushHitEnemies.has(e)) {
@@ -255,7 +260,7 @@ class CollisionSystem {
             }
         }
 
-        // 3. Player & Enemy vs Obstacles (Mushrooms & Crates)
+        // 3. Player & Enemy vs Obstacles (Mushrooms, Crates, Trees & Buildings)
         for (let i = 0; i < obstacles.length; i++) {
             const obs = obstacles[i];
             if (obs.dead) continue;
@@ -264,27 +269,26 @@ class CollisionSystem {
             const radSum = p.radius + obs.radius;
 
             if (Math.abs(odx) <= radSum && Math.abs(ody) <= radSum) {
-                if (odx * odx + ody * ody < radSum * radSum) {
+                const hit = obs.hitTestCircle ? obs.hitTestCircle(p.x, p.y, p.radius) : null;
+                if (hit) {
                     if (obs.type === 'mushroom') {
                         obs.triggerMushroom(p, effects);
-                    } else if (obs.type === 'crate' || obs.type === 'barrel' || obs.type === 'tree') {
-                        if (obs.type !== 'tree' && p.isBladeRushing) {
+                    } else if (obs.type === 'crate' || obs.type === 'barrel' || obs.type === 'tree' || obs.type === 'building') {
+                        if (obs.type !== 'tree' && obs.type !== 'building' && (p.isBladeRushing || p.vf185Active)) {
                             const destroyed = obs.takeDamage(85, effects, game);
                             if (destroyed && obs.type === 'crate') {
                                 game.drops.push(new Drop(obs.x, obs.y, 'xp', 20));
                                 if (Math.random() < 0.35) game.drops.push(new Drop(obs.x, obs.y, 'heart', 25));
                             }
                         } else {
-                            const angle = Math.atan2(p.y - obs.y, p.x - obs.x);
-                            p.x = obs.x + Math.cos(angle) * radSum;
-                            p.y = obs.y + Math.sin(angle) * radSum;
+                            p.x = hit.pushX;
+                            p.y = hit.pushY;
                         }
                     }
                 }
             }
 
             if (obs.type === 'mushroom') {
-                // Viewport & Manhattan pre-filtered mushroom bouncing
                 if (!camera || camera.isVisible(obs.x, obs.y, obs.radius + 60)) {
                     for (let ei = 0; ei < enemies.length; ei++) {
                         const e = enemies[ei];
@@ -294,30 +298,19 @@ class CollisionSystem {
                         if (Math.abs(edx) > eRadSum) continue;
                         const edy = e.y - obs.y;
                         if (Math.abs(edy) > eRadSum) continue;
-
-                        if (edx * edx + edy * edy < eRadSum * eRadSum) {
-                            obs.triggerMushroom(e, effects);
-                        }
+                        if (edx * edx + edy * edy < eRadSum * eRadSum) obs.triggerMushroom(e, effects);
                     }
                 }
-            }
-
-            if (obs.type === 'tree') {
-                // Keep enemies from walking through solid tree trunks
-                if (!camera || camera.isVisible(obs.x, obs.y, obs.radius + 80)) {
+            } else if (obs.type === 'tree' || obs.type === 'building') {
+                // Keep enemies from walking through solid tree trunks or buildings
+                if (!camera || camera.isVisible(obs.x, obs.y, (obs.cullRadius || obs.radius) + 80)) {
                     for (let ei = 0; ei < enemies.length; ei++) {
                         const e = enemies[ei];
-                        if (e.dead) continue;
+                        if (e.dead || e.isAirborne || e.isAirborneImmune || (e.cutsceneState && e.cutsceneState !== 'COMBAT')) continue;
                         const eRadSum = e.radius + obs.radius;
-                        const edx = e.x - obs.x;
-                        if (Math.abs(edx) > eRadSum) continue;
-                        const edy = e.y - obs.y;
-                        if (Math.abs(edy) > eRadSum) continue;
-                        if (edx * edx + edy * edy < eRadSum * eRadSum) {
-                            const angle = Math.atan2(e.y - obs.y, e.x - obs.x);
-                            e.x = obs.x + Math.cos(angle) * eRadSum;
-                            e.y = obs.y + Math.sin(angle) * eRadSum;
-                        }
+                        if (Math.abs(e.x - obs.x) > eRadSum || Math.abs(e.y - obs.y) > eRadSum) continue;
+                        const eHit = obs.hitTestCircle ? obs.hitTestCircle(e.x, e.y, e.radius) : null;
+                        if (eHit) { e.x = eHit.pushX; e.y = eHit.pushY; }
                     }
                 }
             }
@@ -328,7 +321,9 @@ class CollisionSystem {
      * Handle Enemy Defeat, XP, Loot Pinata, Killfeed, & Quests
      */
     static handleDeath(game, enemy) {
+        if (typeof SymbioteLauncher !== 'undefined') SymbioteLauncher.onEnemyDeath(enemy, game);
         const player = game.player;
+        if (typeof HeroUltimates !== 'undefined') HeroUltimates.onEnemyKilled(player, enemy);
         player.kills++;
         game.waveManager.waveEnemiesKilled++;
         if (!enemy._deathPopped && game.effects && typeof game.effects.addDeathPop === 'function') {

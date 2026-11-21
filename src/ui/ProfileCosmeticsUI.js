@@ -75,6 +75,10 @@ class ProfileCosmeticsUI {
         const profAvatarWrap = document.querySelector('#player-profile-modal .prof-avatar-wrap');
         CosmeticManager.applyBannerClass(profCard, st.equippedBanner);
         CosmeticManager.applyFrameClass(profAvatarWrap, st.equippedFrame);
+        if (typeof CosmeticEffectsEngine !== 'undefined') {
+            CosmeticEffectsEngine.bindHoloCards(menuProfile && menuProfile.parentElement ? menuProfile.parentElement : null);
+            CosmeticEffectsEngine.bindHoloCards(document.getElementById('player-profile-modal'));
+        }
         this.renderShowcaseTray(st);
     }
 
@@ -132,6 +136,10 @@ class ProfileCosmeticsUI {
             this._renderFramesGrid(container, st, snap);
         } else if (this.activeTab === 'coins') {
             this._renderCoinsGrid(container, st, snap);
+        }
+        if (typeof CosmeticEffectsEngine !== 'undefined') {
+            CosmeticEffectsEngine.decorateContainer(container);
+            CosmeticEffectsEngine.bindHoloCards(container);
         }
     }
 

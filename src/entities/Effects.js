@@ -342,6 +342,9 @@ class EffectsManager {
         if (typeof MobilePerf !== 'undefined' && MobilePerf.isHighGraphics()) {
             MobilePerf.drawHighQualityLighting(ctx, width, height, window.gameInstance);
         }
+        if (typeof EndlessMapEvolution !== 'undefined') {
+            EndlessMapEvolution.drawScreenAtmosphere(ctx, width, height);
+        }
         if (typeof KolossosArenaAtmosphere !== 'undefined') {
             KolossosArenaAtmosphere.drawScreenFog(ctx, width, height);
         }
@@ -423,6 +426,11 @@ class EffectsManager {
         if (this.combatJuice) this.combatJuice.update(dt);
         const gameRef = (typeof window !== 'undefined') ? window.gameInstance : null;
         if (typeof ChronoRifle !== 'undefined') ChronoRifle.update(dt, gameRef);
+        if (typeof SymbioteLauncher !== 'undefined') SymbioteLauncher.update(dt, gameRef);
+        if (typeof HeliosOmegaCannon !== 'undefined') HeliosOmegaCannon.update(dt, gameRef);
+        if (typeof EndlessMapEvolution !== 'undefined') {
+            EndlessMapEvolution.update(dt, gameRef);
+        }
         if (typeof KolossosArenaAtmosphere !== 'undefined') {
             KolossosArenaAtmosphere.update(dt, gameRef);
         }
@@ -468,7 +476,12 @@ class EffectsManager {
         }
         if (this.combatJuice) this.combatJuice.drawWorld(ctx, cam);
         if (typeof ChronoRifle !== 'undefined') ChronoRifle.drawWorld(ctx, cam);
+        if (typeof SymbioteLauncher !== 'undefined') SymbioteLauncher.drawWorld(ctx, cam);
+        if (typeof HeliosOmegaCannon !== 'undefined') HeliosOmegaCannon.drawWorld(ctx, cam);
 
+        if (typeof EndlessMapEvolution !== 'undefined') {
+            EndlessMapEvolution.drawWorldForeground(ctx, cam);
+        }
         if (typeof KolossosArenaAtmosphere !== 'undefined') {
             KolossosArenaAtmosphere.drawWorldFog(ctx, cam);
         }
@@ -502,6 +515,11 @@ class EffectsManager {
         this.lightningBeams.length = 0;
         if (this.combatJuice) this.combatJuice.clear();
         if (typeof ChronoRifle !== 'undefined') ChronoRifle.clear();
+        if (typeof SymbioteLauncher !== 'undefined') SymbioteLauncher.clear();
+        if (typeof HeliosOmegaCannon !== 'undefined') HeliosOmegaCannon.clear();
+        if (typeof EndlessMapEvolution !== 'undefined') {
+            EndlessMapEvolution.reset();
+        }
         if (typeof KolossosArenaAtmosphere !== 'undefined') {
             KolossosArenaAtmosphere.reset();
         }

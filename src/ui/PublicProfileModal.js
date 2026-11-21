@@ -187,6 +187,10 @@ class PublicProfileModal {
             this.hide();
             if (window.friendsModal) window.friendsModal.inviteFriendToCoop(p.uid, p.name);
         });
+        if (typeof CosmeticEffectsEngine !== 'undefined') {
+            CosmeticEffectsEngine.decorateContainer(modal);
+            CosmeticEffectsEngine.bindHoloCards(modal);
+        }
     }
 }
 

@@ -39,6 +39,7 @@ class Kiloumpas extends EnemyBase {
         // 'WALK_IN' -> 'DIALOGUE_1' -> 'DIALOGUE_2' -> 'WALK_OUT' -> 'WAIT_3S' -> 'COMBAT'
         this.cutsceneState = 'WALK_IN';
         this.cutsceneTimer = 0;
+        this.walkInElapsed = 0;
         this.wait3sTimer = 180; // 3.0 seconds at 60fps
         this.retreatAngle = 0;
 
@@ -67,7 +68,7 @@ class Kiloumpas extends EnemyBase {
 
         // Handle Cutscene Sequence
         if (this.cutsceneState !== 'COMBAT') {
-            this.updateCutscene(dt, player, effects);
+            this.updateCutscene(dt, player, effects, arena);
             return;
         }
 
@@ -75,7 +76,8 @@ class Kiloumpas extends EnemyBase {
         this.updateCombat(dt, player, enemies, bullets, effects, arena);
     }
 
-    updateCutscene(dt, player, effects) {
+    updateCutscene(dt, player, effects, arena = null) {
+        const activeArena = arena || ((typeof window !== 'undefined' && window.gameInstance) ? window.gameInstance.arena : null);
         const overlay = (typeof window !== 'undefined' && window.gameInstance && window.gameInstance.cutsceneOverlay)
             ? window.gameInstance.cutsceneOverlay
             : null;
@@ -89,16 +91,24 @@ class Kiloumpas extends EnemyBase {
         const dist = Math.hypot(dx, dy) || 1;
 
         if (this.cutsceneState === 'WALK_IN') {
-            // Walk slowly towards player with bare hands
+            this.walkInElapsed = (this.walkInElapsed || 0) + dt;
+            // Walk towards player with bare hands & clamp strictly inside arena
             this.angle = Math.atan2(dy, dx);
-            this.vx = (dx / dist) * 2.2;
-            this.vy = (dy / dist) * 2.2;
+            this.vx = (dx / dist) * 2.4;
+            this.vy = (dy / dist) * 2.4;
             this.x += this.vx * dt;
             this.y += this.vy * dt;
             this.walkCycle += 0.16 * dt;
+            this.applyArenaBounds(activeArena);
 
-            // Stop at speaking distance (~190px)
-            if (dist <= 190) {
+            // Stop at speaking distance (~190px) or failsafe timeout so cutscene never soft-locks
+            if (dist <= 190 || this.walkInElapsed >= 190) {
+                if (dist > 220) {
+                    const snapAngle = Math.atan2(this.y - player.y, this.x - player.x);
+                    this.x = player.x + Math.cos(snapAngle) * 180;
+                    this.y = player.y + Math.sin(snapAngle) * 180;
+                    this.applyArenaBounds(activeArena);
+                }
                 this.cutsceneState = 'DIALOGUE_1';
                 this.vx = 0;
                 this.vy = 0;
@@ -130,6 +140,7 @@ class Kiloumpas extends EnemyBase {
             this.x += this.vx * dt;
             this.y += this.vy * dt;
             this.walkCycle += 0.22 * dt;
+            this.applyArenaBounds(activeArena);
 
             if (this.cutsceneTimer <= 0) {
                 // Vanish off-screen for 3 seconds
@@ -148,10 +159,13 @@ class Kiloumpas extends EnemyBase {
             this.wait3sTimer -= dt;
 
             if (this.wait3sTimer <= 0) {
-                // After 3 seconds, re-emerge with the Hunting Carbine in hands!
-                const spawnAngle = Math.random() * Math.PI * 2;
-                this.x = player.x + Math.cos(spawnAngle) * 280;
-                this.y = player.y + Math.sin(spawnAngle) * 280;
+                // After 3 seconds, re-emerge inward inside arena with Hunting Carbine in hands!
+                const inward = (Math.abs(player.x) > 120 || Math.abs(player.y) > 120)
+                    ? Math.atan2(-player.y, -player.x) + (Math.random() - 0.5) * 1.1
+                    : Math.random() * Math.PI * 2;
+                this.x = player.x + Math.cos(inward) * 260;
+                this.y = player.y + Math.sin(inward) * 260;
+                this.applyArenaBounds(activeArena);
                 this.hidden = false;
                 this.hasCarbine = true;
                 this.cutsceneState = 'COMBAT';

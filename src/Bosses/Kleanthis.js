@@ -336,12 +336,14 @@ class Kleanthis extends EnemyBase {
             const dy = target.y - this.y;
             const dist = Math.hypot(dx, dy);
 
-            // Within impact slam range: heavy damage and 3-second stun!
+            // Within impact slam range: heavy damage and 3-second stun (bypassed by Psanas Rage)!
             if (dist <= impactRadius + target.radius) {
                 target.takeDamage(slamDmg, effects);
-                target.stunTimer = 180;
-                if (effects) {
-                    effects.addComicSplash(target.x, target.y - 35, 'STUNNED! 💫 (3s)');
+                if (!target.rageUltActive) {
+                    target.stunTimer = 180;
+                    if (effects) effects.addComicSplash(target.x, target.y - 35, 'STUNNED! 💫 (3s)');
+                } else if (effects) {
+                    effects.addComicSplash(target.x, target.y - 35, 'UNSTOPPABLE! 🔥');
                 }
             }
         }

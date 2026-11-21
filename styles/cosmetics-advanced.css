@@ -1,0 +1,323 @@
+/* ==========================================================================
+   Lesa.io - Advanced Animated Shaders, Holographic Parallax, Frame Orbits & 3D Minted Coins
+   ========================================================================== */
+
+/* Interactive 3D Holo Parallax + Foil Cursor Sheen */
+.cos-card {
+    position: relative;
+    transform-style: preserve-3d;
+    transition: transform 0.16s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.cos-card:hover {
+    transform: perspective(640px) rotateX(var(--cos-rx, 0deg)) rotateY(var(--cos-ry, 0deg)) translateY(-2px);
+}
+
+.cos-banner-preview,
+.profile-header-card[class*="cos-banner-"],
+.pub-banner-hero[class*="cos-banner-"],
+.lb-item[class*="cos-banner-"],
+#menu-player-profile[class*="cos-banner-"] {
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+}
+
+.cos-banner-preview::after,
+.profile-header-card[class*="cos-banner-"]::after,
+.pub-banner-hero[class*="cos-banner-"]::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 1;
+    background: radial-gradient(circle 130px at var(--cos-mx, 50%) var(--cos-my, 50%), rgba(255, 255, 255, 0.22), transparent 65%);
+    mix-blend-mode: screen;
+    opacity: 0.75;
+}
+
+/* Elevated content above FX layers */
+.cos-banner-preview > :not(.cos-banner-fx-layer),
+.profile-header-card > :not(.cos-banner-fx-layer),
+.pub-banner-hero > :not(.cos-banner-fx-layer),
+.lb-item > :not(.cos-banner-fx-layer),
+#menu-player-profile > :not(.cos-banner-fx-layer) {
+    position: relative;
+    z-index: 2;
+}
+
+/* ==================== SVG BANNER FX LAYERS ==================== */
+.cos-banner-fx-layer {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 1;
+    overflow: hidden;
+}
+
+.cos-fx-svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+@keyframes cosEmberRise {
+    0% { transform: translateY(10px) scale(0.7); opacity: 0; }
+    25% { opacity: 0.95; }
+    100% { transform: translateY(-76px) scale(1.15); opacity: 0; }
+}
+.cos-ember { animation: cosEmberRise 3.1s linear infinite; transform-box: fill-box; }
+.cos-ember.p2 { animation-delay: 0.8s; animation-duration: 2.7s; }
+.cos-ember.p3 { animation-delay: 1.5s; animation-duration: 3.4s; }
+.cos-ember.p4 { animation-delay: 2.2s; animation-duration: 2.9s; }
+
+@keyframes cosBoltFlash {
+    0%, 82%, 100% { opacity: 0.12; }
+    85%, 91% { opacity: 1; filter: drop-shadow(0 0 6px #fef08a); }
+    88% { opacity: 0.25; }
+}
+.cos-bolt { animation: cosBoltFlash 3.6s ease-in-out infinite; }
+.cos-bolt.b2 { animation-delay: 1.7s; }
+
+@keyframes cosStarTwinkle {
+    0%, 100% { transform: scale(0.65) rotate(0deg); opacity: 0.35; }
+    50% { transform: scale(1.25) rotate(22deg); opacity: 1; }
+}
+.cos-star { animation: cosStarTwinkle 2.4s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+.cos-star.s2 { animation-delay: 0.7s; }
+.cos-star.s3 { animation-delay: 1.4s; }
+
+@keyframes cosCyberSlide {
+    0% { stroke-dashoffset: 0; }
+    100% { stroke-dashoffset: -120; }
+}
+.cos-cyber-beam { animation: cosCyberSlide 2.6s linear infinite; }
+
+@keyframes cosChevShift {
+    0%, 100% { transform: translateX(-6px); opacity: 0.28; }
+    50% { transform: translateX(6px); opacity: 0.75; }
+}
+.cos-chev { animation: cosChevShift 1.9s ease-in-out infinite; }
+.cos-chev.c2 { animation-delay: 0.9s; }
+
+@keyframes cosLaserSweep {
+    0%, 100% { transform: translateY(-24px); opacity: 0.2; }
+    50% { transform: translateY(24px); opacity: 0.75; }
+}
+.cos-scan-laser { animation: cosLaserSweep 3.2s ease-in-out infinite; }
+
+/* ==================== 8 NEW ANIMATED BANNERS ==================== */
+.cos-banner-kafenio-dusk {
+    background: linear-gradient(112deg, transparent 32%, rgba(254, 240, 138, 0.32) 50%, transparent 68%),
+                radial-gradient(circle at 80% 25%, rgba(251, 146, 60, 0.55), transparent 52%),
+                linear-gradient(135deg, #271535 0%, #9a3412 52%, #d97706 100%) !important;
+    background-size: 230% 100%, 100% 100%, 160% 160% !important;
+    animation: cosGleamTrack 4.8s ease-in-out infinite;
+    border-color: #fb923c !important;
+}
+
+.cos-banner-kiloumpas-yeet {
+    background: linear-gradient(110deg, transparent 34%, rgba(255, 255, 255, 0.28) 50%, transparent 66%),
+                repeating-linear-gradient(-28deg, rgba(250, 204, 21, 0.16) 0 10px, transparent 10px 22px),
+                linear-gradient(135deg, #1e293b 0%, #0284c7 52%, #4f46e5 100%) !important;
+    background-size: 220% 100%, 100% 100%, 170% 170% !important;
+    animation: cosGleamTrack 4.2s ease-in-out infinite;
+    border-color: #38bdf8 !important;
+}
+
+.cos-banner-village-blaze {
+    background: linear-gradient(115deg, transparent 32%, rgba(253, 224, 71, 0.36) 50%, transparent 68%),
+                radial-gradient(circle at 22% 80%, rgba(249, 115, 22, 0.58), transparent 50%),
+                linear-gradient(135deg, #1c0507 0%, #b91c1c 54%, #ea580c 100%) !important;
+    background-size: 210% 100%, 100% 100%, 165% 165% !important;
+    animation: cosGleamTrack 3.6s ease-in-out infinite, cosEmberPulse 3s ease-in-out infinite;
+    border-color: #fb7185 !important;
+}
+
+.cos-banner-vf185-turbo {
+    background: linear-gradient(112deg, transparent 32%, rgba(255, 71, 133, 0.42) 48%, rgba(34, 211, 238, 0.34) 55%, transparent 70%),
+                repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.05) 0 4px, transparent 4px 10px),
+                linear-gradient(135deg, #090b10 0%, #161820 55%, #3b0764 100%) !important;
+    background-size: 205% 100%, 100% 100%, 150% 150% !important;
+    animation: cosGleamTrack 2.9s linear infinite;
+    border-color: #ff4785 !important;
+}
+
+.cos-banner-olympus-lightning {
+    background: linear-gradient(115deg, transparent 32%, rgba(224, 242, 254, 0.45) 50%, transparent 68%),
+                radial-gradient(circle at 75% 22%, rgba(250, 204, 21, 0.45), transparent 48%),
+                linear-gradient(135deg, #0c4a6e 0%, #0369a1 48%, #4338ca 100%) !important;
+    background-size: 210% 100%, 100% 100%, 170% 170% !important;
+    animation: cosGleamTrack 3.4s ease-in-out infinite;
+    border-color: #7dd3fc !important;
+}
+
+.cos-banner-helios-core {
+    background: linear-gradient(110deg, transparent 30%, rgba(254, 240, 138, 0.48) 50%, transparent 70%),
+                radial-gradient(circle at 50% 50%, rgba(255, 71, 87, 0.56), transparent 62%),
+                linear-gradient(135deg, #141418 0%, #991b1b 48%, #b45309 100%) !important;
+    background-size: 200% 100%, 100% 100%, 180% 180% !important;
+    animation: cosGleamTrack 3.1s ease-in-out infinite, cosEmberPulse 2.6s ease-in-out infinite;
+    border-color: #fed330 !important;
+}
+
+.cos-banner-holo-prisma {
+    background: linear-gradient(115deg, transparent 22%, rgba(34, 211, 238, 0.45) 38%, rgba(244, 114, 182, 0.48) 50%, rgba(250, 204, 21, 0.45) 62%, transparent 78%),
+                linear-gradient(125deg, #090d16 0%, #311042 35%, #0e7490 68%, #4c1d95 100%) !important;
+    background-size: 240% 100%, 200% 200% !important;
+    animation: cosGleamTrack 3.3s ease-in-out infinite, cosPrismaticPulse 3.2s ease-in-out infinite;
+    border-color: #38bdf8 !important;
+}
+
+.cos-banner-apex-transcendent {
+    background: linear-gradient(110deg, transparent 26%, rgba(255, 46, 76, 0.52) 44%, rgba(254, 211, 48, 0.55) 54%, transparent 74%),
+                radial-gradient(circle at 82% 28%, rgba(255, 46, 76, 0.62), transparent 48%),
+                linear-gradient(135deg, #09090b 0%, #4c0519 45%, #713f12 80%, #141418 100%) !important;
+    background-size: 195% 100%, 100% 100%, 190% 190% !important;
+    animation: cosGleamTrack 2.6s ease-in-out infinite, cosPrismaticPulse 2.8s ease-in-out infinite;
+    border-color: #fed330 !important;
+}
+
+/* ==================== ORBITAL SVG AVATAR FRAME DECORATORS ==================== */
+.player-avatar-frame-menu,
+.prof-avatar-wrap,
+.pub-avatar-wrap,
+.cos-frame-demo,
+.player-avatar-frame-menu[class*="cos-frame-"],
+.prof-avatar-wrap[class*="cos-frame-"],
+.pub-avatar-wrap[class*="cos-frame-"],
+.lb-avatar-wrap[class*="cos-frame-"],
+.friend-avatar-wrap[class*="cos-frame-"],
+.cos-frame-demo[class*="cos-frame-"] {
+    position: relative;
+    overflow: visible !important;
+}
+
+.cos-frame-fx-ring {
+    position: absolute;
+    inset: -8px;
+    pointer-events: none;
+    z-index: 4;
+}
+
+.cos-frame-fx-svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+    animation: cosRingRotate 6.5s linear infinite;
+    filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.45));
+}
+
+.cos-frame-fx-svg.cos-frame-fx-slow {
+    animation-duration: 11s;
+}
+
+@keyframes cosRingRotate {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* ==================== 8 NEW KINETIC AVATAR FRAMES ==================== */
+.cos-frame-flame {
+    border: 3.5px solid transparent !important;
+    background-image: linear-gradient(#1c0505, #1c0505), conic-gradient(from var(--cos-angle), #fb923c, #ef4444, #fde047, #b91c1c, #fb923c) !important;
+    animation: cosAngleSpin 3.8s linear infinite;
+    box-shadow: 0 0 13px rgba(251, 146, 60, 0.72) !important;
+}
+.cos-frame-vf185 {
+    border: 3.5px solid transparent !important;
+    background-image: linear-gradient(#14161d, #14161d), conic-gradient(from var(--cos-angle), #ff4785, #ffffff, #14161d, #22d3ee, #eccc3b, #ff4785) !important;
+    animation: cosAngleSpin 2.6s linear infinite;
+    box-shadow: 0 0 16px rgba(255, 71, 133, 0.85) !important;
+}
+.cos-frame-marble {
+    border: 3.5px solid transparent !important;
+    background-image: linear-gradient(#0c4a6e, #0c4a6e), conic-gradient(from var(--cos-angle), #f8fafc, #7dd3fc, #fbbf24, #cbd5e1, #f8fafc) !important;
+    animation: cosAngleSpin 4s linear infinite;
+    box-shadow: 0 0 14px rgba(125, 211, 252, 0.78) !important;
+}
+.cos-frame-sakura {
+    border: 3.5px solid transparent !important;
+    background-image: linear-gradient(#160c24, #160c24), conic-gradient(from var(--cos-angle), #f472b6, #22d3ee, #fbcfe8, #38bdf8, #f472b6) !important;
+    animation: cosAngleSpin 2.7s linear infinite;
+    box-shadow: 0 0 16px rgba(244, 114, 182, 0.85) !important;
+}
+.cos-frame-reactor {
+    border: 4px solid transparent !important;
+    background-image: linear-gradient(#18181b, #18181b), conic-gradient(from var(--cos-angle), #facc15 0 60deg, #18181b 60deg 120deg, #ef4444 120deg 180deg, #18181b 180deg 240deg, #facc15 240deg 300deg, #18181b 300deg 360deg) !important;
+    animation: cosAngleSpin 2.5s linear infinite, cosEmberPulse 2.4s ease-in-out infinite;
+}
+.cos-frame-helios {
+    border: 4px solid transparent !important;
+    background-image: linear-gradient(#141418, #141418), conic-gradient(from var(--cos-angle), #ff3838, #fed330, #ffffff, #ff9f1a, #991b1b, #ff3838) !important;
+    animation: cosAngleSpin 2.1s linear infinite, cosEmberPulse 2s ease-in-out infinite;
+}
+.cos-frame-cosmic {
+    border: 4px solid transparent !important;
+    background-image: linear-gradient(#090d1a, #090d1a), conic-gradient(from var(--cos-angle), #a78bfa, #38bdf8, #f472b6, #fde047, #6366f1, #a78bfa) !important;
+    animation: cosAngleSpin 2s linear infinite, cosStarOrbit 2.6s ease-in-out infinite;
+}
+.cos-frame-apex {
+    border: 4px solid transparent !important;
+    background-image: linear-gradient(#141418, #141418), conic-gradient(from var(--cos-angle), #ff2e4c, #fed330, #00f5ff, #ffffff, #ff2e4c, #fed330, #ff2e4c) !important;
+    animation: cosAngleSpin 1.6s linear infinite, cosPrismaticPulse 2.1s ease-in-out infinite;
+}
+
+/* ==================== 3D MINTED ANIMATED MILESTONE COINS ==================== */
+.cos-coin-minted {
+    overflow: visible;
+    transform-style: preserve-3d;
+}
+
+.cos-coin-minted:hover {
+    transform: scale(1.14) rotateY(14deg);
+}
+
+.cos-coin-orbit {
+    position: absolute;
+    inset: -3px;
+    border-radius: 50%;
+    border: 1.5px dashed var(--coin-rim, #fde047);
+    opacity: 0.72;
+    pointer-events: none;
+    animation: cosRingRotate 6s linear infinite;
+}
+
+.cos-coin.rarity-celestial:not(.is-locked) .cos-coin-orbit {
+    border-color: #22d3ee;
+    box-shadow: 0 0 8px rgba(34, 211, 238, 0.7);
+    animation-duration: 3.4s;
+}
+
+.cos-coin-gleam {
+    position: absolute;
+    inset: 2px;
+    border-radius: 50%;
+    pointer-events: none;
+    background: linear-gradient(120deg, transparent 32%, rgba(255, 255, 255, 0.55) 50%, transparent 68%);
+    background-size: 240% 100%;
+    mix-blend-mode: screen;
+    animation: cosGleamTrack 3.2s ease-in-out infinite;
+}
+
+.cos-coin.rarity-celestial:not(.is-locked),
+.cos-coin.rarity-mythic:not(.is-locked) {
+    animation: cosCoinFloat 3s ease-in-out infinite;
+}
+
+@keyframes cosCoinFloat {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-2.5px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .cos-banner-preview,
+    .cos-banner-fx-layer *,
+    .cos-frame-fx-svg,
+    .cos-coin-orbit,
+    .cos-coin-gleam,
+    .cos-coin-minted {
+        animation: none !important;
+        transition: none !important;
+    }
+}

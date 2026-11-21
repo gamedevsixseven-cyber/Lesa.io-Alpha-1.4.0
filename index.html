@@ -28,21 +28,24 @@
     <link rel="stylesheet" href="styles/menu.css">
     <link rel="stylesheet" href="styles/cards.css">
     <link rel="stylesheet" href="styles/hud.css">
+    <link rel="stylesheet" href="styles/ultimates.css?v=1.5.74">
     <link rel="stylesheet" href="styles/modals.css?v=1.5.8">
     <link rel="stylesheet" href="styles/roster.css?v=1.5.55">
     <link rel="stylesheet" href="styles/skills.css?v=1.5.7">
     <link rel="stylesheet" href="styles/mail.css">
-    <link rel="stylesheet" href="styles/tabmodals.css?v=1.5.56">
+    <link rel="stylesheet" href="styles/tabmodals.css?v=1.5.72">
     <link rel="stylesheet" href="styles/gear.css?v=1.5.41">
-    <link rel="stylesheet" href="styles/gear-upgrades.css?v=1.5.41">
+    <link rel="stylesheet" href="styles/gear-upgrades.css?v=1.5.72">
     <link rel="stylesheet" href="styles/perks.css?v=1.5.36">
     <link rel="stylesheet" href="styles/chests.css?v=1.5.28">
     <link rel="stylesheet" href="styles/inventory.css?v=1.5.27">
     <link rel="stylesheet" href="styles/tabs-shared.css?v=1.5.62">
     <link rel="stylesheet" href="styles/loading.css">
-    <link rel="stylesheet" href="styles/mobile.css?v=1.5.62">
-    <link rel="stylesheet" href="styles/mobile-modals.css?v=1.5.62">
+    <link rel="stylesheet" href="styles/mobile.css?v=1.5.79">
+    <link rel="stylesheet" href="styles/mobile-modals.css?v=1.5.79">
     <link rel="stylesheet" href="styles/mobile-settings.css?v=1.5.65">
+    <link rel="stylesheet" href="styles/mobile-virtual-landscape.css?v=1.5.79">
+    <script src="src/core/VirtualLandscape.js?v=1.5.79"></script>
     <link rel="stylesheet" href="src/admin/admin.css?v=1.5.40">
     <link rel="stylesheet" href="styles/credits.css?v=1.4.0">
     <link rel="stylesheet" href="styles/gamemode.css?v=1.5.0">
@@ -51,9 +54,10 @@
     <link rel="stylesheet" href="styles/friends.css?v=1.5.5">
     <link rel="stylesheet" href="styles/olympus-altar.css?v=1.5.13">
     <link rel="stylesheet" href="styles/olympus-victory.css?v=1.5.41">
-    <link rel="stylesheet" href="styles/boss-rewards.css?v=1.5.31">
+    <link rel="stylesheet" href="styles/boss-rewards.css?v=1.5.73">
     <link rel="stylesheet" href="styles/cosmetics.css?v=1.5.49">
     <link rel="stylesheet" href="styles/cosmetics-fx.css?v=1.5.49">
+    <link rel="stylesheet" href="styles/cosmetics-advanced.css?v=1.5.75">
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -368,6 +372,11 @@
                             RUSH (E)</span>
                         <div id="skill-cooldown-fill" class="skill-cooldown-bar"></div>
                     </div>
+                    <div id="ult-badge" class="ult-badge hidden" title="Press Q to unleash Hero Ultimate">
+                        <span><img src="assets/SkillsIcons/UltRageSkill.svg" class="dash-badge-img" alt="Ultimate"> ULT
+                            (Q)</span>
+                        <div id="ult-cooldown-fill" class="ult-cooldown-bar"></div>
+                    </div>
                     <div id="chrono-skip-badge" class="chrono-badge hidden"
                         title="Walk near Wave Skipper Machine & press F to skip up to 5 waves (stops at bosses)">
                         <span>⏳ CORES: 0/5</span>
@@ -425,6 +434,18 @@
                     </svg>
                     <img class="btn-dash-img-icon" src="assets/SkillsIcons/DashIcon.png" alt="Dash">
                     <span class="btn-label">DASH</span>
+                    <div class="mobile-btn-cooldown"></div>
+                </button>
+
+                <!-- Hero Ultimate Button (Q) -->
+                <button id="mobile-ult-btn" class="mobile-action-btn mobile-ult-btn hidden" aria-label="Hero Ultimate">
+                    <svg class="btn-cooldown-ring" viewBox="0 0 80 80">
+                        <circle class="ring-bg" cx="40" cy="40" r="36" fill="none" />
+                        <circle class="ring-progress ult-ring" cx="40" cy="40" r="36" fill="none" />
+                    </svg>
+                    <img id="mobile-ult-img" class="btn-ult-img-icon" src="assets/SkillsIcons/UltRageSkill.svg"
+                        alt="Ultimate">
+                    <span class="btn-label">ULT</span>
                     <div class="mobile-btn-cooldown"></div>
                 </button>
             </div>
@@ -1778,6 +1799,28 @@
                                 </div>
                             </div>
 
+                            <!-- Weapon 7.9: Symbiote Launcher (Mythic Chest Drop Unlock) -->
+                            <div class="weapon-card" data-weapon="symbiote">
+                                <div class="weapon-card-top">
+                                    <div class="weapon-card-left">
+                                        <div class="weapon-icon-wrap">
+                                            <img src="assets/WeaponIcons/SymbioteLauncher.png" class="weapon-card-img"
+                                                alt="Symbiote Launcher">
+                                        </div>
+                                        <h3 class="weapon-name">SYMBIOTE LAUNCHER</h3>
+                                    </div>
+                                    <div class="weapon-badge badge-mythic">MYTHIC</div>
+                                </div>
+                                <div class="weapon-stats-list">
+                                    <div class="weapon-stat-row"><span class="stat-key">Damage:</span> <span
+                                            class="stat-val">28 Bio-Needle</span></div>
+                                    <div class="weapon-stat-row"><span class="stat-key">Fire Delay:</span> <span
+                                            class="stat-val">Brisk (0.23s)</span></div>
+                                    <div class="weapon-stat-row"><span class="stat-key">Trait:</span> <span
+                                            class="stat-val">40% Voodoo Link • 3x Hive Burst</span></div>
+                                </div>
+                            </div>
+
                             <!-- Weapon 8: Kiloumpas's Carbine (Boss Unlock - Wave 15) -->
                             <div class="weapon-card" data-weapon="carbine">
                                 <div class="weapon-card-top">
@@ -1841,6 +1884,28 @@
                                             class="stat-val">Fast (0.25s)</span></div>
                                     <div class="weapon-stat-row"><span class="stat-key">Trait:</span> <span
                                             class="stat-val">+12% Crit • Forked Arc • 5th Shot Sky-Bolt</span></div>
+                                </div>
+                            </div>
+
+                            <!-- Weapon 11: Helios Omega Cannon (Boss Unlock - Endless W40 Kolossos MK-IV) -->
+                            <div class="weapon-card rarity-apex" data-weapon="helios_cannon">
+                                <div class="weapon-card-top">
+                                    <div class="weapon-card-left">
+                                        <div class="weapon-icon-wrap">
+                                            <img src="assets/WeaponIcons/HeliosOmegaCannon.png" class="weapon-card-img"
+                                                alt="Helios Omega Cannon">
+                                        </div>
+                                        <h3 class="weapon-name">HELIOS OMEGA CANNON</h3>
+                                    </div>
+                                    <div class="weapon-badge badge-apex">APEX</div>
+                                </div>
+                                <div class="weapon-stats-list">
+                                    <div class="weapon-stat-row"><span class="stat-key">Damage:</span> <span
+                                            class="stat-val">52 Solar Plasma</span></div>
+                                    <div class="weapon-stat-row"><span class="stat-key">Fire Delay:</span> <span
+                                            class="stat-val">Rapid (0.20s)</span></div>
+                                    <div class="weapon-stat-row"><span class="stat-key">Trait:</span> <span
+                                            class="stat-val">+16% Crit • 4th Singularity • 8th Omega Beam</span></div>
                                 </div>
                             </div>
                         </div>
@@ -2866,7 +2931,7 @@
 
     <!-- GAME SCRIPTS IN CLEAN DEPENDENCY ORDER -->
     <!-- 1. DATA DEFINITIONS -->
-    <script src="src/data/rarities.js?v=1.2.4"></script>
+    <script src="src/data/rarities.js?v=1.5.72"></script>
     <script src="src/weapons/WeaponBase.js?v=1.2.4"></script>
     <script src="src/weapons/HeroBaseWeapons/PeaSlingshot.js?v=1.2.4"></script>
     <script src="src/weapons/HeroBaseWeapons/MelonCannon.js?v=1.5.53"></script>
@@ -2877,12 +2942,14 @@
     <script src="src/weapons/Spas12.js?v=1.5.61"></script>
     <script src="src/weapons/BoomerangSawblade.js?v=1.5.59"></script>
     <script src="src/weapons/ChronoRifle.js?v=1.5.61"></script>
+    <script src="src/weapons/SymbioteLauncher.js?v=1.5.67"></script>
     <script src="src/weapons/Exclusive/BubbleGun.js?v=1.2.4"></script>
     <script src="src/weapons/BossWeapons/KiloumpasCarbine.js?v=1.5.15"></script>
     <script src="src/weapons/BossWeapons/RoufDialToneBlaster.js?v=1.5.15"></script>
     <script src="src/weapons/BossWeapons/ZeusThunderbolt.js?v=1.5.30"></script>
+    <script src="src/weapons/BossWeapons/HeliosOmegaCannon.js?v=1.5.72"></script>
     <script src="src/data/heroes.js?v=1.5.56"></script>
-    <script src="src/data/weapons.js?v=1.5.61"></script>
+    <script src="src/data/weapons.js?v=1.5.72"></script>
     <script src="src/data/skills.js?v=1.5.44"></script>
     <script src="src/data/quests.js?v=1.5.36"></script>
     <script src="src/data/tips.js?v=1.5.53"></script>
@@ -2892,10 +2959,12 @@
     <script src="src/data/perks.js?v=1.5.37"></script>
     <script src="src/data/gear.js?v=1.5.8"></script>
     <script src="src/data/gearEndgame.js?v=1.5.33"></script>
-    <script src="src/data/chests.js?v=1.5.61"></script>
+    <script src="src/data/chests.js?v=1.5.67"></script>
     <script src="src/data/materials.js?v=1.5.36"></script>
     <script src="src/data/bossRanks.js?v=1.5.16"></script>
     <script src="src/data/profile_cosmetics.js?v=1.5.49"></script>
+    <script src="src/data/profile_cosmetics_ext.js?v=1.5.75"></script>
+    <script src="src/ui/CosmeticEffectsEngine.js?v=1.5.75"></script>
     <script src="src/data/creditsData.js?v=1.4.1"></script>
 
     <!-- 2. CORE MESSAGING & CANONICAL STATE -->
@@ -2912,19 +2981,24 @@
     <script src="src/save/AccountSyncManager.js?v=1.5.55"></script>
     <script src="src/gear/GearManager.js?v=1.5.41"></script>
     <script src="src/gear/GearUpgradeManager.js?v=1.5.54"></script>
-    <script src="src/weapons/WeaponEvolutionManager.js?v=1.5.42"></script>
+    <script src="src/weapons/WeaponEvolutionManager.js?v=1.5.72"></script>
     <script src="src/gear/GearPassives.js?v=1.5.41"></script>
 
     <!-- 3. AUDIO & SYNTHESIS -->
-    <script src="src/engine/ProceduralSynth.js?v=1.5.60"></script>
+    <script src="src/engine/ProceduralSynth.js?v=1.5.69"></script>
     <script src="src/audio.js?v=1.5.51"></script>
 
     <!-- 4. ENGINE SUBSYSTEMS -->
     <script src="src/engine/Input.js?v=1.2.2"></script>
     <script src="src/engine/Camera.js?v=1.5.51"></script>
+    <script src="src/engine/EndlessBuildingModels.js?v=1.5.73"></script>
+    <script src="src/engine/EndlessBuildingRenderer.js?v=1.5.73"></script>
+    <script src="src/engine/EndlessMapEvolution.js?v=1.5.73"></script>
+    <script src="src/engine/CryptonXModel.js?v=1.5.78"></script>
+    <script src="src/engine/OutsidePerimeterRoads.js?v=1.5.77"></script>
     <script src="src/engine/Arena.js?v=1.5.51"></script>
     <script src="src/engine/WaveManager.js?v=1.5.34"></script>
-    <script src="src/engine/EndlessWaveDirector.js?v=1.5.43"></script>
+    <script src="src/engine/EndlessWaveDirector.js?v=1.5.70"></script>
     <script src="src/dungeons/OlympusAssets.js?v=1.5.51"></script>
     <script src="src/dungeons/OlympusLayouts.js?v=1.5.4"></script>
     <script src="src/dungeons/OlympusAltarUI.js?v=1.5.13"></script>
@@ -2932,7 +3006,7 @@
     <script src="src/dungeons/OlympusAscentSystem.js?v=1.5.51"></script>
     <script src="src/dungeons/DungeonMapTheme.js?v=1.5.66"></script>
     <script src="src/dungeons/DungeonManager.js?v=1.5.51"></script>
-    <script src="src/progression/BossRewardManager.js?v=1.5.44"></script>
+    <script src="src/progression/BossRewardManager.js?v=1.5.69"></script>
     <script src="src/engine/CollisionSystem.js?v=1.5.59"></script>
     <script src="src/engine/NameValidator.js?v=1.2.2"></script>
     <script src="src/engine/EpicPerkEffects.js?v=1.5.35"></script>
@@ -2943,15 +3017,15 @@
     <!-- 5. ENTITIES & HERO RENDERING -->
     <script src="src/entities/ParticleEffect.js?v=1.5.26"></script>
     <script src="src/entities/ComicPopupCache.js?v=1.5.65"></script>
-    <script src="src/entities/CombatRenderFX.js?v=1.5.60"></script>
-    <script src="src/entities/CombatJuiceFX.js?v=1.5.66"></script>
-    <script src="src/entities/Effects.js?v=1.5.65"></script>
-    <script src="src/entities/Bullet.js?v=1.5.60"></script>
+    <script src="src/entities/CombatRenderFX.js?v=1.5.69"></script>
+    <script src="src/entities/CombatJuiceFX.js?v=1.5.69"></script>
+    <script src="src/entities/Effects.js?v=1.5.69"></script>
+    <script src="src/entities/Bullet.js?v=1.5.69"></script>
     <script src="src/entities/Drop.js?v=1.5.36"></script>
     <script src="src/entities/FoliageRenderer.js?v=1.5.26"></script>
     <script src="src/entities/Obstacle.js?v=1.5.35"></script>
     <script src="src/entities/WaterPuddle.js?v=1.2.2"></script>
-    <script src="src/entities/Weapons.js?v=1.5.61"></script>
+    <script src="src/entities/Weapons.js?v=1.5.69"></script>
     <script src="src/heroes/PsanasHero.js?v=1.2.2"></script>
     <script src="src/heroes/PetrosHero.js?v=1.2.2"></script>
     <script src="src/heroes/PsogasHero.js?v=1.2.2"></script>
@@ -2965,6 +3039,8 @@
     <script src="src/skills/YayaScream.js?v=1.5.28"></script>
     <script src="src/skills/Frappes.js?v=1.5.28"></script>
     <script src="src/skills/WrathOfOlympus.js?v=1.5.44"></script>
+    <script src="src/skills/VF185Model.js?v=1.5.74"></script>
+    <script src="src/skills/HeroUltimates.js?v=1.5.74"></script>
     <script src="src/entities/PlayerSkills.js?v=1.5.37"></script>
     <script src="src/entities/Player.js?v=1.5.56"></script>
     <script src="src/entities/RemotePlayer.js?v=1.5.53"></script>
@@ -3003,11 +3079,14 @@
     <script src="src/Bosses/SyndicateCapoRenderer.js?v=1.5.20"></script>
     <script src="src/Bosses/KolossosArenaAtmosphere.js?v=1.5.51"></script>
     <script src="src/Bosses/KolossosDrone.js?v=1.5.43"></script>
-    <script src="src/Bosses/KolossosAttackSystem.js?v=1.5.43"></script>
-    <script src="src/Bosses/MechaKolossosRenderer.js?v=1.5.43"></script>
+    <script src="src/Bosses/KolossosTrooper.js?v=1.5.71"></script>
+    <script src="src/Bosses/KolossosJumpAttack.js?v=1.5.70"></script>
+    <script src="src/Bosses/KolossosHazardVFX.js?v=1.5.70"></script>
+    <script src="src/Bosses/KolossosAttackSystem.js?v=1.5.70"></script>
+    <script src="src/Bosses/MechaKolossosRenderer.js?v=1.5.70"></script>
     <script src="src/Bosses/EndlessBossRenderer.js?v=1.5.20"></script>
     <script src="src/Bosses/EndlessMiniBosses.js?v=1.5.16"></script>
-    <script src="src/Bosses/EndlessMainBosses.js?v=1.5.43"></script>
+    <script src="src/Bosses/EndlessMainBosses.js?v=1.5.70"></script>
     <script src="src/dungeons/OlympusBossRenderer.js?v=1.5.51"></script>
     <script src="src/dungeons/OlympusEarlyBosses.js?v=1.5.14"></script>
     <script src="src/dungeons/DungeonBosses.js?v=1.5.14"></script>
@@ -3016,7 +3095,7 @@
     <script src="src/dungeons/ZeusBoss.js?v=1.5.51"></script>
 
     <!-- 7. PROGRESSION & PROFILE -->
-    <script src="src/ui/UiIcons.js?v=1.5.60"></script>
+    <script src="src/ui/UiIcons.js?v=1.5.69"></script>
     <script src="src/progression/CurrencyManager.js?v=1.2.2"></script>
     <script src="src/progression/QuestManager.js?v=1.5.27"></script>
     <script src="src/profile/StatsManager.js?v=1.5.55"></script>
@@ -3024,14 +3103,14 @@
     <!-- 8. UI SUBSYSTEMS -->
     <script src="src/ui/DevIntro.js?v=1.2.2"></script>
     <script src="src/ui/LoadingScreen.js?v=1.2.2"></script>
-    <script src="src/ui/BossRewardModalUI.js?v=1.5.31"></script>
+    <script src="src/ui/BossRewardModalUI.js?v=1.5.72"></script>
     <script src="src/ui/OlympusVictoryModal.js?v=1.5.41"></script>
     <script src="src/ui/GearModalUI.js?v=1.5.62"></script>
     <script src="src/ui/ProfileCosmeticsUI.js?v=1.5.55"></script>
     <script src="src/ui/PublicProfileModal.js?v=1.5.55"></script>
     <script src="src/ui/LeaderboardModal.js?v=1.5.48"></script>
-    <script src="src/ui/ModalManager.js?v=1.5.60"></script>
-    <script src="src/ui/HUDController.js?v=1.5.65"></script>
+    <script src="src/ui/ModalManager.js?v=1.5.72"></script>
+    <script src="src/ui/HUDController.js?v=1.5.69"></script>
     <script src="src/ui/ProfileManager.js?v=1.5.55"></script>
     <script src="src/ui/HeroRoster.js?v=1.5.55"></script>
     <script src="src/ui/SkillManager.js?v=1.5.32"></script>
@@ -3044,7 +3123,7 @@
     <script src="src/ui/BossWarningOverlay.js?v=1.5.16"></script>
     <script src="src/ui/CinematicCutsceneOverlay.js?v=1.5.2"></script>
     <script src="src/ui/CreditsScreen.js?v=1.5.10"></script>
-    <script src="src/chests/ChestManager.js?v=1.5.61"></script>
+    <script src="src/chests/ChestManager.js?v=1.5.72"></script>
     <script src="src/ui/ChestModalUI.js?v=1.5.61"></script>
     <script src="src/progression/InventoryManager.js?v=1.5.36"></script>
     <script src="src/ui/InventoryModalUI.js?v=1.5.41"></script>
@@ -3052,7 +3131,7 @@
 
     <!-- 8.5. ADMIN & PLAYTESTING SUBSYSTEM -->
     <script src="src/admin/AdminAuth.js?v=1.5.50"></script>
-    <script src="src/admin/AdminCheats.js?v=1.5.60"></script>
+    <script src="src/admin/AdminCheats.js?v=1.5.69"></script>
     <script src="src/admin/AdminPanel.js?v=1.5.46"></script>
 
     <!-- 8.7. MOBILE TOUCH SUBSYSTEM -->

@@ -20,6 +20,7 @@ class Arena {
         this.halfWidth = width / 2;
         this.halfHeight = height / 2;
         this.seed = seed;
+        this.gameMode = 'story';
 
         this.tileSize = 100;
         this.props = [];
@@ -95,6 +96,23 @@ class Arena {
         this.generateDecorations();
         this.generateObstacles();
         this.renderGroundCache();
+    }
+
+    setGameMode(gameMode) {
+        if (gameMode !== 'dungeons' && this.dungeonFloor) {
+            this.resetNormalTheme();
+        }
+        if (gameMode === 'dungeons') {
+            this.gameMode = 'dungeons';
+            return;
+        }
+        const nextMode = (gameMode === 'endless') ? 'endless' : 'story';
+        if (this.gameMode !== nextMode) {
+            this.gameMode = nextMode;
+            this.destroyedObsIds = new Set();
+            const rng = (this.seed !== null && this.seed !== undefined) ? createArenaRng(this.seed) : Math.random;
+            this.generateObstacles(rng);
+        }
     }
 
     static getFloorTexture1() {
@@ -235,9 +253,51 @@ class Arena {
         }
     }
 
+    _hitsBuilding(x, y, pad = 90) {
+        for (let i = 0; i < this.obstacles.length; i++) {
+            const o = this.obstacles[i];
+            if (o.type === 'building' && Math.abs(x - o.x) < (o.halfW || 70) + pad && Math.abs(y - o.y) < (o.halfH || 48) + pad) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     generateObstacles(rng = Math.random) {
         this.obstacles = [];
         let obsId = 1;
+
+        // 0. Endless Mode: Place 6 Landmark Greek Village Buildings around the outer ring
+        if (this.gameMode === 'endless' && typeof EndlessBuildingRenderer !== 'undefined') {
+            const placements = [
+                { arch: 'chapel', x: 0, y: -900 },
+                { arch: 'kafenio', x: -780, y: -640 },
+                { arch: 'periptero', x: 780, y: -640 },
+                { arch: 'bakery', x: -780, y: 620 },
+                { arch: 'outpost', x: 780, y: 620 },
+                { arch: 'windmill', x: 0, y: 910 }
+            ];
+            for (const p of placements) {
+                const spec = EndlessBuildingRenderer.SPECS[p.arch] || EndlessBuildingRenderer.SPECS.kafenio;
+                const bx = p.x + (rng() - 0.5) * 80;
+                const by = p.y + (rng() - 0.5) * 70;
+                const bld = new Obstacle(bx, by, 'building');
+                bld.id = obsId++;
+                bld.arch = p.arch;
+                bld.halfW = spec.halfW;
+                bld.halfH = spec.halfH;
+                bld.roofHeight = spec.roofH;
+                bld.cullRadius = spec.cullR;
+                bld.radius = Math.ceil(Math.hypot(spec.halfW, spec.halfH));
+                bld.isTall25D = true;
+                bld.maxHp = 99999;
+                bld.hp = 99999;
+                this.obstacles.push(bld);
+            }
+        }
+        if (typeof EndlessMapEvolution !== 'undefined') {
+            EndlessMapEvolution.seedHotspots(this, rng);
+        }
 
         // 1. Place 2.5D Lush Trees FIRST so props can position cleanly around them
         const trees = [];
@@ -249,6 +309,7 @@ class Arena {
             const y = (rng() * 2 - 1) * (this.halfHeight - 320);
 
             if (x * x + y * y <= 260 * 260) continue; // Safe from player spawn
+            if (this._hitsBuilding(x, y, 135)) continue;
 
             let tooClose = false;
             for (let t = 0; t < trees.length; t++) {
@@ -276,10 +337,12 @@ class Arena {
                 const x = (rng() * 2 - 1) * (this.halfWidth - boundInset);
                 const y = (rng() * 2 - 1) * (this.halfHeight - boundInset);
                 if (x * x + y * y <= 220 * 220) continue; // Spawn clearance
+                if (this._hitsBuilding(x, y, 78)) continue;
 
                 let blocked = false;
                 for (let j = 0; j < this.obstacles.length; j++) {
                     const other = this.obstacles[j];
+                    if (other.type === 'building') continue;
                     const distSq = (x - other.x) * (x - other.x) + (y - other.y) * (y - other.y);
                     const reqDistSq = other.type === 'tree' ? minTreeSq : minPropSq;
                     if (distSq < reqDistSq) {
@@ -344,10 +407,12 @@ class Arena {
             const x = minX + Math.random() * (maxX - minX);
             const y = minY + Math.random() * (maxY - minY);
             if (p && ((x - p.x) * (x - p.x) + (y - p.y) * (y - p.y) < 280 * 280)) continue;
+            if (this._hitsBuilding(x, y, 75)) continue;
 
             let blocked = false;
             for (let i = 0; i < this.obstacles.length; i++) {
                 const o = this.obstacles[i];
+                if (o.type === 'building') continue;
                 const dSq = (x - o.x) * (x - o.x) + (y - o.y) * (y - o.y);
                 const req = o.type === 'tree' ? 110 * 110 : 70 * 70;
                 if (dSq < req) {
@@ -440,6 +505,9 @@ class Arena {
             DungeonMapTheme.drawBoundaries(ctx, this);
             return;
         }
+        if (typeof EndlessMapEvolution !== 'undefined' && EndlessMapEvolution.drawBoundaries(ctx, this)) {
+            return;
+        }
         ctx.save();
         ctx.lineWidth = 14;
         ctx.strokeStyle = '#b71540';
@@ -457,7 +525,16 @@ class Arena {
         if (typeof window !== 'undefined' && window.gameInstance && window.gameInstance.waveManager && window.gameInstance.waveManager.dungeonManager) {
             window.gameInstance.waveManager.dungeonManager.drawGroundOverlay(ctx, camera, this);
         }
+        if (typeof OutsidePerimeterRoads !== 'undefined') {
+            OutsidePerimeterRoads.drawRoads(ctx, camera, this);
+        }
+        if (typeof EndlessMapEvolution !== 'undefined') {
+            EndlessMapEvolution.drawWorldGround(ctx, camera, this);
+        }
         this.drawBoundaries(ctx);
+        if (typeof OutsidePerimeterRoads !== 'undefined') {
+            OutsidePerimeterRoads.drawTraffic(ctx, camera, this);
+        }
         if (typeof KolossosArenaAtmosphere !== 'undefined') {
             KolossosArenaAtmosphere.drawWorldGround(ctx, camera, this);
         }

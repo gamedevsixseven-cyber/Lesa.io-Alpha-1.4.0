@@ -67,6 +67,7 @@ class Player {
         this.scarfWave = 0; this.ghostTrails = [];
 
         // Apply Gear & Equipment Stats cleanly onto baselines
+        if (typeof HeroUltimates !== 'undefined') HeroUltimates.initPlayer(this);
         this.applyEquipmentStats();
         this.hp = this.maxHp;
         this.speed = this.baseSpeed;
@@ -140,10 +141,10 @@ class Player {
         this.maxDashCooldown = Math.max(72, Math.round((this.baseMaxDashCooldown || 180) * (1 - (s.dashCooldown || 0) / 100)));
         this.magnetRadius = (this.baseMagnetRadius || 140) + (s.magnetRadius || 0);
         if (typeof window !== 'undefined' && window.perkSystem && typeof window.perkSystem.applyPlayerStatModifiers === 'function') window.perkSystem.applyPlayerStatModifiers(this, true);
+        if (typeof HeroUltimates !== 'undefined') HeroUltimates.reapplyActiveBuffs(this);
     }
 
     update(dt = 1, input = null, camera = null, effects = null, arena = null) {
-        // Cooldowns
         if (this.fireCooldown > 0) this.fireCooldown -= dt;
         if (this.dashCooldown > 0) this.dashCooldown -= dt;
         if (this.skillCooldown > 0 && !(this.frappesFrenzyTimer > 0)) this.skillCooldown -= dt;
@@ -263,6 +264,7 @@ class Player {
 
             const { dx, dy } = input.getMovementVector();
             let currentSpeed = (this.frappesFrenzyTimer > 0 ? this.speed * (this.frappesSpeedBuff || 1.65) : (this.frenzyTimer > 0 ? this.speed * 1.35 : this.speed));
+            if (typeof HeroUltimates !== 'undefined') currentSpeed *= HeroUltimates.getSpeedMultiplier(this);
             const slowImmune = typeof GearPassives !== 'undefined' && GearPassives.isSlowImmune();
             if (this.secondWindSpeedTimer > 0) currentSpeed *= (this.secondWindSpeedMult || 1.25);
             if (this.speedDebuffTimer > 0 && !slowImmune) currentSpeed *= 0.68;
@@ -437,9 +439,12 @@ class Player {
     useSkill(enemies = [], effects = null, camera = null, game = null) {
         if (this.stunTimer > 0 || this.isGrabbed || this.isAirborne) return;
         if (window.gameInstance && window.gameInstance.isCutsceneActive && window.gameInstance.isCutsceneActive()) return;
-        if (typeof PlayerSkills !== 'undefined') {
-            PlayerSkills.execute(this, enemies, effects, camera, game);
-        }
+        if (typeof PlayerSkills !== 'undefined') PlayerSkills.execute(this, enemies, effects, camera, game);
+    }
+
+    useUlt(enemies = [], effects = null, camera = null, game = null) {
+        if (window.gameInstance && window.gameInstance.isCutsceneActive && window.gameInstance.isCutsceneActive()) return;
+        if (typeof HeroUltimates !== 'undefined') HeroUltimates.execute(this, enemies, effects, camera, game);
     }
 
     shoot(effects = null) {
@@ -586,14 +591,8 @@ class Player {
         }
     }
 
-    draw(ctx) {
-        if (typeof HeroRenderer !== 'undefined') {
-            HeroRenderer.draw(this, ctx);
-        }
-    }
+    draw(ctx) { if (typeof HeroRenderer !== 'undefined') HeroRenderer.draw(this, ctx); }
 }
 
-if (typeof window !== 'undefined') {
-    window.Player = Player;
-}
+if (typeof window !== 'undefined') window.Player = Player;
 

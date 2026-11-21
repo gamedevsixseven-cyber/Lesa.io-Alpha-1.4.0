@@ -338,9 +338,11 @@ class ModalManager {
             spas12: 'SPAS-12',
             boomerang_saw: 'Boomerang Sawblade',
             chrono_rifle: 'Chrono Stutter Rifle',
+            symbiote: 'Symbiote Launcher',
             carbine: "Kiloumpas's Carbine",
             dialtone: "Rouf's Dial-Tone Blaster",
-            zeus_thunderbolt: "Zeus's Master Thunderbolt"
+            zeus_thunderbolt: "Zeus's Master Thunderbolt",
+            helios_cannon: 'Helios Omega Cannon'
         };
         const weaponImages = {
             pea: 'assets/WeaponIcons/PeaSlingshot.png',
@@ -355,9 +357,11 @@ class ModalManager {
             spas12: 'assets/WeaponIcons/Spas12.png',
             boomerang_saw: 'assets/WeaponIcons/BoomerangSawblade.png',
             chrono_rifle: 'assets/WeaponIcons/ChronoRifle.png',
+            symbiote: 'assets/WeaponIcons/SymbioteLauncher.png',
             carbine: 'assets/WeaponIcons/KiloumpasCarbine.png',
             dialtone: 'assets/WeaponIcons/RoufBlaster.png',
-            zeus_thunderbolt: 'assets/WeaponIcons/ZeusThunderbolt.png'
+            zeus_thunderbolt: 'assets/WeaponIcons/ZeusThunderbolt.png',
+            helios_cannon: 'assets/WeaponIcons/HeliosOmegaCannon.png'
         };
 
         const weaponNameEl = document.getElementById('gear-equipped-weapon-name');
@@ -395,6 +399,7 @@ class ModalManager {
 
             card.style.display = '';
             card.classList.toggle('weapon-locked', !unlocked);
+            card.classList.toggle('rarity-apex', (wData.rarity || '').toLowerCase() === 'apex');
             if (unlocked) visibleCount++;
 
             const badge = card.querySelector('.weapon-badge');

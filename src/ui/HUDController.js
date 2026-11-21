@@ -19,6 +19,8 @@ class HUDController {
         this.dashBadge = document.getElementById('dash-badge');
         this.skillFill = document.getElementById('skill-cooldown-fill');
         this.skillBadge = document.getElementById('skill-badge');
+        this.ultFill = document.getElementById('ult-cooldown-fill');
+        this.ultBadge = document.getElementById('ult-badge');
         this.chronoBadge = document.getElementById('chrono-skip-badge');
         this.weaponIcon = document.getElementById('weapon-icon');
         this.weaponName = document.getElementById('weapon-name');
@@ -37,6 +39,13 @@ class HUDController {
             this.skillBadge.addEventListener('click', () => {
                 if (window.gameInstance && window.gameInstance.input && window.gameInstance.input.onSkillCallback) {
                     window.gameInstance.input.onSkillCallback();
+                }
+            });
+        }
+        if (this.ultBadge) {
+            this.ultBadge.addEventListener('click', () => {
+                if (window.gameInstance && window.gameInstance.input && window.gameInstance.input.onUltCallback) {
+                    window.gameInstance.input.onUltCallback();
                 }
             });
         }
@@ -259,6 +268,35 @@ class HUDController {
             }
         }
 
+        if (this.ultBadge && this.ultFill) {
+            const uState = (typeof HeroUltimates !== 'undefined') ? HeroUltimates.getHUDState(player) : null;
+            if (c.ultVisible !== !!uState) {
+                c.ultVisible = !!uState;
+                this.ultBadge.classList.toggle('hidden', !uState);
+            }
+            if (uState) {
+                if (c.ultPct !== uState.pct) {
+                    c.ultPct = uState.pct;
+                    this.ultFill.style.width = `${uState.pct}%`;
+                }
+                const uMode = uState.active ? 2 : (uState.ready ? 0 : 1);
+                if (c.ultMode !== uMode) {
+                    c.ultMode = uMode;
+                    this.ultBadge.classList.toggle('is-active', uMode === 2);
+                    this.ultBadge.classList.toggle('is-ready', uMode === 0);
+                    this.ultBadge.classList.toggle('on-cooldown', uMode === 1);
+                }
+                const ultSpan = this._ultSpan || (this._ultSpan = this.ultBadge.querySelector('span'));
+                const uKey = `${uState.cfg.id}:${uState.active ? 'ACT' : (uState.ready ? 'RDY' : uState.pct)}`;
+                if (ultSpan && c.ultKey !== uKey) {
+                    c.ultKey = uKey;
+                    const suffix = uState.active ? 'ACTIVE!' : (uState.ready ? 'READY (Q)' : `${uState.pct}%`);
+                    ultSpan.innerHTML = `<img src="${uState.cfg.icon}" class="dash-badge-img" alt="${uState.cfg.name}"> ${uState.cfg.name} • ${suffix}`;
+                    this.ultBadge.title = `Press Q to activate ${uState.cfg.name}`;
+                }
+            }
+        }
+
         const weaponNames = {
             'pea': 'Pea Slingshot',
             'watermelon': 'Melon Cannon',
@@ -272,9 +310,11 @@ class HUDController {
             'spas12': 'SPAS-12',
             'boomerang_saw': 'Boomerang Sawblade',
             'chrono_rifle': 'Chrono Stutter Rifle',
+            'symbiote': 'Symbiote Launcher',
             'carbine': "Kiloumpas's Carbine",
             'dialtone': 'Dial-Tone Blaster',
-            'zeus_thunderbolt': "Zeus's Thunderbolt"
+            'zeus_thunderbolt': "Zeus's Thunderbolt",
+            'helios_cannon': 'Helios Omega Cannon'
         };
         const weaponKeys = {
             'pea': 'weapon_pea',
@@ -289,9 +329,11 @@ class HUDController {
             'spas12': 'weapon_spas12',
             'boomerang_saw': 'weapon_boomerang_saw',
             'chrono_rifle': 'weapon_chrono_rifle',
+            'symbiote': 'weapon_symbiote',
             'carbine': 'weapon_carbine',
             'dialtone': 'weapon_dialtone',
-            'zeus_thunderbolt': 'weapon_zeus_thunderbolt'
+            'zeus_thunderbolt': 'weapon_zeus_thunderbolt',
+            'helios_cannon': 'weapon_helios_cannon'
         };
         const weaponIcons = {
             'pea': '🌱',
@@ -306,9 +348,11 @@ class HUDController {
             'spas12': '🔫',
             'boomerang_saw': '🪚',
             'chrono_rifle': '⏳',
+            'symbiote': '🦠',
             'carbine': '🔫',
             'dialtone': '📱',
-            'zeus_thunderbolt': '⚡'
+            'zeus_thunderbolt': '⚡',
+            'helios_cannon': '☀️'
         };
         if (this.weaponIcon) {
             const wKey = weaponKeys[player.weaponType] || 'weapon_pea';

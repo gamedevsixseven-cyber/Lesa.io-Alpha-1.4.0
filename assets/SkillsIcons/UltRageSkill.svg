@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <defs>
+    <radialGradient id="rageBg" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#ff5e57"/>
+      <stop offset="65%" stop-color="#c01828"/>
+      <stop offset="100%" stop-color="#580612"/>
+    </radialGradient>
+    <linearGradient id="flameGold" x1="0" y1="1" x2="0" y2="0">
+      <stop offset="0%" stop-color="#ff3838"/>
+      <stop offset="55%" stop-color="#ff9f1a"/>
+      <stop offset="100%" stop-color="#fff200"/>
+    </linearGradient>
+    <linearGradient id="fistSkin" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ffe0b8"/>
+      <stop offset="45%" stop-color="#e39d69"/>
+      <stop offset="100%" stop-color="#9e4724"/>
+    </linearGradient>
+  </defs>
+  <circle cx="64" cy="64" r="59" fill="url(#rageBg)" stroke="#18181b" stroke-width="5"/>
+  <!-- Outer Roaring Rage Flame Crown -->
+  <path d="M22 88 C12 62, 26 32, 42 22 C40 36, 48 40, 52 14 C64 26, 70 10, 82 26 C80 38, 92 34, 102 22 C112 46, 114 72, 102 90 C90 106, 36 108, 22 88 Z" fill="url(#flameGold)" stroke="#18181b" stroke-width="4" stroke-linejoin="round"/>
+  <!-- Lightning Aura Bolts -->
+  <polygon points="18,38 30,26 26,42 36,44 20,62 24,46" fill="#fff200" stroke="#18181b" stroke-width="2" stroke-linejoin="round"/>
+  <polygon points="108,34 96,46 104,48 92,66 112,50 102,46" fill="#fff200" stroke="#18181b" stroke-width="2" stroke-linejoin="round"/>
+  <!-- Clenched Rage Fist -->
+  <g stroke="#18181b" stroke-width="4" stroke-linejoin="round" stroke-linecap="round">
+    <path d="M44 106 L44 82 L84 82 L84 106 Z" fill="#1e2028"/>
+    <path d="M36 62 C36 44, 46 38, 64 38 C84 38, 94 46, 94 64 C94 78, 86 88, 64 88 C44 88, 36 78, 36 62 Z" fill="url(#fistSkin)"/>
+    <line x1="48" y1="40" x2="48" y2="58"/>
+    <line x1="62" y1="39" x2="62" y2="58"/>
+    <line x1="76" y1="40" x2="76" y2="58"/>
+    <path d="M37 64 C48 56, 66 58, 72 68 C74 74, 62 78, 46 76" fill="#d28e5d"/>
+    <!-- Crimson Veins / Rage Glow -->
+    <path d="M48 76 L58 72 L68 78" fill="none" stroke="#ff2e4c" stroke-width="3"/>
+  </g>
+</svg>

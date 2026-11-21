@@ -188,6 +188,16 @@ class CombatRenderFX {
                     : (type === 'chrono_rifle' ? (i % 2 === 0 ? '#00f5ff' : '#a55eea') : ((type === 'spas12' && bullet._spasBreach) ? '#ff4757' : (i % 2 === 0 ? '#ffd32a' : '#ff9f43')));
                 ctx.fillRect(-segW * 0.5, -1.6 * ratio, segW, 3.2 * ratio);
                 ctx.restore();
+            } else if (type === 'symbiote' || type === 'symbiote_tendril') {
+                ctx.fillStyle = i % 2 === 0 ? '#ff2e63' : '#9b59b6';
+                ctx.beginPath();
+                ctx.arc(pt.x, pt.y, Math.max(2, (bullet.radius || 8) * ratio * 0.56), 0, Math.PI * 2);
+                ctx.fill();
+            } else if (type === 'helios_cannon') {
+                ctx.fillStyle = i % 2 === 0 ? '#ff2e4c' : '#fed330';
+                ctx.beginPath();
+                ctx.arc(pt.x, pt.y, Math.max(2.4, (bullet.radius || 11) * ratio * (bullet.isSingularityCore ? 0.72 : 0.54)), 0, Math.PI * 2);
+                ctx.fill();
             } else if (type === 'boomerang_saw') {
                 ctx.strokeStyle = bullet._returning ? (i % 2 === 0 ? '#00f5ff' : '#dfe6e9') : (i % 2 === 0 ? '#ff9f43' : '#feca57');
                 ctx.lineWidth = Math.max(1.5, 3.0 * ratio);

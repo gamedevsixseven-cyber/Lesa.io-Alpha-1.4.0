@@ -373,7 +373,7 @@ html, body {
 /* ===================================================
    MOBILE RESPONSIVE UI FITTING (LANDSCAPE <= 520px / TOUCH)
    =================================================== */
-@media screen and (max-height: 520px), screen and (pointer: coarse) and (max-height: 700px) {
+@media screen and (max-height: 520px), screen and (pointer: coarse) and (max-height: 700px), screen and (pointer: coarse) and (orientation: portrait) {
     /* 1. Prevent mobile viewport bouncing & overflow (dvh respects browser bars) */
     html, body {
         overflow: hidden !important;

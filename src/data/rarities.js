@@ -64,6 +64,16 @@ const RARITIES = {
         badgeClass: 'badge-mythic',
         glow: 'rgba(231, 76, 60, 0.6)'
     },
+    Apex: {
+        id: 'Apex',
+        key: 'apex',
+        name: 'Apex',
+        color: '#ff2e4c',
+        bg: '#141418',
+        border: '#fed330',
+        badgeClass: 'badge-apex',
+        glow: 'rgba(255, 46, 76, 0.85)'
+    },
     Exotic: {
         id: 'Exotic',
         key: 'exotic',

@@ -29,9 +29,11 @@ class BossRewardModalUI {
 
         const toast = this.getOrCreateToast();
         const metas = drops.map(d => BossRewardManager.getRewardMeta(d.category, d.id));
-        const topRarity = metas.some(m => (m.rarity || '').toLowerCase() === 'mythic')
-            ? 'mythic'
-            : (metas[0].rarity || 'epic').toLowerCase();
+        const topRarity = metas.some(m => (m.rarity || '').toLowerCase() === 'apex')
+            ? 'apex'
+            : (metas.some(m => (m.rarity || '').toLowerCase() === 'mythic')
+                ? 'mythic'
+                : (metas[0].rarity || 'epic').toLowerCase());
 
         const rowsHtml = metas.map(m => `
             <div class="but-row">

@@ -60,6 +60,7 @@ class Game {
                 this.player.useSkill(this.enemies, this.effects, this.camera, this);
             }
         };
+        this.input.onUltCallback = () => (this.state === 'PLAYING' && !this.isCutsceneActive()) && this.player.useUlt(this.enemies, this.effects, this.camera, this);
         this.input.onInteractCallback = () => (this.state === 'PLAYING' && !this.isCutsceneActive() && this.waveSkipper) && this.waveSkipper.tryActivate(this);
 
         this.input.onPauseCallback = () => {
@@ -154,7 +155,13 @@ class Game {
         }
 
         this.gameTime = 0;
-        if (gameMode !== 'dungeons' && this.arena && this.arena.dungeonFloor) {
+        if (typeof EndlessMapEvolution !== 'undefined') {
+            EndlessMapEvolution.reset();
+        }
+        if (typeof OutsidePerimeterRoads !== 'undefined') OutsidePerimeterRoads.reset();
+        if (this.arena && typeof this.arena.setGameMode === 'function') {
+            this.arena.setGameMode(gameMode);
+        } else if (gameMode !== 'dungeons' && this.arena && this.arena.dungeonFloor) {
             this.arena.resetNormalTheme();
         }
         this.waveManager.reset(gameMode);
@@ -338,9 +345,13 @@ class Game {
         if (typeof PlayerSkills !== 'undefined') {
             PlayerSkills.update(this.player, dt, this.effects, this.enemies);
         }
+        if (typeof HeroUltimates !== 'undefined') {
+            HeroUltimates.update(this.player, dt, this.enemies, this.bullets, this.effects, this);
+        }
         this.camera.follow(this.player.x, this.player.y);
         this.camera.update(dt);
         this.arena.update(dt);
+        if (typeof OutsidePerimeterRoads !== 'undefined') OutsidePerimeterRoads.update(dt, this);
         if (this.waveSkipper) this.waveSkipper.update(dt, this);
 
         // Bullets Compaction
@@ -504,15 +515,12 @@ class Game {
             }
         }
 
-        // 3. Obstacles (Mushrooms, Crates, Barrels, Bushes & Trees behind player - Viewport Culled)
+        // 3. Obstacles (Mushrooms, Crates, Barrels, Bushes, Trees & Buildings behind player)
         for (let i = 0; i < this.arena.obstacles.length; i++) {
             const obs = this.arena.obstacles[i];
             if (obs.dead) continue;
-            // Defer tall 2.5D trees/pillars south of player so their top renders over player
-            if (obs.type === 'tree' && obs.isTall25D !== false && obs.y > this.player.y) continue;
-            if (this.camera.isVisible(obs.x, obs.y, obs.radius + 120)) {
-                obs.draw(ctx);
-            }
+            if ((obs.type === 'tree' || obs.type === 'building') && obs.isTall25D !== false && obs.y > this.player.y) continue;
+            if (this.camera.isVisible(obs.x, obs.y, (obs.cullRadius || obs.radius) + 120)) obs.draw(ctx);
         }
 
         // 3.5. Endless Wave Skipper & 4. Enemies (Viewport Culled + Hit Squash-and-Stretch)
@@ -544,22 +552,14 @@ class Game {
             }
         }
 
-        // 6.5. Foreground 2.5D Trees/Columns (Canopy overlays player with peek-through transparency)
+        // 6.5. Foreground 2.5D Trees, Columns & Buildings (Peek-through transparency)
         for (let i = 0; i < this.arena.obstacles.length; i++) {
             const obs = this.arena.obstacles[i];
-            if (obs.dead || obs.type !== 'tree' || obs.isTall25D === false || obs.y <= this.player.y) continue;
-            if (this.camera.isVisible(obs.x, obs.y, obs.radius + 120)) {
-                const dx = this.player.x - obs.x;
-                const dy = this.player.y - (obs.y - 70);
-                const isBehindCanopy = (dx * dx + dy * dy < 85 * 85);
-                if (isBehindCanopy) {
-                    ctx.save();
-                    ctx.globalAlpha = 0.72;
-                    obs.draw(ctx);
-                    ctx.restore();
-                } else {
-                    obs.draw(ctx);
-                }
+            if (obs.dead || (obs.type !== 'tree' && obs.type !== 'building') || obs.isTall25D === false || obs.y <= this.player.y) continue;
+            if (this.camera.isVisible(obs.x, obs.y, (obs.cullRadius || obs.radius) + 120)) {
+                const behind = obs.isPlayerBehind ? obs.isPlayerBehind(this.player) : false;
+                if (behind) { ctx.save(); ctx.globalAlpha = 0.72; obs.draw(ctx); ctx.restore(); }
+                else obs.draw(ctx);
             }
         }
 

@@ -4,7 +4,7 @@
  */
 
 class WeaponSystem {
-    static SHARED_UNLOCKABLE_IDS = ['bubble', 'm4_carbine', 'spas12', 'boomerang_saw', 'chrono_rifle', 'carbine', 'dialtone', 'zeus_thunderbolt'];
+    static SHARED_UNLOCKABLE_IDS = ['bubble', 'm4_carbine', 'spas12', 'boomerang_saw', 'chrono_rifle', 'symbiote', 'carbine', 'dialtone', 'zeus_thunderbolt', 'helios_cannon'];
 
     static isSharedWeapon(weaponType) {
         return this.SHARED_UNLOCKABLE_IDS.includes(weaponType);
@@ -26,6 +26,8 @@ class WeaponSystem {
                 return { baseDelay: 14, baseDamage: 34, radius: 13, extraPierce: 2, maxBounces: 0, speedMultiplier: 0.94, range: 820, slowDuration: 1.5, slowMultiplier: 0.70, fanEveryNShots: 4 };
             case 'zeus_thunderbolt':
                 return { baseDelay: 15, baseDamage: 46, radius: 12, extraPierce: 2, maxBounces: 0, speedMultiplier: 1.55, critChanceBonus: 0.12, range: 1050, skyBoltEveryNShots: 5 };
+            case 'helios_cannon':
+                return { baseDelay: 12, baseDamage: 52, radius: 11, extraPierce: 3, maxBounces: 0, speedMultiplier: 1.60, critChanceBonus: 0.16, range: 1020, singularityEveryNShots: 4, beamEveryNShots: 8 };
             case 'pepper':
                 return { baseDelay: 9, baseDamage: 22, radius: 8, extraPierce: 2, maxBounces: 0 };
             case 'money_gun':
@@ -44,6 +46,8 @@ class WeaponSystem {
                 return { baseDelay: 22, baseDamage: 42, radius: 15, extraPierce: 99, maxBounces: 0, speedMultiplier: 1.28, critChanceBonus: 0.10, range: 520 };
             case 'chrono_rifle':
                 return { baseDelay: 11, baseDamage: 24, radius: 8, extraPierce: 0, maxBounces: 0, speedMultiplier: 1.58, critChanceBonus: 0.12, range: 960 };
+            case 'symbiote':
+                return { baseDelay: 14, baseDamage: 28, radius: 9, extraPierce: 0, maxBounces: 0, speedMultiplier: 1.52, critChanceBonus: 0.10, range: 960 };
             case 'pea':
             default:
                 return { baseDelay: 16, baseDamage: 25, radius: 8, extraPierce: 0, maxBounces: 0 };
@@ -164,6 +168,10 @@ class WeaponSystem {
             ChronoRifle.drawWeapon(ctx, flash, recoil);
             return true;
         }
+        if (weaponType === 'symbiote' && typeof SymbioteLauncher !== 'undefined') {
+            SymbioteLauncher.drawWeapon(ctx, flash, recoil);
+            return true;
+        }
         if (weaponType === 'carbine' && typeof KiloumpasCarbine !== 'undefined') {
             KiloumpasCarbine.drawWeapon(ctx, flash, recoil);
             return true;
@@ -174,6 +182,10 @@ class WeaponSystem {
         }
         if (weaponType === 'zeus_thunderbolt' && typeof ZeusThunderbolt !== 'undefined') {
             ZeusThunderbolt.drawWeapon(ctx, flash, recoil, isEvolved);
+            return true;
+        }
+        if (weaponType === 'helios_cannon' && typeof HeliosOmegaCannon !== 'undefined') {
+            HeliosOmegaCannon.drawWeapon(ctx, flash, recoil, isEvolved);
             return true;
         }
         if (weaponType === 'bubble' && typeof BubbleGun !== 'undefined' && typeof BubbleGun.drawWeapon === 'function') {
@@ -187,6 +199,9 @@ class WeaponSystem {
         if (b.type === 'boomerang_saw' && typeof BoomerangSawblade !== 'undefined') {
             return BoomerangSawblade.updateBullet(b, dt, effects, arena);
         }
+        if (b.type === 'symbiote_tendril' && typeof SymbioteLauncher !== 'undefined') {
+            return SymbioteLauncher.updateBullet(b, dt, effects, arena);
+        }
         return false;
     }
 
@@ -195,22 +210,31 @@ class WeaponSystem {
         if (b.type === 'spas12' && typeof Spas12 !== 'undefined') { Spas12.drawBullet(ctx, b); return true; }
         if (b.type === 'boomerang_saw' && typeof BoomerangSawblade !== 'undefined') { BoomerangSawblade.drawBullet(ctx, b); return true; }
         if (b.type === 'chrono_rifle' && typeof ChronoRifle !== 'undefined') { ChronoRifle.drawBullet(ctx, b); return true; }
+        if ((b.type === 'symbiote' || b.type === 'symbiote_tendril') && typeof SymbioteLauncher !== 'undefined') { SymbioteLauncher.drawBullet(ctx, b); return true; }
         if (b.type === 'carbine' && typeof KiloumpasCarbine !== 'undefined') { KiloumpasCarbine.drawBullet(ctx, b); return true; }
         if (b.type === 'dialtone' && typeof RoufDialToneBlaster !== 'undefined') { RoufDialToneBlaster.drawBullet(ctx, b); return true; }
         if (b.type === 'zeus_thunderbolt' && typeof ZeusThunderbolt !== 'undefined') { ZeusThunderbolt.drawBullet(ctx, b); return true; }
+        if (b.type === 'helios_cannon' && typeof HeliosOmegaCannon !== 'undefined') { HeliosOmegaCannon.drawBullet(ctx, b); return true; }
         return false;
     }
 
     static onBulletHit(b, e, finalDmg, enemies, effects, game) {
         if (b.type === 'zeus_thunderbolt' && typeof ZeusThunderbolt !== 'undefined') {
             ZeusThunderbolt.onHit(b, e, finalDmg, enemies, effects, game);
+        } else if (b.type === 'helios_cannon' && typeof HeliosOmegaCannon !== 'undefined') {
+            HeliosOmegaCannon.onHit(b, e, finalDmg, enemies, effects, game);
         } else if (b.type === 'spas12' && typeof Spas12 !== 'undefined') {
             Spas12.onHit(b, e, finalDmg, enemies, effects, game);
         } else if (b.type === 'chrono_rifle' && typeof ChronoRifle !== 'undefined') {
             ChronoRifle.onHit(b, e, finalDmg, enemies, effects, game);
+        } else if ((b.type === 'symbiote' || b.type === 'symbiote_tendril') && typeof SymbioteLauncher !== 'undefined') {
+            SymbioteLauncher.onHit(b, e, finalDmg, enemies, effects, game);
         }
         if (b.type !== 'chrono_rifle' && typeof ChronoRifle !== 'undefined') {
             ChronoRifle.onAnyBulletHit(e, finalDmg, effects);
+        }
+        if (b.type !== 'symbiote' && !b.isSymbioteMirror && typeof SymbioteLauncher !== 'undefined') {
+            SymbioteLauncher.onAnyDamage(e, finalDmg, effects, game);
         }
     }
 
@@ -244,7 +268,7 @@ class WeaponSystem {
         player.fireCooldown = delay / (player.fireRateMultiplier * passiveFrMult * perkFrMult);
         player.recoilOffset = 8;
 
-        if (window.soundEngine) {
+        if (window.soundEngine && typeof window.soundEngine.playShoot === 'function') {
             window.soundEngine.playShoot(player.weaponType);
         }
 
@@ -277,6 +301,16 @@ class WeaponSystem {
             player._zeusBoltShotCount = ((player._zeusBoltShotCount || 0) + 1) % skyN;
             isZeusSkyBolt = player._zeusBoltShotCount === 0;
         }
+        // Helios Omega Cannon: every 4th shot launches a Singularity Core; every 8th (6th Evolved) fires a Handheld Omega Beam
+        let isHeliosSingularity = false;
+        let isHeliosBeam = false;
+        if (player.weaponType === 'helios_cannon') {
+            player._heliosShotCount = (player._heliosShotCount || 0) + 1;
+            const singN = config.singularityEveryNShots || 4;
+            const beamN = config.beamEveryNShots || 8;
+            isHeliosBeam = (player._heliosShotCount % beamN) === 0;
+            isHeliosSingularity = !isHeliosBeam && (player._heliosShotCount % singN) === 0;
+        }
         // SPAS-12 fires 6 buckshot pellets normally and an 8-pellet Breacher salvo on every 4th trigger pull
         let isSpasBreach = false;
         if (player.weaponType === 'spas12') {
@@ -303,9 +337,9 @@ class WeaponSystem {
                 const pr = player.radius || 25;
                 let muzzleX = player.x + Math.cos(aimAngle) * (pr + 14);
                 let muzzleY = player.y + Math.sin(aimAngle) * (pr + 14);
-                if (player.weaponType === 'm4_carbine' || player.weaponType === 'spas12' || player.weaponType === 'boomerang_saw' || player.weaponType === 'chrono_rifle') {
-                    const tip = player.weaponType === 'boomerang_saw' ? 43 : (player.weaponType === 'chrono_rifle' ? 48 : (player.weaponType === 'spas12' ? 48 : 46));
-                    const gyBase = player.weaponType === 'spas12' ? 2.1 : 1.05;
+                if (player.weaponType === 'm4_carbine' || player.weaponType === 'spas12' || player.weaponType === 'boomerang_saw' || player.weaponType === 'chrono_rifle' || player.weaponType === 'symbiote' || player.weaponType === 'helios_cannon') {
+                    const tip = player.weaponType === 'boomerang_saw' ? 43 : (player.weaponType === 'm4_carbine' ? 46 : 48);
+                    const gyBase = player.weaponType === 'spas12' ? 2.1 : ((player.weaponType === 'symbiote' || player.weaponType === 'helios_cannon') ? 0 : 1.05);
                     const gy = Math.cos(aimAngle) < 0 ? gyBase : -gyBase;
                     muzzleX = player.x + Math.cos(aimAngle) * tip - Math.sin(aimAngle) * gy;
                     muzzleY = (player.y - pr * 0.32) + Math.sin(aimAngle) * tip + Math.cos(aimAngle) * gy;
@@ -327,18 +361,19 @@ class WeaponSystem {
                     vy: Math.sin(shotAngle) * pelletSpeed,
                     damage: dmg,
                     speed: pelletSpeed,
-                    radius: config.radius,
+                    radius: isHeliosSingularity ? (config.radius + 3) : config.radius,
                     type: player.weaponType,
                     isEnemy: false,
-                    pierce: player.pierce + config.extraPierce,
+                    pierce: isHeliosSingularity ? 1 : (player.pierce + config.extraPierce),
                     maxBounces: config.maxBounces > 0 ? config.maxBounces : player.maxBounces,
-                    range: shotRange,
+                    range: isHeliosSingularity ? Math.min(shotRange, 560) : shotRange,
                     shooter: player,
                     isCrit: isCrit
                 });
                 b.isCrit = isCrit;
                 if (isEvolved) b.isWeaponEvolved = true;
                 if (isZeusSkyBolt) b.isSkyBolt = true;
+                if (isHeliosSingularity) b.isSingularityCore = true;
                 if (isSpasBreach) b._spasBreach = true;
                 if (perkFire && perkFire.isPermafrostShard) b.isPermafrostShard = true;
                 bullets.push(b);
@@ -352,6 +387,9 @@ class WeaponSystem {
             }
         }
 
+        if (isHeliosBeam && typeof HeliosOmegaCannon !== 'undefined') {
+            HeliosOmegaCannon.fireBeam(player, player.angle, config.baseDamage * (player.damageMultiplier || 1), isEvolved, effects, (typeof window !== 'undefined' ? window.gameInstance : null));
+        }
         if (typeof GearPassives !== 'undefined') {
             GearPassives.onShoot(player, bullets, effects);
         }

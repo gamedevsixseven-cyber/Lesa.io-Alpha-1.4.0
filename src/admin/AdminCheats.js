@@ -474,7 +474,7 @@ class AdminCheatsService {
         const weaponsMap = (typeof WEAPONS !== 'undefined' && WEAPONS) || (typeof window !== 'undefined' && window.WEAPONS) || null;
         const ids = weaponsMap
             ? Object.keys(weaponsMap)
-            : ['pea', 'watermelon', 'pepper', 'bubble', 'money_gun', 'burger', 'lightning', 'greek_flag', 'm4_carbine', 'spas12', 'boomerang_saw', 'chrono_rifle', 'carbine', 'dialtone', 'zeus_thunderbolt'];
+            : ['pea', 'watermelon', 'pepper', 'bubble', 'money_gun', 'burger', 'lightning', 'greek_flag', 'm4_carbine', 'spas12', 'boomerang_saw', 'chrono_rifle', 'symbiote', 'carbine', 'dialtone', 'zeus_thunderbolt', 'helios_cannon'];
         for (const id of ids) {
             if (typeof WeaponSystem !== 'undefined' && typeof WeaponSystem.unlockWeapon === 'function') {
                 WeaponSystem.unlockWeapon(id, { silent: true });

@@ -129,6 +129,7 @@ class Bullet {
     }
 
     explode(effects) {
+        if (this.type === 'helios_cannon' && typeof HeliosOmegaCannon !== 'undefined') HeliosOmegaCannon.onExpire(this, effects);
         if (!effects) return;
         if (typeof BossProjectileFX !== 'undefined' && BossProjectileFX.explodeBullet(this, effects)) {
         } else if (this.type === 'watermelon') {
@@ -170,6 +171,9 @@ class Bullet {
         } else if (this.type === 'chrono_rifle') {
             effects.addSparks(this.x, this.y, '#00f5ff', 6);
             effects.addSparks(this.x, this.y, '#a55eea', 5);
+        } else if (this.type === 'symbiote' || this.type === 'symbiote_tendril') {
+            effects.addSparks(this.x, this.y, '#ff2e63', 6);
+            effects.addSparks(this.x, this.y, '#9b59b6', 5);
         } else if (this.type === 'greek_flag') {
             effects.addSparks(this.x, this.y, '#0d5eaf', 6); effects.addSparks(this.x, this.y, '#ffffff', 5);
         } else if (this.type === 'dialtone' || this.type === 'soundwave') {
@@ -239,7 +243,7 @@ class Bullet {
             watermelon: '#eb4d4b', bubble: '#70a1ff', pepper: '#ff6b6b', soccer: '#ffffff',
             smoke: '#9b59b6', money_gun: '#f39c12', euro: '#f39c12', carbine: '#f39c12',
             soundwave: '#fed330', dialtone: '#fed330', burger: '#e59b52', lightning: '#00d2d3',
-            greek_flag: '#1e90ff', m4_carbine: '#ffa502', spas12: '#ff6348', boomerang_saw: '#ff9f43', chrono_rifle: '#a55eea', zeus_thunderbolt: '#fed330'
+            greek_flag: '#1e90ff', m4_carbine: '#ffa502', spas12: '#ff6348', boomerang_saw: '#ff9f43', chrono_rifle: '#a55eea', symbiote: '#ff2e63', symbiote_tendril: '#e056fd', zeus_thunderbolt: '#fed330', helios_cannon: '#ff9f43'
         };
         return map[this.type] || this.color || (this.isEnemy ? '#ff4757' : '#2ed573');
     }

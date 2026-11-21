@@ -55,6 +55,14 @@ class ProceduralSynth {
             gain.gain.exponentialRampToValueAtTime(0.01, now + 0.12);
             osc.start(now);
             osc.stop(now + 0.13);
+        } else if (type === 'helios_cannon') {
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(420 + Math.random() * 60, now);
+            osc.frequency.exponentialRampToValueAtTime(95, now + 0.15);
+            gain.gain.setValueAtTime(masterVolume * 0.88, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.16);
+            osc.start(now);
+            osc.stop(now + 0.17);
         } else if (type === 'boomerang_saw') {
             osc.type = 'sawtooth';
             osc.frequency.setValueAtTime(480 + Math.random() * 70, now);
@@ -71,6 +79,14 @@ class ProceduralSynth {
             gain.gain.exponentialRampToValueAtTime(0.01, now + 0.10);
             osc.start(now);
             osc.stop(now + 0.11);
+        } else if (type === 'symbiote') {
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(620 + Math.random() * 90, now);
+            osc.frequency.exponentialRampToValueAtTime(210, now + 0.11);
+            gain.gain.setValueAtTime(masterVolume * 0.72, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.12);
+            osc.start(now);
+            osc.stop(now + 0.13);
         } else if (type === 'spas12') {
             osc.type = 'sawtooth';
             osc.frequency.setValueAtTime(340 + Math.random() * 50, now);
@@ -396,6 +412,49 @@ class ProceduralSynth {
         oscGain.connect(ctx.destination);
         osc.start(now);
         osc.stop(now + duration);
+    }
+
+    static playHeroUlt(ctx, masterVolume, ultId) {
+        if (!ctx) return;
+        const now = ctx.currentTime;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+
+        if (ultId === 'vf185') {
+            // Sport 6-speed underbone engine rev (183cc two-stage throttle sweep)
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(110, now);
+            osc.frequency.exponentialRampToValueAtTime(340, now + 0.18);
+            osc.frequency.setValueAtTime(195, now + 0.21);
+            osc.frequency.exponentialRampToValueAtTime(480, now + 0.45);
+            gain.gain.setValueAtTime(masterVolume * 0.9, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.48);
+            osc.start(now);
+            osc.stop(now + 0.50);
+            this.playNoiseCrack(ctx, masterVolume, now + 0.16, 0.25, 0.45);
+        } else if (ultId === 'inferno_storm') {
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(240, now);
+            osc.frequency.exponentialRampToValueAtTime(880, now + 0.28);
+            gain.gain.setValueAtTime(masterVolume * 0.85, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.36);
+            osc.start(now);
+            osc.stop(now + 0.38);
+            this.playNoiseCrack(ctx, masterVolume, now, 0.34, 0.75);
+        } else {
+            // Psanas Rage power surge roar
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(135, now);
+            osc.frequency.exponentialRampToValueAtTime(520, now + 0.22);
+            osc.frequency.exponentialRampToValueAtTime(260, now + 0.42);
+            gain.gain.setValueAtTime(masterVolume * 1.1, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.44);
+            osc.start(now);
+            osc.stop(now + 0.45);
+            this.playNoiseCrack(ctx, masterVolume, now, 0.24, 0.65);
+        }
     }
 }
 

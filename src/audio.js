@@ -440,6 +440,14 @@ class SoundEngine {
         }
     }
 
+    playHeroUlt(ultId) {
+        if (this.muted || this.masterVolume <= 0) return;
+        this.init();
+        if (typeof ProceduralSynth !== 'undefined' && typeof ProceduralSynth.playHeroUlt === 'function') {
+            ProceduralSynth.playHeroUlt(this.ctx, this.masterVolume, ultId);
+        }
+    }
+
     playTick() {
         if (this.muted || this.masterVolume <= 0) return;
         this.init();

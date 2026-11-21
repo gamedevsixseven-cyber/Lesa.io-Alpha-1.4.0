@@ -25,12 +25,29 @@ class HeroRenderer {
             }
         }
 
+        if (typeof HeroUltimates !== 'undefined') {
+            HeroUltimates.drawUnderPlayer(player, ctx);
+        }
+
         ctx.save();
         ctx.translate(player.x, player.y);
 
         const airZ = player.airZ || 0;
         const isAirborne = player.isAirborne;
         const isGrabbed = player.isGrabbed;
+
+        // Mounted Petros VF185 Rideable Mode (replaces walking rig with bike+rider model)
+        if (player.vf185Active && typeof VF185Model !== 'undefined') {
+            ctx.save();
+            if (airZ > 0) ctx.translate(0, -airZ);
+            VF185Model.drawMountedPetros(player, ctx, player.hitFlash > 0);
+            if (player.shieldActive) HeroRenderer.drawShieldBubble(player, ctx);
+            ctx.restore();
+            ctx.restore();
+            if (typeof HeroUltimates !== 'undefined') HeroUltimates.drawOverPlayer(player, ctx);
+            if (!isAirborne) HeroRenderer.drawOverheadHUD(player, ctx, airZ);
+            return;
+        }
 
         // 2. Dynamic Ground Shadow (Grounded at arena floor, scales down with height)
         const shadowAlpha = 0.32 * Math.max(0.08, 1.0 - airZ / 220);
@@ -79,6 +96,10 @@ class HeroRenderer {
         ctx.restore();
 
         ctx.restore();
+
+        if (typeof HeroUltimates !== 'undefined') {
+            HeroUltimates.drawOverPlayer(player, ctx);
+        }
 
         // 5. Overhead Name & HP Bar (Hides while airborne, tracks with height during grab)
         if (!isAirborne) {

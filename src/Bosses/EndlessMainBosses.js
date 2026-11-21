@@ -236,26 +236,39 @@ class MechaKolossos extends EndlessBossBase {
             crateId: extra.crateId || 'boss_crate_insane',
             isApex: extra.isApex,
             radius: 56,
-            baseHp: 24000,
-            speed: 2.65,
-            baseDmg: 48,
+            baseHp: 32000,
+            speed: 2.85,
+            baseDmg: 58,
             xpDrop: 2400,
             scoreValue: 10000,
             goldBonus: 2200,
             xpBonus: 1600
         });
-        this.sweepCooldown = 62;
+        this.sweepCooldown = 75;
         this.sawCooldown = 140;
-        this.gridCooldown = 185;
-        this.wellCooldown = 235;
-        this.beamCooldown = 290;
-        this.orbitalCooldown = 215;
-        this.stompCooldown = 160;
+        this.gridCooldown = 190;
+        this.wellCooldown = 230;
+        this.beamCooldown = 280;
+        this.orbitalCooldown = 210;
+        this.jumpCooldown = 165;
+        this.novaCooldown = 0;
+        this.actionCooldown = 72; // Breathing delay before opening volley
+        this.stompCooldown = 200;
         this.criticalTriggered = false;
+        this.trooperWaveTriggered = false;
+        this.troopCooldown = 0;
         this.totalDronesSpawned = 0;
+        this.totalTroopersSpawned = 0;
+        this._lastAttack = '';
 
         this.omegaBeam = null;
+        this.solarNova = null;
+        this.solarVentTimer = 0;
+        this.jumpAttack = null;
+        this.jumpLift = 0;
+        this.leapShockwaves = [];
         this.laserGrids = [];
+        this.laserFlashes = [];
         this.gravityWells = [];
         this.helixShotsLeft = 0;
         this.helixTick = 0;
@@ -268,14 +281,20 @@ class MechaKolossos extends EndlessBossBase {
     }
 
     applyStun(durationSeconds = 2.0, effects = null) {
-        if (this.isDying || this.dead) return;
+        if (this.isDying || this.dead || this.isAirborneImmune) return;
         this.omegaBeam = null;
+        this.solarNova = null;
+        this.jumpAttack = null;
+        this.jumpLift = 0;
         super.applyStun(durationSeconds, effects);
     }
 
     applyFear(durationSeconds = 3.0, effects = null) {
-        if (this.isDying || this.dead) return;
+        if (this.isDying || this.dead || this.isAirborneImmune) return;
         this.omegaBeam = null;
+        this.solarNova = null;
+        this.jumpAttack = null;
+        this.jumpLift = 0;
         super.applyFear(durationSeconds, effects);
     }
 
@@ -289,7 +308,13 @@ class MechaKolossos extends EndlessBossBase {
                 this.isDying = true;
                 this.deathTimer = 0;
                 this.omegaBeam = null;
+                this.solarNova = null;
+                this.jumpAttack = null;
+                this.jumpLift = 0;
+                this.isAirborneImmune = false;
+                this.leapShockwaves = [];
                 this.laserGrids = [];
+                this.laserFlashes = [];
                 this.gravityWells = [];
                 this.telegraphs = [];
                 this.helixShotsLeft = 0;
@@ -320,7 +345,7 @@ class MechaKolossos extends EndlessBossBase {
                 this.dead = true;
                 for (let i = 0; i < enemies.length; i++) {
                     const e = enemies[i];
-                    if (e && !e.dead && e.type === 'kolossos_drone' && e.ownedByBoss === this) {
+                    if (e && !e.dead && (e.type === 'kolossos_drone' || e.type === 'kolossos_trooper') && e.ownedByBoss === this) {
                         e.dead = true;
                         if (effects) effects.addShockwave(e.x, e.y, 85, 'rgba(255, 46, 76, 0.9)');
                     }
@@ -339,18 +364,34 @@ class MechaKolossos extends EndlessBossBase {
 
         this.updateDebuffs(dt);
         this.updateTelegraphs(dt, player, effects);
+        if (this.solarVentTimer > 0) this.solarVentTimer -= dt;
         if (typeof KolossosAttackSystem !== 'undefined') {
             KolossosAttackSystem.updateLaserGrids(this, dt, player, effects);
             KolossosAttackSystem.updateGravityWells(this, dt, player, bullets, effects);
             KolossosAttackSystem.updateOmegaBeam(this, dt, player, effects);
+            KolossosAttackSystem.updateSolarNova(this, dt, player, bullets, effects);
             KolossosAttackSystem.updateSpiralHelix(this, dt, bullets, effects);
+        }
+        if (typeof KolossosJumpAttack !== 'undefined') {
+            KolossosJumpAttack.updateJumpAttack(this, dt, player, bullets, effects, arena);
+            KolossosJumpAttack.updateLeapShockwaves(this, dt, player, effects);
         }
         if (!player || player.hp <= 0) return;
 
+        // Under 75% HP: Deploy miniature Helios Trooper robot squads + periodic reinforcements
+        if (!this.trooperWaveTriggered && this.hp <= this.maxHp * 0.75) {
+            this.trooperWaveTriggered = true;
+            this.troopCooldown = this.isEnraged ? 400 : 480;
+            if (typeof KolossosJumpAttack !== 'undefined') {
+                KolossosJumpAttack.spawnTroopers(this, enemies, effects, 3);
+            }
+        }
+
         // Phase 2 (<= 55% HP): Crimson Overdrive + Twin Siege Drones + Double Helix Burst
-        if (this.checkEnrage(0.55, effects, '🔴 CRIMSON OVERDRIVE! 🔴', 1.28, 'rgba(255, 46, 76, 0.95)')) {
-            this.helixShotsLeft = Math.max(this.helixShotsLeft, 22);
+        if (this.checkEnrage(0.55, effects, '🔴 CRIMSON OVERDRIVE! 🔴', 1.32, 'rgba(255, 46, 76, 0.95)')) {
+            this.helixShotsLeft = Math.max(this.helixShotsLeft, 20);
             this.helixAngle = this.angle;
+            this.actionCooldown = Math.max(this.actionCooldown, 85);
             if (effects) {
                 if (typeof effects.triggerScreenFlash === 'function') effects.triggerScreenFlash('#ff2e4c', 0.32, 26);
                 if (typeof effects.onBossSlam === 'function') effects.onBossSlam(0.065);
@@ -360,11 +401,13 @@ class MechaKolossos extends EndlessBossBase {
             }
         }
 
-        // Phase 3 (<= 25% HP): Critical Meltdown Protocol
-        if (!this.criticalTriggered && this.hp <= this.maxHp * 0.25) {
+        // Phase 3 (<= 25% HP): Critical Meltdown + Unique Solar Reactor Nova signature attack
+        if (!this.criticalTriggered && this.hp <= this.maxHp * 0.25 && !this.jumpAttack) {
             this.criticalTriggered = true;
-            this.speed = this.baseSpeed * 1.44;
-            this.helixShotsLeft = Math.max(this.helixShotsLeft, 26);
+            this.speed = this.baseSpeed * 1.45;
+            this.omegaBeam = null; // Interrupt beam cleanly for signature Phase-3 Solar Nova opener
+            this.novaCooldown = 420;
+            this.actionCooldown = 140;
             if (effects) {
                 effects.addShockwave(this.x, this.y, 200, 'rgba(255, 46, 76, 0.95)');
                 effects.addComicSplash(this.x, this.y - 68, '☢️ CRITICAL MELTDOWN! ☢️');
@@ -373,6 +416,7 @@ class MechaKolossos extends EndlessBossBase {
             }
             if (typeof KolossosAttackSystem !== 'undefined') {
                 KolossosAttackSystem.spawnDrones(this, enemies, effects, 2);
+                KolossosAttackSystem.startSolarNova(this, effects);
             }
         }
 
@@ -384,63 +428,43 @@ class MechaKolossos extends EndlessBossBase {
         const dx = player.x - this.x;
         const dy = player.y - this.y;
         const dist = Math.hypot(dx, dy) || 1;
-        if (!this.omegaBeam) this.angle = Math.atan2(dy, dx);
+        if (!this.omegaBeam && !this.solarNova && !this.jumpAttack) this.angle = Math.atan2(dy, dx);
 
+        if (this.actionCooldown > 0 && !this.omegaBeam && !this.solarNova && !this.jumpAttack) this.actionCooldown -= dt;
         if (this.sweepCooldown > 0) this.sweepCooldown -= dt;
         if (this.sawCooldown > 0) this.sawCooldown -= dt;
         if (this.gridCooldown > 0) this.gridCooldown -= dt;
         if (this.wellCooldown > 0) this.wellCooldown -= dt;
         if (this.beamCooldown > 0) this.beamCooldown -= dt;
         if (this.orbitalCooldown > 0) this.orbitalCooldown -= dt;
+        if (this.jumpCooldown > 0) this.jumpCooldown -= dt;
+        if (this.troopCooldown > 0) this.troopCooldown -= dt;
+        if (this.novaCooldown > 0) this.novaCooldown -= dt;
         if (this.stompCooldown > 0) this.stompCooldown -= dt;
 
-        if (!this.omegaBeam) {
-            if (this.beamCooldown <= 0 && typeof KolossosAttackSystem !== 'undefined') {
-                this.beamCooldown = this.criticalTriggered ? 245 : (this.isEnraged ? 280 : 340);
-                KolossosAttackSystem.startOmegaBeam(this, player, effects);
-            } else if (this.gridCooldown <= 0 && typeof KolossosAttackSystem !== 'undefined') {
-                this.gridCooldown = this.criticalTriggered ? 165 : (this.isEnraged ? 195 : 235);
-                KolossosAttackSystem.spawnLaserCrossGrid(this, player, effects, arena);
-            } else if (this.wellCooldown <= 0 && typeof KolossosAttackSystem !== 'undefined') {
-                this.wellCooldown = this.criticalTriggered ? 210 : (this.isEnraged ? 235 : 285);
-                KolossosAttackSystem.spawnSingularityWell(this, player, effects, arena);
-            } else if (this.sawCooldown <= 0 && typeof KolossosAttackSystem !== 'undefined') {
-                this.sawCooldown = this.isEnraged ? 145 : 185;
-                KolossosAttackSystem.fireBoomerangSawFan(this, bullets, effects);
-            } else if (this.sweepCooldown <= 0) {
-                this.sweepCooldown = this.isEnraged ? 68 : 90;
-                const twin = this.isEnraged ? [-0.32, -0.14, 0, 0.14, 0.32] : [-0.24, -0.07, 0.07, 0.24];
-                this.fireFan(bullets, this.angle, twin, 12.2, Math.round(this.damage * 0.80), 11, 'kolossos_plasma');
-                if (effects) effects.addSparks(this.x, this.y, '#ff6348', 5);
-            }
-
-            if (this.orbitalCooldown <= 0) {
-                this.orbitalCooldown = this.isEnraged ? 165 : 210;
-                const ringCount = this.isEnraged ? 5 : 4;
-                for (let i = 0; i < ringCount; i++) {
-                    const a = (i / ringCount) * Math.PI * 2 + Math.random() * 0.4;
-                    const r = i === 0 ? 12 : (72 + Math.random() * 145);
-                    this.addTelegraph(
-                        player.x + Math.cos(a) * r,
-                        player.y + Math.sin(a) * r,
-                        78, 52, Math.round(this.damage * 1.12), '☢️', 'rgba(255, 46, 76, 0.95)', 'orbital_nuke', '#ff4757'
-                    );
-                }
-            }
+        if (this.trooperWaveTriggered && this.troopCooldown <= 0 && !this.jumpAttack && typeof KolossosJumpAttack !== 'undefined') {
+            this.troopCooldown = this.isEnraged ? 400 : 480;
+            KolossosJumpAttack.spawnTroopers(this, enemies, effects, 2);
         }
 
-        if (dist < 145 && this.stompCooldown <= 0) {
-            this.stompCooldown = 165;
+        if (typeof KolossosAttackSystem !== 'undefined') {
+            KolossosAttackSystem.updateBossActions(this, dt, player, bullets, effects, arena);
+        }
+
+        if (dist < 145 && this.stompCooldown <= 0 && !this.solarNova && !this.jumpAttack) {
+            this.stompCooldown = 210;
             if (effects) {
                 effects.addShockwave(this.x, this.y, 175, 'rgba(255, 46, 76, 0.94)');
                 effects.addComicSplash(this.x, this.y - 44, 'TITAN STOMP!');
                 if (typeof effects.onBossSlam === 'function') effects.onBossSlam(0.05);
             }
-            player.takeDamage(Math.round(this.damage * 0.92), effects);
+            player.takeDamage(Math.round(this.damage * 0.90), effects);
         }
 
-        const speedScale = this.omegaBeam ? 0.38 : 1.0;
-        this.moveTowards(dt * speedScale, dx, dy, dist, 235, arena);
+        if (!this.jumpAttack) {
+            const speedScale = this.solarNova ? 0.14 : (this.solarVentTimer > 0 ? 0.45 : (this.omegaBeam ? 0.38 : 1.0));
+            this.moveTowards(dt * speedScale, dx, dy, dist, 235, arena);
+        }
     }
 
     draw(ctx) {

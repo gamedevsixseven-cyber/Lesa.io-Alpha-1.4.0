@@ -156,6 +156,26 @@
     box-shadow: 0 0 0 2px #fbbf24, 0 5px 0 #991b1b, 0 8px 18px rgba(245, 158, 11, 0.35);
 }
 
+.weapon-card.rarity-apex.is-evolved-card {
+    background: linear-gradient(145deg, #211528 0%, #3a1220 55%, #181a24 100%);
+    border-color: #ffffff;
+    box-shadow: 0 0 0 2px #fed330, 0 0 22px rgba(255, 46, 76, 0.72), 0 5px 0 #141418;
+}
+
+.weapon-card.rarity-apex .gear-upgrade-box {
+    border-top-color: rgba(254, 211, 48, 0.28);
+}
+
+.weapon-card.rarity-apex .gear-upgrade-cost-line {
+    color: #fed330;
+}
+
+.weapon-card.rarity-apex .gear-cost-chip {
+    background: rgba(15, 23, 42, 0.85);
+    border-color: rgba(254, 211, 48, 0.4);
+    color: #f8fafc;
+}
+
 .gear-slot-card.is-evolved-card {
     border-color: #f59e0b !important;
     box-shadow: 0 0 12px rgba(245, 158, 11, 0.65), 0 3px 0 #991b1b;
@@ -327,7 +347,7 @@
     }
 }
 
-@media (max-height: 500px) and (orientation: landscape) {
+@media (max-height: 500px) and (orientation: landscape), (pointer: coarse) and (orientation: portrait) {
     .gear-upgrade-toolbar {
         padding: 3px 8px;
         margin-bottom: 4px;

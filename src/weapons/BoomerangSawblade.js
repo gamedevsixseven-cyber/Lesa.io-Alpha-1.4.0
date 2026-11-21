@@ -321,7 +321,7 @@ class BoomerangSawblade extends WeaponBase {
             effects.addSparks(b.x, b.y, '#ff9f43', 4);
             effects.addSparks(b.x, b.y, '#dfe6e9', 2);
         }
-        if (!b._returning && obs.type === 'tree') {
+        if (!b._returning && (obs.type === 'tree' || obs.type === 'building')) {
             this._beginReturn(b, effects);
         }
         return true;

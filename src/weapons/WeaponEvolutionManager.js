@@ -34,7 +34,8 @@ class WeaponEvolutionManager {
 
     static isEvolvableWeapon(weaponOrId) {
         const w = this._resolveWeapon(weaponOrId);
-        return !!w && this.normalizeRarity(w.rarity) === 'mythic';
+        const r = w ? this.normalizeRarity(w.rarity) : '';
+        return r === 'mythic' || r === 'apex';
     }
 
     static _sanitizeList(raw) {
@@ -274,11 +275,12 @@ class WeaponEvolutionManager {
             this._updateMythicCardStats(card, wMeta, isEvolved);
             if (!unlocked) return;
 
+            const isApex = this.normalizeRarity(wMeta && wMeta.rarity) === 'apex';
             const evoRow = document.createElement('div');
             evoRow.className = 'weapon-evo-row';
             evoRow.innerHTML = isEvolved
-                ? `<span class="gear-lvl-pill is-evolved">★ EVOLVED AWAKENED</span>`
-                : `<span class="gear-lvl-pill is-max">MYTHIC EVOLUTION (1x ★)</span>`;
+                ? `<span class="gear-lvl-pill is-evolved">${isApex ? '★ APEX AWAKENED' : '★ EVOLVED AWAKENED'}</span>`
+                : `<span class="gear-lvl-pill is-max">${isApex ? 'APEX EVOLUTION (1x ★)' : 'MYTHIC EVOLUTION (1x ★)'}</span>`;
 
             const evoBox = document.createElement('div');
             evoBox.className = 'gear-upgrade-box weapon-evo-box';
@@ -330,20 +332,31 @@ class WeaponEvolutionManager {
         if (!card || !wMeta) return;
         const rows = card.querySelectorAll('.weapon-stat-row .stat-val');
         if (rows.length < 3) return;
+        if (!card.dataset.origDmgText) {
+            card.dataset.origDmgText = rows[0].textContent.trim();
+            card.dataset.origDelayText = rows[1].textContent.trim();
+            card.dataset.origTraitText = rows[2].textContent.trim();
+        }
         const evo = wMeta.evolved || {};
         if (isEvolved && evo.uiStats) {
-            rows[0].textContent = evo.uiStats.damage || `${evo.baseDamage || wMeta.baseDamage} Lightning`;
+            rows[0].textContent = evo.uiStats.damage || `${evo.baseDamage || wMeta.baseDamage}`;
             rows[1].textContent = evo.uiStats.fireDelay || 'Awakened';
-            rows[2].textContent = evo.uiStats.trait || rows[2].textContent;
-        } else if (!isEvolved) {
+            rows[2].textContent = evo.uiStats.trait || card.dataset.origTraitText;
+        } else if (isEvolved) {
+            const evoDmg = Math.round((wMeta.baseDamage || 30) * 1.35);
+            rows[0].textContent = `${evoDmg} Awakened`;
+            rows[1].textContent = `${card.dataset.origDelayText} ★`;
+            rows[2].textContent = card.dataset.origTraitText;
+        } else {
             const baseDmg = wMeta.baseDamage || 46;
             const evoDmg = evo.baseDamage || Math.round(baseDmg * 1.35);
             const delta = Math.max(0, evoDmg - baseDmg);
+            const baseLabel = card.dataset.origDmgText;
             rows[0].innerHTML = delta > 0
-                ? `${baseDmg} Lightning <span class="gear-stat-delta">(→ ${evoDmg})</span>`
-                : `${baseDmg} Lightning`;
-            rows[1].textContent = 'Fast (0.25s)';
-            rows[2].textContent = '+12% Crit • Forked Arc • 5th Shot Sky-Bolt';
+                ? `${baseLabel} <span class="gear-stat-delta">(→ ${evoDmg})</span>`
+                : baseLabel;
+            rows[1].textContent = card.dataset.origDelayText;
+            rows[2].textContent = card.dataset.origTraitText;
         }
     }
 }

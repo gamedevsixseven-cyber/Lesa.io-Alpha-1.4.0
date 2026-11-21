@@ -296,14 +296,18 @@ class BossProjectileFX {
     }
 
     static drawKolossosPlasma(ctx, r) {
+        ctx.fillStyle = 'rgba(255, 71, 87, 0.30)';
+        ctx.beginPath(); ctx.ellipse(0, 0, r * 1.65, r * 0.85, 0, 0, Math.PI * 2); ctx.fill();
         this.drawPoly(ctx, [[-r * 1.35, -r * 0.68], [r * 0.25, -r * 0.42], [r * 1.4, 0], [r * 0.25, r * 0.42], [-r * 1.35, r * 0.68], [-r * 0.8, 0]], '#cd6133', '#1e272e', 2.3);
         this.drawPoly(ctx, [[-r * 0.65, -r * 0.28], [r * 0.95, 0], [-r * 0.65, r * 0.28]], '#ff6348', null, 0);
         ctx.fillStyle = '#fff3b0';
-        ctx.beginPath(); ctx.ellipse(r * 0.2, 0, r * 0.38, r * 0.16, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.ellipse(r * 0.2, 0, r * 0.42, r * 0.18, 0, 0, Math.PI * 2); ctx.fill();
         return true;
     }
 
     static drawKolossosOrb(ctx, r) {
+        ctx.fillStyle = 'rgba(255, 46, 76, 0.26)';
+        ctx.beginPath(); ctx.arc(0, 0, r * 1.35, 0, Math.PI * 2); ctx.fill();
         ctx.fillStyle = '#2f3542'; ctx.strokeStyle = '#1e272e'; ctx.lineWidth = 2.4;
         ctx.beginPath(); ctx.arc(0, 0, r * 0.98, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
         ctx.fillStyle = '#ff4757';
@@ -312,7 +316,9 @@ class BossProjectileFX {
             ctx.beginPath(); ctx.moveTo(0, 0); ctx.arc(0, 0, r * 0.78, a, a + 0.65); ctx.closePath(); ctx.fill();
         }
         ctx.fillStyle = '#fed330';
-        ctx.beginPath(); ctx.arc(0, 0, r * 0.38, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(0, 0, r * 0.40, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath(); ctx.arc(-r * 0.12, -r * 0.12, r * 0.16, 0, Math.PI * 2); ctx.fill();
         return true;
     }
 

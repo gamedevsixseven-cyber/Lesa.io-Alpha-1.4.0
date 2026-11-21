@@ -1,0 +1,107 @@
+/* Hero Ultimate HUD Badge (Q) & Mobile Action Button */
+
+.ult-badge {
+    background: var(--comic-panel-bg);
+    border: 3.5px solid var(--dark-outline);
+    border-radius: 20px;
+    box-shadow: var(--shadow-solid);
+    padding: 8px 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: 'Luckiest Guy', cursive;
+    font-size: 1.1rem;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.12s ease, box-shadow 0.2s ease, opacity 0.15s ease;
+}
+
+.ult-cooldown-bar {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #ff3838, #ff9f1a, #fed330);
+    width: 100%;
+    transition: width 0.1s linear;
+}
+
+.ult-badge.on-cooldown {
+    opacity: 0.72;
+}
+
+.ult-badge.is-ready {
+    opacity: 1 !important;
+    border-color: #ff4785;
+    box-shadow: 0 0 14px rgba(255, 71, 133, 0.75), var(--shadow-solid);
+    animation: ultReadyPulse 1.4s ease-in-out infinite;
+}
+
+.ult-badge.is-active {
+    opacity: 1 !important;
+    border-color: #fff200;
+    box-shadow: 0 0 18px rgba(255, 211, 42, 0.9), var(--shadow-solid);
+}
+
+@keyframes ultReadyPulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.04); }
+}
+
+/* Mobile Action Button (Tucked cleanly above Shoot Joystick) */
+#mobile-ult-btn {
+    bottom: 112px;
+    right: 16px;
+    width: 60px;
+    height: 60px;
+    background: linear-gradient(135deg, #b71540 0%, #ff4757 60%, #ff9f1a 100%);
+    border-color: #18181b;
+}
+
+#mobile-ult-btn.ult-vf185 {
+    background: linear-gradient(135deg, #161820 0%, #2c313d 55%, #ff4785 100%);
+    border-color: #ff4785;
+}
+
+#mobile-ult-btn .btn-ult-img-icon {
+    width: 28px;
+    height: 28px;
+    object-fit: contain;
+    pointer-events: none;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5));
+}
+
+#mobile-ult-btn .btn-label {
+    font-size: 7.5px;
+    letter-spacing: 0.4px;
+    margin-top: 1px;
+}
+
+.btn-cooldown-ring .ult-ring {
+    stroke: #ff4785;
+    filter: drop-shadow(0 0 5px #ff4785);
+}
+
+#mobile-ult-btn.is-ready .ult-ring {
+    stroke: #fed330;
+    filter: drop-shadow(0 0 8px #fed330);
+}
+
+#mobile-ult-btn.is-active .ult-ring {
+    stroke: #00f5ff;
+    filter: drop-shadow(0 0 8px #00f5ff);
+}
+
+#mobile-controls-container.autofire-active #mobile-ult-btn {
+    width: 64px !important;
+    height: 64px !important;
+    bottom: 118px !important;
+    right: 14px !important;
+}
+
+@media screen and (max-width: 900px) {
+    .ult-badge {
+        display: none !important;
+    }
+}

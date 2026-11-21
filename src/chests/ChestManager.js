@@ -304,7 +304,7 @@ class ChestManager {
         const allowLeg = ((def.gearOdds && def.gearOdds.legendary) || 0) > 0 || (def.guaranteedLegendary || 0) > 0;
         const eligibleGear = rawGear.filter(g => {
             const r = g.rarity || 'common';
-            if (r === 'exclusive' || r === 'mythic' || g.excludeFromChests || g.bossUnlock) return false;
+            if (r === 'exclusive' || r === 'mythic' || r === 'apex' || g.excludeFromChests || g.bossUnlock) return false;
             if (r === 'epic' && !allowEpic) return false;
             if (r === 'legendary' && !allowLeg) return false;
             return true;

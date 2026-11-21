@@ -194,9 +194,17 @@ class FoliageRenderer {
 
         const cw = Math.ceil(r * 2.5);
         const ch = Math.ceil(r * 2.0);
-        const crownSprite = FoliageRenderer._getOrBake(`crown:${rKey}:${variant}`, cw, ch, cw * 0.5, Math.ceil(r * 1.45), (cctx) => {
+        const burn = (typeof EndlessMapEvolution !== 'undefined') ? EndlessMapEvolution.getTreeBurnRatio() : 0;
+        const charred = (!obs.olympusStyle && !obs.isOlympianPillar && burn >= 0.45);
+        const crownSprite = FoliageRenderer._getOrBake(`crown:${rKey}:${variant}:${charred ? 'c' : 'g'}`, cw, ch, cw * 0.5, Math.ceil(r * 1.45), (cctx) => {
             cctx.translate(0, r * 0.10);
             this._drawCrownVector(cctx, r, scale, variant);
+            if (charred) {
+                cctx.globalCompositeOperation = 'source-atop';
+                cctx.fillStyle = 'rgba(72, 24, 10, 0.62)';
+                cctx.fillRect(-cw, -ch, cw * 2, ch * 2);
+                cctx.globalCompositeOperation = 'source-over';
+            }
         });
         ctx.drawImage(crownSprite.canvas, -crownSprite.ax, -crownSprite.ay, crownSprite.lw, crownSprite.lh);
         ctx.restore();
@@ -206,12 +214,12 @@ class FoliageRenderer {
     static _drawCrownVector(ctx, r, scale, variant) {
 
         const puffs = [
-            { x: -r * 0.48, y: -r * 0.62, rx: r * 0.44, ry: r * 0.40, lobes: 8,  ph: 0.2, dark: '#11431b', mid: '#21792b', hi: '#64c935' },
-            { x:  r * 0.48, y: -r * 0.58, rx: r * 0.43, ry: r * 0.39, lobes: 8,  ph: 0.9, dark: '#11431b', mid: '#1f7028', hi: '#59be31' },
-            { x:  0,        y: -r * 0.86, rx: r * 0.54, ry: r * 0.45, lobes: 10, ph: 0.5, dark: '#155020', mid: '#2d9431', hi: '#8be036' },
-            { x: -r * 0.40, y: -r * 0.32, rx: r * 0.40, ry: r * 0.33, lobes: 8,  ph: 1.3, dark: '#13481d', mid: '#25822d', hi: '#70ce34' },
-            { x:  r * 0.42, y: -r * 0.30, rx: r * 0.39, ry: r * 0.32, lobes: 8,  ph: 0.4, dark: '#13481d', mid: '#237b2a', hi: '#68c532' },
-            { x: -r * 0.02, y: -r * 0.46, rx: r * 0.48, ry: r * 0.41, lobes: 9,  ph: 0.7, dark: '#175823', mid: '#319b32', hi: '#8ee338' }
+            { x: -r * 0.48, y: -r * 0.62, rx: r * 0.44, ry: r * 0.40, lobes: 8, ph: 0.2, dark: '#11431b', mid: '#21792b', hi: '#64c935' },
+            { x: r * 0.48, y: -r * 0.58, rx: r * 0.43, ry: r * 0.39, lobes: 8, ph: 0.9, dark: '#11431b', mid: '#1f7028', hi: '#59be31' },
+            { x: 0, y: -r * 0.86, rx: r * 0.54, ry: r * 0.45, lobes: 10, ph: 0.5, dark: '#155020', mid: '#2d9431', hi: '#8be036' },
+            { x: -r * 0.40, y: -r * 0.32, rx: r * 0.40, ry: r * 0.33, lobes: 8, ph: 1.3, dark: '#13481d', mid: '#25822d', hi: '#70ce34' },
+            { x: r * 0.42, y: -r * 0.30, rx: r * 0.39, ry: r * 0.32, lobes: 8, ph: 0.4, dark: '#13481d', mid: '#237b2a', hi: '#68c532' },
+            { x: -r * 0.02, y: -r * 0.46, rx: r * 0.48, ry: r * 0.41, lobes: 9, ph: 0.7, dark: '#175823', mid: '#319b32', hi: '#8ee338' }
         ];
 
         // Exterior ink border first

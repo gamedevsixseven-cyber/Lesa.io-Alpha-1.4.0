@@ -253,6 +253,10 @@ class LeaderboardModal {
         }).join('');
 
         box.innerHTML = noteHtml + rowsHtml;
+        if (typeof CosmeticEffectsEngine !== 'undefined') {
+            CosmeticEffectsEngine.decorateContainer(box);
+            CosmeticEffectsEngine.bindHoloCards(box);
+        }
         box.querySelectorAll('[data-lb-idx]').forEach((rowBtn) => {
             rowBtn.addEventListener('click', () => {
                 const idx = parseInt(rowBtn.dataset.lbIdx || '-1', 10);
