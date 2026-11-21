@@ -159,7 +159,7 @@ class ChestModalUI {
                 <div class="chest-summary-item">
                     <span class="chest-summary-icon">${typeof UiIcons !== 'undefined' ? UiIcons.i('shield', 'ui-icon-sm') : '🛡️'}</span>
                     <span class="chest-summary-text">${def.gearCount} Gear Cards</span>
-                </div>
+                </div>${def.weaponDropChance > 0 ? `<div class="chest-summary-item"><span class="chest-summary-icon">🔫</span><span class="chest-summary-text">${Math.round(def.weaponDropChance * 100)}% Weapon</span></div>` : ''}
             </div>
             ${actionBtnHtml}
         `;
@@ -252,6 +252,12 @@ class ChestModalUI {
                     sound: (item.rarity === 'legendary' || item.rarity === 'mythic') ? 'levelup' : 'star'
                 });
             }
+        }
+
+        // 3.5. Bonus Chest Weapon drop
+        if (loot.weapon) {
+            const w = loot.weapon;
+            items.push({ type: 'weapon', title: w.name, weapon: w, rarity: w.rarityKey || (w.rarity || 'Rare').toLowerCase(), sound: 'levelup' });
         }
 
         // 4. Crafting Materials
@@ -428,6 +434,11 @@ class ChestModalUI {
                     </div>
                 </div>
             `;
+        } else if (item.type === 'weapon') {
+            const w = item.weapon;
+            const rClass = item.rarity || 'rare';
+            const wImg = w.image ? `<img src="${w.image}" class="cr-item-img" alt="${w.name}">` : `<div class="cr-item-emoji">${w.icon || '🔫'}</div>`;
+            itemCardHtml = `<div class="cr-card-slam"><div class="cr-item-card tier-${rClass}"><div class="cr-card-rarity-ribbon">${rClass.toUpperCase()} WEAPON</div>${wImg}<div class="cr-item-name" title="${w.name}">${w.name}</div><div class="cr-item-qty" style="color:#2ed573;font-size:0.74rem;">NEW UNLOCK!</div></div></div>`;
         } else if (item.type === 'material') {
             const m = item.mat;
             const mIconHtml = m.iconImg
@@ -485,6 +496,9 @@ class ChestModalUI {
             window.soundEngine.playLevelUp();
         }
 
+        const wLoot = loot.weapon;
+        const weaponCardHtml = wLoot ? `<div class="loot-card-item tier-${wLoot.rarityKey || 'rare'}"><span style="font-size:0.6rem;font-weight:900;text-transform:uppercase;color:#2ed573;">${(wLoot.rarity || 'RARE').toUpperCase()} GUN</span>${wLoot.image ? `<img src="${wLoot.image}" class="loot-card-icon" alt="${wLoot.name}">` : `<span style="font-size:2rem;">${wLoot.icon || '🔫'}</span>`}<div class="loot-card-name" title="${wLoot.name}">${wLoot.name}</div></div>` : '';
+
         let gearCardsHtml = '';
         if (loot.gear && loot.gear.length > 0) {
             gearCardsHtml = loot.gear.map((item, idx) => {
@@ -537,6 +551,7 @@ class ChestModalUI {
             </div>
 
             <div class="chest-loot-cards">
+                ${weaponCardHtml}
                 ${gearCardsHtml}
                 ${matCardsHtml}
             </div>

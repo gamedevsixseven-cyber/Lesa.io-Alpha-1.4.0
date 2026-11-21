@@ -38,6 +38,9 @@
     min-height: 0;
     overflow-y: auto;
     overflow-x: hidden;
+    touch-action: pan-y;
+    overscroll-behavior-y: contain;
+    -webkit-overflow-scrolling: touch;
     padding: 6px 8px 8px 4px;
     scrollbar-width: thin;
     scrollbar-color: #b2bec3 rgba(0, 0, 0, 0.05);
@@ -220,7 +223,9 @@
         flex: 1 1 auto !important;
         min-height: 0 !important;
         overflow-y: auto !important;
-        -webkit-overflow-scrolling: touch;
+        touch-action: pan-y !important;
+        overscroll-behavior-y: contain !important;
+        -webkit-overflow-scrolling: touch !important;
         padding: 2px 4px !important;
     }
 

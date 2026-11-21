@@ -75,29 +75,13 @@ class ModalManager {
             });
         }
 
-        // Weapon Cards Click to Equip
+        // Weapon Cards Click to Unlock / Equip
         document.querySelectorAll('#weapons-modal .weapon-card').forEach((card) => {
             card.addEventListener('click', (e) => {
                 if (e.target && e.target.closest('[data-weapon-evolve]')) return;
                 const wt = card.getAttribute('data-weapon');
-                if (wt) {
-                    const isShared = typeof WeaponSystem !== 'undefined' && WeaponSystem.SHARED_UNLOCKABLE_IDS.includes(wt);
-                    if (isShared && !WeaponSystem.isWeaponUnlocked(wt)) {
-                        if (window.soundEngine && typeof window.soundEngine.playBuzzer === 'function') {
-                            window.soundEngine.playBuzzer();
-                        }
-                        return;
-                    }
-
-                    if (window.GameState && window.GameState.player) {
-                        window.GameState.player.weaponType = wt;
-                        window.GameState.player.selectedWeapon = wt;
-                    }
-                    localStorage.setItem('lesaio_selected_weapon', wt);
-                    this.updateGearScreen();
-                    if (window.soundEngine && typeof window.soundEngine.playSelect === 'function') {
-                        window.soundEngine.playSelect();
-                    }
+                if (wt && typeof WeaponSystem !== 'undefined' && WeaponSystem.handleWeaponCardClick) {
+                    WeaponSystem.handleWeaponCardClick(wt, this, card);
                 }
             });
         });
@@ -350,6 +334,10 @@ class ModalManager {
             burger: 'Burger Toss',
             lightning: 'Lightning Strike',
             greek_flag: 'Greek Flag',
+            m4_carbine: 'M4 Carbine',
+            spas12: 'SPAS-12',
+            boomerang_saw: 'Boomerang Sawblade',
+            chrono_rifle: 'Chrono Stutter Rifle',
             carbine: "Kiloumpas's Carbine",
             dialtone: "Rouf's Dial-Tone Blaster",
             zeus_thunderbolt: "Zeus's Master Thunderbolt"
@@ -363,6 +351,10 @@ class ModalManager {
             burger: 'assets/WeaponIcons/BurgerToss.png',
             lightning: 'assets/WeaponIcons/LightningStrike.png',
             greek_flag: 'assets/WeaponIcons/GreekFlag.png',
+            m4_carbine: 'assets/WeaponIcons/M4Carbine.png',
+            spas12: 'assets/WeaponIcons/Spas12.png',
+            boomerang_saw: 'assets/WeaponIcons/BoomerangSawblade.png',
+            chrono_rifle: 'assets/WeaponIcons/ChronoRifle.png',
             carbine: 'assets/WeaponIcons/KiloumpasCarbine.png',
             dialtone: 'assets/WeaponIcons/RoufBlaster.png',
             zeus_thunderbolt: 'assets/WeaponIcons/ZeusThunderbolt.png'

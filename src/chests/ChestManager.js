@@ -324,7 +324,10 @@ class ChestManager {
             }
         }
 
-        // 3.5. Container materials & duplicate gear salvage into Armory Shards
+        // 3.5. Bonus Chest Weapon Drop Roll (prefers unowned Rare / Epic / Legendary chest weapons)
+        const droppedWeapon = this.rollChestWeaponDrop(def);
+
+        // 3.6. Container materials & duplicate gear salvage into Armory Shards
         let matLoot = { materials: {}, duplicateShards: 0 };
         if (typeof window !== 'undefined' && window.inventoryManager && typeof window.inventoryManager.applyContainerMaterials === 'function') {
             matLoot = window.inventoryManager.applyContainerMaterials(def.id || def.rarity, duplicateEntries);
@@ -335,7 +338,7 @@ class ChestManager {
             window.GameState.addCurrency(coins, gems);
         }
 
-        const loot = { coins, gems, gear: droppedGear, materials: matLoot.materials, duplicateShards: matLoot.duplicateShards };
+        const loot = { coins, gems, gear: droppedGear, weapon: droppedWeapon, materials: matLoot.materials, duplicateShards: matLoot.duplicateShards };
 
         if (showModal && typeof ChestModalUI !== 'undefined' && typeof ChestModalUI.showLoot === 'function') {
             ChestModalUI.showLoot(def, loot);
@@ -365,6 +368,41 @@ class ChestManager {
         }
 
         return loot;
+    }
+
+    /**
+     * Roll chest bonus weapon drop: selects rarity by chest weaponOdds, prefers unowned weapons, and permanently unlocks.
+     */
+    rollChestWeaponDrop(def) {
+        const chance = (def && def.weaponDropChance) || 0;
+        if (chance <= 0 || Math.random() >= chance) return null;
+        const wMap = (typeof WEAPONS !== 'undefined' && WEAPONS) || (typeof window !== 'undefined' && window.WEAPONS) || {};
+        const odds = (def && def.weaponOdds) || { rare: 1.0 };
+        const allowedRarities = Object.keys(odds).filter(r => odds[r] > 0);
+        const candidates = Object.values(wMap).filter(w => {
+            if (!w || w.unlockSource !== 'chest_drop') return false;
+            const rk = (w.rarity || 'Rare').toLowerCase();
+            if (!allowedRarities.includes(rk)) return false;
+            return typeof WeaponSystem === 'undefined' || !WeaponSystem.isWeaponUnlocked(w.id);
+        });
+        if (candidates.length === 0) return null;
+
+        const total = allowedRarities.reduce((s, r) => s + odds[r], 0);
+        let pick = Math.random() * (total > 0 ? total : 1);
+        let rolledRarity = allowedRarities[0] || 'rare';
+        for (const r of allowedRarities) {
+            pick -= odds[r];
+            if (pick <= 0) { rolledRarity = r; break; }
+        }
+        let pool = candidates.filter(w => (w.rarity || 'Rare').toLowerCase() === rolledRarity);
+        if (pool.length === 0) pool = candidates;
+        const chosen = pool[Math.floor(Math.random() * pool.length)];
+        if (!chosen) return null;
+
+        if (typeof WeaponSystem !== 'undefined' && typeof WeaponSystem.unlockWeapon === 'function') {
+            WeaponSystem.unlockWeapon(chosen.id, { silent: true });
+        }
+        return { ...chosen, rarityKey: (chosen.rarity || 'Rare').toLowerCase() };
     }
 
     rollRarity(def, itemIndex) {

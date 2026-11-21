@@ -267,6 +267,10 @@ class HUDController {
             'burger': 'Burger Toss',
             'lightning': 'Lightning Strike',
             'greek_flag': 'Greek Flag',
+            'm4_carbine': 'M4 Carbine',
+            'spas12': 'SPAS-12',
+            'boomerang_saw': 'Boomerang Sawblade',
+            'chrono_rifle': 'Chrono Stutter Rifle',
             'carbine': "Kiloumpas's Carbine",
             'dialtone': 'Dial-Tone Blaster',
             'zeus_thunderbolt': "Zeus's Thunderbolt"
@@ -280,6 +284,10 @@ class HUDController {
             'burger': 'weapon_burger',
             'lightning': 'weapon_lightning',
             'greek_flag': 'weapon_greek_flag',
+            'm4_carbine': 'weapon_m4_carbine',
+            'spas12': 'weapon_spas12',
+            'boomerang_saw': 'weapon_boomerang_saw',
+            'chrono_rifle': 'weapon_chrono_rifle',
             'carbine': 'weapon_carbine',
             'dialtone': 'weapon_dialtone',
             'zeus_thunderbolt': 'weapon_zeus_thunderbolt'
@@ -293,6 +301,10 @@ class HUDController {
             'burger': '🍔',
             'lightning': '⚡',
             'greek_flag': '🇬🇷',
+            'm4_carbine': '🔫',
+            'spas12': '🔫',
+            'boomerang_saw': '🪚',
+            'chrono_rifle': '⏳',
             'carbine': '🔫',
             'dialtone': '📱',
             'zeus_thunderbolt': '⚡'

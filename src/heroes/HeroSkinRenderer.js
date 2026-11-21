@@ -283,7 +283,7 @@ class HeroSkinRenderer {
         HeroSkinRenderer.drawSupportArm(ctx, r, armConfig.skinColor, armConfig.sleeveColor, armConfig.cuffColor, flash, armConfig);
 
         // 2. High-Detail Game Weapon Model
-        if ((weaponType === 'carbine' || weaponType === 'dialtone' || weaponType === 'zeus_thunderbolt') && typeof WeaponSystem !== 'undefined') {
+        if (typeof WeaponSystem !== 'undefined' && WeaponSystem.isSharedWeapon(weaponType)) {
             WeaponSystem.drawEquippedModel(ctx, weaponType, flash, recoil, player);
         } else if (weaponType === 'watermelon') {
             HeroSkinRenderer.drawWatermelonCannon(ctx, flash, recoil);

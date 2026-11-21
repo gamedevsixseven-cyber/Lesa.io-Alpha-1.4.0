@@ -856,7 +856,7 @@ class FiftyBalosHero {
         // 2. Equipped Weapon (Cash Cannon 50 default, or clean fallback if ever swapped)
         if (weaponType === 'money_gun' || !weaponType) {
             FiftyBalosHero.drawWeapon(ctx, flash, recoil);
-        } else if ((weaponType === 'carbine' || weaponType === 'dialtone' || weaponType === 'zeus_thunderbolt') && typeof WeaponSystem !== 'undefined') {
+        } else if (typeof WeaponSystem !== 'undefined' && WeaponSystem.isSharedWeapon(weaponType)) {
             WeaponSystem.drawEquippedModel(ctx, weaponType, flash, recoil, player);
         } else if (typeof HeroSkinRenderer !== 'undefined' && HeroSkinRenderer.drawMoneyGun) {
             HeroSkinRenderer.drawMoneyGun(ctx, flash, recoil);

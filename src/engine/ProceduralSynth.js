@@ -39,14 +39,14 @@ class ProceduralSynth {
             gain.gain.exponentialRampToValueAtTime(0.01, now + 0.12);
             osc.start(now);
             osc.stop(now + 0.13);
-        } else if (type === 'carbine') {
+        } else if (type === 'carbine' || type === 'm4_carbine') {
             osc.type = 'sawtooth';
-            osc.frequency.setValueAtTime(1250 + Math.random() * 140, now);
-            osc.frequency.exponentialRampToValueAtTime(190, now + 0.09);
-            gain.gain.setValueAtTime(masterVolume * 0.85, now);
-            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.09);
+            osc.frequency.setValueAtTime((type === 'm4_carbine' ? 1420 : 1250) + Math.random() * 140, now);
+            osc.frequency.exponentialRampToValueAtTime(190, now + 0.08);
+            gain.gain.setValueAtTime(masterVolume * (type === 'm4_carbine' ? 0.65 : 0.85), now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.08);
             osc.start(now);
-            osc.stop(now + 0.1);
+            osc.stop(now + 0.09);
         } else if (type === 'zeus_thunderbolt') {
             osc.type = 'sawtooth';
             osc.frequency.setValueAtTime(1650 + Math.random() * 180, now);
@@ -55,6 +55,30 @@ class ProceduralSynth {
             gain.gain.exponentialRampToValueAtTime(0.01, now + 0.12);
             osc.start(now);
             osc.stop(now + 0.13);
+        } else if (type === 'boomerang_saw') {
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(480 + Math.random() * 70, now);
+            osc.frequency.exponentialRampToValueAtTime(980, now + 0.08);
+            gain.gain.setValueAtTime(masterVolume * 0.65, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.11);
+            osc.start(now);
+            osc.stop(now + 0.12);
+        } else if (type === 'chrono_rifle') {
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(1480 + Math.random() * 120, now);
+            osc.frequency.exponentialRampToValueAtTime(340, now + 0.09);
+            gain.gain.setValueAtTime(masterVolume * 0.7, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.10);
+            osc.start(now);
+            osc.stop(now + 0.11);
+        } else if (type === 'spas12') {
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(340 + Math.random() * 50, now);
+            osc.frequency.exponentialRampToValueAtTime(65, now + 0.14);
+            gain.gain.setValueAtTime(masterVolume * 0.9, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+            osc.start(now);
+            osc.stop(now + 0.16);
         } else if (type === 'dialtone' || type === 'soundwave') {
             osc.type = 'square';
             osc.frequency.setValueAtTime(697, now);

@@ -178,16 +178,22 @@ class CombatRenderFX {
             } else if (type === 'pepper') {
                 ctx.fillStyle = i < 2 ? '#ffa502' : '#ff4757';
                 ctx.beginPath(); ctx.arc(pt.x, pt.y, Math.max(2, bullet.radius * ratio * 0.8), 0, Math.PI * 2); ctx.fill();
-            } else if (type === 'carbine' || type === 'zeus_thunderbolt') {
-                const segW = Math.max(4, (type === 'zeus_thunderbolt' ? 17 : 14) * ratio);
+            } else if (type === 'carbine' || type === 'm4_carbine' || type === 'spas12' || type === 'zeus_thunderbolt' || type === 'chrono_rifle') {
+                const segW = Math.max(4, (type === 'zeus_thunderbolt' ? 17 : (type === 'spas12' ? 9 : (type === 'm4_carbine' ? 11 : 14))) * ratio);
                 ctx.save();
                 ctx.translate(pt.x, pt.y);
                 ctx.rotate(Math.atan2(bullet.vy, bullet.vx));
                 ctx.fillStyle = type === 'zeus_thunderbolt'
                     ? (i % 2 === 0 ? '#fed330' : '#00f5ff')
-                    : (i % 2 === 0 ? '#ffd32a' : '#ff9f43');
+                    : (type === 'chrono_rifle' ? (i % 2 === 0 ? '#00f5ff' : '#a55eea') : ((type === 'spas12' && bullet._spasBreach) ? '#ff4757' : (i % 2 === 0 ? '#ffd32a' : '#ff9f43')));
                 ctx.fillRect(-segW * 0.5, -1.6 * ratio, segW, 3.2 * ratio);
                 ctx.restore();
+            } else if (type === 'boomerang_saw') {
+                ctx.strokeStyle = bullet._returning ? (i % 2 === 0 ? '#00f5ff' : '#dfe6e9') : (i % 2 === 0 ? '#ff9f43' : '#feca57');
+                ctx.lineWidth = Math.max(1.5, 3.0 * ratio);
+                ctx.beginPath();
+                ctx.arc(pt.x, pt.y, Math.max(3, (bullet.radius || 15) * 0.72 * ratio), i * 0.8, i * 0.8 + Math.PI * 1.15);
+                ctx.stroke();
             } else if (type === 'soundwave' || type === 'dialtone') {
                 ctx.strokeStyle = i % 2 === 0 ? '#00d2d3' : '#fed330';
                 ctx.lineWidth = Math.max(1.2, 2.2 * ratio);

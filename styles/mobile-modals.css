@@ -8,7 +8,7 @@
     .modal-overlay { padding: 4px !important; }
 
     .modal-panel {
-        max-height: 96vh !important; max-width: min(96vw, 760px) !important; padding: 6px 12px !important; border-radius: 16px !important; border-width: 2.5px !important; overflow-y: auto !important; -webkit-overflow-scrolling: touch;
+        max-height: 94vh !important; max-height: 94dvh !important; max-width: min(96vw, 760px) !important; padding: 6px 12px !important; border-radius: 16px !important; border-width: 2.5px !important; overflow-y: auto !important; touch-action: pan-y !important; overscroll-behavior-y: contain !important; -webkit-overflow-scrolling: touch;
     }
 
     .modal-title {
@@ -60,9 +60,9 @@
         font-size: 0.52rem !important; padding: 1px 4px !important; top: 2px !important; border-width: 1.5px !important;
     }
 
-    /* 2. Gear & Equipment Modal (Compact Loadout + Weapons Grid) */
+    /* 2. Gear & Equipment Modal (Single Unified Vertical Scroller - No Scroll Traps!) */
     .gear-modal-panel {
-        background: #f2e8d2 !important; max-height: 96vh !important; overflow-y: auto !important; padding: 6px 12px !important;
+        background: #f2e8d2 !important; max-height: 94vh !important; max-height: 94dvh !important; display: flex !important; flex-direction: column !important; overflow: hidden !important; padding: 6px 12px !important;
     }
 
     .gear-modal-header-container { margin: 0 0 4px 0 !important; }
@@ -109,8 +109,8 @@
 
     .gear-stat-item { font-size: 0.58rem !important; }
 
-    /* Gear Inventory Section */
-    .gear-inventory-section { margin-top: 2px !important; }
+    /* Gear Inventory Section (Single Continuous Scroller via .tab-scroll-body) */
+    .gear-inventory-section { margin-top: 2px !important; touch-action: pan-y !important; }
 
     .gear-inventory-header { margin-bottom: 3px !important; }
 
@@ -118,31 +118,43 @@
 
     .gear-inv-badge { font-size: 0.55rem !important; padding: 1px 6px !important; border-radius: 8px !important; }
 
-    #weapons-modal .weapons-grid,
-    .weapons-grid {
-        grid-template-columns: repeat(4, 1fr) !important; gap: 4px !important; max-height: 105px !important; overflow-y: auto !important;
+    .gear-subtabs {
+        touch-action: pan-x pan-y !important;
+        overscroll-behavior-x: contain !important;
+        -webkit-overflow-scrolling: touch !important;
     }
 
-    .weapon-card { padding: 3px 5px !important; border-radius: 8px !important; border-width: 1.5px !important; }
+    #weapons-modal .weapons-grid,
+    .weapons-grid,
+    #weapons-modal .gear-grid,
+    .gear-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+        gap: 6px !important;
+        max-height: none !important;
+        overflow: visible !important;
+        touch-action: pan-y !important;
+    }
 
-    .weapon-card-top { margin-bottom: 1px !important; }
+    .weapon-card { padding: 5px 7px !important; border-radius: 10px !important; border-width: 1.8px !important; }
 
-    .weapon-card-left { display: flex !important; align-items: center !important; gap: 4px !important; }
+    .weapon-card-top { margin-bottom: 2px !important; }
 
-    .weapon-icon-wrap { width: 22px !important; height: 22px !important; border-radius: 5px !important; display: flex !important; align-items: center !important; justify-content: center !important; }
+    .weapon-card-left { display: flex !important; align-items: center !important; gap: 5px !important; min-width: 0 !important; }
 
-    .weapon-card-img { width: 20px !important; height: 20px !important; display: block !important; }
+    .weapon-icon-wrap { width: 26px !important; height: 26px !important; border-radius: 6px !important; display: flex !important; align-items: center !important; justify-content: center !important; flex-shrink: 0 !important; }
 
-    .weapon-name { font-size: 0.62rem !important; }
+    .weapon-card-img { width: 22px !important; height: 22px !important; display: block !important; }
 
-    .weapon-badge { font-size: 0.48rem !important; padding: 1px 3px !important; border-radius: 5px !important; }
+    .weapon-name { font-size: 0.68rem !important; }
+
+    .weapon-badge { font-size: 0.54rem !important; padding: 1px 5px !important; border-radius: 6px !important; }
 
     .weapon-stat-row {
-        padding: 1px 3px !important; font-size: 0.5rem !important; border-radius: 5px !important; min-height: 13px !important; margin: 1px 0 !important;
+        padding: 1.5px 5px !important; font-size: 0.55rem !important; border-radius: 5px !important; min-height: 15px !important; margin: 1.5px 0 !important;
     }
 
     .weapon-stat-row .stat-key,
-    .weapon-stat-row .stat-val { font-size: 0.5rem !important; }
+    .weapon-stat-row .stat-val { font-size: 0.55rem !important; }
 
     .gear-done-btn { font-size: 0.8rem !important; padding: 3px 24px !important; height: 26px !important; }
 
@@ -469,6 +481,62 @@
         font-size: 20px !important;
         padding: 8px !important;
         border-radius: 8px !important;
+    }
+}
+
+/* Mobile-only Touch Enhancements Across All Touch Screen Heights */
+@media (pointer: coarse) {
+    #weapons-modal .tab-scroll-body,
+    .tab-scroll-body,
+    .mail-list-box,
+    .clans-list-box,
+    .friends-list-box,
+    .leaderboard-list-box,
+    #daily-quests-modal .challenges-modal-list {
+        touch-action: pan-y !important;
+        overscroll-behavior-y: contain !important;
+        -webkit-overflow-scrolling: touch !important;
+        transform: translateZ(0);
+    }
+
+    #weapons-modal .weapons-grid,
+    #weapons-modal .gear-grid {
+        max-height: none !important;
+        overflow: visible !important;
+        touch-action: pan-y !important;
+    }
+
+    .gear-subtabs {
+        touch-action: pan-x pan-y !important;
+        overscroll-behavior-x: contain !important;
+    }
+
+    /* Quick Mobile Auto-Fire Toggle Button */
+    #mobile-autofire-btn {
+        position: absolute;
+        bottom: 158px;
+        right: 12px;
+        width: auto !important;
+        min-width: 72px;
+        height: 30px !important;
+        padding: 0 10px !important;
+        border-radius: 999px !important;
+        border: 2.5px solid #1e272e;
+        background: linear-gradient(135deg, #2f3542 0%, #57606f 100%);
+        color: #ffffff;
+        font-family: 'Luckiest Guy', cursive, sans-serif;
+        font-size: 10px;
+        letter-spacing: 0.5px;
+        box-shadow: 0 3px 0 #1e272e, 0 4px 10px rgba(0, 0, 0, 0.35);
+        flex-direction: row !important;
+        gap: 4px;
+        z-index: 135;
+    }
+
+    #mobile-autofire-btn.is-on {
+        background: linear-gradient(135deg, #00b894 0%, #00cec9 100%);
+        border-color: #074b83;
+        box-shadow: 0 3px 0 #1e272e, 0 0 10px rgba(0, 206, 201, 0.55);
     }
 }
 

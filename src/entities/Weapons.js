@@ -4,7 +4,11 @@
  */
 
 class WeaponSystem {
-    static SHARED_UNLOCKABLE_IDS = ['bubble', 'carbine', 'dialtone', 'zeus_thunderbolt'];
+    static SHARED_UNLOCKABLE_IDS = ['bubble', 'm4_carbine', 'spas12', 'boomerang_saw', 'chrono_rifle', 'carbine', 'dialtone', 'zeus_thunderbolt'];
+
+    static isSharedWeapon(weaponType) {
+        return this.SHARED_UNLOCKABLE_IDS.includes(weaponType);
+    }
 
     static getWeaponConfig(type) {
         if (typeof WEAPONS !== 'undefined' && WEAPONS[type]) {
@@ -32,6 +36,14 @@ class WeaponSystem {
                 return { baseDelay: 15, baseDamage: 38, radius: 10, extraPierce: 0, maxBounces: 0 };
             case 'greek_flag':
                 return { baseDelay: 14, baseDamage: 36, radius: 12, extraPierce: 1, maxBounces: 0, speedMultiplier: 1.15 };
+            case 'm4_carbine':
+                return { baseDelay: 8, baseDamage: 24, radius: 7, extraPierce: 1, maxBounces: 0, speedMultiplier: 1.48, critChanceBonus: 0.08, range: 980 };
+            case 'spas12':
+                return { baseDelay: 32, baseDamage: 16, radius: 6, extraPierce: 0, maxBounces: 0, speedMultiplier: 1.44, critChanceBonus: 0.08, range: 560, fanEveryNShots: 4 };
+            case 'boomerang_saw':
+                return { baseDelay: 22, baseDamage: 42, radius: 15, extraPierce: 99, maxBounces: 0, speedMultiplier: 1.28, critChanceBonus: 0.10, range: 520 };
+            case 'chrono_rifle':
+                return { baseDelay: 11, baseDamage: 24, radius: 8, extraPierce: 0, maxBounces: 0, speedMultiplier: 1.58, critChanceBonus: 0.12, range: 960 };
             case 'pea':
             default:
                 return { baseDelay: 16, baseDamage: 25, radius: 8, extraPierce: 0, maxBounces: 0 };
@@ -136,6 +148,22 @@ class WeaponSystem {
      */
     static drawEquippedModel(ctx, weaponType, flash, recoil = 0, player = null) {
         const isEvolved = typeof WeaponEvolutionManager !== 'undefined' && WeaponEvolutionManager.isEvolved(weaponType);
+        if (weaponType === 'm4_carbine' && typeof M4Carbine !== 'undefined') {
+            M4Carbine.drawWeapon(ctx, flash, recoil);
+            return true;
+        }
+        if (weaponType === 'spas12' && typeof Spas12 !== 'undefined') {
+            Spas12.drawWeapon(ctx, flash, recoil);
+            return true;
+        }
+        if (weaponType === 'boomerang_saw' && typeof BoomerangSawblade !== 'undefined') {
+            BoomerangSawblade.drawWeapon(ctx, flash, recoil);
+            return true;
+        }
+        if (weaponType === 'chrono_rifle' && typeof ChronoRifle !== 'undefined') {
+            ChronoRifle.drawWeapon(ctx, flash, recoil);
+            return true;
+        }
         if (weaponType === 'carbine' && typeof KiloumpasCarbine !== 'undefined') {
             KiloumpasCarbine.drawWeapon(ctx, flash, recoil);
             return true;
@@ -151,6 +179,44 @@ class WeaponSystem {
         if (weaponType === 'bubble' && typeof BubbleGun !== 'undefined' && typeof BubbleGun.drawWeapon === 'function') {
             BubbleGun.drawWeapon(ctx, flash, recoil, player ? (player.bubbleCharge || 0) : 0);
             return true;
+        }
+        return false;
+    }
+
+    static updateBullet(b, dt, effects, arena) {
+        if (b.type === 'boomerang_saw' && typeof BoomerangSawblade !== 'undefined') {
+            return BoomerangSawblade.updateBullet(b, dt, effects, arena);
+        }
+        return false;
+    }
+
+    static drawBullet(ctx, b) {
+        if (b.type === 'm4_carbine' && typeof M4Carbine !== 'undefined') { M4Carbine.drawBullet(ctx, b); return true; }
+        if (b.type === 'spas12' && typeof Spas12 !== 'undefined') { Spas12.drawBullet(ctx, b); return true; }
+        if (b.type === 'boomerang_saw' && typeof BoomerangSawblade !== 'undefined') { BoomerangSawblade.drawBullet(ctx, b); return true; }
+        if (b.type === 'chrono_rifle' && typeof ChronoRifle !== 'undefined') { ChronoRifle.drawBullet(ctx, b); return true; }
+        if (b.type === 'carbine' && typeof KiloumpasCarbine !== 'undefined') { KiloumpasCarbine.drawBullet(ctx, b); return true; }
+        if (b.type === 'dialtone' && typeof RoufDialToneBlaster !== 'undefined') { RoufDialToneBlaster.drawBullet(ctx, b); return true; }
+        if (b.type === 'zeus_thunderbolt' && typeof ZeusThunderbolt !== 'undefined') { ZeusThunderbolt.drawBullet(ctx, b); return true; }
+        return false;
+    }
+
+    static onBulletHit(b, e, finalDmg, enemies, effects, game) {
+        if (b.type === 'zeus_thunderbolt' && typeof ZeusThunderbolt !== 'undefined') {
+            ZeusThunderbolt.onHit(b, e, finalDmg, enemies, effects, game);
+        } else if (b.type === 'spas12' && typeof Spas12 !== 'undefined') {
+            Spas12.onHit(b, e, finalDmg, enemies, effects, game);
+        } else if (b.type === 'chrono_rifle' && typeof ChronoRifle !== 'undefined') {
+            ChronoRifle.onHit(b, e, finalDmg, enemies, effects, game);
+        }
+        if (b.type !== 'chrono_rifle' && typeof ChronoRifle !== 'undefined') {
+            ChronoRifle.onAnyBulletHit(e, finalDmg, effects);
+        }
+    }
+
+    static onObstacleHit(b, obs, effects, game) {
+        if (b.type === 'boomerang_saw' && typeof BoomerangSawblade !== 'undefined') {
+            return BoomerangSawblade.onObstacleHit(b, obs, effects, game);
         }
         return false;
     }
@@ -211,31 +277,56 @@ class WeaponSystem {
             player._zeusBoltShotCount = ((player._zeusBoltShotCount || 0) + 1) % skyN;
             isZeusSkyBolt = player._zeusBoltShotCount === 0;
         }
+        // SPAS-12 fires 6 buckshot pellets normally and an 8-pellet Breacher salvo on every 4th trigger pull
+        let isSpasBreach = false;
+        if (player.weaponType === 'spas12') {
+            const breachN = config.fanEveryNShots || 4;
+            player._spasShotCount = ((player._spasShotCount || 0) + 1) % breachN;
+            isSpasBreach = player._spasShotCount === 0;
+            fanOffsets = isSpasBreach
+                ? ((typeof Spas12 !== 'undefined' && Spas12.BREACH_OFFSETS) || [-0.25, -0.175, -0.105, -0.035, 0.035, 0.105, 0.175, 0.25])
+                : ((typeof Spas12 !== 'undefined' && Spas12.PELLET_OFFSETS) || [-0.21, -0.125, -0.042, 0.042, 0.125, 0.21]);
+        }
         const ps = (typeof window !== 'undefined' && window.perkSystem) ? window.perkSystem : null;
         const perkFire = (ps && typeof ps.onWeaponFire === 'function') ? ps.onWeaponFire(player) : null;
         const perkCritBonus = (ps && typeof ps.getCritDamageBonus === 'function') ? ps.getCritDamageBonus(player) : 0;
 
         for (let i = 0; i < player.multiShot; i++) {
             const baseAngle = startAngle + i * player.spreadAngle;
-            for (const fOff of fanOffsets) {
-                const shotAngle = baseAngle + fOff;
-                const muzzleX = player.x + Math.cos(shotAngle) * (player.radius + 14);
-                const muzzleY = player.y + Math.sin(shotAngle) * (player.radius + 14);
+            for (let fIdx = 0; fIdx < fanOffsets.length; fIdx++) {
+                const fOff = fanOffsets[fIdx];
+                const jitter = player.weaponType === 'm4_carbine'
+                    ? (Math.random() - 0.5) * 0.064
+                    : (player.weaponType === 'spas12' ? (Math.random() - 0.5) * 0.035 : 0);
+                const shotAngle = baseAngle + fOff + jitter;
+                const aimAngle = player.weaponType === 'spas12' ? baseAngle : shotAngle;
+                const pr = player.radius || 25;
+                let muzzleX = player.x + Math.cos(aimAngle) * (pr + 14);
+                let muzzleY = player.y + Math.sin(aimAngle) * (pr + 14);
+                if (player.weaponType === 'm4_carbine' || player.weaponType === 'spas12' || player.weaponType === 'boomerang_saw' || player.weaponType === 'chrono_rifle') {
+                    const tip = player.weaponType === 'boomerang_saw' ? 43 : (player.weaponType === 'chrono_rifle' ? 48 : (player.weaponType === 'spas12' ? 48 : 46));
+                    const gyBase = player.weaponType === 'spas12' ? 2.1 : 1.05;
+                    const gy = Math.cos(aimAngle) < 0 ? gyBase : -gyBase;
+                    muzzleX = player.x + Math.cos(aimAngle) * tip - Math.sin(aimAngle) * gy;
+                    muzzleY = (player.y - pr * 0.32) + Math.sin(aimAngle) * tip + Math.cos(aimAngle) * gy;
+                }
 
+                const pelletSpeed = player.weaponType === 'spas12' ? shotSpeed * (0.94 + Math.random() * 0.12) : shotSpeed;
                 const isCrit = Math.random() < critChance;
                 let dmg = config.baseDamage * (player.damageMultiplier || 1);
                 if (adminDmgBoost) dmg *= 10;
                 if (isZeusSkyBolt) dmg *= 1.6;
+                if (isSpasBreach) dmg *= 1.28;
                 if (perkFire && perkFire.shardDmgMult) dmg *= perkFire.shardDmgMult;
                 if (isCrit) dmg *= ((player.critMultiplier || 2.0) + perkCritBonus);
 
                 const b = new Bullet({
                     x: muzzleX,
                     y: muzzleY,
-                    vx: Math.cos(shotAngle) * shotSpeed,
-                    vy: Math.sin(shotAngle) * shotSpeed,
+                    vx: Math.cos(shotAngle) * pelletSpeed,
+                    vy: Math.sin(shotAngle) * pelletSpeed,
                     damage: dmg,
-                    speed: shotSpeed,
+                    speed: pelletSpeed,
                     radius: config.radius,
                     type: player.weaponType,
                     isEnemy: false,
@@ -248,12 +339,13 @@ class WeaponSystem {
                 b.isCrit = isCrit;
                 if (isEvolved) b.isWeaponEvolved = true;
                 if (isZeusSkyBolt) b.isSkyBolt = true;
+                if (isSpasBreach) b._spasBreach = true;
                 if (perkFire && perkFire.isPermafrostShard) b.isPermafrostShard = true;
                 bullets.push(b);
 
-                if (effects) {
+                if (effects && (player.weaponType !== 'spas12' || fIdx === 0)) {
                     if (typeof effects.addMuzzleFlash === 'function') {
-                        effects.addMuzzleFlash(muzzleX, muzzleY, shotAngle, player.weaponType, 1.0, false);
+                        effects.addMuzzleFlash(muzzleX, muzzleY, aimAngle, player.weaponType, isSpasBreach ? 1.25 : 1.0, false);
                     }
                     effects.addDust(muzzleX, muzzleY, 1, 3);
                 }
@@ -265,6 +357,30 @@ class WeaponSystem {
         }
 
         return bullets;
+    }
+
+    /**
+     * Handle Armory weapon card click: reject locked chest/boss weapons, or equip when owned.
+     */
+    static handleWeaponCardClick(wt, modalManager = null, cardEl = null) {
+        if (!wt) return false;
+        const isShared = this.SHARED_UNLOCKABLE_IDS.includes(wt);
+
+        if (isShared && !this.isWeaponUnlocked(wt)) {
+            if (window.soundEngine && typeof window.soundEngine.playBuzzer === 'function') window.soundEngine.playBuzzer();
+            return false;
+        }
+
+        if (typeof window !== 'undefined' && window.GameState && window.GameState.player) {
+            window.GameState.player.weaponType = wt;
+            window.GameState.player.selectedWeapon = wt;
+        }
+        if (typeof localStorage !== 'undefined') localStorage.setItem('lesaio_selected_weapon', wt);
+        if (modalManager && typeof modalManager.updateGearScreen === 'function') modalManager.updateGearScreen();
+        if (typeof window !== 'undefined' && window.soundEngine && typeof window.soundEngine.playSelect === 'function') {
+            window.soundEngine.playSelect();
+        }
+        return true;
     }
 }
 

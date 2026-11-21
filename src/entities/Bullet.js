@@ -73,8 +73,10 @@ class Bullet {
             this.trail.unshift(pt);
         }
 
-        // Bouncy bubble wobble or watermelon spin
+        // Bouncy bubble wobble, boomerang return flight, or watermelon spin
+        const customMotion = (typeof WeaponSystem !== 'undefined') ? WeaponSystem.updateBullet(this, dt, effects, arena) : false;
         if (typeof BossProjectileFX !== 'undefined' && BossProjectileFX.updateBullet(this, dt)) {
+        } else if (customMotion) {
         } else if (this.type === 'bubble') {
             this.scaleX = 1 + Math.sin(this.age * 0.3) * 0.2;
             this.scaleY = 1 + Math.cos(this.age * 0.3) * 0.2;
@@ -87,14 +89,13 @@ class Bullet {
             this.rotation += Math.sin(this.age * 0.4) * 0.04;
         }
 
-        // Range expiration
-        if (this.distanceTraveled >= this.maxRange) {
+        // Range & Arena boundary expiration (skipped when custom weapon flight manages return/bounds)
+        if (!customMotion && this.distanceTraveled >= this.maxRange) {
             this.explode(effects);
             this.dead = true;
         }
 
-        // Arena boundary collision
-        if (arena) {
+        if (!customMotion && arena) {
             const b = arena.dungeonBounds;
             const minX = b ? b.minX : -arena.halfWidth;
             const maxX = b ? b.maxX : arena.halfWidth;
@@ -160,9 +161,15 @@ class Bullet {
             effects.addShockwave(this.x, this.y, 65, this.type === 'zeus_thunderbolt' ? 'rgba(254, 211, 48, 0.8)' : 'rgba(0, 210, 211, 0.7)');
             effects.addSparks(this.x, this.y, '#00d2d3', 9);
             effects.addSparks(this.x, this.y, '#ffffff', 6);
-        } else if (this.type === 'carbine') {
-            effects.addSparks(this.x, this.y, '#ffd32a', 7);
+        } else if (this.type === 'carbine' || this.type === 'm4_carbine' || this.type === 'spas12') {
+            effects.addSparks(this.x, this.y, this._spasBreach ? '#ff4757' : '#ffd32a', 7);
             effects.addSparks(this.x, this.y, '#ff9f43', 4);
+        } else if (this.type === 'boomerang_saw') {
+            effects.addSparks(this.x, this.y, '#ff9f43', 6);
+            effects.addSparks(this.x, this.y, '#00f5ff', 4);
+        } else if (this.type === 'chrono_rifle') {
+            effects.addSparks(this.x, this.y, '#00f5ff', 6);
+            effects.addSparks(this.x, this.y, '#a55eea', 5);
         } else if (this.type === 'greek_flag') {
             effects.addSparks(this.x, this.y, '#0d5eaf', 6); effects.addSparks(this.x, this.y, '#ffffff', 5);
         } else if (this.type === 'dialtone' || this.type === 'soundwave') {
@@ -210,15 +217,7 @@ class Bullet {
             this.drawSmokeBomb(ctx);
         } else if (this.type === 'money_gun' || this.type === 'euro') {
             this.drawEuroBill(ctx);
-        } else if (this.type === 'carbine') {
-            if (typeof KiloumpasCarbine !== 'undefined') KiloumpasCarbine.drawBullet(ctx, this);
-            else this.drawPea(ctx);
-        } else if (this.type === 'dialtone') {
-            if (typeof RoufDialToneBlaster !== 'undefined') RoufDialToneBlaster.drawBullet(ctx, this);
-            else this.drawSoundwave(ctx);
-        } else if (this.type === 'zeus_thunderbolt') {
-            if (typeof ZeusThunderbolt !== 'undefined') ZeusThunderbolt.drawBullet(ctx, this);
-            else this.drawLightning(ctx);
+        } else if (typeof WeaponSystem !== 'undefined' && WeaponSystem.drawBullet(ctx, this)) {
         } else if (this.type === 'soundwave') {
             this.drawSoundwave(ctx);
         } else if (this.type === 'burger') {
@@ -240,7 +239,7 @@ class Bullet {
             watermelon: '#eb4d4b', bubble: '#70a1ff', pepper: '#ff6b6b', soccer: '#ffffff',
             smoke: '#9b59b6', money_gun: '#f39c12', euro: '#f39c12', carbine: '#f39c12',
             soundwave: '#fed330', dialtone: '#fed330', burger: '#e59b52', lightning: '#00d2d3',
-            greek_flag: '#1e90ff', zeus_thunderbolt: '#fed330'
+            greek_flag: '#1e90ff', m4_carbine: '#ffa502', spas12: '#ff6348', boomerang_saw: '#ff9f43', chrono_rifle: '#a55eea', zeus_thunderbolt: '#fed330'
         };
         return map[this.type] || this.color || (this.isEnemy ? '#ff4757' : '#2ed573');
     }

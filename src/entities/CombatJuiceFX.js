@@ -218,11 +218,30 @@ class CombatJuiceFX {
             ctx.arc(10, -5, 3, 0, Math.PI * 2);
             ctx.arc(13, 4, 2.2, 0, Math.PI * 2);
             ctx.fill();
-        } else if (m.type === 'carbine') {
+        } else if (m.type === 'carbine' || m.type === 'm4_carbine') {
             ctx.fillStyle = '#ff9f43';
             ctx.beginPath(); ctx.moveTo(0, -4); ctx.lineTo(28, 0); ctx.lineTo(0, 4); ctx.closePath(); ctx.fill();
             ctx.fillStyle = '#fff3b0';
             ctx.beginPath(); ctx.moveTo(0, -2); ctx.lineTo(18, 0); ctx.lineTo(0, 2); ctx.closePath(); ctx.fill();
+        } else if (m.type === 'spas12') {
+            ctx.fillStyle = '#ff6348';
+            ctx.beginPath();
+            ctx.moveTo(0, 0); ctx.lineTo(24, -12); ctx.lineTo(20, -4);
+            ctx.lineTo(31, 0); ctx.lineTo(20, 4); ctx.lineTo(24, 12);
+            ctx.closePath(); ctx.fill();
+            ctx.fillStyle = '#ffd32a';
+            ctx.beginPath(); ctx.moveTo(0, -3); ctx.lineTo(19, 0); ctx.lineTo(0, 3); ctx.closePath(); ctx.fill();
+        } else if (m.type === 'boomerang_saw') {
+            ctx.strokeStyle = '#ff9f43';
+            ctx.lineWidth = 2.6;
+            ctx.beginPath(); ctx.arc(4, 0, 9, -1.1, 1.1); ctx.stroke();
+            ctx.strokeStyle = '#00f5ff';
+            ctx.beginPath(); ctx.arc(9, 0, 12, -0.7, 0.7); ctx.stroke();
+        } else if (m.type === 'chrono_rifle') {
+            ctx.fillStyle = '#a55eea';
+            ctx.beginPath(); ctx.moveTo(0, -4.5); ctx.lineTo(25, 0); ctx.lineTo(0, 4.5); ctx.closePath(); ctx.fill();
+            ctx.fillStyle = '#00f5ff';
+            ctx.beginPath(); ctx.moveTo(0, -2); ctx.lineTo(16, 0); ctx.lineTo(0, 2); ctx.closePath(); ctx.fill();
         } else if (m.type === 'dialtone' || m.type === 'soundwave') {
             ctx.strokeStyle = '#00d2d3';
             ctx.lineWidth = 2.4;
@@ -274,6 +293,10 @@ class CombatJuiceFX {
             greek_flag: ['rgba(13, 94, 175, 0.78)', '#ffffff'],
             zeus_thunderbolt: ['rgba(254, 211, 48, 0.78)', '#00f5ff'],
             carbine: ['#ffd32a', '#ff9f43'],
+            m4_carbine: ['#ffd32a', '#ff9f43'],
+            spas12: ['#ff6348', '#ffd32a'],
+            boomerang_saw: ['#ff9f43', '#00f5ff'],
+            chrono_rifle: ['#a55eea', '#00f5ff'],
             dialtone: ['#00d2d3', '#fed330'],
             soundwave: ['#00d2d3', '#fed330'],
             ice_spike: ['rgba(116, 185, 255, 0.75)', '#ffffff']

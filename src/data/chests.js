@@ -21,6 +21,8 @@ const CHEST_TYPES = {
         minGems: 1,
         maxGems: 2,
         gearCount: 2,
+        weaponDropChance: 0.01,
+        weaponOdds: { rare: 1.00, epic: 0.00, legendary: 0.00 },
         gearOdds: {
             common: 0.88,
             uncommon: 0.12,
@@ -46,6 +48,8 @@ const CHEST_TYPES = {
         minGems: 2,
         maxGems: 5,
         gearCount: 2,
+        weaponDropChance: 0.03,
+        weaponOdds: { rare: 1.00, epic: 0.00, legendary: 0.00 },
         gearOdds: {
             common: 0.35,
             uncommon: 0.60,
@@ -72,6 +76,8 @@ const CHEST_TYPES = {
         maxGems: 12,
         gearCount: 3,
         guaranteedRare: 1,
+        weaponDropChance: 0.14,
+        weaponOdds: { rare: 0.85, epic: 0.15, legendary: 0.00 },
         gearOdds: {
             common: 0.15,
             uncommon: 0.59,
@@ -98,6 +104,8 @@ const CHEST_TYPES = {
         maxGems: 35,
         gearCount: 4,
         guaranteedEpic: 1,
+        weaponDropChance: 0.30,
+        weaponOdds: { rare: 0.45, epic: 0.45, legendary: 0.10 },
         gearOdds: {
             common: 0.00,
             uncommon: 0.30,
@@ -124,6 +132,8 @@ const CHEST_TYPES = {
         maxGems: 120,
         gearCount: 5,
         guaranteedLegendary: 1,
+        weaponDropChance: 0.65,
+        weaponOdds: { rare: 0.25, epic: 0.40, legendary: 0.35 },
         gearOdds: {
             common: 0.00,
             uncommon: 0.00,
@@ -150,6 +160,8 @@ const CHEST_TYPES = {
         maxGems: 350,
         gearCount: 6,
         guaranteedLegendary: 2,
+        weaponDropChance: 1.00,
+        weaponOdds: { rare: 0.10, epic: 0.35, legendary: 0.55 },
         gearOdds: {
             common: 0.00,
             uncommon: 0.00,

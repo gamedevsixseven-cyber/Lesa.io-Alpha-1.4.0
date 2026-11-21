@@ -98,6 +98,8 @@ class GearModalUI {
         });
 
         this.renderGrid();
+        const scrollBody = document.querySelector('#weapons-modal .tab-scroll-body');
+        if (scrollBody) scrollBody.scrollTop = 0;
     }
 
     static renderAll() {

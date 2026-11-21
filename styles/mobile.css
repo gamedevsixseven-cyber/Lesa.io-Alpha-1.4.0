@@ -235,13 +235,13 @@ html, body {
     will-change: transform;
 }
 
-/* Right Action Buttons Cluster (Ergonomic Thumb Arc) */
+/* Right Action Buttons Cluster (Ergonomic Thumb Arc + Safe Area Insets) */
 #mobile-actions-zone {
     position: absolute;
-    bottom: 0;
-    right: 0;
-    width: 220px;
-    height: 180px;
+    bottom: max(0px, env(safe-area-inset-bottom, 0px));
+    right: max(0px, env(safe-area-inset-right, 0px));
+    width: 224px;
+    height: 205px;
     pointer-events: none;
     z-index: 120;
 }
@@ -307,12 +307,12 @@ html, body {
 .mobile-action-btn.is-ready .dash-ring { stroke: #feca57; filter: drop-shadow(0 0 6px #feca57); }
 .mobile-action-btn.is-ready .skill-ring { stroke: #55efc4; filter: drop-shadow(0 0 6px #55efc4); }
 
-/* DASH Button (Left of Shoot Joystick, Compact) */
+/* DASH Button (Left of Shoot Joystick, Ergonomic Touch Target) */
 #mobile-dash-btn {
-    bottom: 24px;
-    right: 125px;
-    width: 60px;
-    height: 60px;
+    bottom: 22px;
+    right: 124px;
+    width: 64px;
+    height: 64px;
     background: linear-gradient(135deg, #0984e3 0%, #74b9ff 100%);
     border-color: #0c2461;
 }
@@ -325,12 +325,12 @@ html, body {
 }
 #mobile-dash-btn .btn-label { font-size: 8.5px; letter-spacing: 0.5px; margin-top: 1px; }
 
-/* SKILL Button (Above-Left of Shoot Joystick, Compact) */
+/* SKILL Button (Above-Left of Shoot Joystick, Ergonomic Touch Target) */
 #mobile-skill-btn {
-    bottom: 96px;
-    right: 90px;
-    width: 54px;
-    height: 54px;
+    bottom: 98px;
+    right: 88px;
+    width: 58px;
+    height: 58px;
     background: linear-gradient(135deg, #e67e22 0%, #f39c12 100%);
     border-color: #d35400;
 }
@@ -374,12 +374,13 @@ html, body {
    MOBILE RESPONSIVE UI FITTING (LANDSCAPE <= 520px / TOUCH)
    =================================================== */
 @media screen and (max-height: 520px), screen and (pointer: coarse) and (max-height: 700px) {
-    /* 1. Prevent mobile viewport bouncing & overflow */
+    /* 1. Prevent mobile viewport bouncing & overflow (dvh respects browser bars) */
     html, body {
         overflow: hidden !important;
         position: fixed !important;
         width: 100vw !important;
         height: 100vh !important;
+        height: 100dvh !important;
     }
 
     /* 2. Compact In-Game HUD */

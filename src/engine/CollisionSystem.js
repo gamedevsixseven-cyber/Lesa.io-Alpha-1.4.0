@@ -75,7 +75,7 @@ class CollisionSystem {
                             if (b.type === 'dialtone' && !b.isEnemy && typeof e.applySonicSlow === 'function') {
                                 e.applySonicSlow(1.5, 0.70, effects);
                             }
-                            if (b.type === 'zeus_thunderbolt' && !b.isEnemy && typeof ZeusThunderbolt !== 'undefined') ZeusThunderbolt.onHit(b, e, finalDmg, enemies, effects, game);
+                            if (!b.isEnemy && typeof WeaponSystem !== 'undefined') WeaponSystem.onBulletHit(b, e, finalDmg, enemies, effects, game);
                             if (typeof GearPassives !== 'undefined') {
                                 GearPassives.onBulletHit(b, e, finalDmg, enemies, effects, game);
                             }
@@ -105,6 +105,7 @@ class CollisionSystem {
                             const radSum = b.radius + obs.radius;
                             if (Math.abs(odx) <= radSum && Math.abs(ody) <= radSum) {
                                 if (odx * odx + ody * ody < radSum * radSum) {
+                                    if (typeof WeaponSystem !== 'undefined' && WeaponSystem.onObstacleHit(b, obs, effects, game)) { break; }
                                     const destroyed = obs.takeDamage(b.damage, effects, game);
                                     if (destroyed && obs.type === 'crate') {
                                         game.drops.push(new Drop(obs.x, obs.y, 'xp', 20));

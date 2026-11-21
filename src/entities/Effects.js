@@ -418,8 +418,9 @@ class EffectsManager {
         this.lightningBeams.length = lbWrite;
 
         if (this.combatJuice) this.combatJuice.update(dt);
+        const gameRef = (typeof window !== 'undefined') ? window.gameInstance : null;
+        if (typeof ChronoRifle !== 'undefined') ChronoRifle.update(dt, gameRef);
         if (typeof KolossosArenaAtmosphere !== 'undefined') {
-            const gameRef = (typeof window !== 'undefined') ? window.gameInstance : null;
             KolossosArenaAtmosphere.update(dt, gameRef);
         }
     }
@@ -427,6 +428,9 @@ class EffectsManager {
     drawGround(ctx) {
         const cam = window.gameInstance ? window.gameInstance.camera : null;
         if (this.combatJuice) this.combatJuice.drawGround(ctx, cam);
+        if (typeof MobileAimAssist !== 'undefined' && window.gameInstance) {
+            MobileAimAssist.drawReticle(ctx, window.gameInstance);
+        }
         for (let i = 0; i < this.groundCracks.length; i++) {
             const gc = this.groundCracks[i];
             if (!cam || cam.isVisible(gc.x, gc.y, gc.radius + 30)) {
@@ -460,6 +464,7 @@ class EffectsManager {
             if (!cam || cam.isVisible(p.x, p.y, p.radius + 20)) p.draw(ctx);
         }
         if (this.combatJuice) this.combatJuice.drawWorld(ctx, cam);
+        if (typeof ChronoRifle !== 'undefined') ChronoRifle.drawWorld(ctx, cam);
 
         if (typeof KolossosArenaAtmosphere !== 'undefined') {
             KolossosArenaAtmosphere.drawWorldFog(ctx, cam);
@@ -493,6 +498,7 @@ class EffectsManager {
         this.groundCracks.length = 0;
         this.lightningBeams.length = 0;
         if (this.combatJuice) this.combatJuice.clear();
+        if (typeof ChronoRifle !== 'undefined') ChronoRifle.clear();
         if (typeof KolossosArenaAtmosphere !== 'undefined') {
             KolossosArenaAtmosphere.reset();
         }

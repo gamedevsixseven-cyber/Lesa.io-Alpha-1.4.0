@@ -38,10 +38,10 @@
     <link rel="stylesheet" href="styles/perks.css?v=1.5.36">
     <link rel="stylesheet" href="styles/chests.css?v=1.5.28">
     <link rel="stylesheet" href="styles/inventory.css?v=1.5.27">
-    <link rel="stylesheet" href="styles/tabs-shared.css?v=1.5.12">
+    <link rel="stylesheet" href="styles/tabs-shared.css?v=1.5.62">
     <link rel="stylesheet" href="styles/loading.css">
-    <link rel="stylesheet" href="styles/mobile.css?v=1.5.51">
-    <link rel="stylesheet" href="styles/mobile-modals.css?v=1.5.34">
+    <link rel="stylesheet" href="styles/mobile.css?v=1.5.62">
+    <link rel="stylesheet" href="styles/mobile-modals.css?v=1.5.62">
     <link rel="stylesheet" href="src/admin/admin.css?v=1.5.40">
     <link rel="stylesheet" href="styles/credits.css?v=1.4.0">
     <link rel="stylesheet" href="styles/gamemode.css?v=1.5.0">
@@ -425,6 +425,9 @@
                     <span class="btn-label">DASH</span>
                     <div class="mobile-btn-cooldown"></div>
                 </button>
+
+                <!-- Quick Auto-Fire Toggle Button (Mobile Only) -->
+                <button id="mobile-autofire-btn" class="mobile-action-btn" aria-label="Toggle Auto-Fire">🎯 AUTO OFF</button>
             </div>
         </div>
 
@@ -1688,6 +1691,94 @@
                                 </div>
                             </div>
 
+                            <!-- Weapon 7.6: M4 Carbine (Rare Chest Drop Unlock) -->
+                            <div class="weapon-card" data-weapon="m4_carbine">
+                                <div class="weapon-card-top">
+                                    <div class="weapon-card-left">
+                                        <div class="weapon-icon-wrap">
+                                            <img src="assets/WeaponIcons/M4Carbine.png" class="weapon-card-img"
+                                                alt="M4 Carbine">
+                                        </div>
+                                        <h3 class="weapon-name">M4 CARBINE</h3>
+                                    </div>
+                                    <div class="weapon-badge badge-rare">RARE</div>
+                                </div>
+                                <div class="weapon-stats-list">
+                                    <div class="weapon-stat-row"><span class="stat-key">Damage:</span> <span
+                                            class="stat-val">24 AP Round</span></div>
+                                    <div class="weapon-stat-row"><span class="stat-key">Fire Delay:</span> <span
+                                            class="stat-val">Auto (0.13s)</span></div>
+                                    <div class="weapon-stat-row"><span class="stat-key">Trait:</span> <span
+                                            class="stat-val">+8% Crit • 5.56 Pierce 1</span></div>
+                                </div>
+                            </div>
+
+                            <!-- Weapon 7.65: SPAS-12 (Rare Chest Drop Unlock) -->
+                            <div class="weapon-card" data-weapon="spas12">
+                                <div class="weapon-card-top">
+                                    <div class="weapon-card-left">
+                                        <div class="weapon-icon-wrap">
+                                            <img src="assets/WeaponIcons/Spas12.png" class="weapon-card-img"
+                                                alt="SPAS-12">
+                                        </div>
+                                        <h3 class="weapon-name">SPAS-12</h3>
+                                    </div>
+                                    <div class="weapon-badge badge-rare">RARE</div>
+                                </div>
+                                <div class="weapon-stats-list">
+                                    <div class="weapon-stat-row"><span class="stat-key">Damage:</span> <span
+                                            class="stat-val">16 x 6 Buckshot</span></div>
+                                    <div class="weapon-stat-row"><span class="stat-key">Fire Delay:</span> <span
+                                            class="stat-val">Pump (0.53s)</span></div>
+                                    <div class="weapon-stat-row"><span class="stat-key">Trait:</span> <span
+                                            class="stat-val">Knockback • 4th Breacher (8x)</span></div>
+                                </div>
+                            </div>
+
+                            <!-- Weapon 7.7: Boomerang Sawblade (Epic Chest Drop Unlock) -->
+                            <div class="weapon-card" data-weapon="boomerang_saw">
+                                <div class="weapon-card-top">
+                                    <div class="weapon-card-left">
+                                        <div class="weapon-icon-wrap">
+                                            <img src="assets/WeaponIcons/BoomerangSawblade.png" class="weapon-card-img"
+                                                alt="Boomerang Sawblade">
+                                        </div>
+                                        <h3 class="weapon-name">BOOMERANG SAWBLADE</h3>
+                                    </div>
+                                    <div class="weapon-badge badge-epic">EPIC</div>
+                                </div>
+                                <div class="weapon-stats-list">
+                                    <div class="weapon-stat-row"><span class="stat-key">Damage:</span> <span
+                                            class="stat-val">42 Out / +20% Ret</span></div>
+                                    <div class="weapon-stat-row"><span class="stat-key">Fire Delay:</span> <span
+                                            class="stat-val">Medium (0.37s)</span></div>
+                                    <div class="weapon-stat-row"><span class="stat-key">Trait:</span> <span
+                                            class="stat-val">+10% Crit • 2x Boomerang Slice</span></div>
+                                </div>
+                            </div>
+
+                            <!-- Weapon 7.8: Chrono Stutter Rifle (Legendary Chest Drop Unlock) -->
+                            <div class="weapon-card" data-weapon="chrono_rifle">
+                                <div class="weapon-card-top">
+                                    <div class="weapon-card-left">
+                                        <div class="weapon-icon-wrap">
+                                            <img src="assets/WeaponIcons/ChronoRifle.png" class="weapon-card-img"
+                                                alt="Chrono Stutter Rifle">
+                                        </div>
+                                        <h3 class="weapon-name">CHRONO STUTTER RIFLE</h3>
+                                    </div>
+                                    <div class="weapon-badge badge-legendary">LEGENDARY</div>
+                                </div>
+                                <div class="weapon-stats-list">
+                                    <div class="weapon-stat-row"><span class="stat-key">Damage:</span> <span
+                                            class="stat-val">24 Temporal</span></div>
+                                    <div class="weapon-stat-row"><span class="stat-key">Fire Delay:</span> <span
+                                            class="stat-val">Rapid (0.18s)</span></div>
+                                    <div class="weapon-stat-row"><span class="stat-key">Trait:</span> <span
+                                            class="stat-val">+12% Crit • 3-Hit Stasis + Shatter</span></div>
+                                </div>
+                            </div>
+
                             <!-- Weapon 8: Kiloumpas's Carbine (Boss Unlock - Wave 15) -->
                             <div class="weapon-card" data-weapon="carbine">
                                 <div class="weapon-card-top">
@@ -2699,12 +2790,16 @@
     <script src="src/weapons/HeroBaseWeapons/ChilliBlaster.js?v=1.2.4"></script>
     <script src="src/weapons/HeroBaseWeapons/MoneyGun.js?v=1.2.4"></script>
     <script src="src/weapons/HeroBaseWeapons/GreekFlag.js?v=1.5.56"></script>
+    <script src="src/weapons/M4Carbine.js?v=1.5.57"></script>
+    <script src="src/weapons/Spas12.js?v=1.5.61"></script>
+    <script src="src/weapons/BoomerangSawblade.js?v=1.5.59"></script>
+    <script src="src/weapons/ChronoRifle.js?v=1.5.61"></script>
     <script src="src/weapons/Exclusive/BubbleGun.js?v=1.2.4"></script>
     <script src="src/weapons/BossWeapons/KiloumpasCarbine.js?v=1.5.15"></script>
     <script src="src/weapons/BossWeapons/RoufDialToneBlaster.js?v=1.5.15"></script>
     <script src="src/weapons/BossWeapons/ZeusThunderbolt.js?v=1.5.30"></script>
     <script src="src/data/heroes.js?v=1.5.56"></script>
-    <script src="src/data/weapons.js?v=1.5.56"></script>
+    <script src="src/data/weapons.js?v=1.5.61"></script>
     <script src="src/data/skills.js?v=1.5.44"></script>
     <script src="src/data/quests.js?v=1.5.36"></script>
     <script src="src/data/tips.js?v=1.5.53"></script>
@@ -2714,7 +2809,7 @@
     <script src="src/data/perks.js?v=1.5.37"></script>
     <script src="src/data/gear.js?v=1.5.8"></script>
     <script src="src/data/gearEndgame.js?v=1.5.33"></script>
-    <script src="src/data/chests.js?v=1.5.8"></script>
+    <script src="src/data/chests.js?v=1.5.61"></script>
     <script src="src/data/materials.js?v=1.5.36"></script>
     <script src="src/data/bossRanks.js?v=1.5.16"></script>
     <script src="src/data/profile_cosmetics.js?v=1.5.49"></script>
@@ -2738,7 +2833,7 @@
     <script src="src/gear/GearPassives.js?v=1.5.41"></script>
 
     <!-- 3. AUDIO & SYNTHESIS -->
-    <script src="src/engine/ProceduralSynth.js?v=1.5.29"></script>
+    <script src="src/engine/ProceduralSynth.js?v=1.5.60"></script>
     <script src="src/audio.js?v=1.5.51"></script>
 
     <!-- 4. ENGINE SUBSYSTEMS -->
@@ -2755,7 +2850,7 @@
     <script src="src/dungeons/DungeonMapTheme.js?v=1.5.51"></script>
     <script src="src/dungeons/DungeonManager.js?v=1.5.51"></script>
     <script src="src/progression/BossRewardManager.js?v=1.5.44"></script>
-    <script src="src/engine/CollisionSystem.js?v=1.5.35"></script>
+    <script src="src/engine/CollisionSystem.js?v=1.5.59"></script>
     <script src="src/engine/NameValidator.js?v=1.2.2"></script>
     <script src="src/engine/EpicPerkEffects.js?v=1.5.35"></script>
     <script src="src/engine/LegendaryPerkEffects.js?v=1.5.45"></script>
@@ -2765,23 +2860,23 @@
     <!-- 5. ENTITIES & HERO RENDERING -->
     <script src="src/entities/ParticleEffect.js?v=1.5.26"></script>
     <script src="src/entities/ComicPopupCache.js?v=1.5.51"></script>
-    <script src="src/entities/CombatRenderFX.js?v=1.5.29"></script>
-    <script src="src/entities/CombatJuiceFX.js?v=1.5.56"></script>
-    <script src="src/entities/Effects.js?v=1.5.51"></script>
-    <script src="src/entities/Bullet.js?v=1.5.56"></script>
+    <script src="src/entities/CombatRenderFX.js?v=1.5.60"></script>
+    <script src="src/entities/CombatJuiceFX.js?v=1.5.60"></script>
+    <script src="src/entities/Effects.js?v=1.5.62"></script>
+    <script src="src/entities/Bullet.js?v=1.5.60"></script>
     <script src="src/entities/Drop.js?v=1.5.36"></script>
     <script src="src/entities/FoliageRenderer.js?v=1.5.26"></script>
     <script src="src/entities/Obstacle.js?v=1.5.35"></script>
     <script src="src/entities/WaterPuddle.js?v=1.2.2"></script>
-    <script src="src/entities/Weapons.js?v=1.5.56"></script>
+    <script src="src/entities/Weapons.js?v=1.5.61"></script>
     <script src="src/heroes/PsanasHero.js?v=1.2.2"></script>
     <script src="src/heroes/PetrosHero.js?v=1.2.2"></script>
     <script src="src/heroes/PsogasHero.js?v=1.2.2"></script>
-    <script src="src/heroes/FiftyBalosHero.js?v=1.5.29"></script>
+    <script src="src/heroes/FiftyBalosHero.js?v=1.5.59"></script>
     <script src="src/heroes/BilliasHero.js?v=1.3.0"></script>
     <script src="src/heroes/KitsosHero.js?v=1.3.0"></script>
     <script src="src/heroes/PsgiannhsHero.js?v=1.5.56"></script>
-    <script src="src/heroes/HeroSkinRenderer.js?v=1.5.56"></script>
+    <script src="src/heroes/HeroSkinRenderer.js?v=1.5.59"></script>
     <script src="src/entities/HeroRenderer.js?v=1.5.12"></script>
     <script src="src/skills/SeismicQuake.js?v=1.5.28"></script>
     <script src="src/skills/YayaScream.js?v=1.5.28"></script>
@@ -2838,7 +2933,7 @@
     <script src="src/dungeons/ZeusBoss.js?v=1.5.51"></script>
 
     <!-- 7. PROGRESSION & PROFILE -->
-    <script src="src/ui/UiIcons.js?v=1.5.56"></script>
+    <script src="src/ui/UiIcons.js?v=1.5.60"></script>
     <script src="src/progression/CurrencyManager.js?v=1.2.2"></script>
     <script src="src/progression/QuestManager.js?v=1.5.27"></script>
     <script src="src/profile/StatsManager.js?v=1.5.55"></script>
@@ -2848,12 +2943,12 @@
     <script src="src/ui/LoadingScreen.js?v=1.2.2"></script>
     <script src="src/ui/BossRewardModalUI.js?v=1.5.31"></script>
     <script src="src/ui/OlympusVictoryModal.js?v=1.5.41"></script>
-    <script src="src/ui/GearModalUI.js?v=1.5.47"></script>
+    <script src="src/ui/GearModalUI.js?v=1.5.62"></script>
     <script src="src/ui/ProfileCosmeticsUI.js?v=1.5.55"></script>
     <script src="src/ui/PublicProfileModal.js?v=1.5.55"></script>
     <script src="src/ui/LeaderboardModal.js?v=1.5.48"></script>
-    <script src="src/ui/ModalManager.js?v=1.5.56"></script>
-    <script src="src/ui/HUDController.js?v=1.5.56"></script>
+    <script src="src/ui/ModalManager.js?v=1.5.60"></script>
+    <script src="src/ui/HUDController.js?v=1.5.60"></script>
     <script src="src/ui/ProfileManager.js?v=1.5.55"></script>
     <script src="src/ui/HeroRoster.js?v=1.5.55"></script>
     <script src="src/ui/SkillManager.js?v=1.5.32"></script>
@@ -2866,19 +2961,20 @@
     <script src="src/ui/BossWarningOverlay.js?v=1.5.16"></script>
     <script src="src/ui/CinematicCutsceneOverlay.js?v=1.5.2"></script>
     <script src="src/ui/CreditsScreen.js?v=1.5.10"></script>
-    <script src="src/chests/ChestManager.js?v=1.5.29"></script>
-    <script src="src/ui/ChestModalUI.js?v=1.5.27"></script>
+    <script src="src/chests/ChestManager.js?v=1.5.61"></script>
+    <script src="src/ui/ChestModalUI.js?v=1.5.61"></script>
     <script src="src/progression/InventoryManager.js?v=1.5.36"></script>
     <script src="src/ui/InventoryModalUI.js?v=1.5.41"></script>
     <script src="src/ui/TributeManager.js?v=1.5.31"></script>
 
     <!-- 8.5. ADMIN & PLAYTESTING SUBSYSTEM -->
     <script src="src/admin/AdminAuth.js?v=1.5.50"></script>
-    <script src="src/admin/AdminCheats.js?v=1.5.56"></script>
+    <script src="src/admin/AdminCheats.js?v=1.5.60"></script>
     <script src="src/admin/AdminPanel.js?v=1.5.46"></script>
 
     <!-- 8.7. MOBILE TOUCH SUBSYSTEM -->
-    <script src="src/engine/TouchInput.js?v=1.5.51"></script>
+    <script src="src/engine/MobileAimAssist.js?v=1.5.62"></script>
+    <script src="src/engine/TouchInput.js?v=1.5.62"></script>
 
     <!-- 8.8. MULTIPLAYER CO-OP SUBSYSTEM (PLAYTEST) -->
     <script src="src/libs/peerjs.min.js"></script>
