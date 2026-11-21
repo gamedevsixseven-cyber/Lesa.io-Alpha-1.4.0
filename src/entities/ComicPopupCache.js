@@ -13,8 +13,8 @@
 class ComicTextCache {
     constructor() {
         this.cache = new Map();
-        const isMob = (typeof MobilePerf !== 'undefined' && MobilePerf.isMobile);
-        this.MAX_ENTRIES = isMob ? 80 : 420;
+        const mobPreset = (typeof MobilePerf !== 'undefined' && MobilePerf.isMobile) ? MobilePerf.getPreset() : null;
+        this.MAX_ENTRIES = mobPreset ? mobPreset.cacheMaxEntries : 420;
     }
 
     /**
@@ -78,9 +78,9 @@ class ComicThrottler {
     constructor() {
         this.recentKills = [];
         this.lastSplashTimes = new Map();
-        const isMob = (typeof MobilePerf !== 'undefined' && MobilePerf.isMobile);
-        this.MAX_ACTIVE_COMIC = isMob ? 4 : 6;  // Capped to punchy, readable popups
-        this.MAX_ACTIVE_DAMAGE = isMob ? 8 : 14; // Capped damage numbers
+        const mobPreset = (typeof MobilePerf !== 'undefined' && MobilePerf.isMobile) ? MobilePerf.getPreset() : null;
+        this.MAX_ACTIVE_COMIC = mobPreset ? mobPreset.maxComic : 6;  // Capped to punchy, readable popups
+        this.MAX_ACTIVE_DAMAGE = mobPreset ? mobPreset.maxDamage : 14; // Capped damage numbers
         this._lastMegaKoMs = 0;
         this._lastUtilityMs = 0;
     }

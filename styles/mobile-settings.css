@@ -1,0 +1,195 @@
+/* =====================================================================
+   Lesa.io - Mobile-Only Tabbed Settings, Graphics Presets & FPS Pill
+   Strictly inert on Desktop PC (all controls stay hidden on desktop).
+   ===================================================================== */
+
+#mobile-settings-tabs,
+#mobile-fps-pill,
+.setting-mobile-only {
+    display: none !important;
+}
+
+@media (pointer: coarse), screen and (max-height: 580px) and (orientation: landscape) {
+    /* Live Mobile Controls Custom Opacity */
+    #mobile-controls-container:not(.cutscene-hidden) .mobile-joystick-base.active,
+    #mobile-controls-container:not(.cutscene-hidden) .mobile-aim-base.active,
+    #mobile-controls-container:not(.cutscene-hidden) #mobile-actions-zone {
+        opacity: var(--mobile-controls-opacity, 1);
+    }
+
+    /* Lightweight Mobile FPS Counter Pill (top-left under player status card) */
+    #mobile-fps-pill:not(.hidden) {
+        display: inline-flex !important;
+        align-items: center;
+        justify-content: center;
+        position: fixed;
+        top: 6px;
+        left: 50%;
+        transform: translateX(-50%);
+        padding: 2px 9px;
+        border-radius: 999px;
+        background: rgba(15, 23, 42, 0.82);
+        border: 2px solid #1e272e;
+        box-shadow: 0 2px 0 #1e272e;
+        color: #2ed573;
+        font-family: 'Fredoka', sans-serif;
+        font-weight: 900;
+        font-size: 0.66rem;
+        letter-spacing: 0.5px;
+        z-index: 260;
+        pointer-events: none;
+        white-space: nowrap;
+    }
+
+    /* Mobile-Only Settings Tabs Bar */
+    #mobile-settings-tabs.mobile-settings-tabs {
+        display: flex !important;
+        gap: 6px;
+        margin-bottom: 10px;
+        padding: 4px;
+        background: #dfe4ea;
+        border: 2.5px solid #1e272e;
+        border-radius: 14px;
+        box-shadow: 0 3px 0 rgba(30, 39, 46, 0.25);
+    }
+
+    .mob-stab-btn {
+        flex: 1;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 5px;
+        padding: 7px 10px;
+        border: 2px solid transparent;
+        border-radius: 10px;
+        background: transparent;
+        color: #2f3542;
+        font-family: 'Fredoka', sans-serif;
+        font-weight: 900;
+        font-size: 0.82rem;
+        cursor: pointer;
+        transition: transform 0.1s ease, background 0.15s ease;
+        white-space: nowrap;
+    }
+
+    .mob-stab-btn.active {
+        background: linear-gradient(180deg, #ffeaa7 0%, #fed330 100%);
+        color: #1e272e;
+        border-color: #1e272e;
+        box-shadow: 0 2px 0 #1e272e;
+    }
+
+    .mob-stab-btn:active {
+        transform: translateY(1px);
+    }
+
+    /* Show mobile-only setting rows on touch devices */
+    .setting-mobile-only {
+        display: flex !important;
+    }
+
+    /* Active Tab Filtering (Scoped cleanly to .mob-tabs-active) */
+    #settings-modal.mob-tabs-active [data-mob-tab] {
+        display: none !important;
+    }
+    #settings-modal.mob-tabs-active[data-active-tab="graphics"] .setting-row[data-mob-tab="graphics"],
+    #settings-modal.mob-tabs-active[data-active-tab="audio"] .setting-row[data-mob-tab="audio"],
+    #settings-modal.mob-tabs-active[data-active-tab="gameplay"] .setting-row[data-mob-tab="gameplay"] {
+        display: flex !important;
+    }
+    #settings-modal.mob-tabs-active[data-active-tab="gameplay"] .settings-cloud-section[data-mob-tab="gameplay"] {
+        display: block !important;
+        margin-top: 10px !important;
+    }
+
+    /* Tighter, clean landscape modal rhythm for mobile settings */
+    #settings-modal .modal-panel {
+        max-width: min(94vw, 560px) !important;
+        max-height: 92vh !important;
+        padding: 10px 14px !important;
+        touch-action: pan-y;
+    }
+    #settings-modal.mob-tabs-active .modal-title {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        paint-order: stroke fill;
+        text-shadow: 2px 2px 0 var(--dark-outline);
+        -webkit-text-stroke: 2px var(--dark-outline);
+        line-height: 1.15;
+    }
+    #settings-modal.mob-tabs-active .setting-info {
+        text-align: left;
+    }
+    #settings-modal .settings-list {
+        display: flex;
+        flex-direction: column;
+        gap: 6px !important;
+        margin-bottom: 6px !important;
+    }
+    #settings-modal .setting-row {
+        padding: 5.5px 11px !important;
+        border-radius: 13px !important;
+        border-width: 2.5px !important;
+        gap: 10px !important;
+    }
+    #settings-modal .setting-title {
+        font-size: 0.8rem !important;
+    }
+    #settings-modal .setting-desc {
+        font-size: 0.65rem !important;
+        line-height: 1.15 !important;
+    }
+    #settings-modal .modal-actions {
+        margin-top: 8px !important;
+    }
+
+    /* Graphics Quality Segmented Pills (Low / Med / High) */
+    .mob-preset-group {
+        display: inline-flex;
+        gap: 4px;
+        background: #eef1f5;
+        padding: 3px;
+        border-radius: 11px;
+        border: 2px solid #1e272e;
+        flex-shrink: 0;
+    }
+
+    .mob-seg-btn {
+        padding: 5px 10px;
+        border: 2px solid transparent;
+        border-radius: 8px;
+        background: transparent;
+        color: #57606f;
+        font-family: 'Luckiest Guy', 'Fredoka', sans-serif;
+        font-size: 0.72rem;
+        letter-spacing: 0.4px;
+        cursor: pointer;
+        transition: background 0.12s ease, transform 0.1s ease;
+    }
+
+    .mob-seg-btn.active {
+        border-color: #1e272e;
+        color: #1e272e;
+        box-shadow: 0 2px 0 #1e272e;
+    }
+
+    .mob-seg-btn[data-quality="low"].active {
+        background: linear-gradient(180deg, #7ef9ff 0%, #00d2d3 100%);
+    }
+    .mob-seg-btn[data-quality="medium"].active {
+        background: linear-gradient(180deg, #ffeaa7 0%, #ffa502 100%);
+    }
+    .mob-seg-btn[data-quality="high"].active {
+        background: linear-gradient(180deg, #7bed9f 0%, #2ed573 100%);
+    }
+
+    .mob-cycle-btn {
+        min-width: 92px;
+        padding: 5px 10px !important;
+        font-size: 0.76rem !important;
+        background: linear-gradient(180deg, #74b9ff 0%, #0984e3 100%) !important;
+        color: #ffffff !important;
+    }
+}

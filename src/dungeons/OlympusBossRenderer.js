@@ -243,7 +243,7 @@ class OlympusBossRenderer {
             ctx.fill();
 
             ctx.fillStyle = '#e056fd';
-            if (!(typeof MobilePerf !== 'undefined' && MobilePerf.isMobile)) {
+            if (typeof MobilePerf === 'undefined' || MobilePerf.shouldUseGlows()) {
                 ctx.shadowColor = '#e056fd';
                 ctx.shadowBlur = 8;
             }
@@ -360,7 +360,7 @@ class OlympusBossRenderer {
             ctx.lineWidth = 2.4;
             ctx.strokeRect(-r * 0.42, -r * 0.34, r * 0.84, r * 0.14);
             ctx.fillStyle = '#81ecec';
-            if (!(typeof MobilePerf !== 'undefined' && MobilePerf.isMobile)) {
+            if (typeof MobilePerf === 'undefined' || MobilePerf.shouldUseGlows()) {
                 ctx.shadowColor = '#00cec9';
                 ctx.shadowBlur = 10;
             }
@@ -390,7 +390,7 @@ class OlympusBossRenderer {
 
         if (!flash) {
             ctx.fillStyle = '#00f5ff';
-            if (!(typeof MobilePerf !== 'undefined' && MobilePerf.isMobile)) {
+            if (typeof MobilePerf === 'undefined' || MobilePerf.shouldUseGlows()) {
                 ctx.shadowColor = '#00f5ff';
                 ctx.shadowBlur = 7;
             }

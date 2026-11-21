@@ -416,14 +416,19 @@ class Obstacle {
     }
 
     static getScaledTreeSprite() {
-        if (Obstacle._scaledTreeCanvas) return Obstacle._scaledTreeCanvas;
+        const targetW = (typeof MobilePerf !== 'undefined' && MobilePerf.isMobile) ? MobilePerf.getPreset().treeSize : 324;
+        if (Obstacle._scaledTreeCanvas && Obstacle._scaledTreeCanvas.width === targetW) {
+            return Obstacle._scaledTreeCanvas;
+        }
         const img = Obstacle.getTreeImage();
         if (!img || !img.complete || img.naturalWidth <= 0) return null;
-        // Pre-downsample 1254x1254 tree once to 1.5x display resolution to avoid 6x Lanczos resample per tree per frame
+        // Pre-downsample 1254x1254 tree once at tier-appropriate resolution (High mobile uses crisp 460px)
         const c = document.createElement('canvas');
-        c.width = 324;
-        c.height = 316;
+        c.width = targetW;
+        c.height = Math.round(targetW * (316 / 324));
         const tctx = c.getContext('2d');
+        tctx.imageSmoothingEnabled = true;
+        tctx.imageSmoothingQuality = (typeof MobilePerf !== 'undefined' && MobilePerf.isHighGraphics()) ? 'high' : 'medium';
         tctx.drawImage(img, 0, 0, c.width, c.height);
         Obstacle._scaledTreeCanvas = c;
         return c;
@@ -438,7 +443,13 @@ class Obstacle {
         const drawX = -w * 0.5;
         const drawY = -h * 0.86;
 
-        // Soft natural ground shadow under trunk base
+        // Soft natural ground shadow under trunk base (richer soft canopy penumbra in High mobile mode)
+        if (typeof MobilePerf !== 'undefined' && MobilePerf.isHighGraphics()) {
+            ctx.fillStyle = 'rgba(14, 36, 12, 0.16)';
+            ctx.beginPath();
+            ctx.ellipse(0, 8, 66, 22, 0, 0, Math.PI * 2);
+            ctx.fill();
+        }
         ctx.fillStyle = 'rgba(20, 45, 15, 0.30)';
         ctx.beginPath();
         ctx.ellipse(0, 4, 38, 14, 0, 0, Math.PI * 2);

@@ -43,10 +43,10 @@ class EffectsManager {
         this.groundCracks = [];
         this.lightningBeams = [];
 
-        // Concurrency budget caps (AAA engine throttling; tighter budget on mobile)
-        const isMob = (typeof MobilePerf !== 'undefined' && MobilePerf.isMobile);
-        this.MAX_POPUPS = isMob ? 10 : 16;
-        this.MAX_PARTICLES = isMob ? 22 : 50;
+        // Concurrency budget caps (preset-aware on mobile, full fidelity on high/desktop)
+        const mobPreset = (typeof MobilePerf !== 'undefined' && MobilePerf.isMobile) ? MobilePerf.getPreset() : null;
+        this.MAX_POPUPS = mobPreset ? mobPreset.maxPopups : 16;
+        this.MAX_PARTICLES = mobPreset ? mobPreset.maxParticles : 50;
 
         // Settings toggles
         this.showPopups = localStorage.getItem('lesaio_popups') !== 'false'; // default true
@@ -339,6 +339,9 @@ class EffectsManager {
     }
 
     drawScreenSpace(ctx, width, height, player) {
+        if (typeof MobilePerf !== 'undefined' && MobilePerf.isHighGraphics()) {
+            MobilePerf.drawHighQualityLighting(ctx, width, height, window.gameInstance);
+        }
         if (typeof KolossosArenaAtmosphere !== 'undefined') {
             KolossosArenaAtmosphere.drawScreenFog(ctx, width, height);
         }

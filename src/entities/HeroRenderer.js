@@ -34,10 +34,16 @@ class HeroRenderer {
 
         // 2. Dynamic Ground Shadow (Grounded at arena floor, scales down with height)
         const shadowAlpha = 0.32 * Math.max(0.08, 1.0 - airZ / 220);
-        ctx.fillStyle = `rgba(0, 0, 0, ${shadowAlpha})`;
-        ctx.beginPath();
         const heightScale = Math.max(0.26, 1.0 - airZ / 220);
         const shadowScale = (player.isMoving ? 1.0 + Math.sin((player.walkCycle || 0) * 2) * 0.08 : 1.0) * heightScale;
+        if (typeof MobilePerf !== 'undefined' && MobilePerf.isHighGraphics()) {
+            ctx.fillStyle = `rgba(12, 24, 28, ${shadowAlpha * 0.45})`;
+            ctx.beginPath();
+            ctx.ellipse(0, player.radius * 0.8, player.radius * 1.1 * shadowScale, player.radius * 0.42 * shadowScale, 0, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        ctx.fillStyle = `rgba(0, 0, 0, ${shadowAlpha})`;
+        ctx.beginPath();
         ctx.ellipse(0, player.radius * 0.75, player.radius * 0.85 * shadowScale, player.radius * 0.32 * shadowScale, 0, 0, Math.PI * 2);
         ctx.fill();
 

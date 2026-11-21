@@ -144,7 +144,7 @@ class OlympusIceRenderer {
 
             // Glowing predator eye + fierce brow
             ctx.fillStyle = '#00f5ff';
-            if (!(typeof MobilePerf !== 'undefined' && MobilePerf.isMobile)) {
+            if (typeof MobilePerf === 'undefined' || MobilePerf.shouldUseGlows()) {
                 ctx.shadowColor = '#00d2d3';
                 ctx.shadowBlur = 6;
             }
@@ -254,7 +254,7 @@ class OlympusIceRenderer {
             ctx.save();
             ctx.translate(0, -r * 0.08);
             ctx.rotate((golem.age || 0) * 0.04);
-            if (!(typeof MobilePerf !== 'undefined' && MobilePerf.isMobile)) {
+            if (typeof MobilePerf === 'undefined' || MobilePerf.shouldUseGlows()) {
                 ctx.shadowColor = '#00f5ff';
                 ctx.shadowBlur = 10;
             }
@@ -272,7 +272,7 @@ class OlympusIceRenderer {
             ctx.fillStyle = '#0c1824';
             ctx.fillRect(-10, -8, 22, 6);
             ctx.fillStyle = '#00f5ff';
-            if (!(typeof MobilePerf !== 'undefined' && MobilePerf.isMobile)) {
+            if (typeof MobilePerf === 'undefined' || MobilePerf.shouldUseGlows()) {
                 ctx.shadowColor = '#00f5ff';
                 ctx.shadowBlur = 7;
             }

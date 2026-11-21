@@ -23,6 +23,7 @@ class HUDController {
         this.weaponIcon = document.getElementById('weapon-icon');
         this.weaponName = document.getElementById('weapon-name');
         this.hudAvatarImg = document.getElementById('hud-avatar-img');
+        this.mobileFpsPill = document.getElementById('mobile-fps-pill');
 
         // Clickable HUD badges
         if (this.dashBadge) {
@@ -369,6 +370,9 @@ class HUDController {
         const minimapEvery = (typeof MobilePerf !== 'undefined' && MobilePerf.isMobile) ? 6 : 2;
         if (this.minimapFrameCount % minimapEvery === 0 && window.gameInstance) {
             this.drawMinimap(player, window.gameInstance.enemies, window.gameInstance.arena);
+        }
+        if (this.mobileFpsPill && typeof MobilePerf !== 'undefined' && MobilePerf.isMobile) {
+            MobilePerf.tickFpsHUD(this.mobileFpsPill);
         }
     }
 

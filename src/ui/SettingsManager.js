@@ -20,6 +20,18 @@ class SettingsManager {
         this.toggleShakeBtn = document.getElementById('toggle-shake-btn');
         this.toggleAutofireBtn = document.getElementById('toggle-autofire-btn');
 
+        // Mobile-Only Tabbed Settings & Extra Controls
+        this.mobTabBtns = document.querySelectorAll('#mobile-settings-tabs .mob-stab-btn');
+        this.mobGfxBtns = document.querySelectorAll('.mob-seg-btn[data-quality]');
+        this.toggleFpsBtn = document.getElementById('toggle-fps-btn');
+        this.toggleMuteBtn = document.getElementById('toggle-mute-btn');
+        this.toggleHapticsBtn = document.getElementById('toggle-haptics-btn');
+        this.toggleAimReticleBtn = document.getElementById('toggle-aim-reticle-btn');
+        this.cycleAimRangeBtn = document.getElementById('cycle-aim-range-btn');
+        this.cycleTouchOpacityBtn = document.getElementById('cycle-touch-opacity-btn');
+        this.toggleAutopauseBtn = document.getElementById('toggle-autopause-btn');
+        this.activeMobileTab = this._loadInitialMobileTab();
+
         // Cloud & Save Elements
         this.bindGoogleBtn = document.getElementById('bind-google-btn');
         this.syncCloudBtn = document.getElementById('sync-cloud-btn');
@@ -37,6 +49,10 @@ class SettingsManager {
     }
 
     initEvents() {
+        if (this.settingsModal) {
+            if (this.settingsModal.dataset.eventsBound === '1') return;
+            this.settingsModal.dataset.eventsBound = '1';
+        }
         const menuSettingsBtn = document.getElementById('menu-settings-btn');
         if (menuSettingsBtn) {
             menuSettingsBtn.addEventListener('click', () => {
@@ -119,6 +135,80 @@ class SettingsManager {
                     if (typeof window.gameInstance.touchInput.updateAutoFireState === 'function') {
                         window.gameInstance.touchInput.updateAutoFireState();
                     }
+                }
+                this.updateSettingsUI();
+            });
+        }
+
+        // ================= MOBILE-ONLY TABS & EXTRA SETTINGS =================
+        this.mobTabBtns.forEach((btn) => {
+            btn.addEventListener('click', () => {
+                if (window.soundEngine) window.soundEngine.playSelect();
+                this.setMobileTab(btn.getAttribute('data-mob-tab-btn'));
+            });
+        });
+
+        this.mobGfxBtns.forEach((btn) => {
+            btn.addEventListener('click', () => {
+                if (window.soundEngine) window.soundEngine.playSelect();
+                const q = btn.getAttribute('data-quality');
+                if (typeof MobilePerf !== 'undefined') {
+                    MobilePerf.setGraphicsQuality(q, window.gameInstance);
+                    MobilePerf.tickFpsHUD(document.getElementById('mobile-fps-pill'));
+                }
+                this.updateSettingsUI();
+            });
+        });
+
+        this._bindLocalToggle(this.toggleFpsBtn, 'lesaio_show_fps', false, () => {
+            if (typeof MobilePerf !== 'undefined') {
+                MobilePerf.tickFpsHUD(document.getElementById('mobile-fps-pill'));
+            }
+        });
+        this._bindLocalToggle(this.toggleHapticsBtn, 'lesaio_haptics', true, (next) => {
+            if (next && window.gameInstance && window.gameInstance.touchInput) {
+                window.gameInstance.touchInput.vibrate(20);
+            }
+        });
+        this._bindLocalToggle(this.toggleAimReticleBtn, 'lesaio_aim_reticle', true);
+        this._bindLocalToggle(this.toggleAutopauseBtn, 'lesaio_mobile_autopause', true);
+
+        if (this.toggleMuteBtn) {
+            this.toggleMuteBtn.addEventListener('click', () => {
+                const nextMuted = !(window.soundEngine && window.soundEngine.muted);
+                if (window.soundEngine && typeof window.soundEngine.setMuted === 'function') {
+                    window.soundEngine.setMuted(nextMuted);
+                    if (!nextMuted) window.soundEngine.playSelect();
+                }
+                this.updateSettingsUI();
+            });
+        }
+
+        if (this.cycleAimRangeBtn) {
+            this.cycleAimRangeBtn.addEventListener('click', () => {
+                if (window.soundEngine) window.soundEngine.playSelect();
+                const steps = [520, 750, 980];
+                const cur = (typeof MobilePerf !== 'undefined') ? MobilePerf.getAutoAimRange() : 750;
+                const idx = steps.indexOf(cur);
+                const next = steps[(idx + 1) % steps.length];
+                localStorage.setItem('lesaio_autoaim_range', String(next));
+                if (window.gameInstance && window.gameInstance.touchInput) {
+                    window.gameInstance.touchInput.applyPreferences();
+                }
+                this.updateSettingsUI();
+            });
+        }
+
+        if (this.cycleTouchOpacityBtn) {
+            this.cycleTouchOpacityBtn.addEventListener('click', () => {
+                if (window.soundEngine) window.soundEngine.playSelect();
+                const steps = [1.0, 0.75, 0.5];
+                const cur = (typeof MobilePerf !== 'undefined') ? MobilePerf.getTouchOpacity() : 1.0;
+                const idx = steps.findIndex((s) => Math.abs(s - cur) < 0.05);
+                const next = steps[(idx + 1) % steps.length];
+                localStorage.setItem('lesaio_touch_opacity', String(next));
+                if (window.gameInstance && window.gameInstance.touchInput) {
+                    window.gameInstance.touchInput.applyPreferences();
                 }
                 this.updateSettingsUI();
             });
@@ -331,32 +421,84 @@ class SettingsManager {
             if (this.sfxValText) this.sfxValText.textContent = `${sfxVal}%`;
         }
 
-        if (this.togglePopupsBtn) {
-            const on = window.effectsManager ? window.effectsManager.showPopups : true;
-            if (typeof UiIcons !== 'undefined') UiIcons.setRichText(this.togglePopupsBtn, on ? 'ON ✅' : 'OFF ❌', 'ui-icon-sm');
-            else this.togglePopupsBtn.textContent = on ? 'ON ✅' : 'OFF ❌';
-            this.togglePopupsBtn.className = on ? 'comic-btn comic-btn-sm toggle-on' : 'comic-btn comic-btn-sm toggle-off';
-        }
-        if (this.toggleDamageBtn) {
-            const on = window.effectsManager ? window.effectsManager.showDamage : true;
-            if (typeof UiIcons !== 'undefined') UiIcons.setRichText(this.toggleDamageBtn, on ? 'ON ✅' : 'OFF ❌', 'ui-icon-sm');
-            else this.toggleDamageBtn.textContent = on ? 'ON ✅' : 'OFF ❌';
-            this.toggleDamageBtn.className = on ? 'comic-btn comic-btn-sm toggle-on' : 'comic-btn comic-btn-sm toggle-off';
-        }
-        if (this.toggleShakeBtn) {
-            const on = localStorage.getItem('lesaio_screenshake') !== 'false';
-            if (typeof UiIcons !== 'undefined') UiIcons.setRichText(this.toggleShakeBtn, on ? 'ON ✅' : 'OFF ❌', 'ui-icon-sm');
-            else this.toggleShakeBtn.textContent = on ? 'ON ✅' : 'OFF ❌';
-            this.toggleShakeBtn.className = on ? 'comic-btn comic-btn-sm toggle-on' : 'comic-btn comic-btn-sm toggle-off';
-        }
-        if (this.toggleAutofireBtn) {
-            const on = localStorage.getItem('lesaio_autofire') === 'true';
-            if (typeof UiIcons !== 'undefined') UiIcons.setRichText(this.toggleAutofireBtn, on ? 'ON ✅' : 'OFF ❌', 'ui-icon-sm');
-            else this.toggleAutofireBtn.textContent = on ? 'ON ✅' : 'OFF ❌';
-            this.toggleAutofireBtn.className = on ? 'comic-btn comic-btn-sm toggle-on' : 'comic-btn comic-btn-sm toggle-off';
-        }
+        this._renderToggleBtn(this.togglePopupsBtn, window.effectsManager ? window.effectsManager.showPopups : true);
+        this._renderToggleBtn(this.toggleDamageBtn, window.effectsManager ? window.effectsManager.showDamage : true);
+        this._renderToggleBtn(this.toggleShakeBtn, localStorage.getItem('lesaio_screenshake') !== 'false');
+        this._renderToggleBtn(this.toggleAutofireBtn, localStorage.getItem('lesaio_autofire') === 'true');
+        this._updateMobileSettingsUI();
 
         this.updateCloudUI();
+    }
+
+    _loadInitialMobileTab() {
+        const saved = localStorage.getItem('lesaio_mob_settings_tab');
+        return (saved === 'graphics' || saved === 'audio' || saved === 'gameplay') ? saved : 'graphics';
+    }
+
+    _bindLocalToggle(btn, storageKey, defaultVal, afterFn = null) {
+        if (!btn) return;
+        btn.addEventListener('click', () => {
+            if (window.soundEngine) window.soundEngine.playSelect();
+            const raw = localStorage.getItem(storageKey);
+            const cur = raw === null ? defaultVal : (raw === 'true');
+            const next = !cur;
+            localStorage.setItem(storageKey, String(next));
+            if (afterFn) afterFn(next);
+            this.updateSettingsUI();
+        });
+    }
+
+    _renderToggleBtn(btn, isOn) {
+        if (!btn) return;
+        if (typeof UiIcons !== 'undefined') UiIcons.setRichText(btn, isOn ? 'ON ✅' : 'OFF ❌', 'ui-icon-sm');
+        else btn.textContent = isOn ? 'ON ✅' : 'OFF ❌';
+        btn.className = isOn ? 'comic-btn comic-btn-sm toggle-on' : 'comic-btn comic-btn-sm toggle-off';
+    }
+
+    setMobileTab(tab) {
+        const valid = (tab === 'graphics' || tab === 'audio' || tab === 'gameplay') ? tab : 'graphics';
+        this.activeMobileTab = valid;
+        localStorage.setItem('lesaio_mob_settings_tab', valid);
+        this._syncMobileTabDOM();
+    }
+
+    _syncMobileTabDOM() {
+        const isMob = (typeof MobilePerf !== 'undefined' && MobilePerf.isMobile);
+        if (this.settingsModal) {
+            this.settingsModal.classList.toggle('mob-tabs-active', !!isMob);
+            if (isMob) this.settingsModal.setAttribute('data-active-tab', this.activeMobileTab);
+            else this.settingsModal.removeAttribute('data-active-tab');
+        }
+        this.mobTabBtns.forEach((btn) => {
+            const active = btn.getAttribute('data-mob-tab-btn') === this.activeMobileTab;
+            btn.classList.toggle('active', active);
+            btn.setAttribute('aria-selected', active ? 'true' : 'false');
+        });
+    }
+
+    _updateMobileSettingsUI() {
+        this._syncMobileTabDOM();
+        if (typeof MobilePerf === 'undefined' || !MobilePerf.isMobile) return;
+
+        const quality = MobilePerf.getGraphicsQuality();
+        this.mobGfxBtns.forEach((btn) => {
+            btn.classList.toggle('active', btn.getAttribute('data-quality') === quality);
+        });
+
+        this._renderToggleBtn(this.toggleFpsBtn, MobilePerf.shouldShowFps());
+        this._renderToggleBtn(this.toggleMuteBtn, !!(window.soundEngine && window.soundEngine.muted));
+        this._renderToggleBtn(this.toggleHapticsBtn, MobilePerf.isHapticsEnabled());
+        this._renderToggleBtn(this.toggleAimReticleBtn, MobilePerf.shouldShowAimReticle());
+        this._renderToggleBtn(this.toggleAutopauseBtn, MobilePerf.shouldAutoPauseOnBlur());
+
+        if (this.cycleAimRangeBtn) {
+            const range = MobilePerf.getAutoAimRange();
+            this.cycleAimRangeBtn.textContent = range <= 550 ? 'SHORT' : (range >= 900 ? 'FAR' : 'NORMAL');
+        }
+        if (this.cycleTouchOpacityBtn) {
+            const pct = Math.round(MobilePerf.getTouchOpacity() * 100);
+            this.cycleTouchOpacityBtn.textContent = `${pct}%`;
+        }
     }
 
     showSettingsModal() {

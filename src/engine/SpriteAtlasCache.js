@@ -199,6 +199,17 @@ class SpriteAtlasCache {
             entries: SpriteAtlasCache._entries.size
         };
     }
+
+    static clearCache() {
+        if (typeof MobilePerf !== 'undefined' && MobilePerf.isMobile) {
+            for (const p of SpriteAtlasCache._pages) {
+                if (p && p.canvas) MobilePerf.releaseCanvas(p.canvas);
+            }
+        }
+        SpriteAtlasCache._pages.length = 0;
+        SpriteAtlasCache._entries.clear();
+        SpriteAtlasCache._fontKeys.clear();
+    }
 }
 
 window.SpriteAtlasCache = SpriteAtlasCache;

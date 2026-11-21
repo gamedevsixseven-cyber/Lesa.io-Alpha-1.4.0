@@ -42,6 +42,7 @@
     <link rel="stylesheet" href="styles/loading.css">
     <link rel="stylesheet" href="styles/mobile.css?v=1.5.62">
     <link rel="stylesheet" href="styles/mobile-modals.css?v=1.5.62">
+    <link rel="stylesheet" href="styles/mobile-settings.css?v=1.5.65">
     <link rel="stylesheet" href="src/admin/admin.css?v=1.5.40">
     <link rel="stylesheet" href="styles/credits.css?v=1.4.0">
     <link rel="stylesheet" href="styles/gamemode.css?v=1.5.0">
@@ -310,6 +311,7 @@
 
         <!-- ================= IN-GAME CARTOON HUD ================= -->
         <div id="game-hud" class="hidden">
+            <div id="mobile-fps-pill" class="mobile-fps-pill hidden">60 FPS</div>
             <!-- Top Row -->
             <div class="hud-top">
                 <!-- Player Status Card -->
@@ -2044,9 +2046,38 @@
                     SETTINGS</h2>
                 <p class="modal-subtitle">Customize your cartoon game experience:</p>
 
+                <!-- Mobile-Only Settings Category Tabs (Strictly hidden on Desktop PC) -->
+                <div id="mobile-settings-tabs" class="mobile-settings-tabs setting-mobile-only" role="tablist">
+                    <button type="button" class="mob-stab-btn active" data-mob-tab-btn="graphics" role="tab" aria-selected="true">🎨 Graphics</button>
+                    <button type="button" class="mob-stab-btn" data-mob-tab-btn="audio" role="tab" aria-selected="false">🔊 Audio</button>
+                    <button type="button" class="mob-stab-btn" data-mob-tab-btn="gameplay" role="tab" aria-selected="false">🎮 Gameplay</button>
+                </div>
+
                 <div class="settings-list">
+                    <!-- Mobile-Only Graphics Quality Preset -->
+                    <div id="setting-row-graphics-preset" class="setting-row setting-mobile-only" data-mob-tab="graphics">
+                        <div class="setting-info">
+                            <div class="setting-title">Graphics Quality (Mobile)</div>
+                            <div class="setting-desc">Low boosts FPS; High sharpens Retina clarity, glows & terrain</div>
+                        </div>
+                        <div class="mob-preset-group" role="group" aria-label="Mobile Graphics Quality">
+                            <button type="button" id="mob-gfx-low" class="mob-seg-btn" data-quality="low">LOW</button>
+                            <button type="button" id="mob-gfx-med" class="mob-seg-btn active" data-quality="medium">MED</button>
+                            <button type="button" id="mob-gfx-high" class="mob-seg-btn" data-quality="high">HIGH</button>
+                        </div>
+                    </div>
+
+                    <!-- Mobile-Only FPS Counter Toggle -->
+                    <div id="setting-row-show-fps" class="setting-row setting-mobile-only" data-mob-tab="graphics">
+                        <div class="setting-info">
+                            <div class="setting-title">Show FPS Counter (Mobile)</div>
+                            <div class="setting-desc">Display live frame rate & quality badge in battle</div>
+                        </div>
+                        <button id="toggle-fps-btn" class="comic-btn comic-btn-sm">OFF</button>
+                    </div>
+
                     <!-- Music Volume Slider -->
-                    <div class="setting-row">
+                    <div class="setting-row" data-mob-tab="audio">
                         <div class="setting-info">
                             <div class="setting-title"><img src="assets/ui-icons/music.svg" class="ui-icon ui-icon-sm"
                                     alt=""> Music Volume (BGM)</div>
@@ -2060,7 +2091,7 @@
                     </div>
 
                     <!-- Game Sounds / SFX Volume Slider -->
-                    <div class="setting-row">
+                    <div class="setting-row" data-mob-tab="audio">
                         <div class="setting-info">
                             <div class="setting-title"><img src="assets/ui-icons/sound.svg" class="ui-icon ui-icon-sm"
                                     alt=""> Game Sounds (SFX)</div>
@@ -2073,8 +2104,26 @@
                         </div>
                     </div>
 
+                    <!-- Mobile-Only Mute All Audio Toggle -->
+                    <div id="setting-row-mute-all" class="setting-row setting-mobile-only" data-mob-tab="audio">
+                        <div class="setting-info">
+                            <div class="setting-title">Mute All Audio (Mobile)</div>
+                            <div class="setting-desc">Quickly silence background music and combat SFX</div>
+                        </div>
+                        <button id="toggle-mute-btn" class="comic-btn comic-btn-sm">OFF</button>
+                    </div>
+
+                    <!-- Mobile-Only Haptic Vibration Toggle -->
+                    <div id="setting-row-haptics" class="setting-row setting-mobile-only" data-mob-tab="audio">
+                        <div class="setting-info">
+                            <div class="setting-title">Haptic Vibration (Mobile)</div>
+                            <div class="setting-desc">Tactile pulse feedback when pressing Dash or Skills</div>
+                        </div>
+                        <button id="toggle-haptics-btn" class="comic-btn comic-btn-sm">ON</button>
+                    </div>
+
                     <!-- Comic Popups Toggle -->
-                    <div class="setting-row">
+                    <div class="setting-row" data-mob-tab="graphics">
                         <div class="setting-info">
                             <div class="setting-title">Comic Popups ("POW!", "K.O!", "BOING!")</div>
                             <div class="setting-desc">Show cartoon comic text reactions on hits and events</div>
@@ -2084,7 +2133,7 @@
                     </div>
 
                     <!-- Damage Numbers Toggle -->
-                    <div class="setting-row">
+                    <div class="setting-row" data-mob-tab="graphics">
                         <div class="setting-info">
                             <div class="setting-title">Damage Numbers</div>
                             <div class="setting-desc">Display floating damage values on hits</div>
@@ -2094,7 +2143,7 @@
                     </div>
 
                     <!-- Screen Shake Toggle -->
-                    <div class="setting-row">
+                    <div class="setting-row" data-mob-tab="graphics">
                         <div class="setting-info">
                             <div class="setting-title">Screen Shake</div>
                             <div class="setting-desc">Impact camera shake on heavy explosions & hits</div>
@@ -2104,7 +2153,7 @@
                     </div>
 
                     <!-- Mobile-Only Auto Fire Toggle -->
-                    <div id="setting-row-autofire" class="setting-row setting-mobile-only">
+                    <div id="setting-row-autofire" class="setting-row setting-mobile-only" data-mob-tab="gameplay">
                         <div class="setting-info">
                             <div class="setting-title"><img src="assets/ui-icons/target.svg" class="ui-icon ui-icon-sm"
                                     alt=""> Auto Fire (Mobile)</div>
@@ -2113,10 +2162,47 @@
                         <button id="toggle-autofire-btn" class="comic-btn comic-btn-sm">OFF <img
                                 src="assets/ui-icons/cross.svg" class="ui-icon ui-icon-sm" alt=""></button>
                     </div>
+
+                    <!-- Mobile-Only Aim Assist Lock Indicator Toggle -->
+                    <div id="setting-row-aim-reticle" class="setting-row setting-mobile-only" data-mob-tab="gameplay">
+                        <div class="setting-info">
+                            <div class="setting-title"><img src="assets/ui-icons/target.svg" class="ui-icon ui-icon-sm"
+                                    alt=""> Aim Assist Indicator (Mobile)</div>
+                            <div class="setting-desc">Show target lock ring around locked enemies & crystals</div>
+                        </div>
+                        <button id="toggle-aim-reticle-btn" class="comic-btn comic-btn-sm">ON</button>
+                    </div>
+
+                    <!-- Mobile-Only Auto-Aim Range Cycle -->
+                    <div id="setting-row-aim-range" class="setting-row setting-mobile-only" data-mob-tab="gameplay">
+                        <div class="setting-info">
+                            <div class="setting-title">Auto-Aim Lock Range (Mobile)</div>
+                            <div class="setting-desc">Adjust maximum lock-on distance for mobile auto-aim</div>
+                        </div>
+                        <button type="button" id="cycle-aim-range-btn" class="comic-btn comic-btn-sm mob-cycle-btn">NORMAL</button>
+                    </div>
+
+                    <!-- Mobile-Only Touch Controls Opacity Cycle -->
+                    <div id="setting-row-touch-opacity" class="setting-row setting-mobile-only" data-mob-tab="gameplay">
+                        <div class="setting-info">
+                            <div class="setting-title">Controls Opacity (Mobile)</div>
+                            <div class="setting-desc">Adjust transparency of touch joysticks & skill buttons</div>
+                        </div>
+                        <button type="button" id="cycle-touch-opacity-btn" class="comic-btn comic-btn-sm mob-cycle-btn">100%</button>
+                    </div>
+
+                    <!-- Mobile-Only Auto-Pause on App Switch Toggle -->
+                    <div id="setting-row-autopause" class="setting-row setting-mobile-only" data-mob-tab="gameplay">
+                        <div class="setting-info">
+                            <div class="setting-title">Auto-Pause on Switch (Mobile)</div>
+                            <div class="setting-desc">Pause combat automatically if switching apps or tabs</div>
+                        </div>
+                        <button id="toggle-autopause-btn" class="comic-btn comic-btn-sm">ON</button>
+                    </div>
                 </div>
 
                 <!-- Cloud & Save Account Section -->
-                <div class="settings-cloud-section">
+                <div class="settings-cloud-section" data-mob-tab="gameplay">
                     <div class="cloud-section-header">
                         <div class="cloud-icon"><img src="assets/ui-icons/cloud.svg" class="ui-icon ui-icon-box" alt="">
                         </div>
@@ -2814,13 +2900,13 @@
 
     <!-- 2. CORE MESSAGING & CANONICAL STATE -->
     <script src="src/core/EventBus.js?v=1.2.2"></script>
-    <script src="src/core/MobilePerf.js?v=1.5.64"></script>
+    <script src="src/core/MobilePerf.js?v=1.5.65"></script>
     <script src="src/core/GameState.js?v=1.5.55"></script>
     <script src="src/progression/PerkProgression.js?v=1.5.36"></script>
     <script src="src/progression/CosmeticManager.js?v=1.5.49"></script>
     <script src="src/dungeons/AscentCrestManager.js?v=1.5.14"></script>
     <script src="src/core/CharacterSprites.js?v=1.5.26"></script>
-    <script src="src/engine/SpriteAtlasCache.js?v=1.5.51"></script>
+    <script src="src/engine/SpriteAtlasCache.js?v=1.5.65"></script>
     <script src="src/save/SaveSerializer.js?v=1.5.55"></script>
     <script src="src/save/SaveManager.js?v=1.5.55"></script>
     <script src="src/save/AccountSyncManager.js?v=1.5.55"></script>
@@ -2856,10 +2942,10 @@
 
     <!-- 5. ENTITIES & HERO RENDERING -->
     <script src="src/entities/ParticleEffect.js?v=1.5.26"></script>
-    <script src="src/entities/ComicPopupCache.js?v=1.5.51"></script>
+    <script src="src/entities/ComicPopupCache.js?v=1.5.65"></script>
     <script src="src/entities/CombatRenderFX.js?v=1.5.60"></script>
-    <script src="src/entities/CombatJuiceFX.js?v=1.5.60"></script>
-    <script src="src/entities/Effects.js?v=1.5.62"></script>
+    <script src="src/entities/CombatJuiceFX.js?v=1.5.65"></script>
+    <script src="src/entities/Effects.js?v=1.5.65"></script>
     <script src="src/entities/Bullet.js?v=1.5.60"></script>
     <script src="src/entities/Drop.js?v=1.5.36"></script>
     <script src="src/entities/FoliageRenderer.js?v=1.5.26"></script>
@@ -2945,7 +3031,7 @@
     <script src="src/ui/PublicProfileModal.js?v=1.5.55"></script>
     <script src="src/ui/LeaderboardModal.js?v=1.5.48"></script>
     <script src="src/ui/ModalManager.js?v=1.5.60"></script>
-    <script src="src/ui/HUDController.js?v=1.5.60"></script>
+    <script src="src/ui/HUDController.js?v=1.5.65"></script>
     <script src="src/ui/ProfileManager.js?v=1.5.55"></script>
     <script src="src/ui/HeroRoster.js?v=1.5.55"></script>
     <script src="src/ui/SkillManager.js?v=1.5.32"></script>
@@ -2953,7 +3039,7 @@
     <script src="src/ui/PerkManager.js?v=1.5.34"></script>
     <script src="src/ui/MailManager.js?v=1.5.10"></script>
     <script src="src/ui/StarterPackModal.js?v=1.5.10"></script>
-    <script src="src/ui/SettingsManager.js?v=1.5.10"></script>
+    <script src="src/ui/SettingsManager.js?v=1.5.65"></script>
     <script src="src/ui/MenuController.js?v=1.5.55"></script>
     <script src="src/ui/BossWarningOverlay.js?v=1.5.16"></script>
     <script src="src/ui/CinematicCutsceneOverlay.js?v=1.5.2"></script>
@@ -2970,8 +3056,8 @@
     <script src="src/admin/AdminPanel.js?v=1.5.46"></script>
 
     <!-- 8.7. MOBILE TOUCH SUBSYSTEM -->
-    <script src="src/engine/MobileAimAssist.js?v=1.5.62"></script>
-    <script src="src/engine/TouchInput.js?v=1.5.62"></script>
+    <script src="src/engine/MobileAimAssist.js?v=1.5.65"></script>
+    <script src="src/engine/TouchInput.js?v=1.5.65"></script>
 
     <!-- 8.8. MULTIPLAYER CO-OP SUBSYSTEM (PLAYTEST) -->
     <script src="src/libs/peerjs.min.js"></script>

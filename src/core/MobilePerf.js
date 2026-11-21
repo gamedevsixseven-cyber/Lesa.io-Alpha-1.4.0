@@ -28,6 +28,100 @@ class MobilePerf {
     static _hooksBound = false;
     static _audioBuffers = new Map();
     static _audioLoading = new Set();
+    static _highLightCanvas = null;
+    static _fpsFrames = 0;
+    static _fpsLastMs = 0;
+    static _fpsValue = 60;
+
+    static GRAPHICS_PRESETS = {
+        low: {
+            pixelBudget: 850000, minDpr: 0.85, maxDpr: 1.0, smoothing: 'low',
+            groundScale: 0.5, tileSupScale: 1.0,
+            atlas: { pageSize: 1024, maxPages: 4, dprCap: 1.0 },
+            glows: false, ambientLighting: false, treeSize: 224,
+            maxParticles: 12, maxPopups: 7, maxMuzzles: 6, maxSplats: 6, maxPoofs: 6,
+            maxComic: 3, maxDamage: 6, cacheMaxEntries: 50, snowCap: 24, fogCap: 6, emberCap: 8
+        },
+        medium: {
+            pixelBudget: 1550000, minDpr: 1.3, maxDpr: 1.75, smoothing: 'medium',
+            groundScale: 0.75, tileSupScale: 1.5,
+            atlas: { pageSize: 1536, maxPages: 4, dprCap: 1.5 },
+            glows: false, ambientLighting: false, treeSize: 324,
+            maxParticles: 24, maxPopups: 11, maxMuzzles: 10, maxSplats: 12, maxPoofs: 10,
+            maxComic: 4, maxDamage: 8, cacheMaxEntries: 80, snowCap: 42, fogCap: 10, emberCap: 12
+        },
+        high: {
+            pixelBudget: 2800000, minDpr: 1.75, maxDpr: 2.5, smoothing: 'high',
+            groundScale: 1.0, tileSupScale: 2.0,
+            atlas: { pageSize: 2048, maxPages: 8, dprCap: 2.0 },
+            glows: true, ambientLighting: true, treeSize: 460,
+            maxParticles: 56, maxPopups: 18, maxMuzzles: 24, maxSplats: 28, maxPoofs: 24,
+            maxComic: 6, maxDamage: 14, cacheMaxEntries: 220, snowCap: 999, fogCap: 24, emberCap: 30
+        }
+    };
+
+    static getGraphicsQuality() {
+        if (!this.isMobile) return 'high';
+        try {
+            const v = localStorage.getItem('lesaio_mobile_graphics');
+            return (v === 'low' || v === 'medium' || v === 'high') ? v : 'medium';
+        } catch (_) {
+            return 'medium';
+        }
+    }
+
+    static getPreset() {
+        return this.GRAPHICS_PRESETS[this.getGraphicsQuality()] || this.GRAPHICS_PRESETS.medium;
+    }
+
+    static isHighGraphics() {
+        return !!(this.isMobile && this.getGraphicsQuality() === 'high');
+    }
+
+    static isLowGraphics() {
+        return !!(this.isMobile && this.getGraphicsQuality() === 'low');
+    }
+
+    static shouldUseGlows() {
+        return !this.isMobile || this.getGraphicsQuality() === 'high';
+    }
+
+    static shouldShowAimReticle() {
+        if (!this.isMobile) return false;
+        try { return localStorage.getItem('lesaio_aim_reticle') !== 'false'; } catch (_) { return true; }
+    }
+
+    static isHapticsEnabled() {
+        if (!this.isMobile) return false;
+        try { return localStorage.getItem('lesaio_haptics') !== 'false'; } catch (_) { return true; }
+    }
+
+    static shouldShowFps() {
+        if (!this.isMobile) return false;
+        try { return localStorage.getItem('lesaio_show_fps') === 'true'; } catch (_) { return false; }
+    }
+
+    static getAutoAimRange() {
+        try {
+            const v = parseInt(localStorage.getItem('lesaio_autoaim_range'), 10);
+            return Number.isFinite(v) && v >= 350 && v <= 1200 ? v : 750;
+        } catch (_) {
+            return 750;
+        }
+    }
+
+    static getTouchOpacity() {
+        try {
+            const v = parseFloat(localStorage.getItem('lesaio_touch_opacity'));
+            return Number.isFinite(v) && v >= 0.3 && v <= 1.0 ? v : 1.0;
+        } catch (_) {
+            return 1.0;
+        }
+    }
+
+    static shouldAutoPauseOnBlur() {
+        try { return localStorage.getItem('lesaio_mobile_autopause') !== 'false'; } catch (_) { return true; }
+    }
 
     static refreshDeviceFlags() {
         this.isMobile = this._detectMobile();
@@ -38,21 +132,21 @@ class MobilePerf {
     static getCanvasDpr(cssW = 0, cssH = 0) {
         const raw = (typeof window !== 'undefined' && window.devicePixelRatio) || 1;
         if (!this.isMobile) return Math.min(raw, 2);
+        const preset = this.getPreset();
         const w = cssW || (typeof window !== 'undefined' && window.innerWidth) || 844;
         const h = cssH || (typeof window !== 'undefined' && window.innerHeight) || 390;
-        // Up to 2.0x Retina sharpness on mobile constrained by a 1.65M physical pixel GPU budget
-        const budgetDpr = Math.sqrt(1650000 / Math.max(1, w * h));
-        const targetCap = Math.max(1.35, Math.min(2.0, budgetDpr));
+        const budgetDpr = Math.sqrt(preset.pixelBudget / Math.max(1, w * h));
+        const targetCap = Math.max(preset.minDpr, Math.min(preset.maxDpr, budgetDpr));
         return Math.min(raw, targetCap);
     }
 
     static getGroundCacheScale() {
-        return this.isMobile ? 0.75 : 1.0;
+        return this.isMobile ? this.getPreset().groundScale : 1.0;
     }
 
     static getAtlasConfig() {
         return this.isMobile
-            ? { pageSize: 1536, maxPages: 4, dprCap: 1.75 }
+            ? this.getPreset().atlas
             : { pageSize: 2048, maxPages: 8, dprCap: 2.0 };
     }
 
@@ -95,7 +189,7 @@ class MobilePerf {
 
         if (game.ctx) {
             game.ctx.imageSmoothingEnabled = true;
-            game.ctx.imageSmoothingQuality = this.isMobile ? 'medium' : 'high';
+            game.ctx.imageSmoothingQuality = this.isMobile ? this.getPreset().smoothing : 'high';
         }
         if (game.arena) game.arena._mobileTilePatternCtx = null;
         if (game.camera) {
@@ -148,8 +242,9 @@ class MobilePerf {
      */
     static buildMobileGroundTile(arena) {
         if (!arena || typeof document === 'undefined') return null;
+        const preset = this.getPreset();
         const canScalePattern = typeof DOMMatrix === 'function' && typeof CanvasPattern !== 'undefined' && CanvasPattern.prototype && typeof CanvasPattern.prototype.setTransform === 'function';
-        const supScale = canScalePattern ? 1.5 : 1.0;
+        const supScale = canScalePattern ? preset.tileSupScale : 1.0;
         const size = Math.round(500 * supScale);
         arena._mobileTileSupScale = supScale;
         let tile = arena._mobileTileCanvas;
@@ -165,7 +260,7 @@ class MobilePerf {
         const gCtx = tile.getContext('2d');
         if (!gCtx) return null;
         gCtx.imageSmoothingEnabled = true;
-        gCtx.imageSmoothingQuality = 'medium';
+        gCtx.imageSmoothingQuality = preset.smoothing;
 
         const tex1 = (typeof Arena !== 'undefined' && Arena.floorTexture1) ? Arena.floorTexture1 : null;
         const tex2 = (typeof Arena !== 'undefined' && Arena.floorTextureGrass2) ? Arena.floorTextureGrass2 : null;
@@ -184,8 +279,8 @@ class MobilePerf {
 
         // Seamless 100px tactical grid baked onto the supersampled pattern tile
         const step = (arena.tileSize || 100) * supScale;
-        gCtx.strokeStyle = 'rgba(40, 140, 50, 0.24)';
-        gCtx.lineWidth = 2.0 * supScale;
+        gCtx.strokeStyle = this.isHighGraphics() ? 'rgba(34, 128, 44, 0.28)' : 'rgba(40, 140, 50, 0.24)';
+        gCtx.lineWidth = (this.isHighGraphics() ? 2.2 : 2.0) * supScale;
         gCtx.beginPath();
         for (let x = 0; x < size; x += step) {
             gCtx.moveTo(x, 0);
@@ -196,6 +291,26 @@ class MobilePerf {
             gCtx.lineTo(size, y);
         }
         gCtx.stroke();
+
+        // High Graphics Mobile Upgrade: crisp sunlit highlight bevel & subtle grass tufts
+        if (this.isHighGraphics()) {
+            gCtx.strokeStyle = 'rgba(220, 255, 200, 0.14)';
+            gCtx.lineWidth = 1.1 * supScale;
+            gCtx.beginPath();
+            for (let x = 0; x < size; x += step) {
+                gCtx.moveTo(x + 2 * supScale, 0);
+                gCtx.lineTo(x + 2 * supScale, size);
+            }
+            gCtx.stroke();
+            gCtx.fillStyle = 'rgba(195, 245, 130, 0.20)';
+            for (let gx = 28; gx < 500; gx += 75) {
+                for (let gy = 22; gy < 500; gy += 88) {
+                    const px = ((gx + gy * 3) % 480 + 10) * supScale;
+                    const py = ((gy + gx * 2) % 480 + 10) * supScale;
+                    gCtx.fillRect(px, py, 3 * supScale, 2 * supScale);
+                }
+            }
+        }
 
         arena._mobileTilePattern = null;
         arena._mobileTilePatternCtx = null;
@@ -352,6 +467,107 @@ class MobilePerf {
         } catch (_) {
             if (onError) onError();
             return false;
+        }
+    }
+
+    /**
+     * Subtle theatrical contrast vignette & depth lighting baked once to an offscreen sprite
+     * for Mobile "High" Graphics Mode (zero per-frame gradient allocations).
+     */
+    static drawHighQualityLighting(ctx, width, height) {
+        if (!ctx || width <= 0 || height <= 0 || !this.isHighGraphics()) return;
+        if (!this._highLightCanvas && typeof document !== 'undefined') {
+            const c = document.createElement('canvas');
+            c.width = 256;
+            c.height = 256;
+            const gctx = c.getContext('2d');
+            const g = gctx.createRadialGradient(128, 128, 66, 128, 128, 152);
+            g.addColorStop(0, 'rgba(255, 252, 232, 0.05)');
+            g.addColorStop(0.62, 'rgba(0, 0, 0, 0)');
+            g.addColorStop(1, 'rgba(10, 22, 18, 0.34)');
+            gctx.fillStyle = g;
+            gctx.fillRect(0, 0, 256, 256);
+            this._highLightCanvas = c;
+        }
+        if (this._highLightCanvas) {
+            const prev = ctx.globalAlpha;
+            ctx.globalAlpha = prev * 0.65;
+            ctx.drawImage(this._highLightCanvas, 0, 0, width, height);
+            ctx.globalAlpha = prev;
+        }
+    }
+
+    static applyFxBudgets(game = null) {
+        if (!this.isMobile) return;
+        const p = this.getPreset();
+        const fx = (game && game.effects) || (typeof window !== 'undefined' && window.gameInstance ? window.gameInstance.effects : null);
+        if (fx) {
+            fx.MAX_POPUPS = p.maxPopups;
+            fx.MAX_PARTICLES = p.maxParticles;
+            if (fx.combatJuice) {
+                fx.combatJuice.MAX_MUZZLES = p.maxMuzzles;
+                fx.combatJuice.MAX_SPLATS = p.maxSplats;
+                fx.combatJuice.MAX_POOFS = p.maxPoofs;
+            }
+        }
+        if (typeof window !== 'undefined' && window.ComicThrottlerInstance) {
+            window.ComicThrottlerInstance.MAX_ACTIVE_COMIC = p.maxComic;
+            window.ComicThrottlerInstance.MAX_ACTIVE_DAMAGE = p.maxDamage;
+        }
+        if (typeof window !== 'undefined' && window.ComicTextCacheInstance) {
+            window.ComicTextCacheInstance.MAX_ENTRIES = p.cacheMaxEntries;
+        }
+    }
+
+    static setGraphicsQuality(level, game = null) {
+        const clean = (level === 'low' || level === 'medium' || level === 'high') ? level : 'medium';
+        try { localStorage.setItem('lesaio_mobile_graphics', clean); } catch (_) {}
+        if (!this.isMobile) return clean;
+        if (typeof Obstacle !== 'undefined') Obstacle._scaledTreeCanvas = null;
+        if (typeof SpriteAtlasCache !== 'undefined' && typeof SpriteAtlasCache.clearCache === 'function') {
+            SpriteAtlasCache.clearCache();
+        }
+        if (typeof KolossosArenaAtmosphere !== 'undefined') {
+            KolossosArenaAtmosphere._fogClouds = null;
+            KolossosArenaAtmosphere._embers = null;
+        }
+        const g = game || (typeof window !== 'undefined' ? window.gameInstance : null);
+        this.applyFxBudgets(g);
+        if (g) {
+            if (typeof g.resize === 'function') g.resize();
+            else this.applyCanvasSettings(g);
+            if (g.arena && typeof g.arena.renderGroundCache === 'function') {
+                g.arena.renderGroundCache();
+            }
+            if (g.waveManager && g.waveManager.dungeonManager && typeof g.waveManager.dungeonManager.initSnowParticles === 'function') {
+                const dm = g.waveManager.dungeonManager;
+                if (dm.active) dm.initSnowParticles(dm.floor >= 4 ? 95 : 55);
+            }
+        }
+        return clean;
+    }
+
+    static tickFpsHUD(el) {
+        if (!el) return;
+        const show = this.shouldShowFps();
+        if (!show) {
+            if (!el.classList.contains('hidden')) el.classList.add('hidden');
+            return;
+        }
+        if (el.classList.contains('hidden')) el.classList.remove('hidden');
+        this._fpsFrames++;
+        const now = (typeof performance !== 'undefined') ? performance.now() : Date.now();
+        if (!this._fpsLastMs) {
+            this._fpsLastMs = now;
+            el.textContent = `${this._fpsValue} FPS • ${this.getGraphicsQuality().toUpperCase()}`;
+            return;
+        }
+        const elapsed = now - this._fpsLastMs;
+        if (elapsed >= 450) {
+            this._fpsValue = Math.max(1, Math.min(120, Math.round((this._fpsFrames * 1000) / elapsed)));
+            this._fpsFrames = 0;
+            this._fpsLastMs = now;
+            el.textContent = `${this._fpsValue} FPS • ${this.getGraphicsQuality().toUpperCase()}`;
         }
     }
 }

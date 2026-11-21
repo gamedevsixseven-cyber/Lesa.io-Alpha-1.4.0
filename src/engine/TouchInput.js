@@ -30,7 +30,7 @@ class TouchInput {
         this.isBubbleChargeHeld = false;
         this.lockedTarget = null;
         this.autoFireEnabled = localStorage.getItem('lesaio_autofire') === 'true';
-        this.autoAimMaxDistance = 750;
+        this.autoAimMaxDistance = (typeof MobilePerf !== 'undefined' && MobilePerf.isMobile) ? MobilePerf.getAutoAimRange() : 750;
 
         // DOM Elements
         this.container = null;
@@ -80,11 +80,28 @@ class TouchInput {
         this._uiCache = Object.create(null);
 
         this.updateAutoFireState();
+        this.applyPreferences();
 
         // STRICT: If on PC/desktop, permanently disable and hide the container
         if (!this.isTouchDevice) {
             this.hide();
             this.container.style.display = 'none';
+        }
+    }
+
+    vibrate(ms = 18) {
+        if (typeof MobilePerf !== 'undefined' && !MobilePerf.isHapticsEnabled()) return;
+        if (typeof navigator !== 'undefined' && navigator.vibrate) {
+            try { navigator.vibrate(ms); } catch (_) {}
+        }
+    }
+
+    applyPreferences() {
+        if (!this.isTouchDevice) return;
+        this.autoAimMaxDistance = (typeof MobilePerf !== 'undefined') ? MobilePerf.getAutoAimRange() : 750;
+        const opacity = (typeof MobilePerf !== 'undefined') ? MobilePerf.getTouchOpacity() : 1.0;
+        if (this.container) {
+            this.container.style.setProperty('--mobile-controls-opacity', String(opacity));
         }
     }
 
@@ -128,7 +145,8 @@ class TouchInput {
         document.addEventListener('visibilitychange', () => {
             if (document.visibilityState === 'hidden') {
                 this.resetActiveTouches();
-                if (this.game && this.game.state === 'PLAYING') this.game.pauseGame();
+                const autoPause = (typeof MobilePerf === 'undefined') || MobilePerf.shouldAutoPauseOnBlur();
+                if (this.game && this.game.state === 'PLAYING' && autoPause && typeof this.game.pauseGame === 'function') this.game.pauseGame();
             }
         });
         window.addEventListener('blur', () => this.resetActiveTouches());
@@ -251,7 +269,7 @@ class TouchInput {
             this.dashBtn.addEventListener('pointerdown', (e) => {
                 if (e.pointerType && e.pointerType !== 'touch') return;
                 e.stopPropagation();
-                if (navigator.vibrate) navigator.vibrate(18);
+                this.vibrate(18);
                 this.dashBtn.classList.add('pressed');
                 if (this.game && this.game.input && this.game.input.onDashCallback) {
                     this.game.input.onDashCallback();
@@ -267,7 +285,7 @@ class TouchInput {
             this.skillBtn.addEventListener('pointerdown', (e) => {
                 if (e.pointerType && e.pointerType !== 'touch') return;
                 e.stopPropagation();
-                if (navigator.vibrate) navigator.vibrate(25);
+                this.vibrate(25);
                 this.skillBtn.classList.add('pressed');
                 if (this.game && this.game.input && this.game.input.onSkillCallback) {
                     this.game.input.onSkillCallback();
@@ -285,7 +303,7 @@ class TouchInput {
                 if (e.pointerId && this.bubbleBtn.setPointerCapture) {
                     try { this.bubbleBtn.setPointerCapture(e.pointerId); } catch (_) {}
                 }
-                if (navigator.vibrate) navigator.vibrate(15);
+                this.vibrate(15);
                 this.bubbleBtn.classList.add('pressed');
                 this.isBubbleChargeHeld = true;
                 const player = this.game ? this.game.player : null;

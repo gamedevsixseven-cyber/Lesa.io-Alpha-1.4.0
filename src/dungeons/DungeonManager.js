@@ -182,8 +182,8 @@ class DungeonManager {
 
     initSnowParticles(targetCount) {
         this.snowflakes = [];
-        const isMob = (typeof MobilePerf !== 'undefined' && MobilePerf.isMobile);
-        const count = isMob ? Math.min(targetCount, 42) : targetCount;
+        const snowCap = (typeof MobilePerf !== 'undefined' && MobilePerf.isMobile) ? MobilePerf.getPreset().snowCap : targetCount;
+        const count = Math.min(targetCount, snowCap);
         const w = (typeof window !== 'undefined') ? window.innerWidth : 1920;
         const h = (typeof window !== 'undefined') ? window.innerHeight : 1080;
 
@@ -510,10 +510,10 @@ class DungeonManager {
             ctx.restore();
         }
 
-        // 2. Falling Snowflakes (Screen Space — batched by alpha bucket on mobile)
+        // 2. Falling Snowflakes (Screen Space — batched by alpha bucket on mobile low/medium)
         if (this.snowflakes.length > 0) {
             ctx.save();
-            if (typeof MobilePerf !== 'undefined' && MobilePerf.isMobile) {
+            if (typeof MobilePerf !== 'undefined' && MobilePerf.isMobile && !MobilePerf.isHighGraphics()) {
                 for (let b = 0; b < 2; b++) {
                     ctx.fillStyle = b === 0 ? 'rgba(255, 255, 255, 0.48)' : 'rgba(255, 255, 255, 0.82)';
                     ctx.beginPath();

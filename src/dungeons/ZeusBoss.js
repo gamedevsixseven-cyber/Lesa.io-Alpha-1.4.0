@@ -461,7 +461,7 @@ class ZeusBoss extends EnemyBase {
             ctx.stroke();
 
             ctx.fillStyle = this.isEnraged ? '#fff200' : '#00f5ff';
-            if (!(typeof MobilePerf !== 'undefined' && MobilePerf.isMobile)) {
+            if (typeof MobilePerf === 'undefined' || MobilePerf.shouldUseGlows()) {
                 ctx.shadowColor = this.isEnraged ? '#f1c40f' : '#00d2d3';
                 ctx.shadowBlur = 9;
             }
@@ -502,7 +502,7 @@ class ZeusBoss extends EnemyBase {
         ctx.fillStyle = flash ? '#ffffff' : '#ffeaa7';
         ctx.strokeStyle = '#f39c12';
         ctx.lineWidth = 2.5;
-        if (!(typeof MobilePerf !== 'undefined' && MobilePerf.isMobile)) {
+        if (typeof MobilePerf === 'undefined' || MobilePerf.shouldUseGlows()) {
             ctx.shadowColor = '#f1c40f';
             ctx.shadowBlur = this.isEnraged ? 14 : 7;
         }

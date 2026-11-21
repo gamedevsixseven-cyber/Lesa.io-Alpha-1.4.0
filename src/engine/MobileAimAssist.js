@@ -58,6 +58,7 @@ class MobileAimAssist {
         if (!ctx || !game || game.state !== 'PLAYING') return;
         const ti = game.touchInput;
         if (!ti || !ti.isTouchDevice) return;
+        if (typeof MobilePerf !== 'undefined' && !MobilePerf.shouldShowAimReticle()) return;
         const t = ti.lockedTarget;
         if (!t || t.dead || t.hp <= 0 || t.isDying || t.isAirborneImmune) return;
 

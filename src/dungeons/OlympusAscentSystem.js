@@ -325,7 +325,7 @@ class OlympusAscentSystem {
                 ctx.font = 'bold 12px "Outfit", sans-serif';
                 ctx.textAlign = 'center';
                 ctx.fillStyle = '#fef08a';
-                if (!(typeof MobilePerf !== 'undefined' && MobilePerf.isMobile)) {
+                if (typeof MobilePerf === 'undefined' || MobilePerf.shouldUseGlows()) {
                     ctx.shadowColor = '#000';
                     ctx.shadowBlur = 4;
                 }
