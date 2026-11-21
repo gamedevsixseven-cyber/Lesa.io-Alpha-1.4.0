@@ -37,10 +37,52 @@ class CombatJuiceFX {
         this.screenFX = (typeof CombatRenderFX !== 'undefined') ? new CombatRenderFX() : null;
     }
 
+    resizePools(maxMuzzles, maxSplats, maxPoofs) {
+        const mCap = Math.max(1, maxMuzzles || this.MAX_MUZZLES);
+        const sCap = Math.max(1, maxSplats || this.MAX_SPLATS);
+        const pCap = Math.max(1, maxPoofs || this.MAX_POOFS);
+
+        while (this.muzzlePool.length < mCap) {
+            this.muzzlePool.push({
+                active: false, x: 0, y: 0, angle: 0, type: 'pea',
+                scale: 1, life: 0, maxLife: 6, isEnemy: false, seed: 0
+            });
+        }
+        while (this.splatPool.length < sCap) {
+            this.splatPool.push({
+                active: false, x: 0, y: 0, type: 'pea', rotation: 0,
+                radius: 14, life: 0, maxLife: 42, isCrit: false, isEnemy: false,
+                seed: 0, blobCount: 0,
+                blobs: Array.from({ length: 6 }, () => ({ x: 0, y: 0, r: 0 }))
+            });
+        }
+        while (this.poofPool.length < pCap) {
+            this.poofPool.push({
+                active: false, x: 0, y: 0, radius: 24, color: '#2ed573',
+                life: 0, maxLife: 22, isBoss: false, seed: 0, puffCount: 0,
+                puffs: Array.from({ length: 8 }, () => ({ cos: 0, sin: 0, dist: 0, size: 0 }))
+            });
+        }
+
+        for (let i = mCap; i < this.muzzlePool.length; i++) this.muzzlePool[i].active = false;
+        for (let i = sCap; i < this.splatPool.length; i++) this.splatPool[i].active = false;
+        for (let i = pCap; i < this.poofPool.length; i++) this.poofPool[i].active = false;
+
+        this.MAX_MUZZLES = mCap;
+        this.MAX_SPLATS = sCap;
+        this.MAX_POOFS = pCap;
+        this.muzzleCursor %= mCap;
+        this.splatCursor %= sCap;
+        this.poofCursor %= pCap;
+    }
+
     clear() {
-        for (let i = 0; i < this.MAX_MUZZLES; i++) this.muzzlePool[i].active = false;
-        for (let i = 0; i < this.MAX_SPLATS; i++) this.splatPool[i].active = false;
-        for (let i = 0; i < this.MAX_POOFS; i++) this.poofPool[i].active = false;
+        const mLen = Math.min(this.MAX_MUZZLES, this.muzzlePool.length);
+        const sLen = Math.min(this.MAX_SPLATS, this.splatPool.length);
+        const pLen = Math.min(this.MAX_POOFS, this.poofPool.length);
+        for (let i = 0; i < mLen; i++) this.muzzlePool[i].active = false;
+        for (let i = 0; i < sLen; i++) this.splatPool[i].active = false;
+        for (let i = 0; i < pLen; i++) this.poofPool[i].active = false;
         if (this.screenFX) this.screenFX.clear();
     }
 
@@ -148,15 +190,18 @@ class CombatJuiceFX {
     }
 
     update(dt = 1) {
-        for (let i = 0; i < this.MAX_MUZZLES; i++) {
+        const mLen = Math.min(this.MAX_MUZZLES, this.muzzlePool.length);
+        const sLen = Math.min(this.MAX_SPLATS, this.splatPool.length);
+        const pLen = Math.min(this.MAX_POOFS, this.poofPool.length);
+        for (let i = 0; i < mLen; i++) {
             const m = this.muzzlePool[i];
             if (m.active && (m.life -= dt) <= 0) m.active = false;
         }
-        for (let i = 0; i < this.MAX_SPLATS; i++) {
+        for (let i = 0; i < sLen; i++) {
             const s = this.splatPool[i];
             if (s.active && (s.life -= dt) <= 0) s.active = false;
         }
-        for (let i = 0; i < this.MAX_POOFS; i++) {
+        for (let i = 0; i < pLen; i++) {
             const p = this.poofPool[i];
             if (p.active && (p.life -= dt) <= 0) p.active = false;
         }
@@ -164,18 +209,21 @@ class CombatJuiceFX {
     }
 
     drawGround(ctx, cam) {
-        for (let i = 0; i < this.MAX_SPLATS; i++) {
+        const sLen = Math.min(this.MAX_SPLATS, this.splatPool.length);
+        for (let i = 0; i < sLen; i++) {
             const s = this.splatPool[i];
             if (s.active && this.isVisible(cam, s.x, s.y, s.radius + 30)) this.drawSingleSplat(ctx, s);
         }
     }
 
     drawWorld(ctx, cam) {
-        for (let i = 0; i < this.MAX_MUZZLES; i++) {
+        const mLen = Math.min(this.MAX_MUZZLES, this.muzzlePool.length);
+        const pLen = Math.min(this.MAX_POOFS, this.poofPool.length);
+        for (let i = 0; i < mLen; i++) {
             const m = this.muzzlePool[i];
             if (m.active && this.isVisible(cam, m.x, m.y, 48)) this.drawSingleMuzzle(ctx, m);
         }
-        for (let i = 0; i < this.MAX_POOFS; i++) {
+        for (let i = 0; i < pLen; i++) {
             const p = this.poofPool[i];
             if (p.active && this.isVisible(cam, p.x, p.y, p.radius * 3 + 30)) this.drawSinglePoof(ctx, p);
         }

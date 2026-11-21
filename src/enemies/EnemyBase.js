@@ -403,7 +403,7 @@ class EnemyBase {
         const roundedMaxW = maxWidth > 0 ? Math.round(maxWidth * 2) / 2 : 0;
         const key = `${text}|${font}|${fillStyle}|${strokeStyle}|${lineWidth}|${roundedMaxW}|${baseline}`;
         const hit = cache.get(key);
-        if (hit) return hit;
+        if (hit && hit.canvas && hit.canvas.width > 0 && hit.canvas.height > 0) return hit;
 
         if (cache.size >= 480) {
             let count = 0;
@@ -499,7 +499,7 @@ class EnemyBase {
     }
 
     static drawLabel(ctx, lbl, x, y) {
-        if (!lbl || !lbl.canvas) return;
+        if (!lbl || !lbl.canvas || lbl.canvas.width === 0 || lbl.canvas.height === 0) return;
         ctx.drawImage(
             lbl.canvas,
             lbl.sx, lbl.sy, lbl.sw, lbl.sh,

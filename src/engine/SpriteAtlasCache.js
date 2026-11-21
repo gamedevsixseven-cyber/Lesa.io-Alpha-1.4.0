@@ -95,7 +95,7 @@ class SpriteAtlasCache {
     static getOrBake(key, logicalW, logicalH, anchorX, anchorY, drawFn, opts) {
         SpriteAtlasCache._ensureFontHook();
         const existing = SpriteAtlasCache._entries.get(key);
-        if (existing) return existing;
+        if (existing && existing.canvas && existing.canvas.width > 0 && existing.canvas.height > 0) return existing;
 
         const cfg = (typeof MobilePerf !== 'undefined') ? MobilePerf.getAtlasConfig() : null;
         const rawDpr = (opts && opts.dpr) || 1.25;
@@ -209,6 +209,9 @@ class SpriteAtlasCache {
         SpriteAtlasCache._pages.length = 0;
         SpriteAtlasCache._entries.clear();
         SpriteAtlasCache._fontKeys.clear();
+        if (typeof EnemyBase !== 'undefined' && EnemyBase._labelCache) {
+            EnemyBase._labelCache.clear();
+        }
     }
 }
 

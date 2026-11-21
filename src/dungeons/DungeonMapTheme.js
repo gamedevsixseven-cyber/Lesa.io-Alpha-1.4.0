@@ -26,6 +26,13 @@ class DungeonMapTheme {
             }
         }
 
+        this.rebuildGroundOnly(arena, f);
+        this.generateFloorObstacles(arena, f);
+    }
+
+    static rebuildGroundOnly(arena, floorNum) {
+        if (!arena) return;
+        const f = Math.max(1, Math.min(5, floorNum || arena.dungeonFloor || 1));
         const cacheScale = (typeof MobilePerf !== 'undefined') ? MobilePerf.getGroundCacheScale() : 1.0;
         const targetW = Math.max(256, Math.round(arena.width * cacheScale));
         const targetH = Math.max(256, Math.round(arena.height * cacheScale));
@@ -43,8 +50,6 @@ class DungeonMapTheme {
             const gCtx = arena.cachedGroundCanvas.getContext('2d');
             this.drawGroundTheme(gCtx, arena, f);
         }
-
-        this.generateFloorObstacles(arena, f);
     }
 
     static drawGroundTheme(gCtx, arena, floorNum) {

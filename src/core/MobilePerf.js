@@ -505,9 +505,13 @@ class MobilePerf {
             fx.MAX_POPUPS = p.maxPopups;
             fx.MAX_PARTICLES = p.maxParticles;
             if (fx.combatJuice) {
-                fx.combatJuice.MAX_MUZZLES = p.maxMuzzles;
-                fx.combatJuice.MAX_SPLATS = p.maxSplats;
-                fx.combatJuice.MAX_POOFS = p.maxPoofs;
+                if (typeof fx.combatJuice.resizePools === 'function') {
+                    fx.combatJuice.resizePools(p.maxMuzzles, p.maxSplats, p.maxPoofs);
+                } else {
+                    fx.combatJuice.MAX_MUZZLES = p.maxMuzzles;
+                    fx.combatJuice.MAX_SPLATS = p.maxSplats;
+                    fx.combatJuice.MAX_POOFS = p.maxPoofs;
+                }
             }
         }
         if (typeof window !== 'undefined' && window.ComicThrottlerInstance) {
@@ -536,7 +540,9 @@ class MobilePerf {
         if (g) {
             if (typeof g.resize === 'function') g.resize();
             else this.applyCanvasSettings(g);
-            if (g.arena && typeof g.arena.renderGroundCache === 'function') {
+            if (g.arena && g.arena.dungeonFloor && typeof DungeonMapTheme !== 'undefined' && typeof DungeonMapTheme.rebuildGroundOnly === 'function') {
+                DungeonMapTheme.rebuildGroundOnly(g.arena, g.arena.dungeonFloor);
+            } else if (g.arena && typeof g.arena.renderGroundCache === 'function') {
                 g.arena.renderGroundCache();
             }
             if (g.waveManager && g.waveManager.dungeonManager && typeof g.waveManager.dungeonManager.initSnowParticles === 'function') {
