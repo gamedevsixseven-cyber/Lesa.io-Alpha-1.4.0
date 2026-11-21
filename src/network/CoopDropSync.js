@@ -47,6 +47,9 @@ class CoopDropSync {
             } else {
                 p1.chronoCores = (p1.chronoCores || 0) + (drop.value || 1);
             }
+            if (collectorIsGuest && session.net) {
+                session.net.send('GUEST_DROP_EFFECT', { type: 'chrono_core', val: drop.value || 1, total: p1.chronoCores || 0 });
+            }
         } else if (typeof Drop !== 'undefined' && Drop.MATERIAL_DROP_MAP && Drop.MATERIAL_DROP_MAP[drop.type]) {
             const matId = Drop.MATERIAL_DROP_MAP[drop.type];
             const gain = Math.max(1, Math.min(10, Math.floor(drop.value || 1)));
@@ -147,21 +150,36 @@ class CoopDropSync {
         const p = session && session.game && session.game.player;
         const fx = session && session.game && session.game.effects;
         if (!payload || !p) return;
+        const localFxAt = (session._localFxAt && session._localFxAt[payload.type]) || 0;
+        const alreadyPlayedLocal = localFxAt > 0 && (performance.now() - localFxAt) < 1200;
+        if (alreadyPlayedLocal) session._localFxAt[payload.type] = 0;
+
         if (payload.type === 'heart') {
             session._pendingHealUntil = 0;
             if (typeof payload.maxHp === 'number' && payload.maxHp >= 25) p.maxHp = payload.maxHp;
             if (typeof payload.hp === 'number') p.hp = Math.max(p.hp, Math.min(p.maxHp, payload.hp));
-            if (window.soundEngine) window.soundEngine.playPickup('heart');
-            if (fx) { fx.addPopup(p.x, p.y, `+${payload.amt || 30} HP`, '#2ed573', 24); fx.addSparks(p.x, p.y, '#2ed573', 8); }
-            p.happyTimer = 40;
+            session._trackedHp = p.hp;
+            if (!alreadyPlayedLocal) {
+                if (window.soundEngine) window.soundEngine.playPickup('heart');
+                if (fx) { fx.addPopup(p.x, p.y, `+${payload.amt || 30} HP`, '#2ed573', 24); fx.addSparks(p.x, p.y, '#2ed573', 8); }
+                p.happyTimer = 40;
+            }
         } else if (payload.type === 'star') {
-            p.activatePepperFrenzy(7000);
-            if (window.soundEngine) window.soundEngine.playPickup('star');
-            if (fx) fx.addComicSplash(p.x, p.y, 'FRENZY!');
+            if (!alreadyPlayedLocal) {
+                p.activatePepperFrenzy(7000);
+                if (window.soundEngine) window.soundEngine.playPickup('star');
+                if (fx) fx.addComicSplash(p.x, p.y, 'FRENZY!');
+            }
         } else if (payload.type === 'shield') {
-            p.addShield();
+            if (!alreadyPlayedLocal) {
+                p.addShield();
+                if (window.soundEngine) window.soundEngine.playPickup('star');
+                if (fx) fx.addComicSplash(p.x, p.y, 'SHIELD!');
+            }
+        } else if (payload.type === 'chrono_core') {
+            if (typeof payload.total === 'number') p.chronoCores = Math.max(p.chronoCores || 0, payload.total);
             if (window.soundEngine) window.soundEngine.playPickup('star');
-            if (fx) fx.addComicSplash(p.x, p.y, 'SHIELD!');
+            if (fx) fx.addComicSplash(p.x, p.y, `+${payload.val || 1} CHRONO CORE!`);
         } else if (payload.type === 'shield_break' && p.shieldActive) {
             p.shieldActive = false; p.invulnerableTimer = 30;
             if (window.soundEngine) window.soundEngine.playHit(false, true);
@@ -198,12 +216,17 @@ class CoopDropSync {
                     if (player && player.hp <= 0) return;
                     const dtType = dNet.t || 'xp';
                     if (dtType === 'heart') {
-                        session._preHealHp = player ? player.hp : 0; session._pendingHealUntil = performance.now() + 350;
+                        session._preHealHp = player ? player.hp : 0; session._pendingHealUntil = performance.now() + 450;
+                        if (!session._localFxAt) session._localFxAt = {};
+                        session._localFxAt.heart = performance.now();
                         origCollect(player, effects);
+                        if (player) session._trackedHp = player.hp;
                     } else if (dtType === 'star' || dtType === 'shield') {
+                        if (!session._localFxAt) session._localFxAt = {};
+                        session._localFxAt[dtType] = performance.now();
                         origCollect(player, effects);
-                    } else if (window.soundEngine) {
-                        window.soundEngine.playPickup(dtType === 'coin_pouch' ? 'coin' : (dtType === 'magnet' ? 'star' : 'xp'));
+                    } else if (dtType !== 'magnet' && dtType !== 'chrono_core' && window.soundEngine) {
+                        window.soundEngine.playPickup(dtType === 'coin_pouch' ? 'coin' : 'xp');
                     }
                     drop.dead = true; session.collectedDropIds.add(dNet.id);
                     session.net.send('GUEST_COLLECT_DROP', { id: dNet.id });

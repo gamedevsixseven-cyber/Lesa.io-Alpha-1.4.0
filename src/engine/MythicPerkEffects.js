@@ -38,6 +38,7 @@ class MythicPerkEffects {
         if (!enemy || enemy.dead || enemy.isDying || amount <= 0) return;
         const dmg = Math.max(1, Math.round(amount));
         const killed = enemy.takeDamage(dmg, effects, isCrit, false);
+        if (game && game.isCoopGuest) { enemy.dead = false; return; }
         if (killed && game && typeof game.handleEnemyKill === 'function' && !enemy._mythicKillHandled) {
             enemy._mythicKillHandled = true;
             game.handleEnemyKill(enemy);

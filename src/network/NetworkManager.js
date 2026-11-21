@@ -121,7 +121,8 @@ class NetworkManager {
             });
 
             this.peer.on('open', () => {
-                this.conn = this.peer.connect(targetPeerId, { serialization: 'json' });
+                // Default Binary serialization handles automatic MTU chunking (avoids MessageToBig drops on late waves)
+                this.conn = this.peer.connect(targetPeerId, { reliable: true });
                 this.setupConnectionHandlers();
                 if (this.connectTimeout) clearTimeout(this.connectTimeout);
                 this.connectTimeout = setTimeout(() => {
@@ -237,13 +238,21 @@ class NetworkManager {
         });
     }
 
-    send(type, payload = {}) {
-        if (!this.conn || !this.connected) return;
+    send(type, payload = {}, options = null) {
+        if (!this.conn || !this.connected || !this.conn.open) return false;
+        const opts = options || {};
+        const dc = this.conn.dataChannel || this.conn._dc;
+        const maxBuf = opts.maxBufferedBytes || 98304;
+        if (opts.droppable && dc && typeof dc.bufferedAmount === 'number' && dc.bufferedAmount > maxBuf) {
+            return false;
+        }
         try {
-            const raw = JSON.stringify({ type, payload });
-            this.conn.send(raw);
+            const msg = { type, payload };
+            this.conn.send(this.conn.serialization === 'json' ? JSON.stringify(msg) : msg);
+            return true;
         } catch (err) {
             console.warn('[NetworkManager] Failed to send packet:', type, err);
+            return false;
         }
     }
 

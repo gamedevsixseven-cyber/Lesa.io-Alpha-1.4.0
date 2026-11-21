@@ -26,7 +26,7 @@ class CoopCombatFx {
                 isSingularityCore: !!b.isSingularityCore, isSpasBreach: !!b._spasBreach,
                 isPermafrostShard: !!b.isPermafrostShard, isCryoShard: !!b.isCryoShard,
                 isExplosiveMitts: !!b.isExplosiveMitts, muzzle: isMuzzle
-            });
+            }, { droppable: true });
         }
     }
 
@@ -111,7 +111,7 @@ class CoopCombatFx {
             angle: Number((angle || 0).toFixed(3)),
             damage: Math.round(damage || 60),
             isEvolved: !!isEvolved
-        });
+        }, { droppable: true });
     }
 
     static handleRemoteBeam(session, data, isHostAuthoritative = false) {
@@ -144,7 +144,7 @@ class CoopCombatFx {
         if (!this._canSendFx()) return;
         g.coopSession.net.send('COOP_FX', {
             t: 'chain', x1: Math.round(x1), y1: Math.round(y1), x2: Math.round(x2), y2: Math.round(y2), c: col
-        });
+        }, { droppable: true });
     }
 
     static relayRing(player, r, col, msg = '', spkCol = '', spkCount = 0) {
@@ -156,7 +156,7 @@ class CoopCombatFx {
             t: 'ring', x: Math.round(player.x), y: Math.round(player.y),
             r: Math.round(r || 90), c: col || 'rgba(255,255,255,0.8)',
             m: msg || '', sc: spkCol || '', sn: spkCount || 0
-        });
+        }, { droppable: true });
     }
 
     static handleRemoteFx(session, data) {

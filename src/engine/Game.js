@@ -447,6 +447,7 @@ class Game {
             for (let i = 0; i < this.hazards.length; i++) {
                 const hazard = this.hazards[i];
                 hazard.update(dt, this.enemies, this.player, this.effects);
+                if (this.isCoopGuest && this.enemies) { for (let k = 0; k < this.enemies.length; k++) if (this.enemies[k]) this.enemies[k].dead = false; }
                 if (!hazard.dead) this.hazards[hWrite++] = hazard;
             }
             this.hazards.length = hWrite;
@@ -578,15 +579,15 @@ class Game {
     }
 
     loop(currentTime) {
+        const speedMult = (window.AdminCheats ? window.AdminCheats.gameSpeed : 1.0);
+        const dt = Math.max(0, Math.min((currentTime - this.lastTime) / 16.666, 2.5)) * speedMult;
+        this.lastTime = currentTime;
+        try { this.update(dt); } catch (err) { console.error("Game update error caught:", err); }
         try {
-            const speedMult = (window.AdminCheats ? window.AdminCheats.gameSpeed : 1.0);
-            const dt = Math.min((currentTime - this.lastTime) / 16.666, 2.5) * speedMult;
-            this.lastTime = currentTime;
-
-            this.update(dt);
             if (typeof MobilePerf === 'undefined' || !MobilePerf.shouldSkipRender(this)) this.render();
         } catch (err) {
-            console.error("Game loop error caught:", err);
+            console.error("Game render error caught:", err);
+            if (this.ctx) { this.ctx.globalAlpha = 1; this.ctx.shadowBlur = 0; this.ctx.restore(); }
         } finally {
             requestAnimationFrame((t) => this.loop(t));
         }

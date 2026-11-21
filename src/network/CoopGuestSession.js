@@ -21,6 +21,7 @@ class CoopGuestSession {
         this.collectedDropIds = new Set();
         this._pendingHealUntil = 0;
         this._preHealHp = 0;
+        this._trackedHp = (game && game.player && Number.isFinite(game.player.hp)) ? game.player.hp : 100;
 
         if (this.game.cutsceneOverlay) {
             this.game.cutsceneOverlay.totalPlayers = 2;
@@ -264,32 +265,34 @@ class CoopGuestSession {
         }
 
         // 2. Sync Local Guest Health from Host Authority
-        if (typeof data.guestMaxHp === 'number' && data.guestMaxHp >= 25) this.game.player.maxHp = data.guestMaxHp;
-        if (typeof data.guestHp === 'number') {
+        if (typeof data.guestMaxHp === 'number' && Number.isFinite(data.guestMaxHp) && data.guestMaxHp >= 25) this.game.player.maxHp = data.guestMaxHp;
+        if (typeof data.guestHp === 'number' && Number.isFinite(data.guestHp)) {
+            this._syncLocalHeal();
             const p = this.game.player, wasDowned = p.hp <= 0;
             const pendingHeal = performance.now() < (this._pendingHealUntil || 0);
             if (data.guestHp > (this._preHealHp || 0)) this._pendingHealUntil = 0;
             if (!(pendingHeal && data.guestHp >= (this._preHealHp || 0) && data.guestHp < p.hp)) {
-                if (data.guestHp < p.hp) {
+                if (data.guestHp < p.hp - 0.5) {
                     p.hitFlash = 12;
                     if (this.game.effects) {
-                        this.game.effects.addDamage(p.x, p.y, p.hp - data.guestHp, false, false);
+                        this.game.effects.addDamage(p.x, p.y, Math.max(1, Math.round(p.hp - data.guestHp)), false, false);
                         this.game.effects.addSparks(p.x, p.y, '#ff4757', 6);
                     }
                     if (window.soundEngine && typeof window.soundEngine.playHit === 'function') window.soundEngine.playHit(false, true);
                     if (this.game.camera && typeof this.game.camera.addShake === 'function') this.game.camera.addShake(8);
                 }
                 p.hp = data.guestHp;
+                this._trackedHp = p.hp;
                 if (wasDowned && data.guestHp > 0 && this.game.ui) this.game.ui.addKillfeed('🤝 YOU WERE REVIVED!');
             }
         }
 
         // 3. Sync Wave Info, Squad Stats & HUD
         if (this.game.waveManager) {
-            this.game.waveManager.wave = data.wave;
-            this.game.waveManager.waveState = data.wState;
-            this.game.waveManager.waveTotalEnemies = data.wTotal;
-            this.game.waveManager.waveEnemiesKilled = data.wKilled;
+            if (Number.isFinite(data.wave)) this.game.waveManager.wave = data.wave;
+            if (typeof data.wState === 'string') this.game.waveManager.waveState = data.wState;
+            if (Number.isFinite(data.wTotal)) this.game.waveManager.waveTotalEnemies = data.wTotal;
+            if (Number.isFinite(data.wKilled)) this.game.waveManager.waveEnemiesKilled = data.wKilled;
         }
         if (data.sq && this.game.player) {
             const p = this.game.player, sq = data.sq;
@@ -319,6 +322,9 @@ class CoopGuestSession {
                 this.game.cutsceneOverlay.setDialogue(data.cutscene.spk, data.cutscene.txt, data.cutscene.col, data.cutscene.ico, data.cutscene.adv);
                 this.game.cutsceneOverlay.setReadyState(data.cutscene.rc || 0, data.cutscene.tp || 2, false);
             }
+        } else if (!data.cutscene && this.game.cutsceneOverlay && this.game.cutsceneOverlay.active) {
+            this.game.cutsceneOverlay.endCutscene();
+            this.game.cutsceneOverlay.setReadyState(0, 1, false);
         }
 
         // 4. Synchronize Enemies with per-frame target lerp coordinates
@@ -328,7 +334,7 @@ class CoopGuestSession {
             const existingMap = new Map();
             for (let i = 0; i < this.game.enemies.length; i++) {
                 const e = this.game.enemies[i];
-                if (e._netId) existingMap.set(e._netId, e);
+                if (e && e._netId) existingMap.set(e._netId, e);
             }
 
             for (let i = 0; i < data.enemies.length; i++) {
@@ -386,17 +392,21 @@ class CoopGuestSession {
             // Remove enemies no longer present on host (triggering death pop & weapon death FX)
             for (let i = this.game.enemies.length - 1; i >= 0; i--) {
                 const e = this.game.enemies[i];
-                if (e._netId && !incomingIds.has(e._netId)) {
+                if (e && e._netId && !incomingIds.has(e._netId)) {
                     e.dead = true;
-                    if (!e._deathPopped && this.game.effects && typeof this.game.effects.addDeathPop === 'function') {
-                        e._deathPopped = true;
-                        this.game.effects.addDeathPop(e.x, e.y, e.radius, e.color, e.isBoss || e.isMiniBoss);
-                    }
-                    if (e._chronoStasisTimer > 0 && typeof ChronoRifle !== 'undefined' && typeof ChronoRifle._shatter === 'function') {
-                        e._chronoStasisTimer = 0; ChronoRifle._shatter(e, this.game);
-                    }
-                    if ((e._symbioteHost || e._symbioteTimer > 0) && typeof SymbioteLauncher !== 'undefined') {
-                        SymbioteLauncher.onEnemyDeath(e, this.game);
+                    try {
+                        if (!e._deathPopped && this.game.effects && typeof this.game.effects.addDeathPop === 'function' && Number.isFinite(e.x) && Number.isFinite(e.y)) {
+                            e._deathPopped = true;
+                            this.game.effects.addDeathPop(e.x, e.y, e.radius || 24, e.color, e.isBoss || e.isMiniBoss);
+                        }
+                        if (e._chronoStasisTimer > 0 && typeof ChronoRifle !== 'undefined' && typeof ChronoRifle._shatter === 'function') {
+                            e._chronoStasisTimer = 0; ChronoRifle._shatter(e, this.game);
+                        }
+                        if ((e._symbioteHost || e._symbioteTimer > 0) && typeof SymbioteLauncher !== 'undefined') {
+                            SymbioteLauncher.onEnemyDeath(e, this.game);
+                        }
+                    } catch (fxErr) {
+                        console.warn('[CoopGuestSession] Enemy death FX skipped:', fxErr);
                     }
                     this.game.enemies.splice(i, 1);
                 }
@@ -455,8 +465,21 @@ class CoopGuestSession {
         if (this.game.player.hp <= 0 && this.remotePlayer.isDowned && this.game.state === 'PLAYING') this.game.gameOver();
     }
 
+    _syncLocalHeal() {
+        const p = this.game && this.game.player;
+        if (!p || !Number.isFinite(p.hp)) return;
+        if (this._trackedHp > 0 && p.hp > this._trackedHp + 0.05) {
+            const delta = Math.min(p.hp - this._trackedHp, p.maxHp || 100);
+            this._preHealHp = this._trackedHp;
+            this._pendingHealUntil = performance.now() + 450;
+            this.net.send('GUEST_HEAL', { amount: Number(delta.toFixed(2)) });
+        }
+        this._trackedHp = p.hp;
+    }
+
     update(dt) {
         this.remotePlayer.update(dt);
+        this._syncLocalHeal();
         this.inputSyncTimer++;
         if (this.inputSyncTimer >= 2) {
             this.inputSyncTimer = 0;
@@ -470,7 +493,7 @@ class CoopGuestSession {
                 armorEvolved: !!p.armorEvolved, weaponEvolved: !!p.weaponEvolved,
                 heroSkin: p.heroSkin || 'default', starBlessed: !!p._starBlessed,
                 bubbleCharge: p.isChargingBubble ? Number((p.bubbleCharge || 0).toFixed(2)) : 0
-            });
+            }, { droppable: true });
         }
     }
 

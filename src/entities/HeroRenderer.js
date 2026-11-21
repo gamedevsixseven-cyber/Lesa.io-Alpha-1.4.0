@@ -266,7 +266,9 @@ class HeroRenderer {
         ctx.fill();
 
         // HP Fill
-        const hpPct = Math.max(0, Math.min(1, player.hp / player.maxHp));
+        const safeMaxHp = (Number.isFinite(player.maxHp) && player.maxHp > 0) ? player.maxHp : 100;
+        const safeHp = Number.isFinite(player.hp) ? player.hp : 0;
+        const hpPct = Math.max(0, Math.min(1, safeHp / safeMaxHp));
         let hpColor = '#2ed573';
         if (hpPct < 0.3) hpColor = '#ff4757';
         else if (hpPct < 0.6) hpColor = '#ffa502';

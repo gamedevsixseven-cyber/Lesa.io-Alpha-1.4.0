@@ -317,6 +317,7 @@ class GearPassives {
                     e.x += Math.cos(ang) * 28;
                     e.y += Math.sin(ang) * 28;
                     if (typeof e.takeDamage === 'function') e.takeDamage(coalDmg, effects, false);
+                    if (game.isCoopGuest) e.dead = false;
                     if (effects) effects.addSparks(e.x, e.y, '#ff6348', 5);
                 }
             }

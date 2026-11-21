@@ -145,7 +145,7 @@ class CollisionSystem {
                         if (Math.abs(odx) <= radSum && Math.abs(ody) <= radSum) {
                             const hit = obs.hitTestCircle ? obs.hitTestCircle(b.x, b.y, b.radius) : null;
                             if (hit) {
-                                if (obs.type === 'crate' || obs.type === 'barrel') {
+                                if (!game.isCoopGuest && (obs.type === 'crate' || obs.type === 'barrel')) {
                                     obs.takeDamage(b.damage * 0.7, effects, game);
                                 } else if (obs.type === 'building' && effects) {
                                     effects.addSparks(b.x, b.y, '#ffa502', 3);

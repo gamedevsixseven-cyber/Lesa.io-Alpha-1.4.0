@@ -164,6 +164,16 @@ class CoopHostSession {
                 CoopCombatFx.handleRemoteBeam(this, payload, true);
             } else if (type === 'COOP_FX' && typeof CoopCombatFx !== 'undefined') {
                 CoopCombatFx.handleRemoteFx(this, payload);
+            } else if (type === 'GUEST_HEAL' && payload) {
+                const p2 = this.remotePlayer;
+                const amt = Number(payload.amount);
+                if (p2 && p2.hp > 0 && !p2.isDowned && !p2.isDownedDisconnected && Number.isFinite(amt) && amt > 0) {
+                    const now = performance.now();
+                    if (!this._healWinStart || now - this._healWinStart > 1000) { this._healWinStart = now; this._healWinAcc = 0; }
+                    const room = Math.max(0, 120 - this._healWinAcc);
+                    const safeAmt = Math.min(amt, room, Math.max(10, (p2.maxHp || 100) * 0.5));
+                    if (safeAmt > 0) { this._healWinAcc += safeAmt; p2.hp = Math.min(p2.maxHp || 100, p2.hp + safeAmt); }
+                }
             }
         };
 
@@ -248,9 +258,11 @@ class CoopHostSession {
             return;
         }
 
-        // 5. Broadcast State Snapshot to Guest
+        // 5. Broadcast State Snapshot to Guest (adaptively throttle under heavy wave/drop load)
+        const loadCount = (this.game.enemies ? this.game.enemies.length : 0) + (this.game.drops ? this.game.drops.length : 0);
+        const effInterval = (loadCount > 80 || (this.net && this.net.latency > 110)) ? 3 : this.snapshotInterval;
         this.snapshotTimer++;
-        if (this.snapshotTimer >= this.snapshotInterval) {
+        if (this.snapshotTimer >= effInterval) {
             this.snapshotTimer = 0;
             this.broadcastSnapshot();
         }
@@ -295,25 +307,41 @@ class CoopHostSession {
             });
         }
 
-        // Collect drops
+        // Collect drops (prioritize special pickups/magnetized gems & cap to keep packets lightweight on late waves)
         const dropsPayload = [];
+        const xpDrops = [];
+        const p2 = this.remotePlayer;
         for (let i = 0; i < this.game.drops.length; i++) {
             const d = this.game.drops[i];
             if (!d || d.dead) continue;
             if (!d._netId) d._netId = this.netIdCounter++;
-            dropsPayload.push({
+            const entry = {
                 id: safeInt(d._netId, 1, 2000000000, 1),
                 t: (typeof d.type === 'string' && d.type) ? d.type : 'xp',
                 x: safeInt(d.x),
                 y: safeInt(d.y),
                 v: safeInt(d.value, 1, 1000, 1),
                 m: (d._magTarget === 'host') ? 1 : (d._magTarget === 'guest' ? 2 : 0)
-            });
+            };
+            if (entry.t !== 'xp' || entry.m > 0) {
+                if (dropsPayload.length < 90) dropsPayload.push(entry);
+            } else {
+                const d1Sq = (d.x - p.x) ** 2 + (d.y - p.y) ** 2;
+                const d2Sq = p2 ? ((d.x - p2.x) ** 2 + (d.y - p2.y) ** 2) : Infinity;
+                entry._dSq = Math.min(d1Sq, d2Sq);
+                xpDrops.push(entry);
+            }
+        }
+        const xpSlots = Math.max(0, 90 - dropsPayload.length);
+        if (xpDrops.length > xpSlots) xpDrops.sort((a, b) => a._dSq - b._dSq);
+        for (let i = 0; i < Math.min(xpSlots, xpDrops.length); i++) {
+            delete xpDrops[i]._dSq;
+            dropsPayload.push(xpDrops[i]);
         }
 
         // Collect enemy bullets (soccer balls, police shots, boss projectiles) with stable IDs & velocities
         const enemyBulletsPayload = [];
-        for (let i = 0; i < this.game.bullets.length; i++) {
+        for (let i = 0; i < this.game.bullets.length && enemyBulletsPayload.length < 80; i++) {
             const b = this.game.bullets[i];
             if (!b || b.dead || !b.isEnemy) continue;
             if (!b._netId) b._netId = this.netIdCounter++;
@@ -328,9 +356,11 @@ class CoopHostSession {
             });
         }
 
-        const deadObsArray = (this.game.arena && this.game.arena.destroyedObsIds)
-            ? Array.from(this.game.arena.destroyedObsIds)
-            : [];
+        const obsSet = this.game.arena && this.game.arena.destroyedObsIds;
+        this._obsSyncTick = ((this._obsSyncTick || 0) + 1) % 20;
+        const deadObsArray = (obsSet && (obsSet.size !== (this._lastObsCount || 0) || this._obsSyncTick === 0))
+            ? (this._lastObsCount = obsSet.size, Array.from(obsSet))
+            : null;
 
         const snapshot = {
             mapSeed: safeInt(this.mapSeed, 1, 2000000000, 123456),
@@ -390,7 +420,7 @@ class CoopHostSession {
             enemyBullets: enemyBulletsPayload
         };
 
-        this.net.send('HOST_SNAPSHOT', snapshot);
+        this.net.send('HOST_SNAPSHOT', snapshot, { droppable: true });
     }
 
     playRemoteSkill(remotePlayer, skillData = {}, isHostAuthoritative = true) {
@@ -428,7 +458,7 @@ class CoopHostSession {
         if (this.net && typeof this.net.disconnectGracefully === 'function') {
             this.net.disconnectGracefully('Host left the match');
         } else if (this.net) {
-            try { this.net.send('HOST_QUIT_MATCH', { reason: 'host_left' }); } catch (e) {}
+            try { this.net.send('HOST_QUIT_MATCH', { reason: 'host_left' }); } catch (e) { }
             setTimeout(() => { if (this.net) this.net.disconnect(); }, 100);
         }
     }
