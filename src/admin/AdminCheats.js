@@ -453,7 +453,7 @@ class AdminCheatsService {
     }
 
     unlockAllHeroes() {
-        const heroes = ['psanas', 'psogas', 'petros', '50balos', 'billias', 'kitsos'];
+        const heroes = ['psanas', 'psogas', 'petros', '50balos', 'billias', 'kitsos', 'psgiannhs'];
         const gs = (typeof window !== 'undefined') ? window.GameState : null;
         for (const id of heroes) {
             if (gs && typeof gs.unlockHero === 'function') gs.unlockHero(id, 0);
@@ -474,7 +474,7 @@ class AdminCheatsService {
         const weaponsMap = (typeof WEAPONS !== 'undefined' && WEAPONS) || (typeof window !== 'undefined' && window.WEAPONS) || null;
         const ids = weaponsMap
             ? Object.keys(weaponsMap)
-            : ['pea', 'watermelon', 'pepper', 'bubble', 'money_gun', 'burger', 'lightning', 'carbine', 'dialtone', 'zeus_thunderbolt'];
+            : ['pea', 'watermelon', 'pepper', 'bubble', 'money_gun', 'burger', 'lightning', 'greek_flag', 'carbine', 'dialtone', 'zeus_thunderbolt'];
         for (const id of ids) {
             if (typeof WeaponSystem !== 'undefined' && typeof WeaponSystem.unlockWeapon === 'function') {
                 WeaponSystem.unlockWeapon(id, { silent: true });

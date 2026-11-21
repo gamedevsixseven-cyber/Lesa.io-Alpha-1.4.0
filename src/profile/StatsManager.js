@@ -42,7 +42,8 @@ class StatsManager {
             petros: { name: 'Petros', emoji: '🛡️', iconKey: 'shield' },
             '50balos': { name: '50balos', emoji: '💰', iconKey: 'bag_gold' },
             billias: { name: 'Billias', emoji: '🍔', iconKey: 'weapon_burger' },
-            kitsos: { name: 'Kitsos', emoji: '⚡', iconKey: 'bolt' }
+            kitsos: { name: 'Kitsos', emoji: '⚡', iconKey: 'bolt' },
+            psgiannhs: { name: 'Psgiannhs', emoji: '🥊', iconKey: 'boxing_glove' }
         };
 
         return map[fav] || { name: 'Psanas', emoji: '🏹', iconKey: 'target' };

@@ -24,6 +24,7 @@ class SaveSerializer {
                 gems: state.player.gems || 0,
                 diamonds: state.player.gems || 0,
                 selectedHero: state.player.selectedHero || 'psanas',
+                heroStyles: { ...(state.player.heroStyles || { psgiannhs: (typeof localStorage !== 'undefined' ? (localStorage.getItem('lesaio_hero_style_psgiannhs') || 'jacket') : 'jacket') }) },
                 unlockedHeroes: Array.from(state.player.unlockedHeroes || ['psanas']),
                 selectedWeapon: state.player.selectedWeapon || state.player.weaponType || 'pea',
                 unlockedWeapons: Array.from(state.player.unlockedWeapons || ['pea']),
@@ -86,6 +87,12 @@ class SaveSerializer {
             state.player.coins = typeof p.coins === 'number' ? p.coins : (typeof p.gold === 'number' ? p.gold : state.player.coins);
             state.player.gems = typeof p.diamonds === 'number' ? p.diamonds : (typeof p.gems === 'number' ? p.gems : state.player.gems);
             state.player.selectedHero = p.selectedHero || state.player.selectedHero;
+            if (p.heroStyles && typeof p.heroStyles === 'object') {
+                state.player.heroStyles = { ...(state.player.heroStyles || {}), ...p.heroStyles };
+                if (p.heroStyles.psgiannhs && typeof localStorage !== 'undefined') {
+                    localStorage.setItem('lesaio_hero_style_psgiannhs', p.heroStyles.psgiannhs);
+                }
+            }
             state.player.selectedWeapon = p.selectedWeapon || p.weaponType || state.player.selectedWeapon || 'pea';
             state.player.weaponType = state.player.selectedWeapon;
             if (typeof p.olympianStarStones === 'number') {
@@ -262,6 +269,92 @@ class SaveSerializer {
             console.error('[SaveSerializer] Failed to deserialize save data:', err);
             return false;
         }
+    }
+
+    /**
+     * Build a complete, non-destructive Firestore cloud payload from full or partial input.
+     * Ensures partial updates (e.g. gear upgrades, weapon unlocks) never reset coins, gems, or level to 0/1.
+     */
+    static buildCloudPayload(saveData = {}, user = {}, identity = {}) {
+        const input = (saveData && typeof saveData === 'object') ? saveData : {};
+        const gs = (typeof window !== 'undefined' && window.GameState) ? window.GameState : null;
+        const base = gs ? (this.serialize(gs) || {}) : {};
+        const basePlayer = (base.player && typeof base.player === 'object') ? base.player : {};
+        const inputPlayer = (input.player && typeof input.player === 'object') ? input.player : {};
+        const ls = (typeof localStorage !== 'undefined') ? localStorage : null;
+
+        const pickNum = (val) => {
+            if (typeof val === 'number' && Number.isFinite(val)) return val;
+            if (typeof val === 'string' && val.trim() !== '' && !isNaN(Number(val))) return Number(val);
+            return undefined;
+        };
+
+        const isItemEvent = input.itemId !== undefined;
+        const pCoins = pickNum(inputPlayer.coins) ?? pickNum(input.coins) ?? pickNum(inputPlayer.gold) ?? pickNum(input.gold)
+            ?? pickNum(basePlayer.coins) ?? (ls ? (parseInt(ls.getItem('lesaio_coins') || '0', 10) || 0) : 0);
+        const pGems = pickNum(inputPlayer.gems) ?? pickNum(inputPlayer.diamonds) ?? pickNum(input.gems) ?? pickNum(input.diamonds)
+            ?? pickNum(basePlayer.gems) ?? (ls ? (parseInt(ls.getItem('lesaio_gems') || '0', 10) || 0) : 0);
+        const pLevel = pickNum(inputPlayer.accountLevel) ?? pickNum(inputPlayer.level) ?? pickNum(input.accountLevel)
+            ?? (!isItemEvent ? pickNum(input.level) : undefined) ?? pickNum(basePlayer.accountLevel)
+            ?? (ls ? (parseInt(ls.getItem('lesaio_account_level') || '1', 10) || 1) : 1);
+        const pXp = pickNum(inputPlayer.accountXp) ?? pickNum(inputPlayer.xp) ?? pickNum(input.accountXp) ?? pickNum(input.xp)
+            ?? pickNum(basePlayer.accountXp) ?? (ls ? (parseInt(ls.getItem('lesaio_account_xp') || '0', 10) || 0) : 0);
+        const pSkills = inputPlayer.skillLevels || input.skillLevels || basePlayer.skillLevels || { blade_rush: 1, nerobalonaki: 1 };
+        const pName = inputPlayer.name || inputPlayer.playerName || input.playerName || input.name
+            || basePlayer.name || (ls ? ls.getItem('lesaio_player_name') : null) || 'Psanas';
+
+        const playerScopedKeys = [
+            'unlockedHeroes', 'selectedHero', 'heroStyles', 'selectedWeapon', 'unlockedWeapons',
+            'unlockedSkills', 'skillLevels', 'upgrades', 'unlockedPerks', 'equippedPerks',
+            'perkRanks', 'combatFeats', 'equippedGear', 'unlockedGear', 'gearLevels',
+            'evolvedGear', 'evolvedWeapons', 'evolutionStones', 'olympianStarStones',
+            'ascentCrests', 'ascentCrestsDate', 'cosmetics', 'materials'
+        ];
+        const partialPlayerOverrides = {};
+        for (const key of playerScopedKeys) {
+            if (input[key] !== undefined && inputPlayer[key] === undefined) {
+                partialPlayerOverrides[key] = input[key];
+            }
+        }
+
+        const cleanRoot = { ...base, ...input };
+        if (isItemEvent) {
+            delete cleanRoot.itemId;
+            delete cleanRoot.level;
+        }
+        if (input.stones !== undefined) delete cleanRoot.stones;
+
+        const fTag = identity.friendTag || '#HERO00';
+        const fTagClean = identity.friendTagClean || 'HERO00';
+
+        return {
+            ...cleanRoot,
+            playerName: pName,
+            playerNameLower: String(pName).toLowerCase(),
+            friendTag: fTag,
+            friendTagClean: fTagClean,
+            coins: pCoins,
+            gold: pCoins,
+            gems: pGems,
+            diamonds: pGems,
+            level: pLevel,
+            xp: pXp,
+            skillLevels: pSkills,
+            player: {
+                ...basePlayer,
+                ...partialPlayerOverrides,
+                ...inputPlayer,
+                name: pName,
+                coins: pCoins,
+                gold: pCoins,
+                gems: pGems,
+                diamonds: pGems,
+                accountLevel: pLevel,
+                accountXp: pXp,
+                skillLevels: pSkills
+            },
+            email: (user && user.email) || 'gamedevsixseven@gmail.com'
+        };
     }
 }
 

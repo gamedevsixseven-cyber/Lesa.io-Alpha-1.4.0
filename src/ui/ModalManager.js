@@ -284,7 +284,10 @@ class ModalManager {
             gearCoinsEl.textContent = coins.toLocaleString();
         }
 
-        if (heroAvatar) heroAvatar.src = heroData.avatar || 'assets/HeroesIcons/PsanasAvatar.png';
+        const resolvedAvatar = (heroKey === 'psgiannhs' && typeof PsgiannhsHero !== 'undefined')
+            ? PsgiannhsHero.getAvatarForStyle()
+            : (heroData.avatar || 'assets/HeroesIcons/PsanasAvatar.png');
+        if (heroAvatar) heroAvatar.src = resolvedAvatar;
         if (heroName) heroName.textContent = (heroData.name || heroKey).toUpperCase();
 
         // Default weapons mapping per hero
@@ -294,7 +297,8 @@ class ModalManager {
             petros: 'watermelon',
             '50balos': 'money_gun',
             billias: 'burger',
-            kitsos: 'lightning'
+            kitsos: 'lightning',
+            psgiannhs: 'greek_flag'
         };
 
         const currentHeroWeapon = HERO_DEFAULT_WEAPONS[heroKey] || heroData.weaponType || 'pea';
@@ -345,6 +349,7 @@ class ModalManager {
             money_gun: 'Money Gun',
             burger: 'Burger Toss',
             lightning: 'Lightning Strike',
+            greek_flag: 'Greek Flag',
             carbine: "Kiloumpas's Carbine",
             dialtone: "Rouf's Dial-Tone Blaster",
             zeus_thunderbolt: "Zeus's Master Thunderbolt"
@@ -357,6 +362,7 @@ class ModalManager {
             money_gun: 'assets/WeaponIcons/MoneyGun.png',
             burger: 'assets/WeaponIcons/BurgerToss.png',
             lightning: 'assets/WeaponIcons/LightningStrike.png',
+            greek_flag: 'assets/WeaponIcons/GreekFlag.png',
             carbine: 'assets/WeaponIcons/KiloumpasCarbine.png',
             dialtone: 'assets/WeaponIcons/RoufBlaster.png',
             zeus_thunderbolt: 'assets/WeaponIcons/ZeusThunderbolt.png'
@@ -423,6 +429,7 @@ class ModalManager {
                     else if (wt === 'money_gun') { badge.textContent = '50BALOS GEAR'; badge.className = 'weapon-badge badge-50balos'; }
                     else if (wt === 'burger') { badge.textContent = 'BILLIAS GEAR'; badge.className = 'weapon-badge badge-billias'; }
                     else if (wt === 'lightning') { badge.textContent = 'KITSOS GEAR'; badge.className = 'weapon-badge badge-kitsos'; }
+                    else if (wt === 'greek_flag') { badge.textContent = 'PSGIANNHS GEAR'; badge.className = 'weapon-badge badge-psgiannhs'; }
                     else {
                         const rName = wData.rarity || 'Exclusive';
                         badge.textContent = isWepEvolved ? `${rName.toUpperCase()} ★` : rName.toUpperCase();

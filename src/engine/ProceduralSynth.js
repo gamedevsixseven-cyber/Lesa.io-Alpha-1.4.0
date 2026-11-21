@@ -71,6 +71,14 @@ class ProceduralSynth {
             gain.gain.exponentialRampToValueAtTime(0.01, now + 0.08);
             osc.start(now);
             osc.stop(now + 0.09);
+        } else if (type === 'greek_flag') {
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(760 + Math.random() * 60, now);
+            osc.frequency.exponentialRampToValueAtTime(220, now + 0.11);
+            gain.gain.setValueAtTime(masterVolume * 0.8, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.11);
+            osc.start(now);
+            osc.stop(now + 0.12);
         } else {
             osc.type = 'sine';
             osc.frequency.setValueAtTime(600 + Math.random() * 80, now);

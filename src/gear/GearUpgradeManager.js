@@ -465,8 +465,14 @@ class GearUpgradeManager {
 
     static _syncCloudAndEvents(extraFields = {}) {
         if (typeof window === 'undefined') return;
-        if (window.cloudSave && window.cloudSave.currentUser && typeof window.cloudSave.saveToCloud === 'function') {
-            window.cloudSave.saveToCloud(extraFields);
+        if (window.SaveManager && typeof window.SaveManager.saveNow === 'function') {
+            window.SaveManager.saveNow();
+        } else if (window.cloudSave && window.cloudSave.currentUser && typeof window.cloudSave.saveToCloud === 'function') {
+            const safeFields = { ...(extraFields || {}) };
+            delete safeFields.itemId;
+            delete safeFields.level;
+            delete safeFields.stones;
+            window.cloudSave.saveToCloud(safeFields);
         }
         if (window.inventoryModalUI && typeof window.inventoryModalUI.render === 'function') {
             window.inventoryModalUI.render();
@@ -477,7 +483,6 @@ class GearUpgradeManager {
         if (typeof GearManager !== 'undefined' && typeof GearManager.syncPlayerStats === 'function') {
             GearManager.syncPlayerStats();
         }
-        this._syncCloudAndEvents(payload);
 
         if (typeof window !== 'undefined') {
             if (window.soundEngine && typeof window.soundEngine.playLevelUp === 'function') {
@@ -486,6 +491,7 @@ class GearUpgradeManager {
             if (window.EventBus) {
                 window.EventBus.emit(eventName, payload);
             }
+            this._syncCloudAndEvents(payload);
             if (window.uiController && window.uiController.modalManager && typeof window.uiController.modalManager.updateGearScreen === 'function') {
                 window.uiController.modalManager.updateGearScreen();
             } else if (typeof GearModalUI !== 'undefined' && typeof GearModalUI.renderAll === 'function') {

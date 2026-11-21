@@ -19,6 +19,7 @@ class HeroRoster {
             'petros': 3500,
             'billias': 4000,
             'kitsos': 4500,
+            'psgiannhs': 5000,
             '50balos': 6000
         };
 
@@ -87,6 +88,23 @@ class HeroRoster {
                 });
             }
 
+            card.querySelectorAll('.hero-style-btn').forEach((styleBtn) => {
+                styleBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const styleId = styleBtn.getAttribute('data-style');
+                    if (hero === 'psgiannhs' && typeof PsgiannhsHero !== 'undefined' && styleId) {
+                        PsgiannhsHero.setActiveStyle(styleId);
+                        if (window.soundEngine) window.soundEngine.playSelect();
+                        this.updateHeroStyleButtons();
+                        if (this.ui && this.ui.menuController) this.ui.menuController.updateHeroAvatarUI();
+                        if (this.ui && this.ui.profileManager) this.ui.profileManager.updateProfileUI();
+                        if (this.ui && this.ui.modalManager && typeof this.ui.modalManager.updateGearScreen === 'function') {
+                            this.ui.modalManager.updateGearScreen();
+                        }
+                    }
+                });
+            });
+
             card.addEventListener('click', () => {
                 this.handleHeroButtonClick(hero, card);
             });
@@ -101,7 +119,6 @@ class HeroRoster {
 
     handleHeroButtonClick(hero, cardEl = null) {
         const comingSoonHeroes = {
-            'psgiannhs': { name: 'Psgiannhs', desc: 'Psgiannhs is currently preparing his battle gear and special weapon. He will be available in an upcoming update!' },
             'mortigen': { name: 'Mortigen', desc: 'Mortigen is currently preparing his dark abilities and weapon. He will be available in an upcoming update!' }
         };
 
@@ -204,7 +221,7 @@ class HeroRoster {
 
         cards.forEach((card) => {
             const hero = card.getAttribute('data-hero');
-            const isSoon = card.classList.contains('hero-card-coming-soon') || hero === 'psgiannhs' || hero === 'mortigen';
+            const isSoon = card.classList.contains('hero-card-coming-soon') || hero === 'mortigen';
             if (isSoon) {
                 card.classList.add('hero-locked');
                 const matches = (this.activeFilter === 'ALL' || this.activeFilter === 'SOON');
@@ -267,7 +284,8 @@ class HeroRoster {
             if (matchesFilter) visibleCount++;
         });
 
-        this._updateSummaryBar(playableCount || 6, ownedCount);
+        this.updateHeroStyleButtons();
+        this._updateSummaryBar(playableCount || 7, ownedCount);
 
         if (grid) {
             let emptyEl = grid.querySelector('.tab-empty-filter-state');
@@ -284,6 +302,17 @@ class HeroRoster {
                 emptyEl.remove();
             }
         }
+    }
+
+    updateHeroStyleButtons() {
+        const psgCard = document.querySelector('.hero-select-card[data-hero="psgiannhs"]');
+        if (!psgCard || typeof PsgiannhsHero === 'undefined') return;
+        const activeStyle = PsgiannhsHero.getActiveStyle();
+        const img = psgCard.querySelector('.hero-select-avatar img');
+        if (img) img.src = PsgiannhsHero.getAvatarForStyle(activeStyle);
+        psgCard.querySelectorAll('.hero-style-btn').forEach((btn) => {
+            btn.classList.toggle('active', btn.getAttribute('data-style') === activeStyle);
+        });
     }
 
     showHeroesModal() {

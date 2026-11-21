@@ -13,6 +13,7 @@ class GameState {
             coins: parseInt(localStorage.getItem('lesaio_coins') || '1500', 10),
             gems: parseInt(localStorage.getItem('lesaio_gems') || '50', 10),
             selectedHero: localStorage.getItem('lesaio_selected_hero') || 'psanas',
+            heroStyles: { psgiannhs: localStorage.getItem('lesaio_hero_style_psgiannhs') || 'jacket' },
             unlockedHeroes: JSON.parse(localStorage.getItem('lesaio_unlocked_heroes') || '["psanas"]'),
             selectedSkill: localStorage.getItem('lesaio_selected_skill') || 'blade_rush',
             unlockedSkills: JSON.parse(localStorage.getItem('lesaio_unlocked_skills') || '["blade_rush", "nerobalonaki"]'),

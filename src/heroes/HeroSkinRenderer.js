@@ -15,6 +15,7 @@ class HeroSkinRenderer {
      * Resolve the hero visual module
      */
     static getHeroModule(heroType) {
+        if (heroType === 'psgiannhs' && typeof PsgiannhsHero !== 'undefined') return PsgiannhsHero;
         if (heroType === '50balos' && typeof FiftyBalosHero !== 'undefined') return FiftyBalosHero;
         if (heroType === 'billias' && typeof BilliasHero !== 'undefined') return BilliasHero;
         if (heroType === 'kitsos' && typeof KitsosHero !== 'undefined') return KitsosHero;
@@ -236,7 +237,7 @@ class HeroSkinRenderer {
         const heroModule = HeroSkinRenderer.getHeroModule(heroType);
 
         if (heroModule && heroModule.drawLikeness) {
-            heroModule.drawLikeness(ctx, r, flash, dir, isBack);
+            heroModule.drawLikeness(ctx, r, flash, dir, isBack, player);
         } else {
             HeroSkinRenderer.drawPsanasLikeness(ctx, r, flash, dir, isBack);
         }
@@ -272,7 +273,7 @@ class HeroSkinRenderer {
             ctx.restore();
             return;
         }
-        const armConfig = heroModule ? heroModule.getArmConfig(flash) : {
+        const armConfig = heroModule ? heroModule.getArmConfig(flash, player) : {
             sleeveColor: null,
             cuffColor: '#1e1e24',
             skinColor: flash ? '#ffffff' : '#d49b6a'
@@ -296,6 +297,8 @@ class HeroSkinRenderer {
             HeroSkinRenderer.drawBurger(ctx, flash, recoil);
         } else if (weaponType === 'lightning') {
             HeroSkinRenderer.drawLightningGauntlet(ctx, flash, recoil);
+        } else if (weaponType === 'greek_flag' && typeof PsgiannhsHero !== 'undefined' && typeof PsgiannhsHero.drawWeapon === 'function') {
+            PsgiannhsHero.drawWeapon(ctx, flash, recoil);
         } else {
             HeroSkinRenderer.drawTacticalSlingshot(ctx, flash, recoil);
         }

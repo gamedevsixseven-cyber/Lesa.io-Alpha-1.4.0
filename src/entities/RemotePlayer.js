@@ -44,22 +44,26 @@ class RemotePlayer {
 
     applyHeroStats(heroType) {
         this.heroType = heroType;
+        const wasFull = !this.hp || this.hp >= this.maxHp;
         const heroData = (typeof HEROES !== 'undefined' && HEROES[heroType]) ? HEROES[heroType] : null;
         if (heroData) {
             this.maxHp = heroData.hp || 100;
             this.weaponType = heroData.weaponType || 'pea';
             this.heroColor = heroData.heroColor || '#1e70d6';
+            this.damageReduction = heroData.damageReduction || 0;
         } else {
-            this.maxHp = 100;
+            this.maxHp = heroType === 'petros' ? 150 : 100;
             this.weaponType = 'pea';
             this.heroColor = '#1e70d6';
+            this.damageReduction = heroType === 'petros' ? 0.08 : 0;
         }
-        if (!this.hp || this.hp > this.maxHp) this.hp = this.maxHp;
+        if (wasFull || this.hp > this.maxHp) this.hp = this.maxHp;
     }
 
     takeDamage(amount, effects = null, camera = null) {
         if (this.invulnerableTimer > 0 || this.hp <= 0) return false;
-        const actualDamage = Math.max(1, Math.round(amount));
+        const mult = (this.damageReduction && this.damageReduction > 0) ? (1 - this.damageReduction) : 1;
+        const actualDamage = Math.max(1, Math.round(amount * mult));
         this.hp = Math.max(0, this.hp - actualDamage);
         this.hitFlash = 12;
         this.invulnerableTimer = 18;

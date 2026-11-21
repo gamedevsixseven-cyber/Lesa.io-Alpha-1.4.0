@@ -33,7 +33,7 @@ class Player {
         this.baseBulletSpeed = 14;
         this.baseCritChance = 0.1 + (upgrades.critChance || 0) * 0.01;
         this.baseCritMultiplier = 2.0 + (upgrades.critDamage || 0) * 0.05;
-        this.baseDamageReduction = 0;
+        this.baseDamageReduction = this.archetypeDamageReduction || 0; this.damageReduction = this.baseDamageReduction;
         this.baseMaxDashCooldown = 180;
         this.baseMagnetRadius = 140;
 
@@ -85,16 +85,19 @@ class Player {
         } else {
             const defaults = {
                 psogas: { name: 'Psogas', radius: 25, speed: 5.6, hp: 90, weapon: 'pepper', color: '#fa8231' },
-                petros: { name: 'Petros', radius: 26, speed: 4.6, hp: 140, weapon: 'watermelon', color: '#1e70d6' },
+                petros: { name: 'Petros', radius: 26, speed: 4.6, hp: 150, weapon: 'watermelon', color: '#1e70d6' },
                 '50balos': { name: '50balos', radius: 24, speed: 5.0, hp: 110, weapon: 'money_gun', color: '#162c50' },
                 billias: { name: 'Billias', radius: 25, speed: 4.6, hp: 120, weapon: 'burger', color: '#e67e22' },
                 kitsos: { name: 'Kitsos', radius: 24, speed: 5.8, hp: 95, weapon: 'lightning', color: '#00d2d3' },
+                psgiannhs: { name: 'Psgiannhs', radius: 24, speed: 5.1, hp: 115, weapon: 'greek_flag', color: '#22242a' },
                 psanas: { name: 'Psanas', radius: 24, speed: 5.2, hp: 100, weapon: 'pea', color: '#ff4757' }
             };
             const d = defaults[type] || defaults.psanas;
             this.name = d.name; this.radius = d.radius; this.archetypeSpeed = d.speed;
             this.archetypeMaxHp = d.hp; this.weaponType = d.weapon; this.heroColor = d.color;
         }
+        this.heroStyle = (type === 'psgiannhs' && typeof PsgiannhsHero !== 'undefined') ? PsgiannhsHero.getActiveStyle() : null; this.archetypeDamageReduction = (heroData && heroData.damageReduction) || (type === 'petros' ? 0.08 : 0);
+        this.baseDamageReduction = this.archetypeDamageReduction; this.damageReduction = this.baseDamageReduction;
 
         if (type === 'kitsos') {
             this.archetypeSpeed = 5.8; // Guaranteed fastest hero in the game by +0.2

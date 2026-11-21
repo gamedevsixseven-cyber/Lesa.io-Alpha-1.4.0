@@ -266,6 +266,7 @@ class HUDController {
             'money_gun': 'Money Gun',
             'burger': 'Burger Toss',
             'lightning': 'Lightning Strike',
+            'greek_flag': 'Greek Flag',
             'carbine': "Kiloumpas's Carbine",
             'dialtone': 'Dial-Tone Blaster',
             'zeus_thunderbolt': "Zeus's Thunderbolt"
@@ -278,6 +279,7 @@ class HUDController {
             'money_gun': 'weapon_money_gun',
             'burger': 'weapon_burger',
             'lightning': 'weapon_lightning',
+            'greek_flag': 'weapon_greek_flag',
             'carbine': 'weapon_carbine',
             'dialtone': 'weapon_dialtone',
             'zeus_thunderbolt': 'weapon_zeus_thunderbolt'
@@ -290,6 +292,7 @@ class HUDController {
             'money_gun': '💵',
             'burger': '🍔',
             'lightning': '⚡',
+            'greek_flag': '🇬🇷',
             'carbine': '🔫',
             'dialtone': '📱',
             'zeus_thunderbolt': '⚡'

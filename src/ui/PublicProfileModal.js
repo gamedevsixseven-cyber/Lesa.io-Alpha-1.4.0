@@ -21,7 +21,8 @@ class PublicProfileModal {
             petros: 'assets/HeroesIcons/PetrosAvatar.png',
             '50balos': 'assets/HeroesIcons/50balosCrop.png',
             billias: 'assets/HeroesIcons/BilliasAvatar.png',
-            kitsos: 'assets/HeroesIcons/KitsosAvatar.png'
+            kitsos: 'assets/HeroesIcons/KitsosAvatar.png',
+            psgiannhs: 'assets/HeroesIcons/PsgiannhsAvatar.png'
         };
         return map[heroId] || map.psanas;
     }

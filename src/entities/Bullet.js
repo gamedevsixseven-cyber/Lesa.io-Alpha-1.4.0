@@ -163,6 +163,8 @@ class Bullet {
         } else if (this.type === 'carbine') {
             effects.addSparks(this.x, this.y, '#ffd32a', 7);
             effects.addSparks(this.x, this.y, '#ff9f43', 4);
+        } else if (this.type === 'greek_flag') {
+            effects.addSparks(this.x, this.y, '#0d5eaf', 6); effects.addSparks(this.x, this.y, '#ffffff', 5);
         } else if (this.type === 'dialtone' || this.type === 'soundwave') {
             effects.addShockwave(this.x, this.y, 52, 'rgba(0, 210, 211, 0.65)');
             effects.addSparks(this.x, this.y, '#fed330', 6);
@@ -223,6 +225,8 @@ class Bullet {
             this.drawBurger(ctx);
         } else if (this.type === 'lightning') {
             this.drawLightning(ctx);
+        } else if (this.type === 'greek_flag') {
+            if (typeof PsgiannhsHero !== 'undefined' && PsgiannhsHero.drawBullet) PsgiannhsHero.drawBullet(ctx, this); else this.drawPea(ctx);
         } else {
             this.drawPea(ctx);
         }
@@ -232,18 +236,13 @@ class Bullet {
 
     getTrailColor() {
         if (typeof BossProjectileFX !== 'undefined') { const c = BossProjectileFX.getTrailColor(this); if (c) return c; }
-        if (this.type === 'watermelon') return '#eb4d4b';
-        if (this.type === 'bubble') return '#70a1ff';
-        if (this.type === 'pepper') return '#ff6b6b';
-        if (this.type === 'soccer') return '#ffffff';
-        if (this.type === 'smoke') return '#9b59b6';
-        if (this.type === 'money_gun' || this.type === 'euro' || this.type === 'carbine') return '#f39c12';
-        if (this.type === 'soundwave' || this.type === 'dialtone') return '#fed330';
-        if (this.type === 'burger') return '#e59b52';
-        if (this.type === 'lightning') return '#00d2d3';
-        if (this.type === 'zeus_thunderbolt') return '#fed330';
-        if (this.color) return this.color;
-        return this.isEnemy ? '#ff4757' : '#2ed573';
+        const map = {
+            watermelon: '#eb4d4b', bubble: '#70a1ff', pepper: '#ff6b6b', soccer: '#ffffff',
+            smoke: '#9b59b6', money_gun: '#f39c12', euro: '#f39c12', carbine: '#f39c12',
+            soundwave: '#fed330', dialtone: '#fed330', burger: '#e59b52', lightning: '#00d2d3',
+            greek_flag: '#1e90ff', zeus_thunderbolt: '#fed330'
+        };
+        return map[this.type] || this.color || (this.isEnemy ? '#ff4757' : '#2ed573');
     }
 
     drawPea(ctx) {

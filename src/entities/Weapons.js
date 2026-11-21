@@ -13,7 +13,7 @@ class WeaponSystem {
 
         switch (type) {
             case 'watermelon':
-                return { baseDelay: 30, baseDamage: 65, radius: 14, extraPierce: 0, maxBounces: 0 };
+                return { baseDelay: 25, baseDamage: 75, radius: 18, extraPierce: 0, maxBounces: 0 };
             case 'bubble':
                 return { baseDelay: 12, baseDamage: 22, radius: 10, extraPierce: 0, maxBounces: 3 };
             case 'carbine':
@@ -30,6 +30,8 @@ class WeaponSystem {
                 return { baseDelay: 18, baseDamage: 45, radius: 12, extraPierce: 1, maxBounces: 0 };
             case 'lightning':
                 return { baseDelay: 15, baseDamage: 38, radius: 10, extraPierce: 0, maxBounces: 0 };
+            case 'greek_flag':
+                return { baseDelay: 14, baseDamage: 36, radius: 12, extraPierce: 1, maxBounces: 0, speedMultiplier: 1.15 };
             case 'pea':
             default:
                 return { baseDelay: 16, baseDamage: 25, radius: 8, extraPierce: 0, maxBounces: 0 };

@@ -20,9 +20,9 @@ const WEAPONS = {
         id: 'watermelon',
         name: 'Melon Cannon',
         icon: '🍉',
-        baseDelay: 30,
-        baseDamage: 65,
-        radius: 14,
+        baseDelay: 25,
+        baseDamage: 75,
+        radius: 18,
         extraPierce: 0,
         maxBounces: 0,
         color: '#20bf6b',
@@ -91,6 +91,19 @@ const WEAPONS = {
         maxBounces: 0,
         color: '#00d2d3',
         image: 'assets/WeaponIcons/LightningStrike.png'
+    },
+    greek_flag: {
+        id: 'greek_flag',
+        name: 'Greek Flag',
+        icon: '🇬🇷',
+        baseDelay: 14,
+        baseDamage: 36,
+        radius: 12,
+        extraPierce: 1,
+        maxBounces: 0,
+        speedMultiplier: 1.15,
+        color: '#0d5eaf',
+        image: 'assets/WeaponIcons/GreekFlag.png'
     },
     carbine: {
         id: 'carbine',

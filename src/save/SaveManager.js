@@ -16,12 +16,27 @@ class SaveManager {
         if (typeof window !== 'undefined' && window.EventBus) {
             window.EventBus.on('currencyChanged', () => this.requestSave());
             window.EventBus.on('heroSelected', () => this.requestSave());
+            window.EventBus.on('heroStyleChanged', () => this.requestSave());
             window.EventBus.on('heroUnlocked', () => this.requestSave());
             window.EventBus.on('accountXpChanged', () => this.requestSave());
             window.EventBus.on('statsUpdated', () => this.requestSave());
             window.EventBus.on('materialsUpdated', () => this.requestSave());
+            window.EventBus.on('gearUpgraded', () => this.requestSave());
+            window.EventBus.on('gearEvolved', () => this.requestSave());
+            window.EventBus.on('evolutionStoneCrafted', () => this.requestSave());
+            window.EventBus.on('weaponEvolved', () => this.requestSave());
+            window.EventBus.on('upgradesUpdated', () => this.requestSave());
+            window.EventBus.on('skillLevelsChanged', () => this.requestSave());
+            window.EventBus.on('cosmeticsUpdated', () => this.requestSave());
             window.EventBus.on('saveRequested', () => this.saveNow());
         }
+    }
+
+    /**
+     * Alias for saveNow() used by UI subsystems
+     */
+    save() {
+        return this.saveNow();
     }
 
     /**

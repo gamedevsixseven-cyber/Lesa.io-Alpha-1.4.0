@@ -7,7 +7,7 @@ const RAW_TIPS = [
     // 1. HEROES & ARCHETYPES
     'hero_psanas_balance|hero|*Psanas* is the ultimate balanced all-rounder—his standard Slingshot delivers rapid, dependable single-target fire!',
     'hero_psogas_pierce|hero|*Psogas* moves 10% faster than other heroes and wields the fiery Chili Blaster with innate bullet pierce!',
-    'hero_petros_tank|hero|*Petros* boasts a massive 125 base HP and starts equipped with the heavy explosive Watermelon Cannon!',
+    'hero_petros_tank|hero|*Petros* boasts a massive 150 base HP, takes 8% less damage, and starts equipped with the heavy explosive Watermelon Cannon!',
     'hero_roster_swapping|hero|Unlock new heroes in the *Roster* using Coins and Diamonds to experiment with different starting weapon styles!',
     'hero_speed_kiting|hero|*Psogas\' 5.2 move speed* lets you outrun charging brutes without even needing to spend your Dash!',
     'hero_petros_splash|hero|While playing *Petros*, aim melon shots right into the center of enemy packs to maximize splash damage!',

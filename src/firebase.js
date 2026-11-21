@@ -128,7 +128,7 @@ class CloudSaveService {
         return this.saveToCloud(saveData);
     }
 
-    async saveToCloud(saveData) {
+    async saveToCloud(saveData = {}) {
         if (!this.isInitialized || !this.db) return false;
         if (this.isSyncingFromCloud) {
             return false;
@@ -138,49 +138,41 @@ class CloudSaveService {
         const user = { uid, email };
         if (!user.uid) return false;
 
+        this._pendingCloudSaves = (this._pendingCloudSaves || 0) + 1;
         try {
             const userDocRef = this.db.collection('players').doc(user.uid);
             this.lastLocalSaveTimestamp = Date.now();
 
-            const p = saveData.player || saveData;
-            const pCoins = p.coins !== undefined ? p.coins : 0;
-            const pGems = p.gems !== undefined ? p.gems : 0;
-            const pLevel = p.accountLevel !== undefined ? p.accountLevel : (p.level || 1);
-            const pXp = p.accountXp !== undefined ? p.accountXp : (p.xp || 0);
-            const pSkills = p.skillLevels || { blade_rush: 1, nerobalonaki: 1 };
-            const pName = p.name || p.playerName || localStorage.getItem('lesaio_player_name') || 'Psanas';
             const fTag = (typeof PlayerIdentity !== 'undefined') ? PlayerIdentity.getOnlineTag(user.uid) : '#HERO00';
             const fTagClean = (typeof PlayerIdentity !== 'undefined') ? PlayerIdentity.normalizeTag(fTag) : 'HERO00';
+            let payload;
+            if (typeof SaveSerializer !== 'undefined' && typeof SaveSerializer.buildCloudPayload === 'function') {
+                payload = SaveSerializer.buildCloudPayload(saveData, user, { friendTag: fTag, friendTagClean: fTagClean });
+            } else {
+                const rawInput = (saveData && typeof saveData === 'object') ? saveData : {};
+                const gsP = (typeof window !== 'undefined' && window.GameState && window.GameState.player) ? window.GameState.player : {};
+                const p = rawInput.player || rawInput;
+                const pCoins = p.coins !== undefined ? p.coins : (gsP.coins ?? (parseInt(localStorage.getItem('lesaio_coins') || '0', 10) || 0));
+                const pGems = p.gems !== undefined ? p.gems : (p.diamonds !== undefined ? p.diamonds : (gsP.gems ?? (parseInt(localStorage.getItem('lesaio_gems') || '0', 10) || 0)));
+                const pLevel = p.accountLevel !== undefined ? p.accountLevel : ((rawInput.itemId === undefined && p.level !== undefined) ? p.level : (gsP.accountLevel ?? 1));
+                const pXp = p.accountXp !== undefined ? p.accountXp : (p.xp !== undefined ? p.xp : (gsP.accountXp ?? 0));
+                const pSkills = p.skillLevels || gsP.skillLevels || { blade_rush: 1, nerobalonaki: 1 };
+                const pName = p.name || p.playerName || gsP.name || localStorage.getItem('lesaio_player_name') || 'Psanas';
+                payload = {
+                    ...rawInput, playerName: pName, playerNameLower: pName.toLowerCase(), friendTag: fTag, friendTagClean: fTagClean,
+                    coins: pCoins, gold: pCoins, gems: pGems, diamonds: pGems, level: pLevel, xp: pXp, skillLevels: pSkills,
+                    player: { ...gsP, ...(rawInput.player || {}), coins: pCoins, gold: pCoins, gems: pGems, diamonds: pGems, accountLevel: pLevel, accountXp: pXp, skillLevels: pSkills },
+                    email: user.email || 'gamedevsixseven@gmail.com'
+                };
+            }
 
-            this.lastSavedGems = pGems;
-            this.lastSavedCoins = pCoins;
-            this.lastKnownRootGems = pGems;
-            this.lastKnownRootCoins = pCoins;
+            this.lastSavedGems = payload.gems;
+            this.lastSavedCoins = payload.coins;
+            this.lastKnownRootGems = payload.gems;
+            this.lastKnownRootCoins = payload.coins;
 
             await userDocRef.set({
-                ...saveData,
-                playerName: pName,
-                playerNameLower: pName.toLowerCase(),
-                friendTag: fTag,
-                friendTagClean: fTagClean,
-                coins: pCoins,
-                gold: pCoins,
-                gems: pGems,
-                diamonds: pGems,
-                level: pLevel,
-                xp: pXp,
-                skillLevels: pSkills,
-                player: {
-                    ...(saveData.player || {}),
-                    coins: pCoins,
-                    gold: pCoins,
-                    gems: pGems,
-                    diamonds: pGems,
-                    accountLevel: pLevel,
-                    accountXp: pXp,
-                    skillLevels: pSkills
-                },
-                email: user.email || 'gamedevsixseven@gmail.com',
+                ...payload,
                 lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
             }, { merge: true });
 
@@ -191,6 +183,8 @@ class CloudSaveService {
                 alert('⚠️ Firestore Rules Notice: Please enable test mode in Firestore Database rules in Firebase Console!');
             }
             return false;
+        } finally {
+            this._pendingCloudSaves = Math.max(0, (this._pendingCloudSaves || 1) - 1);
         }
     }
 
@@ -239,11 +233,15 @@ class CloudSaveService {
 
     applyCloudData(data) {
         if (!data) return;
+        if ((this._pendingCloudSaves || 0) > 0 && Date.now() - (this.lastLocalSaveTimestamp || 0) < 4000) {
+            return;
+        }
         this.lastCloudData = data;
         const isInitialSync = !this.hasCompletedInitialSync;
         this.hasCompletedInitialSync = true;
         this.isSyncingFromCloud = true;
         let changed = false;
+        try {
 
         // 1. Live Gems / Diamonds Sync
         const curGems = (window.GameState && typeof window.GameState.player.gems === 'number')
@@ -495,10 +493,9 @@ class CloudSaveService {
                 this._reconcileDoc({ skillLevels: parsedSkills, 'player.skillLevels': parsedSkills });
             }
         }
-
-        setTimeout(() => {
+        } finally {
             this.isSyncingFromCloud = false;
-        }, 1200);
+        }
 
         // Real-time Developer Mail Inbox Delivery (Explicit mail objects only)
         if (data.mail && typeof data.mail === 'object' && data.mail.title) {

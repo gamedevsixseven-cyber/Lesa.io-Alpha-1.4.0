@@ -446,7 +446,8 @@ class MenuController {
             petros: 'assets/HeroesIcons/PetrosAvatar.png',
             '50balos': 'assets/HeroesIcons/50balosCrop.png',
             billias: 'assets/HeroesIcons/BilliasAvatar.png',
-            kitsos: 'assets/HeroesIcons/KitsosAvatar.png'
+            kitsos: 'assets/HeroesIcons/KitsosAvatar.png',
+            psgiannhs: (typeof PsgiannhsHero !== 'undefined') ? PsgiannhsHero.getAvatarForStyle() : 'assets/HeroesIcons/PsgiannhsAvatar.png'
         };
 
         const path = avatarMap[hero] || avatarMap.psanas;

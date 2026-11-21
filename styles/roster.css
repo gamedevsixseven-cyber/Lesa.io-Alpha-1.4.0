@@ -508,6 +508,35 @@
 }
 .hero-equip-btn { width: 100%; margin-top: auto; white-space: nowrap; font-size: 0.78rem; padding: 5px 8px; }
 
+/* Multi-Style Hero Toggle Pills (e.g. Psgiannhs Jacket / No Jacket) */
+.hero-style-switcher {
+    display: flex;
+    gap: 4px;
+    width: 100%;
+    margin: 2px 0 6px 0;
+}
+.hero-style-btn {
+    flex: 1;
+    font-family: 'Fredoka', sans-serif;
+    font-size: 0.65rem;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+    padding: 3px 4px;
+    border-radius: 8px;
+    border: 2px solid var(--dark-outline);
+    background: #eef1f6;
+    color: #2f3542;
+    cursor: pointer;
+    transition: transform 0.12s ease, background 0.12s ease, color 0.12s ease;
+    white-space: nowrap;
+}
+.hero-style-btn:hover { transform: translateY(-1px); background: #dfe4ea; }
+.hero-style-btn.active {
+    background: #1e272e;
+    color: #ffd32a;
+    box-shadow: 0 2px 0 rgba(0, 0, 0, 0.25);
+}
+
 /* Coming Soon Hero Teaser Card */
 .hero-card-coming-soon { background: #f8f9fa; border-color: #a4b0be !important; opacity: 0.9; }
 .hero-card-coming-soon:hover { transform: translateY(-2px); box-shadow: var(--shadow-solid-sm); border-color: #747d8c !important; }

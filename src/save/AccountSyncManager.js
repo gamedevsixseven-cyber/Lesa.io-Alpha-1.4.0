@@ -59,6 +59,7 @@ class AccountSyncManager {
                     const accountXp = parseInt(p.accountXp ?? p.xp ?? docData.xp ?? 0, 10);
                     const name = p.name || p.playerName || docData.playerName || user.displayName || user.email?.split('@')[0] || 'Psanas';
                     const selectedHero = p.selectedHero || docData.selectedHero || 'psanas';
+                    const heroStyles = (p.heroStyles && typeof p.heroStyles === 'object') ? p.heroStyles : ((docData.heroStyles && typeof docData.heroStyles === 'object') ? docData.heroStyles : {});
 
                     let unlockedHeroes = ['psanas'];
                     if (Array.isArray(p.unlockedHeroes)) {
@@ -129,6 +130,7 @@ class AccountSyncManager {
                             gems,
                             diamonds: gems,
                             selectedHero,
+                            heroStyles,
                             unlockedHeroes,
                             selectedWeapon,
                             unlockedWeapons,
@@ -179,6 +181,9 @@ class AccountSyncManager {
                     localStorage.setItem('lesaio_account_level', accountLevel.toString());
                     localStorage.setItem('lesaio_account_xp', accountXp.toString());
                     localStorage.setItem('lesaio_selected_hero', selectedHero);
+                    if (heroStyles && heroStyles.psgiannhs) {
+                        localStorage.setItem('lesaio_hero_style_psgiannhs', heroStyles.psgiannhs);
+                    }
                     localStorage.setItem('lesaio_unlocked_heroes', JSON.stringify(unlockedHeroes));
                     localStorage.setItem('lesaio_selected_weapon', selectedWeapon);
                     localStorage.setItem('lesaio_unlocked_weapons', JSON.stringify(unlockedWeapons));

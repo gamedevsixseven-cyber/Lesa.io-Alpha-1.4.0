@@ -11,17 +11,17 @@ class MelonCannon extends WeaponBase {
             type: 'watermelon',
             rarity: 'Common',
             hero: 'petros',
-            baseDelay: 30,
-            baseDamage: 65,
-            radius: 14,
+            baseDelay: 25,
+            baseDamage: 75,
+            radius: 18,
             extraPierce: 0,
             maxBounces: 0,
             color: '#20bf6b',
             icon: 'assets/WeaponIcons/MelonCannon.png',
             description: 'Heavy melon mortar launching devastating explosive watermelons with high impact.',
             stats: {
-                damage: '65 Impact',
-                fireRate: 'Slow (0.50s)',
+                damage: '75 Impact',
+                fireRate: 'Heavy (0.42s)',
                 pierce: 'None',
                 special: 'Heavy Blast'
             }

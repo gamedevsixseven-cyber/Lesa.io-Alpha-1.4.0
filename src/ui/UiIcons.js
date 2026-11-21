@@ -28,6 +28,7 @@ class UiIcons {
         weapon_money_gun: 'assets/WeaponIcons/MoneyGun.png',
         weapon_burger: 'assets/WeaponIcons/BurgerToss.png',
         weapon_lightning: 'assets/WeaponIcons/LightningStrike.png',
+        weapon_greek_flag: 'assets/WeaponIcons/GreekFlag.png',
         weapon_carbine: 'assets/WeaponIcons/KiloumpasCarbine.png',
         weapon_dialtone: 'assets/WeaponIcons/RoufBlaster.png',
         weapon_zeus_thunderbolt: 'assets/WeaponIcons/ZeusThunderbolt.png',

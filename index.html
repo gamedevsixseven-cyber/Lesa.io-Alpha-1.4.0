@@ -29,10 +29,10 @@
     <link rel="stylesheet" href="styles/cards.css">
     <link rel="stylesheet" href="styles/hud.css">
     <link rel="stylesheet" href="styles/modals.css?v=1.5.8">
-    <link rel="stylesheet" href="styles/roster.css?v=1.5.7">
+    <link rel="stylesheet" href="styles/roster.css?v=1.5.55">
     <link rel="stylesheet" href="styles/skills.css?v=1.5.7">
     <link rel="stylesheet" href="styles/mail.css">
-    <link rel="stylesheet" href="styles/tabmodals.css?v=1.5.7">
+    <link rel="stylesheet" href="styles/tabmodals.css?v=1.5.56">
     <link rel="stylesheet" href="styles/gear.css?v=1.5.41">
     <link rel="stylesheet" href="styles/gear-upgrades.css?v=1.5.41">
     <link rel="stylesheet" href="styles/perks.css?v=1.5.36">
@@ -488,10 +488,10 @@
                                 <img src="assets/HeroesIcons/PetrosAvatar.png" alt="Petros">
                             </div>
                             <h3 class="hero-select-name">Petros</h3>
-                            <div class="hero-stat-row"><span>HP:</span> <strong>140</strong></div>
+                            <div class="hero-stat-row"><span>HP:</span> <strong>150</strong></div>
                             <div class="hero-stat-row"><span>Speed:</span> <strong>Tanky (4.6)</strong></div>
                             <div class="hero-stat-row"><span>Weapon:</span> <strong>Melon Cannon</strong></div>
-                            <div class="hero-perk">Heavy Armor & Explosive Splash</div>
+                            <div class="hero-perk">Heavy Armor (-8% Dmg) & Explosive Splash</div>
                             <button class="comic-btn comic-btn-sm hero-equip-btn hero-unlock-btn" data-cost="3500"
                                 data-hero="petros">UNLOCK (<img src="assets/ui-icons/coin.svg"
                                     class="ui-icon ui-icon-sm" alt=""> 3,500)</button>
@@ -514,21 +514,25 @@
                                     class="ui-icon ui-icon-sm" alt=""> 6,000)</button>
                         </div>
 
-                        <!-- Hero 5: Psgiannhs (Coming Soon) -->
-                        <div class="hero-select-card hero-card-coming-soon hero-locked" data-hero="psgiannhs">
-                            <div class="hero-card-badge hero-badge-coming-soon"><img src="assets/ui-icons/hourglass.svg"
-                                    class="ui-icon ui-icon-sm" alt=""> COMING SOON</div>
-                            <div class="hero-select-avatar hero-avatar-mystery">
-                                <span class="mystery-avatar-icon"><img src="assets/ui-icons/mystery.svg"
-                                        class="ui-icon ui-icon-box" alt=""></span>
+                        <!-- Hero 5: Psgiannhs (2 Styles: Jacket / No Jacket) -->
+                        <div class="hero-select-card hero-locked" data-hero="psgiannhs">
+                            <div class="hero-lock-badge"><img src="assets/ui-icons/lock.svg" class="ui-icon ui-icon-sm"
+                                    alt=""> LOCKED</div>
+                            <div class="hero-select-avatar">
+                                <img src="assets/HeroesIcons/PsgiannhsAvatar.png" alt="Psgiannhs">
                             </div>
                             <h3 class="hero-select-name">Psgiannhs</h3>
-                            <div class="hero-stat-row"><span>HP:</span> <strong>???</strong></div>
-                            <div class="hero-stat-row"><span>Speed:</span> <strong>???</strong></div>
-                            <div class="hero-stat-row"><span>Weapon:</span> <strong>Classified</strong></div>
-                            <div class="hero-perk">Secret Brawler • In Training</div>
-                            <button class="comic-btn comic-btn-sm hero-equip-btn hero-coming-soon-btn">COMING SOON <img
-                                    src="assets/ui-icons/hourglass.svg" class="ui-icon ui-icon-sm" alt=""></button>
+                            <div class="hero-stat-row"><span>HP:</span> <strong>115</strong></div>
+                            <div class="hero-stat-row"><span>Speed:</span> <strong>Agile (5.1)</strong></div>
+                            <div class="hero-stat-row"><span>Weapon:</span> <strong>Greek Flag</strong></div>
+                            <div class="hero-perk">Piercing Greek Flags • 2 Styles</div>
+                            <div class="hero-style-switcher" role="group" aria-label="Psgiannhs Styles">
+                                <button type="button" class="hero-style-btn active" data-style="jacket">JACKET</button>
+                                <button type="button" class="hero-style-btn" data-style="tee">NO JACKET</button>
+                            </div>
+                            <button class="comic-btn comic-btn-sm hero-equip-btn hero-unlock-btn" data-cost="5000"
+                                data-hero="psgiannhs">UNLOCK (<img src="assets/ui-icons/coin.svg"
+                                    class="ui-icon ui-icon-sm" alt=""> 5,000)</button>
                         </div>
 
                         <!-- Hero 6: Kitsos -->
@@ -1548,9 +1552,9 @@
                                 </div>
                                 <div class="weapon-stats-list">
                                     <div class="weapon-stat-row"><span class="stat-key">Damage:</span> <span
-                                            class="stat-val">65 Explosive</span></div>
+                                            class="stat-val">75 Explosive</span></div>
                                     <div class="weapon-stat-row"><span class="stat-key">Fire Delay:</span> <span
-                                            class="stat-val">Heavy (3.0s)</span></div>
+                                            class="stat-val">Heavy (2.5s)</span></div>
                                     <div class="weapon-stat-row"><span class="stat-key">Trait:</span> <span
                                             class="stat-val">Area Shockwave</span></div>
                                 </div>
@@ -1659,6 +1663,28 @@
                                             class="stat-val">Rapid (1.5s)</span></div>
                                     <div class="weapon-stat-row"><span class="stat-key">Trait:</span> <span
                                             class="stat-val">High Voltage • 10% Chain Zap</span></div>
+                                </div>
+                            </div>
+
+                            <!-- Weapon 7.5: Greek Flag (Psgiannhs Signature) -->
+                            <div class="weapon-card" data-weapon="greek_flag">
+                                <div class="weapon-card-top">
+                                    <div class="weapon-card-left">
+                                        <div class="weapon-icon-wrap">
+                                            <img src="assets/WeaponIcons/GreekFlag.png" class="weapon-card-img"
+                                                alt="Greek Flag">
+                                        </div>
+                                        <h3 class="weapon-name">GREEK FLAG</h3>
+                                    </div>
+                                    <div class="weapon-badge badge-psgiannhs">PSGIANNHS GEAR</div>
+                                </div>
+                                <div class="weapon-stats-list">
+                                    <div class="weapon-stat-row"><span class="stat-key">Damage:</span> <span
+                                            class="stat-val">36 Spear</span></div>
+                                    <div class="weapon-stat-row"><span class="stat-key">Fire Delay:</span> <span
+                                            class="stat-val">Fast (1.4s)</span></div>
+                                    <div class="weapon-stat-row"><span class="stat-key">Trait:</span> <span
+                                            class="stat-val">Spear-Tipped • Pierces 1</span></div>
                                 </div>
                             </div>
 
@@ -2662,25 +2688,26 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
     <script src="src/save/PlayerIdentity.js?v=1.5.5"></script>
-    <script src="src/firebase.js?v=1.5.5"></script>
+    <script src="src/firebase.js?v=1.5.54"></script>
 
     <!-- GAME SCRIPTS IN CLEAN DEPENDENCY ORDER -->
     <!-- 1. DATA DEFINITIONS -->
     <script src="src/data/rarities.js?v=1.2.4"></script>
     <script src="src/weapons/WeaponBase.js?v=1.2.4"></script>
     <script src="src/weapons/HeroBaseWeapons/PeaSlingshot.js?v=1.2.4"></script>
-    <script src="src/weapons/HeroBaseWeapons/MelonCannon.js?v=1.2.4"></script>
+    <script src="src/weapons/HeroBaseWeapons/MelonCannon.js?v=1.5.53"></script>
     <script src="src/weapons/HeroBaseWeapons/ChilliBlaster.js?v=1.2.4"></script>
     <script src="src/weapons/HeroBaseWeapons/MoneyGun.js?v=1.2.4"></script>
+    <script src="src/weapons/HeroBaseWeapons/GreekFlag.js?v=1.5.56"></script>
     <script src="src/weapons/Exclusive/BubbleGun.js?v=1.2.4"></script>
     <script src="src/weapons/BossWeapons/KiloumpasCarbine.js?v=1.5.15"></script>
     <script src="src/weapons/BossWeapons/RoufDialToneBlaster.js?v=1.5.15"></script>
     <script src="src/weapons/BossWeapons/ZeusThunderbolt.js?v=1.5.30"></script>
-    <script src="src/data/heroes.js?v=1.2.4"></script>
-    <script src="src/data/weapons.js?v=1.5.31"></script>
+    <script src="src/data/heroes.js?v=1.5.56"></script>
+    <script src="src/data/weapons.js?v=1.5.56"></script>
     <script src="src/data/skills.js?v=1.5.44"></script>
     <script src="src/data/quests.js?v=1.5.36"></script>
-    <script src="src/data/tips.js?v=1.2.2"></script>
+    <script src="src/data/tips.js?v=1.5.53"></script>
     <script src="src/data/upgrades.js?v=1.5.10"></script>
     <script src="src/data/perks_legendary.js?v=1.5.45"></script>
     <script src="src/data/perks_mythic.js?v=1.5.37"></script>
@@ -2696,17 +2723,17 @@
     <!-- 2. CORE MESSAGING & CANONICAL STATE -->
     <script src="src/core/EventBus.js?v=1.2.2"></script>
     <script src="src/core/MobilePerf.js?v=1.5.51"></script>
-    <script src="src/core/GameState.js?v=1.5.48"></script>
+    <script src="src/core/GameState.js?v=1.5.55"></script>
     <script src="src/progression/PerkProgression.js?v=1.5.36"></script>
     <script src="src/progression/CosmeticManager.js?v=1.5.49"></script>
     <script src="src/dungeons/AscentCrestManager.js?v=1.5.14"></script>
     <script src="src/core/CharacterSprites.js?v=1.5.26"></script>
     <script src="src/engine/SpriteAtlasCache.js?v=1.5.51"></script>
-    <script src="src/save/SaveSerializer.js?v=1.5.48"></script>
-    <script src="src/save/SaveManager.js?v=1.5.27"></script>
-    <script src="src/save/AccountSyncManager.js?v=1.5.48"></script>
+    <script src="src/save/SaveSerializer.js?v=1.5.55"></script>
+    <script src="src/save/SaveManager.js?v=1.5.55"></script>
+    <script src="src/save/AccountSyncManager.js?v=1.5.55"></script>
     <script src="src/gear/GearManager.js?v=1.5.41"></script>
-    <script src="src/gear/GearUpgradeManager.js?v=1.5.41"></script>
+    <script src="src/gear/GearUpgradeManager.js?v=1.5.54"></script>
     <script src="src/weapons/WeaponEvolutionManager.js?v=1.5.42"></script>
     <script src="src/gear/GearPassives.js?v=1.5.41"></script>
 
@@ -2739,29 +2766,30 @@
     <script src="src/entities/ParticleEffect.js?v=1.5.26"></script>
     <script src="src/entities/ComicPopupCache.js?v=1.5.51"></script>
     <script src="src/entities/CombatRenderFX.js?v=1.5.29"></script>
-    <script src="src/entities/CombatJuiceFX.js?v=1.5.51"></script>
+    <script src="src/entities/CombatJuiceFX.js?v=1.5.56"></script>
     <script src="src/entities/Effects.js?v=1.5.51"></script>
-    <script src="src/entities/Bullet.js?v=1.5.29"></script>
+    <script src="src/entities/Bullet.js?v=1.5.56"></script>
     <script src="src/entities/Drop.js?v=1.5.36"></script>
     <script src="src/entities/FoliageRenderer.js?v=1.5.26"></script>
     <script src="src/entities/Obstacle.js?v=1.5.35"></script>
     <script src="src/entities/WaterPuddle.js?v=1.2.2"></script>
-    <script src="src/entities/Weapons.js?v=1.5.36"></script>
+    <script src="src/entities/Weapons.js?v=1.5.56"></script>
     <script src="src/heroes/PsanasHero.js?v=1.2.2"></script>
     <script src="src/heroes/PetrosHero.js?v=1.2.2"></script>
     <script src="src/heroes/PsogasHero.js?v=1.2.2"></script>
     <script src="src/heroes/FiftyBalosHero.js?v=1.5.29"></script>
     <script src="src/heroes/BilliasHero.js?v=1.3.0"></script>
     <script src="src/heroes/KitsosHero.js?v=1.3.0"></script>
-    <script src="src/heroes/HeroSkinRenderer.js?v=1.5.29"></script>
+    <script src="src/heroes/PsgiannhsHero.js?v=1.5.56"></script>
+    <script src="src/heroes/HeroSkinRenderer.js?v=1.5.56"></script>
     <script src="src/entities/HeroRenderer.js?v=1.5.12"></script>
     <script src="src/skills/SeismicQuake.js?v=1.5.28"></script>
     <script src="src/skills/YayaScream.js?v=1.5.28"></script>
     <script src="src/skills/Frappes.js?v=1.5.28"></script>
     <script src="src/skills/WrathOfOlympus.js?v=1.5.44"></script>
     <script src="src/entities/PlayerSkills.js?v=1.5.37"></script>
-    <script src="src/entities/Player.js?v=1.5.37"></script>
-    <script src="src/entities/RemotePlayer.js?v=1.4.9"></script>
+    <script src="src/entities/Player.js?v=1.5.56"></script>
+    <script src="src/entities/RemotePlayer.js?v=1.5.53"></script>
 
     <!-- 6. ENEMIES -->
     <script src="src/enemies/EnemyBase.js?v=1.5.37"></script>
@@ -2810,10 +2838,10 @@
     <script src="src/dungeons/ZeusBoss.js?v=1.5.51"></script>
 
     <!-- 7. PROGRESSION & PROFILE -->
-    <script src="src/ui/UiIcons.js?v=1.5.41"></script>
+    <script src="src/ui/UiIcons.js?v=1.5.56"></script>
     <script src="src/progression/CurrencyManager.js?v=1.2.2"></script>
     <script src="src/progression/QuestManager.js?v=1.5.27"></script>
-    <script src="src/profile/StatsManager.js?v=1.5.10"></script>
+    <script src="src/profile/StatsManager.js?v=1.5.55"></script>
 
     <!-- 8. UI SUBSYSTEMS -->
     <script src="src/ui/DevIntro.js?v=1.2.2"></script>
@@ -2821,20 +2849,20 @@
     <script src="src/ui/BossRewardModalUI.js?v=1.5.31"></script>
     <script src="src/ui/OlympusVictoryModal.js?v=1.5.41"></script>
     <script src="src/ui/GearModalUI.js?v=1.5.47"></script>
-    <script src="src/ui/ProfileCosmeticsUI.js?v=1.5.48"></script>
-    <script src="src/ui/PublicProfileModal.js?v=1.5.48"></script>
+    <script src="src/ui/ProfileCosmeticsUI.js?v=1.5.55"></script>
+    <script src="src/ui/PublicProfileModal.js?v=1.5.55"></script>
     <script src="src/ui/LeaderboardModal.js?v=1.5.48"></script>
-    <script src="src/ui/ModalManager.js?v=1.5.48"></script>
-    <script src="src/ui/HUDController.js?v=1.5.51"></script>
-    <script src="src/ui/ProfileManager.js?v=1.5.48"></script>
-    <script src="src/ui/HeroRoster.js?v=1.5.10"></script>
+    <script src="src/ui/ModalManager.js?v=1.5.56"></script>
+    <script src="src/ui/HUDController.js?v=1.5.56"></script>
+    <script src="src/ui/ProfileManager.js?v=1.5.55"></script>
+    <script src="src/ui/HeroRoster.js?v=1.5.55"></script>
     <script src="src/ui/SkillManager.js?v=1.5.32"></script>
     <script src="src/ui/UpgradeManager.js?v=1.5.10"></script>
     <script src="src/ui/PerkManager.js?v=1.5.34"></script>
     <script src="src/ui/MailManager.js?v=1.5.10"></script>
     <script src="src/ui/StarterPackModal.js?v=1.5.10"></script>
     <script src="src/ui/SettingsManager.js?v=1.5.10"></script>
-    <script src="src/ui/MenuController.js?v=1.5.48"></script>
+    <script src="src/ui/MenuController.js?v=1.5.55"></script>
     <script src="src/ui/BossWarningOverlay.js?v=1.5.16"></script>
     <script src="src/ui/CinematicCutsceneOverlay.js?v=1.5.2"></script>
     <script src="src/ui/CreditsScreen.js?v=1.5.10"></script>
@@ -2846,7 +2874,7 @@
 
     <!-- 8.5. ADMIN & PLAYTESTING SUBSYSTEM -->
     <script src="src/admin/AdminAuth.js?v=1.5.50"></script>
-    <script src="src/admin/AdminCheats.js?v=1.5.46"></script>
+    <script src="src/admin/AdminCheats.js?v=1.5.56"></script>
     <script src="src/admin/AdminPanel.js?v=1.5.46"></script>
 
     <!-- 8.7. MOBILE TOUCH SUBSYSTEM -->
@@ -2862,7 +2890,7 @@
 
     <!-- 8.9. FRIENDS & ONLINE PLAYER ID SUBSYSTEM -->
     <script src="src/social/FriendService.js?v=1.5.48"></script>
-    <script src="src/ui/FriendsModal.js?v=1.5.48"></script>
+    <script src="src/ui/FriendsModal.js?v=1.5.55"></script>
 
     <!-- 9. GAME COORDINATOR & BOOTSTRAP -->
     <script src="src/engine/WaveSkipperMachine.js?v=1.5.23"></script>

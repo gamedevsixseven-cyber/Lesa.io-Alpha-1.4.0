@@ -243,6 +243,7 @@ class CombatJuiceFX {
             if (m.type === 'watermelon') outer = '#ff6b81';
             else if (m.type === 'money_gun') outer = '#ffd32a';
             else if (m.type === 'burger') outer = '#ffa502';
+            else if (m.type === 'greek_flag') outer = '#70a1ff';
             else if (m.type === 'pea') outer = m.isEnemy ? '#ff4757' : '#badc58';
 
             ctx.fillStyle = outer;
@@ -270,6 +271,7 @@ class CombatJuiceFX {
             euro: ['rgba(255, 211, 42, 0.72)', '#2ecc71'],
             burger: ['#e74c3c', '#f1c40f'],
             lightning: ['rgba(0, 210, 211, 0.72)', '#ffffff'],
+            greek_flag: ['rgba(13, 94, 175, 0.78)', '#ffffff'],
             zeus_thunderbolt: ['rgba(254, 211, 48, 0.78)', '#00f5ff'],
             carbine: ['#ffd32a', '#ff9f43'],
             dialtone: ['#00d2d3', '#fed330'],

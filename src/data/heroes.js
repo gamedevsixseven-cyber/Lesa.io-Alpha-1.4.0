@@ -36,12 +36,13 @@ const HEROES = {
         title: 'The Blue Hood Sentinel',
         avatar: 'assets/HeroesIcons/PetrosAvatar.png',
         cost: 3500,
-        hp: 125,
+        hp: 150,
         speed: 4.4,
         radius: 26,
+        damageReduction: 0.08,
         heroColor: '#1e70d6',
         weaponType: 'watermelon',
-        perks: 'High HP tank with heavy Melon Cannon'
+        perks: 'High HP tank (-8% Damage Taken) with heavy Melon Cannon'
     },
     '50balos': {
         id: '50balos',
@@ -81,6 +82,23 @@ const HEROES = {
         heroColor: '#00d2d3',
         weaponType: 'lightning',
         perks: 'Fastest Hero (+0.2) • Drops Lightnings with 10% 4-Enemy Chain'
+    },
+    psgiannhs: {
+        id: 'psgiannhs',
+        name: 'PSGIANNHS',
+        title: 'The Street Brawler',
+        avatar: 'assets/HeroesIcons/PsgiannhsAvatar.png',
+        styles: [
+            { id: 'jacket', name: 'Puffer Jacket', avatar: 'assets/HeroesIcons/PsgiannhsAvatar.png' },
+            { id: 'tee', name: 'No Jacket', avatar: 'assets/HeroesIcons/PsgiannhsStyle2Avatar.png' }
+        ],
+        cost: 5000,
+        hp: 115,
+        speed: 5.1,
+        radius: 24,
+        heroColor: '#22242a',
+        weaponType: 'greek_flag',
+        perks: 'Hurls Piercing Greek Flags • 2 Styles (Jacket / Tee)'
     }
 };
 
