@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <circle cx="32" cy="32" r="26" fill="#2ecc71" opacity="0.16"/>
+  <!-- Kinetic Motion Spin Arcs -->
+  <path d="M12 22 C8 34 12 46 22 52" stroke="#fed330" stroke-width="3.2" stroke-linecap="round"/>
+  <path d="M52 42 C56 30 52 18 42 12" stroke="#2ecc71" stroke-width="3.2" stroke-linecap="round"/>
+  <g transform="rotate(-14 32 33)" stroke="#1a1d2b" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round">
+    <!-- Back Wooden Legs & Crossbar -->
+    <line x1="21" y1="36" x2="18" y2="54" stroke="#6b3410" stroke-width="4.2"/>
+    <line x1="42" y1="36" x2="45" y2="54" stroke="#6b3410" stroke-width="4.2"/>
+    <!-- Curved Backrest Frame & Slats -->
+    <path d="M19 31 L20 12 Q32 8 44 12 L45 31" fill="none" stroke="#8b4513" stroke-width="4.4"/>
+    <line x1="21" y1="18" x2="43" y2="18" stroke="#a0522d" stroke-width="3.4"/>
+    <line x1="21" y1="24" x2="43" y2="24" stroke="#a0522d" stroke-width="3.4"/>
+    <!-- Woven Straw Seat Cushion -->
+    <polygon points="17,32 47,32 44,41 20,41" fill="#f3d285" stroke="#1a1d2b" stroke-width="2.6"/>
+    <line x1="25" y1="33" x2="39" y2="40" stroke="#c89d4c" stroke-width="1.4"/>
+    <line x1="39" y1="33" x2="25" y2="40" stroke="#c89d4c" stroke-width="1.4"/>
+    <!-- Front Wooden Legs -->
+    <line x1="22" y1="40" x2="21" y2="55" stroke="#a0522d" stroke-width="4.2"/>
+    <line x1="42" y1="40" x2="43" y2="55" stroke="#a0522d" stroke-width="4.2"/>
+  </g>
+</svg>

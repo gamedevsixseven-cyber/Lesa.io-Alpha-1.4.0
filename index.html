@@ -30,12 +30,12 @@
     <link rel="stylesheet" href="styles/hud.css">
     <link rel="stylesheet" href="styles/ultimates.css?v=1.5.74">
     <link rel="stylesheet" href="styles/modals.css?v=1.5.8">
-    <link rel="stylesheet" href="styles/roster.css?v=1.5.55">
-    <link rel="stylesheet" href="styles/skills.css?v=1.5.7">
+    <link rel="stylesheet" href="styles/roster.css?v=1.6.0">
+    <link rel="stylesheet" href="styles/skills.css?v=1.6.2">
     <link rel="stylesheet" href="styles/mail.css">
     <link rel="stylesheet" href="styles/tabmodals.css?v=1.5.72">
     <link rel="stylesheet" href="styles/gear.css?v=1.5.41">
-    <link rel="stylesheet" href="styles/gear-upgrades.css?v=1.5.72">
+    <link rel="stylesheet" href="styles/gear-upgrades.css?v=1.6.0">
     <link rel="stylesheet" href="styles/perks.css?v=1.5.36">
     <link rel="stylesheet" href="styles/chests.css?v=1.5.28">
     <link rel="stylesheet" href="styles/inventory.css?v=1.5.27">
@@ -58,6 +58,7 @@
     <link rel="stylesheet" href="styles/cosmetics.css?v=1.5.49">
     <link rel="stylesheet" href="styles/cosmetics-fx.css?v=1.5.49">
     <link rel="stylesheet" href="styles/cosmetics-advanced.css?v=1.5.75">
+    <link rel="stylesheet" href="styles/battlepass.css?v=1.5.82">
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -252,7 +253,10 @@
                                 </div>
                             </div>
                         </div>
-                        <button id="view-battle-pass-btn" class="card-bottom-btn">BATTLE PASS</button>
+                        <button id="view-battle-pass-btn" class="card-bottom-btn">
+                            <span>BATTLE PASS</span>
+                            <span id="bp-claim-badge" class="badge-notify hidden">!</span>
+                        </button>
                     </div>
 
                     <!-- Starter Pack Limited Banner -->
@@ -307,10 +311,15 @@
                     <span class="bot-btn-icon"><img src="assets/ui-icons/calendar.svg" class="ui-icon" alt=""></span>
                     <span class="bot-btn-text">EVENTS</span>
                 </button>
+                <button id="btn-battle-pass" class="bottom-square-btn">
+                    <span class="bot-btn-icon"><img src="assets/ui-icons/gift.svg" class="ui-icon" alt=""></span>
+                    <span class="bot-btn-text">PASS</span>
+                    <span id="bp-bot-badge" class="badge-notify hidden">!</span>
+                </button>
             </div>
 
             <!-- GAME VERSION (BOTTOM RIGHT) -->
-            <div id="menu-game-version" class="menu-game-version">Alpha 1.4.0</div>
+            <div id="menu-game-version" class="menu-game-version">Alpha 1.6.0</div>
         </div>
 
         <!-- ================= IN-GAME CARTOON HUD ================= -->
@@ -466,8 +475,6 @@
                             class="ui-icon ui-icon-sm" alt=""> OWNED</button>
                     <button class="tab-filter-chip" data-filter="LOCKED"><img src="assets/ui-icons/lock.svg"
                             class="ui-icon ui-icon-sm" alt=""> LOCKED</button>
-                    <button class="tab-filter-chip" data-filter="SOON"><img src="assets/ui-icons/hourglass.svg"
-                            class="ui-icon ui-icon-sm" alt=""> COMING SOON</button>
                 </div>
 
                 <div class="tab-scroll-body">
@@ -590,23 +597,6 @@
                             <button class="comic-btn comic-btn-sm hero-equip-btn hero-unlock-btn" data-cost="4000"
                                 data-hero="billias">UNLOCK (<img src="assets/ui-icons/coin.svg"
                                     class="ui-icon ui-icon-sm" alt=""> 4,000)</button>
-                        </div>
-
-                        <!-- Hero 8: Mortigen (Coming Soon) -->
-                        <div class="hero-select-card hero-card-coming-soon hero-locked" data-hero="mortigen">
-                            <div class="hero-card-badge hero-badge-coming-soon"><img src="assets/ui-icons/hourglass.svg"
-                                    class="ui-icon ui-icon-sm" alt=""> COMING SOON</div>
-                            <div class="hero-select-avatar hero-avatar-mystery">
-                                <span class="mystery-avatar-icon"><img src="assets/ui-icons/mystery.svg"
-                                        class="ui-icon ui-icon-box" alt=""></span>
-                            </div>
-                            <h3 class="hero-select-name">Mortigen</h3>
-                            <div class="hero-stat-row"><span>HP:</span> <strong>???</strong></div>
-                            <div class="hero-stat-row"><span>Speed:</span> <strong>???</strong></div>
-                            <div class="hero-stat-row"><span>Weapon:</span> <strong>Classified</strong></div>
-                            <div class="hero-perk">Dark Enigma • In Development</div>
-                            <button class="comic-btn comic-btn-sm hero-equip-btn hero-coming-soon-btn">COMING SOON <img
-                                    src="assets/ui-icons/hourglass.svg" class="ui-icon ui-icon-sm" alt=""></button>
                         </div>
                     </div>
                 </div>
@@ -1708,6 +1698,116 @@
                                             class="stat-val">Fast (1.4s)</span></div>
                                     <div class="weapon-stat-row"><span class="stat-key">Trait:</span> <span
                                             class="stat-val">Spear-Tipped • Pierces 1</span></div>
+                                </div>
+                            </div>
+
+                            <!-- Battle Pass Uncommon 1: Street Uzi (Tier 4) -->
+                            <div class="weapon-card" data-weapon="rusty_smg">
+                                <div class="weapon-card-top">
+                                    <div class="weapon-card-left">
+                                        <div class="weapon-icon-wrap">
+                                            <img src="assets/WeaponIcons/StreetUzi.png" class="weapon-card-img"
+                                                alt="Street Uzi">
+                                        </div>
+                                        <h3 class="weapon-name">STREET UZI</h3>
+                                    </div>
+                                    <div class="weapon-badge badge-uncommon">UNCOMMON</div>
+                                </div>
+                                <div class="weapon-stats-list">
+                                    <div class="weapon-stat-row"><span class="stat-key">Damage:</span> <span
+                                            class="stat-val">14 Rapid SMG</span></div>
+                                    <div class="weapon-stat-row"><span class="stat-key">Fire Delay:</span> <span
+                                            class="stat-val">Blazing (0.10s)</span></div>
+                                    <div class="weapon-stat-row"><span class="stat-key">Trait:</span> <span
+                                            class="stat-val">Season 1 Pass • High Fire Rate</span></div>
+                                </div>
+                            </div>
+
+                            <!-- Battle Pass Uncommon 2: Village Nailgun (Tier 9) -->
+                            <div class="weapon-card" data-weapon="nail_gun">
+                                <div class="weapon-card-top">
+                                    <div class="weapon-card-left">
+                                        <div class="weapon-icon-wrap">
+                                            <img src="assets/WeaponIcons/VillageNailgun.png" class="weapon-card-img"
+                                                alt="Village Nailgun">
+                                        </div>
+                                        <h3 class="weapon-name">VILLAGE NAILGUN</h3>
+                                    </div>
+                                    <div class="weapon-badge badge-uncommon">UNCOMMON</div>
+                                </div>
+                                <div class="weapon-stats-list">
+                                    <div class="weapon-stat-row"><span class="stat-key">Damage:</span> <span
+                                            class="stat-val">24 Steel Nail</span></div>
+                                    <div class="weapon-stat-row"><span class="stat-key">Fire Delay:</span> <span
+                                            class="stat-val">Brisk (0.20s)</span></div>
+                                    <div class="weapon-stat-row"><span class="stat-key">Trait:</span> <span
+                                            class="stat-val">Season 1 Pass • Pierces 2 Targets</span></div>
+                                </div>
+                            </div>
+
+                            <!-- Battle Pass Rare 1: Neon Arc Pistol (Tier 14) -->
+                            <div class="weapon-card" data-weapon="plasma_pistol">
+                                <div class="weapon-card-top">
+                                    <div class="weapon-card-left">
+                                        <div class="weapon-icon-wrap">
+                                            <img src="assets/WeaponIcons/NeonArcPistol.png" class="weapon-card-img"
+                                                alt="Neon Arc Pistol">
+                                        </div>
+                                        <h3 class="weapon-name">NEON ARC PISTOL</h3>
+                                    </div>
+                                    <div class="weapon-badge badge-rare">RARE</div>
+                                </div>
+                                <div class="weapon-stats-list">
+                                    <div class="weapon-stat-row"><span class="stat-key">Damage:</span> <span
+                                            class="stat-val">29 Plasma Bolt</span></div>
+                                    <div class="weapon-stat-row"><span class="stat-key">Fire Delay:</span> <span
+                                            class="stat-val">Fast (0.18s)</span></div>
+                                    <div class="weapon-stat-row"><span class="stat-key">Trait:</span> <span
+                                            class="stat-val">+10% Crit • Pierces 1 &amp; Ricochets</span></div>
+                                </div>
+                            </div>
+
+                            <!-- Battle Pass Rare 2: Sawn-Off Double Barrel (Tier 19) -->
+                            <div class="weapon-card" data-weapon="sawnoff_shotgun">
+                                <div class="weapon-card-top">
+                                    <div class="weapon-card-left">
+                                        <div class="weapon-icon-wrap">
+                                            <img src="assets/WeaponIcons/SawnOffShotgun.png" class="weapon-card-img"
+                                                alt="Sawn-Off Double Barrel">
+                                        </div>
+                                        <h3 class="weapon-name">SAWN-OFF DOUBLE BARREL</h3>
+                                    </div>
+                                    <div class="weapon-badge badge-rare">RARE</div>
+                                </div>
+                                <div class="weapon-stats-list">
+                                    <div class="weapon-stat-row"><span class="stat-key">Damage:</span> <span
+                                            class="stat-val">18 x 4 Buckshot</span></div>
+                                    <div class="weapon-stat-row"><span class="stat-key">Fire Delay:</span> <span
+                                            class="stat-val">Heavy (0.40s)</span></div>
+                                    <div class="weapon-stat-row"><span class="stat-key">Trait:</span> <span
+                                            class="stat-val">Heavy Knockback Blast (+8% Crit)</span></div>
+                                </div>
+                            </div>
+
+                            <!-- Battle Pass Epic: Cryo Vortex Cannon (Tier 25) -->
+                            <div class="weapon-card" data-weapon="frost_cannon">
+                                <div class="weapon-card-top">
+                                    <div class="weapon-card-left">
+                                        <div class="weapon-icon-wrap">
+                                            <img src="assets/WeaponIcons/CryoVortexCannon.png" class="weapon-card-img"
+                                                alt="Cryo Vortex Cannon">
+                                        </div>
+                                        <h3 class="weapon-name">CRYO VORTEX CANNON</h3>
+                                    </div>
+                                    <div class="weapon-badge badge-epic">EPIC</div>
+                                </div>
+                                <div class="weapon-stats-list">
+                                    <div class="weapon-stat-row"><span class="stat-key">Damage:</span> <span
+                                            class="stat-val">42 Cryo + Shards</span></div>
+                                    <div class="weapon-stat-row"><span class="stat-key">Fire Delay:</span> <span
+                                            class="stat-val">Medium (0.28s)</span></div>
+                                    <div class="weapon-stat-row"><span class="stat-key">Trait:</span> <span
+                                            class="stat-val">Chills Enemies (-45% SPD) + 3 Ice Shards</span></div>
                                 </div>
                             </div>
 
@@ -2920,6 +3020,44 @@
                 <div class="credits-intro-badge">LESA.IO • GAME MADE BY PSANAS • 2026</div>
             </div>
         </div>
+
+        <!-- ================= SEASON 1 BATTLE PASS MODAL ================= -->
+        <div id="battle-pass-modal" class="modal-overlay hidden">
+            <div class="modal-panel bp-modal-panel">
+                <button id="close-bp-btn" class="modal-close-x-btn" aria-label="Close">✕</button>
+                <div class="bp-header-banner">
+                    <div class="bp-banner-left">
+                        <span class="bp-season-pill">SEASON 1 • VILLAGE RISING</span>
+                        <h2 class="modal-title" style="margin:0; text-align:left; font-size:1.55rem;">👑 BATTLE PASS</h2>
+                        <div class="bp-tier-progress-row">
+                            <span id="bp-modal-tier" class="bp-level-shield">TIER 1 / 30</span>
+                            <div class="bp-xp-track-wrap">
+                                <div class="bp-xp-label-row">
+                                    <span id="bp-modal-xp-label">0 / 150 XP to Tier 2</span>
+                                    <span id="bp-pass-status-pill" class="bp-status-pill free">FREE VERSION</span>
+                                </div>
+                                <div class="bp-xp-bar-track">
+                                    <div id="bp-modal-xp-fill" class="bp-xp-bar-fill" style="width:0%;"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bp-banner-actions">
+                        <button id="bp-buy-pass-btn" class="comic-btn bp-buy-pass-btn comic-btn-sm">👑 BUY PASS (💎 250)</button>
+                        <button id="bp-skip-tier-btn" class="comic-btn comic-btn-sm">+1 TIER (💎 40)</button>
+                        <button id="bp-claim-all-btn" class="comic-btn comic-btn-primary comic-btn-sm">CLAIM ALL</button>
+                    </div>
+                </div>
+                <div class="bp-xp-hint">Free Version unlocks the top track for everyone • Buy the Full Pass with 💎 250 Gems to unlock all Paid Skins, Guns &amp; Vaults!</div>
+                <div id="bp-filter-bar" class="tab-filter-bar">
+                    <button type="button" class="tab-filter-chip active" data-bp-filter="ALL">ALL 30 TIERS</button>
+                    <button type="button" class="tab-filter-chip" data-bp-filter="READY">CLAIMABLE</button>
+                    <button type="button" class="tab-filter-chip" data-bp-filter="FREE">FREE TRACK ONLY</button>
+                    <button type="button" class="tab-filter-chip" data-bp-filter="LOOT">SKINS &amp; WEAPONS</button>
+                </div>
+                <div id="bp-track-list" class="bp-track-scroll"></div>
+            </div>
+        </div>
     </div>
 
     <!-- FIREBASE SDK (GOOGLE AUTH & CLOUD FIRESTORE) -->
@@ -2948,9 +3086,11 @@
     <script src="src/weapons/BossWeapons/RoufDialToneBlaster.js?v=1.5.15"></script>
     <script src="src/weapons/BossWeapons/ZeusThunderbolt.js?v=1.5.30"></script>
     <script src="src/weapons/BossWeapons/HeliosOmegaCannon.js?v=1.5.72"></script>
+    <script src="src/weapons/BattlePassWeapons.js?v=1.5.83"></script>
     <script src="src/data/heroes.js?v=1.5.56"></script>
-    <script src="src/data/weapons.js?v=1.5.72"></script>
+    <script src="src/data/weapons.js?v=1.5.83"></script>
     <script src="src/data/skills.js?v=1.5.44"></script>
+    <script src="src/data/skills_ext.js?v=1.6.2"></script>
     <script src="src/data/quests.js?v=1.5.36"></script>
     <script src="src/data/tips.js?v=1.5.53"></script>
     <script src="src/data/upgrades.js?v=1.5.10"></script>
@@ -2976,11 +3116,11 @@
     <script src="src/dungeons/AscentCrestManager.js?v=1.5.14"></script>
     <script src="src/core/CharacterSprites.js?v=1.5.26"></script>
     <script src="src/engine/SpriteAtlasCache.js?v=1.5.66"></script>
-    <script src="src/save/SaveSerializer.js?v=1.5.55"></script>
+    <script src="src/save/SaveSerializer.js?v=1.6.0"></script>
     <script src="src/save/SaveManager.js?v=1.5.55"></script>
-    <script src="src/save/AccountSyncManager.js?v=1.5.55"></script>
+    <script src="src/save/AccountSyncManager.js?v=1.6.0"></script>
     <script src="src/gear/GearManager.js?v=1.5.41"></script>
-    <script src="src/gear/GearUpgradeManager.js?v=1.5.54"></script>
+    <script src="src/gear/GearUpgradeManager.js?v=1.6.0"></script>
     <script src="src/weapons/WeaponEvolutionManager.js?v=1.5.72"></script>
     <script src="src/gear/GearPassives.js?v=1.5.41"></script>
 
@@ -2995,19 +3135,19 @@
     <script src="src/engine/EndlessBuildingRenderer.js?v=1.5.73"></script>
     <script src="src/engine/EndlessMapEvolution.js?v=1.5.73"></script>
     <script src="src/engine/CryptonXModel.js?v=1.5.78"></script>
-    <script src="src/engine/OutsidePerimeterRoads.js?v=1.5.77"></script>
+    <script src="src/engine/OutsidePerimeterRoads.js?v=1.6.3"></script>
     <script src="src/engine/Arena.js?v=1.5.51"></script>
-    <script src="src/engine/WaveManager.js?v=1.5.34"></script>
-    <script src="src/engine/EndlessWaveDirector.js?v=1.5.70"></script>
+    <script src="src/engine/WaveManager.js?v=1.6.4"></script>
+    <script src="src/engine/EndlessWaveDirector.js?v=1.6.0"></script>
     <script src="src/dungeons/OlympusAssets.js?v=1.5.51"></script>
     <script src="src/dungeons/OlympusLayouts.js?v=1.5.4"></script>
     <script src="src/dungeons/OlympusAltarUI.js?v=1.5.13"></script>
     <script src="src/dungeons/OlympusClimbTransition.js?v=1.5.14"></script>
     <script src="src/dungeons/OlympusAscentSystem.js?v=1.5.51"></script>
     <script src="src/dungeons/DungeonMapTheme.js?v=1.5.66"></script>
-    <script src="src/dungeons/DungeonManager.js?v=1.5.51"></script>
+    <script src="src/dungeons/DungeonManager.js?v=1.6.0"></script>
     <script src="src/progression/BossRewardManager.js?v=1.5.69"></script>
-    <script src="src/engine/CollisionSystem.js?v=1.5.59"></script>
+    <script src="src/engine/CollisionSystem.js?v=1.6.4"></script>
     <script src="src/engine/NameValidator.js?v=1.2.2"></script>
     <script src="src/engine/EpicPerkEffects.js?v=1.5.35"></script>
     <script src="src/engine/LegendaryPerkEffects.js?v=1.5.45"></script>
@@ -3021,11 +3161,12 @@
     <script src="src/entities/CombatJuiceFX.js?v=1.5.69"></script>
     <script src="src/entities/Effects.js?v=1.5.69"></script>
     <script src="src/entities/Bullet.js?v=1.5.69"></script>
-    <script src="src/entities/Drop.js?v=1.5.36"></script>
+    <script src="src/entities/Drop.js?v=1.6.4"></script>
     <script src="src/entities/FoliageRenderer.js?v=1.5.26"></script>
     <script src="src/entities/Obstacle.js?v=1.5.35"></script>
     <script src="src/entities/WaterPuddle.js?v=1.2.2"></script>
-    <script src="src/entities/Weapons.js?v=1.5.69"></script>
+    <script src="src/entities/Weapons.js?v=1.6.4"></script>
+    <script src="src/heroes/HeroSkinSystem.js?v=1.5.83"></script>
     <script src="src/heroes/PsanasHero.js?v=1.2.2"></script>
     <script src="src/heroes/PetrosHero.js?v=1.2.2"></script>
     <script src="src/heroes/PsogasHero.js?v=1.2.2"></script>
@@ -3033,17 +3174,27 @@
     <script src="src/heroes/BilliasHero.js?v=1.3.0"></script>
     <script src="src/heroes/KitsosHero.js?v=1.3.0"></script>
     <script src="src/heroes/PsgiannhsHero.js?v=1.5.56"></script>
-    <script src="src/heroes/HeroSkinRenderer.js?v=1.5.59"></script>
+    <script src="src/heroes/HeroArmorEndgame.js?v=1.5.81"></script>
+    <script src="src/heroes/HeroArmorCommon.js?v=1.5.81"></script>
+    <script src="src/heroes/HeroArmorRenderer.js?v=1.6.0"></script>
+    <script src="src/heroes/HeroStarBlessing.js?v=1.6.0"></script>
+    <script src="src/heroes/HeroSkinRenderer.js?v=1.6.0"></script>
     <script src="src/entities/HeroRenderer.js?v=1.5.12"></script>
     <script src="src/skills/SeismicQuake.js?v=1.5.28"></script>
     <script src="src/skills/YayaScream.js?v=1.5.28"></script>
     <script src="src/skills/Frappes.js?v=1.5.28"></script>
     <script src="src/skills/WrathOfOlympus.js?v=1.5.44"></script>
+    <script src="src/skills/ChairThrow.js?v=1.6.1"></script>
+    <script src="src/skills/KomboloiVortex.js?v=1.6.1"></script>
+    <script src="src/skills/OuzoFlambe.js?v=1.6.1"></script>
+    <script src="src/skills/DonkeyStampede.js?v=1.6.3"></script>
+    <script src="src/skills/BouzoukiDecoy.js?v=1.6.3"></script>
+    <script src="src/skills/ChronosHourglass.js?v=1.6.2"></script>
     <script src="src/skills/VF185Model.js?v=1.5.74"></script>
     <script src="src/skills/HeroUltimates.js?v=1.5.74"></script>
-    <script src="src/entities/PlayerSkills.js?v=1.5.37"></script>
-    <script src="src/entities/Player.js?v=1.5.56"></script>
-    <script src="src/entities/RemotePlayer.js?v=1.5.53"></script>
+    <script src="src/entities/PlayerSkills.js?v=1.6.2"></script>
+    <script src="src/entities/Player.js?v=1.6.4"></script>
+    <script src="src/entities/RemotePlayer.js?v=1.6.4"></script>
 
     <!-- 6. ENEMIES -->
     <script src="src/enemies/EnemyBase.js?v=1.5.66"></script>
@@ -3095,56 +3246,58 @@
     <script src="src/dungeons/ZeusBoss.js?v=1.5.51"></script>
 
     <!-- 7. PROGRESSION & PROFILE -->
-    <script src="src/ui/UiIcons.js?v=1.5.69"></script>
+    <script src="src/ui/UiIcons.js?v=1.6.0"></script>
     <script src="src/progression/CurrencyManager.js?v=1.2.2"></script>
-    <script src="src/progression/QuestManager.js?v=1.5.27"></script>
+    <script src="src/progression/QuestManager.js?v=1.5.80"></script>
+    <script src="src/progression/BattlePassManager.js?v=1.5.83"></script>
+    <script src="src/ui/BattlePassModalUI.js?v=1.5.82"></script>
     <script src="src/profile/StatsManager.js?v=1.5.55"></script>
 
     <!-- 8. UI SUBSYSTEMS -->
     <script src="src/ui/DevIntro.js?v=1.2.2"></script>
     <script src="src/ui/LoadingScreen.js?v=1.2.2"></script>
     <script src="src/ui/BossRewardModalUI.js?v=1.5.72"></script>
-    <script src="src/ui/OlympusVictoryModal.js?v=1.5.41"></script>
-    <script src="src/ui/GearModalUI.js?v=1.5.62"></script>
+    <script src="src/ui/OlympusVictoryModal.js?v=1.6.0"></script>
+    <script src="src/ui/GearModalUI.js?v=1.6.0"></script>
     <script src="src/ui/ProfileCosmeticsUI.js?v=1.5.55"></script>
     <script src="src/ui/PublicProfileModal.js?v=1.5.55"></script>
     <script src="src/ui/LeaderboardModal.js?v=1.5.48"></script>
-    <script src="src/ui/ModalManager.js?v=1.5.72"></script>
-    <script src="src/ui/HUDController.js?v=1.5.69"></script>
+    <script src="src/ui/ModalManager.js?v=1.5.80"></script>
+    <script src="src/ui/HUDController.js?v=1.6.2"></script>
     <script src="src/ui/ProfileManager.js?v=1.5.55"></script>
-    <script src="src/ui/HeroRoster.js?v=1.5.55"></script>
-    <script src="src/ui/SkillManager.js?v=1.5.32"></script>
+    <script src="src/ui/HeroRoster.js?v=1.6.0"></script>
+    <script src="src/ui/SkillManager.js?v=1.6.2"></script>
     <script src="src/ui/UpgradeManager.js?v=1.5.10"></script>
     <script src="src/ui/PerkManager.js?v=1.5.34"></script>
     <script src="src/ui/MailManager.js?v=1.5.10"></script>
     <script src="src/ui/StarterPackModal.js?v=1.5.10"></script>
     <script src="src/ui/SettingsManager.js?v=1.5.65"></script>
-    <script src="src/ui/MenuController.js?v=1.5.55"></script>
+    <script src="src/ui/MenuController.js?v=1.5.80"></script>
     <script src="src/ui/BossWarningOverlay.js?v=1.5.16"></script>
     <script src="src/ui/CinematicCutsceneOverlay.js?v=1.5.2"></script>
     <script src="src/ui/CreditsScreen.js?v=1.5.10"></script>
     <script src="src/chests/ChestManager.js?v=1.5.72"></script>
     <script src="src/ui/ChestModalUI.js?v=1.5.61"></script>
     <script src="src/progression/InventoryManager.js?v=1.5.36"></script>
-    <script src="src/ui/InventoryModalUI.js?v=1.5.41"></script>
+    <script src="src/ui/InventoryModalUI.js?v=1.6.0"></script>
     <script src="src/ui/TributeManager.js?v=1.5.31"></script>
 
     <!-- 8.5. ADMIN & PLAYTESTING SUBSYSTEM -->
     <script src="src/admin/AdminAuth.js?v=1.5.50"></script>
-    <script src="src/admin/AdminCheats.js?v=1.5.69"></script>
+    <script src="src/admin/AdminCheats.js?v=1.6.4"></script>
     <script src="src/admin/AdminPanel.js?v=1.5.46"></script>
 
     <!-- 8.7. MOBILE TOUCH SUBSYSTEM -->
-    <script src="src/engine/MobileAimAssist.js?v=1.5.65"></script>
+    <script src="src/engine/MobileAimAssist.js?v=1.6.2"></script>
     <script src="src/engine/TouchInput.js?v=1.5.65"></script>
 
     <!-- 8.8. MULTIPLAYER CO-OP SUBSYSTEM (PLAYTEST) -->
     <script src="src/libs/peerjs.min.js"></script>
-    <script src="src/network/NetworkManager.js?v=1.5.3"></script>
-    <script src="src/network/CoopSkillFx.js?v=1.5.29"></script>
-    <script src="src/network/CoopHostSession.js?v=1.5.28"></script>
-    <script src="src/network/CoopGuestSession.js?v=1.5.31"></script>
-    <script src="src/network/CoopLobbyModal.js?v=1.5.10"></script>
+    <script src="src/network/NetworkManager.js?v=1.6.4"></script>
+    <script src="src/network/CoopSkillFx.js?v=1.6.4"></script>
+    <script src="src/network/CoopHostSession.js?v=1.6.4"></script>
+    <script src="src/network/CoopGuestSession.js?v=1.6.4"></script>
+    <script src="src/network/CoopLobbyModal.js?v=1.6.4"></script>
 
     <!-- 8.9. FRIENDS & ONLINE PLAYER ID SUBSYSTEM -->
     <script src="src/social/FriendService.js?v=1.5.48"></script>
@@ -3152,8 +3305,8 @@
 
     <!-- 9. GAME COORDINATOR & BOOTSTRAP -->
     <script src="src/engine/WaveSkipperMachine.js?v=1.5.23"></script>
-    <script src="src/engine/Game.js?v=1.5.64"></script>
-    <script src="src/main.js?v=1.5.48"></script>
+    <script src="src/engine/Game.js?v=1.6.4"></script>
+    <script src="src/main.js?v=1.5.80"></script>
 </body>
 
 </html>

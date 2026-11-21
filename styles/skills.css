@@ -192,6 +192,35 @@
     color: #ffffff;
     text-shadow: 1px 1px 0 var(--dark-outline);
 }
+.skill-tag-chair {
+    background: linear-gradient(135deg, #16a34a, #65a30d);
+    color: #ffffff;
+    text-shadow: 1px 1px 0 var(--dark-outline);
+}
+.skill-tag-komboloi {
+    background: linear-gradient(135deg, #d97706, #fbbf24);
+    color: #1e272e;
+}
+.skill-tag-ouzo {
+    background: linear-gradient(135deg, #0284c7, #00d2d3);
+    color: #ffffff;
+    text-shadow: 1px 1px 0 var(--dark-outline);
+}
+.skill-tag-donkey {
+    background: linear-gradient(135deg, #d35400, #ff9f43);
+    color: #ffffff;
+    text-shadow: 1px 1px 0 var(--dark-outline);
+}
+.skill-tag-bouzouki {
+    background: linear-gradient(135deg, #8e44ad, #ff6b81);
+    color: #ffffff;
+    text-shadow: 1px 1px 0 var(--dark-outline);
+}
+.skill-tag-chrono {
+    background: linear-gradient(135deg, #5f27cd, #fed330);
+    color: #ffffff;
+    text-shadow: 1px 1px 0 var(--dark-outline);
+}
 
 .mastery-sub.olympus-mastery {
     color: #e74c3c;

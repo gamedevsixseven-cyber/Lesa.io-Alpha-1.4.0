@@ -19,6 +19,14 @@ class UIController {
         this.modalManager = new ModalManager();
         this.currencyManager = new CurrencyManager(this.gameState);
         this.questManager = new QuestManager(this);
+        if (typeof BattlePassManager !== 'undefined') {
+            this.battlePassManager = new BattlePassManager();
+            window.battlePassManager = this.battlePassManager;
+        }
+        if (typeof BattlePassModalUI !== 'undefined' && this.battlePassManager) {
+            this.battlePassModalUI = new BattlePassModalUI(this.battlePassManager);
+            window.battlePassModalUI = this.battlePassModalUI;
+        }
         this.profileManager = new ProfileManager(this);
         this.heroRoster = new HeroRoster(this);
         this.skillManager = new SkillManager(this);

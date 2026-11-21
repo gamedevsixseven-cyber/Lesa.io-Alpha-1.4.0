@@ -266,19 +266,24 @@ class CombatJuiceFX {
             ctx.arc(10, -5, 3, 0, Math.PI * 2);
             ctx.arc(13, 4, 2.2, 0, Math.PI * 2);
             ctx.fill();
-        } else if (m.type === 'carbine' || m.type === 'm4_carbine') {
-            ctx.fillStyle = '#ff9f43';
+        } else if (m.type === 'carbine' || m.type === 'm4_carbine' || m.type === 'rusty_smg' || m.type === 'nail_gun') {
+            ctx.fillStyle = m.type === 'nail_gun' ? '#fed330' : '#ff9f43';
             ctx.beginPath(); ctx.moveTo(0, -4); ctx.lineTo(28, 0); ctx.lineTo(0, 4); ctx.closePath(); ctx.fill();
             ctx.fillStyle = '#fff3b0';
             ctx.beginPath(); ctx.moveTo(0, -2); ctx.lineTo(18, 0); ctx.lineTo(0, 2); ctx.closePath(); ctx.fill();
-        } else if (m.type === 'spas12') {
-            ctx.fillStyle = '#ff6348';
+        } else if (m.type === 'spas12' || m.type === 'sawnoff_shotgun') {
+            ctx.fillStyle = m.type === 'sawnoff_shotgun' ? '#ff9f43' : '#ff6348';
             ctx.beginPath();
             ctx.moveTo(0, 0); ctx.lineTo(24, -12); ctx.lineTo(20, -4);
             ctx.lineTo(31, 0); ctx.lineTo(20, 4); ctx.lineTo(24, 12);
             ctx.closePath(); ctx.fill();
             ctx.fillStyle = '#ffd32a';
             ctx.beginPath(); ctx.moveTo(0, -3); ctx.lineTo(19, 0); ctx.lineTo(0, 3); ctx.closePath(); ctx.fill();
+        } else if (m.type === 'plasma_pistol' || m.type === 'frost_cannon') {
+            ctx.fillStyle = m.type === 'frost_cannon' ? '#7dd3fc' : '#d946ef';
+            ctx.beginPath(); ctx.moveTo(0, -4.5); ctx.lineTo(24, 0); ctx.lineTo(0, 4.5); ctx.closePath(); ctx.fill();
+            ctx.fillStyle = '#00f5ff';
+            ctx.beginPath(); ctx.moveTo(0, -2); ctx.lineTo(16, 0); ctx.lineTo(0, 2); ctx.closePath(); ctx.fill();
         } else if (m.type === 'boomerang_saw') {
             ctx.strokeStyle = '#ff9f43';
             ctx.lineWidth = 2.6;
@@ -355,6 +360,12 @@ class CombatJuiceFX {
             carbine: ['#ffd32a', '#ff9f43'],
             m4_carbine: ['#ffd32a', '#ff9f43'],
             spas12: ['#ff6348', '#ffd32a'],
+            rusty_smg: ['#ff9f43', '#2ecc71'],
+            nail_gun: ['#fed330', '#e2e8f0'],
+            plasma_pistol: ['#00f5ff', '#d946ef'],
+            sawnoff_shotgun: ['#ff9f43', '#fed330'],
+            frost_cannon: ['#00f5ff', '#e0f2fe'],
+            cryo_shard: ['#7dd3fc', '#ffffff'],
             boomerang_saw: ['#ff9f43', '#00f5ff'],
             chrono_rifle: ['#a55eea', '#00f5ff'],
             symbiote: ['#ff2e63', '#9b59b6'],

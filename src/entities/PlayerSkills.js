@@ -20,8 +20,8 @@ class PlayerSkills {
     static getEffectiveCooldown(skillId, level) {
         if (typeof SKILLS === 'undefined' || !SKILLS[skillId]) return 8.0;
         const skill = SKILLS[skillId];
-        if (skillId === 'frappes' && level >= 5 && skill.masteryCooldown) {
-            return skill.masteryCooldown; // 9.0s Pagakia CDR
+        if ((skillId === 'frappes' || skillId === 'chrono_hourglass') && level >= 5 && skill.masteryCooldown) {
+            return skill.masteryCooldown; // Permanent Mastery CDR
         }
         return skill.cooldown;
     }
@@ -41,9 +41,25 @@ class PlayerSkills {
                 this.executeBladeRush(player, level, enemies, effects, camera);
                 break;
             case 'seismic_quake':
-                if (typeof SeismicQuakeSkill !== 'undefined') {
-                    SeismicQuakeSkill.execute(player, level, enemies, effects, camera, activeGame);
-                }
+                if (typeof SeismicQuakeSkill !== 'undefined') SeismicQuakeSkill.execute(player, level, enemies, effects, camera, activeGame);
+                break;
+            case 'chair_throw':
+                if (typeof ChairThrowSkill !== 'undefined') ChairThrowSkill.execute(player, level, enemies, effects, camera, activeGame);
+                break;
+            case 'komboloi_vortex':
+                if (typeof KomboloiVortexSkill !== 'undefined') KomboloiVortexSkill.execute(player, level, enemies, effects, camera, activeGame);
+                break;
+            case 'ouzo_flambe':
+                if (typeof OuzoFlambeSkill !== 'undefined') OuzoFlambeSkill.execute(player, level, enemies, effects, camera, activeGame);
+                break;
+            case 'donkey_stampede':
+                if (typeof DonkeyStampedeSkill !== 'undefined') DonkeyStampedeSkill.execute(player, level, enemies, effects, camera, activeGame);
+                break;
+            case 'bouzouki_decoy':
+                if (typeof BouzoukiDecoySkill !== 'undefined') BouzoukiDecoySkill.execute(player, level, enemies, effects, camera, activeGame);
+                break;
+            case 'chrono_hourglass':
+                if (typeof ChronosHourglassSkill !== 'undefined') ChronosHourglassSkill.execute(player, level, enemies, effects, camera, activeGame);
                 break;
             case 'yaya_scream':
                 if (typeof YayaScreamSkill !== 'undefined') {

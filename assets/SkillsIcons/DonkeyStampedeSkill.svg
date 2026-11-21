@@ -1,0 +1,83 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <defs>
+    <radialGradient id="donkeyBg" cx="50%" cy="46%" r="54%">
+      <stop offset="0%" stop-color="#ff9f43"/>
+      <stop offset="55%" stop-color="#c0392b"/>
+      <stop offset="100%" stop-color="#1e1b2e"/>
+    </radialGradient>
+    <linearGradient id="donkeyCoat" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#a4b0be"/>
+      <stop offset="65%" stop-color="#747d8c"/>
+      <stop offset="100%" stop-color="#57606f"/>
+    </linearGradient>
+    <linearGradient id="saddleGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ff4757"/>
+      <stop offset="100%" stop-color="#b33939"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Backdrop -->
+  <circle cx="64" cy="64" r="60" fill="url(#donkeyBg)" stroke="#0f1419" stroke-width="5"/>
+
+  <!-- Speed Lines -->
+  <g stroke="#ffeaa7" stroke-linecap="round" stroke-width="4" opacity="0.8">
+    <line x1="14" y1="42" x2="36" y2="42"/>
+    <line x1="10" y1="58" x2="29" y2="58"/>
+    <line x1="16" y1="76" x2="38" y2="76"/>
+  </g>
+
+  <!-- Dust Clouds -->
+  <g fill="#f5e6ca" stroke="#0f1419" stroke-width="3">
+    <circle cx="26" cy="96" r="11"/>
+    <circle cx="38" cy="100" r="9"/>
+    <circle cx="19" cy="102" r="7"/>
+    <circle cx="102" cy="97" r="9"/>
+  </g>
+
+  <!-- Donkey Body (Charging Right) -->
+  <g stroke="#0f1419" stroke-linejoin="round" stroke-linecap="round">
+    <!-- Rear Leg -->
+    <path d="M 38 78 L 24 98 L 32 101 L 46 82 Z" fill="#57606f" stroke-width="3.5"/>
+    <!-- Tail -->
+    <path d="M 30 68 Q 16 62 18 52" fill="none" stroke="#2f3542" stroke-width="4"/>
+    <ellipse cx="17" cy="51" rx="4" ry="5" fill="#2f3542" stroke-width="2.5"/>
+
+    <!-- Torso -->
+    <ellipse cx="58" cy="70" rx="26" ry="17" transform="rotate(-8 58 70)" fill="url(#donkeyCoat)" stroke-width="4"/>
+
+    <!-- Traditional Greek Saddle Blanket -->
+    <path d="M 42 54 Q 56 50 70 55 L 67 74 Q 54 71 40 73 Z" fill="url(#saddleGrad)" stroke-width="3.5"/>
+    <path d="M 44 69 L 66 70" stroke="#fed330" stroke-width="3"/>
+
+    <!-- Front Galloping Hooves -->
+    <path d="M 74 74 L 96 86 L 91 93 L 69 80 Z" fill="#747d8c" stroke-width="3.5"/>
+    <path d="M 91 84 L 98 88 L 93 95 L 87 90 Z" fill="#1e272e" stroke-width="3"/>
+    <path d="M 62 79 L 76 101 L 68 103 L 55 82 Z" fill="#57606f" stroke-width="3.5"/>
+
+    <!-- Neck & Furious Head -->
+    <path d="M 68 58 L 80 34 L 98 44 L 82 69 Z" fill="url(#donkeyCoat)" stroke-width="4"/>
+    <!-- Spiky Mane -->
+    <path d="M 68 54 L 64 42 L 73 44 L 71 32 L 80 36" fill="#2f3542" stroke-width="3"/>
+
+    <!-- Tall Ears -->
+    <path d="M 80 35 L 70 15 L 82 26 Z" fill="#747d8c" stroke-width="3.5"/>
+    <path d="M 89 35 L 88 13 L 97 30 Z" fill="#a4b0be" stroke-width="3.5"/>
+    <path d="M 90 31 L 89 19 L 94 29 Z" fill="#ff9ff3" stroke="none"/>
+
+    <!-- Snout & Grin -->
+    <path d="M 84 36 L 111 45 Q 116 51 111 58 L 87 56 Z" fill="#ced6e0" stroke-width="4"/>
+    <ellipse cx="107" cy="48" rx="2.5" ry="2" fill="#0f1419" stroke="none"/>
+    <!-- Fierce Eye -->
+    <circle cx="91" cy="42" r="5" fill="#ffffff" stroke-width="2.5"/>
+    <circle cx="92" cy="42" r="2.2" fill="#ff4757" stroke="none"/>
+    <line x1="85" y1="36" x2="97" y2="39" stroke="#0f1419" stroke-width="3.5"/>
+    <!-- Clenched Teeth -->
+    <path d="M 94 53 Q 103 55 110 51" fill="none" stroke="#0f1419" stroke-width="2.5"/>
+    <!-- Leather Bridle & Gold Bell -->
+    <path d="M 82 46 L 103 54" stroke="#7f3b08" stroke-width="3"/>
+    <circle cx="88" cy="61" r="4.5" fill="#fed330" stroke-width="2.5"/>
+  </g>
+
+  <!-- Impact Arc -->
+  <path d="M 103 24 Q 120 46 112 72" fill="none" stroke="#ffeaa7" stroke-width="4" stroke-linecap="round" opacity="0.9"/>
+</svg>

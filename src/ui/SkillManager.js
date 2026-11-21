@@ -298,7 +298,7 @@ class SkillManager {
             const currentLevel = isUnlocked ? this.getSkillLevel(skill.id) : 1;
             const maxLevel = skill.maxLevel || 3;
             const isMaxLevel = currentLevel >= maxLevel;
-            const isMastered = (skill.id === 'frappes' || skill.id === 'wrath_of_olympus') && isMaxLevel;
+            const isMastered = !!(skill.masteryBadgeText || skill.id === 'frappes' || skill.id === 'wrath_of_olympus') && isMaxLevel;
 
             const matchesFilter =
                 this.activeFilter === 'ALL' ||
@@ -327,7 +327,7 @@ class SkillManager {
             if (isUnlocked && skill.levels) {
                 if (isMastered) {
                     const mBadge = skill.masteryBadgeText || 'PAGAKIA';
-                    const mBadgeIc = skill.id === 'wrath_of_olympus' ? '⚡' : iceIc;
+                    const mBadgeIc = skill.masteryIcon || (skill.id === 'wrath_of_olympus' ? '⚡' : iceIc);
                     levelBadgeHtml = `<div class="skill-level-badge mastery-level-badge">${starIc} ${mBadge} ${mBadgeIc}</div>`;
                 } else if (isMaxLevel) {
                     levelBadgeHtml = `<div class="skill-level-badge max-level">LVL ${currentLevel}/${maxLevel} ${starIc} MAX</div>`;
@@ -363,20 +363,23 @@ class SkillManager {
             }
 
             // Tag
-            let tagClass = 'skill-tag-slash';
-            if (skill.id === 'nerobalonaki') tagClass = 'skill-tag-water';
-            else if (skill.id === 'seismic_quake') tagClass = 'skill-tag-quake';
-            else if (skill.id === 'yaya_scream') tagClass = 'skill-tag-yaya';
-            else if (skill.id === 'frappes') tagClass = 'skill-tag-frappes';
-            else if (skill.id === 'wrath_of_olympus') tagClass = 'skill-tag-olympus';
-            else if (!isUnlocked) tagClass = 'skill-tag-locked';
+            const tagMap = {
+                nerobalonaki: 'skill-tag-water', chair_throw: 'skill-tag-chair', seismic_quake: 'skill-tag-quake',
+                komboloi_vortex: 'skill-tag-komboloi', ouzo_flambe: 'skill-tag-ouzo',
+                donkey_stampede: 'skill-tag-donkey', bouzouki_decoy: 'skill-tag-bouzouki',
+                yaya_scream: 'skill-tag-yaya', frappes: 'skill-tag-frappes',
+                chrono_hourglass: 'skill-tag-chrono', wrath_of_olympus: 'skill-tag-olympus'
+            };
+            const tagClass = !isUnlocked ? 'skill-tag-locked' : (tagMap[skill.id] || 'skill-tag-slash');
 
             const tagText = skill.badge || 'SKILL';
 
             // Title & Icon Display
             let displayName = skill.name;
             if (isMastered) {
-                if (skill.id === 'wrath_of_olympus') {
+                if (skill.masteryTitleHtml) {
+                    displayName = skill.masteryTitleHtml;
+                } else if (skill.id === 'wrath_of_olympus') {
                     displayName = `${skill.name} <span class="mastery-sub olympus-mastery">Olympian ⚡</span>`;
                 } else {
                     displayName = `Frappes+ <span class="mastery-sub">Pagakia ${iceIc}</span>`;
@@ -429,7 +432,7 @@ class SkillManager {
 
             if (isUnlocked && skill.levels) {
                 if (isMastered) {
-                    const mDoneLbl = skill.id === 'wrath_of_olympus' ? `${starIc} OLYMPIAN MASTERED ⚡` : `${starIc} MASTERED: PAGAKIA ${iceIc}`;
+                    const mDoneLbl = skill.masteryDoneLabel || (skill.id === 'wrath_of_olympus' ? `${starIc} OLYMPIAN MASTERED ⚡` : `${starIc} MASTERED: PAGAKIA ${iceIc}`);
                     actionsHtml += `<button class="comic-btn comic-btn-sm skill-upgrade-btn mastery-btn" disabled>${mDoneLbl}</button>`;
                 } else if (isMaxLevel) {
                     actionsHtml += `<button class="comic-btn comic-btn-sm skill-upgrade-btn max-btn" disabled>MAX LEVEL ${maxLevel} ${starIc}</button>`;

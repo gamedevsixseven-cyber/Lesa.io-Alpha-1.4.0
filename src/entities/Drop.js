@@ -64,6 +64,8 @@ class Drop {
     onCollect(player, effects) {
         if (this.type === 'xp') {
             player.addXP(this.value);
+            const g = window.gameInstance;
+            if (g && !g.isCoopGuest && g.coopSession && g.coopSession.net) g.coopSession.net.send('XP_SHARE', { val: this.value });
             if (window.soundEngine) window.soundEngine.playPickup('xp');
             if (effects) effects.addSparks(this.x, this.y, '#ffd32a', 4);
         } else if (this.type === 'heart') {
@@ -102,15 +104,13 @@ class Drop {
             const gearGoldMult = (typeof GearPassives !== 'undefined') ? GearPassives.getGoldMultiplier() : 1.0;
             const perkGoldMult = (typeof window !== 'undefined' && window.perkSystem && typeof window.perkSystem.getCoinMultiplier === 'function') ? window.perkSystem.getCoinMultiplier() : 1.0;
             const coins = Math.round((this.value || 20) * gearGoldMult * perkGoldMult);
-            if (window.GameState) {
-                window.GameState.addCurrency(coins, 0);
+            if (window.GameState) window.GameState.addCurrency(coins, 0);
+            const g = window.gameInstance;
+            if (g) {
+                g.coinsEarnedThisRun = (g.coinsEarnedThisRun || 0) + coins;
+                if (!g.isCoopGuest && g.coopSession && g.coopSession.net) g.coopSession.net.send('COIN_SHARE', { coins });
             }
-            if (window.gameInstance) {
-                window.gameInstance.coinsEarnedThisRun = (window.gameInstance.coinsEarnedThisRun || 0) + coins;
-            }
-            if (window.soundEngine && typeof window.soundEngine.playPickup === 'function') {
-                window.soundEngine.playPickup('xp');
-            }
+            if (window.soundEngine && typeof window.soundEngine.playPickup === 'function') window.soundEngine.playPickup('xp');
             if (effects) {
                 effects.addPopup(this.x, this.y, `+${coins} 🪙`, '#ffd32a', 26);
                 effects.addSparks(this.x, this.y, '#ffd32a', 8);

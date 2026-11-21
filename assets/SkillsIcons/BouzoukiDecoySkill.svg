@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <defs>
+    <radialGradient id="bouzBg" cx="50%" cy="50%" r="54%">
+      <stop offset="0%" stop-color="#c44569"/>
+      <stop offset="55%" stop-color="#574b90"/>
+      <stop offset="100%" stop-color="#19162b"/>
+    </radialGradient>
+    <linearGradient id="boxWood" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#784212"/>
+      <stop offset="100%" stop-color="#4a235a"/>
+    </linearGradient>
+    <radialGradient id="wooferCone" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#ff6b81"/>
+      <stop offset="45%" stop-color="#2f3542"/>
+      <stop offset="100%" stop-color="#1e272e"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Backdrop -->
+  <circle cx="64" cy="64" r="60" fill="url(#bouzBg)" stroke="#0f1419" stroke-width="5"/>
+
+  <!-- Sonic Pulse Rings -->
+  <circle cx="64" cy="66" r="50" fill="none" stroke="#ff9ff3" stroke-width="3" stroke-dasharray="10 7" opacity="0.75"/>
+  <circle cx="64" cy="66" r="41" fill="none" stroke="#00d2d3" stroke-width="2.5" opacity="0.7"/>
+
+  <!-- Bouncing Speaker Cabinet -->
+  <g transform="rotate(-6 64 68)" stroke="#0f1419" stroke-linejoin="round">
+    <rect x="36" y="34" width="56" height="68" rx="9" fill="url(#boxWood)" stroke-width="4"/>
+    <!-- Chrome Trim Inner Frame -->
+    <rect x="41" y="39" width="46" height="58" rx="5" fill="#2c243b" stroke="#ffd32a" stroke-width="2.5"/>
+
+    <!-- Top Tweeter -->
+    <circle cx="64" cy="51" r="8" fill="#1e272e" stroke="#0f1419" stroke-width="3"/>
+    <circle cx="64" cy="51" r="3" fill="#00d2d3" stroke="none"/>
+
+    <!-- Main Thumping Bass Woofer -->
+    <circle cx="64" cy="76" r="17" fill="url(#wooferCone)" stroke="#0f1419" stroke-width="3.5"/>
+    <circle cx="64" cy="76" r="11" fill="none" stroke="#ff9ff3" stroke-width="2"/>
+    <circle cx="64" cy="76" r="5.5" fill="#ffd32a" stroke="#0f1419" stroke-width="2.5"/>
+  </g>
+
+  <!-- Mini Golden Bouzouki Silhouette Accent (top-left tilt) -->
+  <g transform="translate(22 36) rotate(-28)" stroke="#0f1419" stroke-width="2.5">
+    <rect x="12" y="-12" width="4" height="22" rx="1.5" fill="#d35400"/>
+    <ellipse cx="14" cy="14" rx="8" ry="11" fill="#fed330"/>
+    <circle cx="14" cy="14" r="3" fill="#2c243b"/>
+  </g>
+
+  <!-- Floating Music Notes -->
+  <g fill="#ffeaa7" stroke="#0f1419" stroke-width="2.5" stroke-linejoin="round">
+    <!-- Note 1 -->
+    <path d="M 96 34 L 96 18 L 109 21 L 109 36" fill="none" stroke="#0f1419" stroke-width="5" stroke-linecap="round"/>
+    <path d="M 96 34 L 96 18 L 109 21 L 109 36" fill="none" stroke="#00d2d3" stroke-width="2.5" stroke-linecap="round"/>
+    <circle cx="93" cy="35" r="4.5" fill="#00d2d3"/>
+    <circle cx="106" cy="37" r="4.5" fill="#00d2d3"/>
+    <!-- Note 2 -->
+    <path d="M 24 88 L 24 72 L 32 75" fill="none" stroke="#ff9ff3" stroke-width="3.5" stroke-linecap="round"/>
+    <circle cx="21" cy="89" r="4.5" fill="#ff9ff3"/>
+  </g>
+</svg>

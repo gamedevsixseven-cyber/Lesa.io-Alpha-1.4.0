@@ -108,7 +108,9 @@ class AccountSyncManager {
                     const unlockedGear = Array.isArray(p.unlockedGear) ? p.unlockedGear : [];
                     const gearLevels = (p.gearLevels && typeof p.gearLevels === 'object' && !Array.isArray(p.gearLevels)) ? p.gearLevels : {};
                     const evolvedGear = Array.isArray(p.evolvedGear) ? p.evolvedGear : [];
+                    const ascendedGear = Array.isArray(p.ascendedGear) ? p.ascendedGear : [];
                     const evolvedWeapons = Array.isArray(p.evolvedWeapons) ? p.evolvedWeapons : [];
+                    const starBlessedHeroes = Array.isArray(p.starBlessedHeroes) ? p.starBlessedHeroes : [];
                     const materials = (typeof MaterialRegistry !== 'undefined')
                         ? MaterialRegistry.normalizeMap(p.materials)
                         : ((p.materials && typeof p.materials === 'object') ? { ...p.materials } : {});
@@ -150,8 +152,12 @@ class AccountSyncManager {
                             unlockedGear,
                             gearLevels,
                             evolvedGear,
+                            ascendedGear,
                             evolvedWeapons,
+                            starBlessedHeroes,
                             materials,
+                            heroSkins: p.heroSkins || null,
+                            battlePass: p.battlePass || null,
                             stats: {
                                 totalKills: stats.totalKills || 0,
                                 maxWave: maxWave,
@@ -213,9 +219,20 @@ class AccountSyncManager {
                     localStorage.setItem('lesaio_unlocked_gear', JSON.stringify(unlockedGear));
                     localStorage.setItem('lesaio_gear_levels', JSON.stringify(gearLevels));
                     localStorage.setItem('lesaio_evolved_gear', JSON.stringify(evolvedGear));
+                    localStorage.setItem('lesaio_ascended_gear', JSON.stringify(ascendedGear));
+                    if (typeof GearUpgradeManager !== 'undefined' && typeof GearUpgradeManager.setAscendedList === 'function') GearUpgradeManager.setAscendedList(ascendedGear);
                     localStorage.setItem('lesaio_evolved_weapons', JSON.stringify(evolvedWeapons));
+                    localStorage.setItem('lesaio_star_blessed_heroes', JSON.stringify(starBlessedHeroes));
+                    if (typeof HeroStarBlessing !== 'undefined') HeroStarBlessing.setBlessedList(starBlessedHeroes);
                     if (p.cosmetics && typeof p.cosmetics === 'object' && typeof CosmeticManager !== 'undefined') {
                         CosmeticManager.saveState(p.cosmetics, false);
+                    }
+                    if (p.heroSkins && typeof p.heroSkins === 'object' && typeof HeroSkinSystem !== 'undefined') {
+                        HeroSkinSystem.applyState(p.heroSkins);
+                    }
+                    if (p.battlePass && typeof p.battlePass === 'object') {
+                        if (typeof window !== 'undefined' && window.battlePassManager) window.battlePassManager.applyState(p.battlePass);
+                        else localStorage.setItem('lesaio_battle_pass_s1', JSON.stringify(p.battlePass));
                     }
                     try {
                         const existingInv = JSON.parse(localStorage.getItem('lesaio_inventory') || '{}');
@@ -321,7 +338,9 @@ class AccountSyncManager {
             'lesaio_unlocked_gear',
             'lesaio_gear_levels',
             'lesaio_evolved_gear',
+            'lesaio_ascended_gear',
             'lesaio_evolution_stones',
+            'lesaio_star_blessed_heroes',
             'lesaio_inventory',
             'lesaio_chest_slots',
             'lesaio_olympian_star_stones',

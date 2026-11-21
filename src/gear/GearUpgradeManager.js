@@ -11,6 +11,7 @@
 class GearUpgradeManager {
     static STORAGE_LEVELS = 'lesaio_gear_levels';
     static STORAGE_EVOLVED = 'lesaio_evolved_gear';
+    static STORAGE_ASCENDED = 'lesaio_ascended_gear';
     static STORAGE_STONES = 'lesaio_evolution_stones';
 
     static MAX_LEVEL_BY_RARITY = {
@@ -30,7 +31,9 @@ class GearUpgradeManager {
         4: 1.60
     };
 
+    static ASCENDED_STAT_MULTIPLIER = 1.80;
     static EVOLVED_STAT_MULTIPLIER = 2.00;
+    static ASCEND_COST = { coins: 30000, starStones: 1 };
 
     static UPGRADE_COSTS = {
         rare: {
@@ -100,9 +103,20 @@ class GearUpgradeManager {
         return this.getMaxLevel(itemOrId) > 1;
     }
 
-    static isEvolvableRarity(itemOrId) {
+    static getEffectiveRarity(itemOrId) {
         const item = this._resolveItem(itemOrId);
-        return !!item && this.normalizeRarity(item.rarity) === 'mythic';
+        if (!item) return 'common';
+        const base = this.normalizeRarity(item.rarity);
+        return (base === 'legendary' && this.isAscended(item.id)) ? 'mythic' : base;
+    }
+
+    static isAscendableRarity(itemOrId) {
+        const item = this._resolveItem(itemOrId);
+        return !!item && this.normalizeRarity(item.rarity) === 'legendary';
+    }
+
+    static isEvolvableRarity(itemOrId) {
+        return this.getEffectiveRarity(itemOrId) === 'mythic';
     }
 
     static getAllLevels() {
@@ -199,6 +213,29 @@ class GearUpgradeManager {
         return this.getEvolvedList().includes(id);
     }
 
+    static getAscendedList() {
+        const gsList = (typeof window !== 'undefined' && window.GameState && window.GameState.player && window.GameState.player.ascendedGear);
+        let raw = gsList;
+        if (!raw && typeof localStorage !== 'undefined') {
+            try { raw = JSON.parse(localStorage.getItem(this.STORAGE_ASCENDED) || '[]'); } catch (e) { raw = []; }
+        }
+        const candidates = Array.isArray(raw) ? raw : [];
+        return Array.from(new Set(candidates.filter(id => typeof id === 'string' && id && this.isAscendableRarity(id))));
+    }
+
+    static setAscendedList(rawList) {
+        const candidates = Array.isArray(rawList) ? rawList : [];
+        const clean = Array.from(new Set(candidates.filter(id => typeof id === 'string' && id && this.isAscendableRarity(id))));
+        if (typeof window !== 'undefined' && window.GameState && window.GameState.player) window.GameState.player.ascendedGear = clean;
+        if (typeof localStorage !== 'undefined') localStorage.setItem(this.STORAGE_ASCENDED, JSON.stringify(clean));
+        return clean;
+    }
+
+    static isAscended(itemOrId) {
+        const id = this._resolveId(itemOrId);
+        return !!(id && this.isAscendableRarity(itemOrId) && this.getAscendedList().includes(id));
+    }
+
     static getEvolutionStones() {
         if (typeof window !== 'undefined' && window.GameState && window.GameState.player &&
             typeof window.GameState.player.evolutionStones === 'number' && Number.isFinite(window.GameState.player.evolutionStones)) {
@@ -272,6 +309,45 @@ class GearUpgradeManager {
         return this.getLevel(item) >= this.getMaxLevel(item) && !this.isEvolved(item);
     }
 
+    static canAscendToMythic(itemOrId) {
+        const item = this._resolveItem(itemOrId);
+        if (!item || !this.isAscendableRarity(item)) return false;
+        const unlocked = (typeof GearManager !== 'undefined') ? GearManager.isUnlocked(item.id) : false;
+        if (!unlocked || this.isAscended(item)) return false;
+        return this.getLevel(item) >= this.getMaxLevel(item);
+    }
+
+    static getAscendCost(itemOrId) {
+        return this.isAscendableRarity(itemOrId) ? { coins: this.ASCEND_COST.coins, starStones: this.ASCEND_COST.starStones } : null;
+    }
+
+    static hasAscendResources(itemOrId) {
+        const cost = this.getAscendCost(itemOrId);
+        const stones = (typeof DungeonManager !== 'undefined') ? DungeonManager.getOlympianStarStones() : 0;
+        return !!(cost && this._getCoins() >= cost.coins && stones >= cost.starStones);
+    }
+
+    static ascendToMythic(itemOrId) {
+        const item = this._resolveItem(itemOrId);
+        if (!item) return { success: false, reason: 'Item not found.' };
+        if (!this.isAscendableRarity(item)) return { success: false, reason: 'Only Legendary gear can ascend to Mythic.' };
+        if (this.getLevel(item) < this.getMaxLevel(item)) return { success: false, reason: `Upgrade gear to Lv.${this.getMaxLevel(item)} first.` };
+        if (this.isAscended(item)) return { success: false, reason: 'Already Ascended to Mythic.' };
+        const cost = this.getAscendCost(item);
+        if (this._getCoins() < cost.coins) return { success: false, reason: 'Not enough Coins.' };
+        if (typeof DungeonManager === 'undefined' || DungeonManager.getOlympianStarStones() < cost.starStones) return { success: false, reason: 'Requires an Olympian Star-Stone!' };
+        if (!this._spendCoins(cost.coins) || !DungeonManager.spendOlympianStarStone(cost.starStones)) return { success: false, reason: 'Ascension failed.' };
+
+        const next = this.getAscendedList();
+        next.push(item.id);
+        const ascendedGear = this.setAscendedList(next);
+        this._afterProgressionChange('gearAscended', { itemId: item.id, ascendedGear });
+        if (typeof window !== 'undefined' && window.modalManager && typeof window.modalManager.showQuickToast === 'function') {
+            window.modalManager.showQuickToast(`🌟 ${item.name} ASCENDED TO MYTHIC!`, 2500);
+        }
+        return { success: true, item, ascended: true, stats: this.getEffectiveStats(item) };
+    }
+
     static getUpgradeCost(itemOrId) {
         const item = this._resolveItem(itemOrId);
         if (!item || !this.isUpgradableRarity(item)) return null;
@@ -309,31 +385,34 @@ class GearUpgradeManager {
         return this._getCoins() >= cost.coins && this.getEvolutionStones() >= cost.evolutionStones;
     }
 
-    static scaleStatValue(baseVal, level = 1, evolved = false) {
+    static scaleStatValue(baseVal, level = 1, evolved = false, ascended = false) {
         if (typeof baseVal !== 'number' || !Number.isFinite(baseVal)) return baseVal;
         const lvl = Math.max(1, Math.floor(level || 1));
-        const evo = !!evolved;
-        if (lvl <= 1 && !evo) return baseVal;
+        const evo = !!evolved, asc = !!ascended;
+        if (lvl <= 1 && !evo && !asc) return baseVal;
         if (baseVal <= 0) return baseVal;
-        const mult = evo ? this.EVOLVED_STAT_MULTIPLIER : (this.LEVEL_STAT_MULTIPLIERS[lvl] || 1.0);
-        const minStep = (lvl - 1) + (evo ? 2 : 0);
+        const mult = evo ? this.EVOLVED_STAT_MULTIPLIER : (asc ? this.ASCENDED_STAT_MULTIPLIER : (this.LEVEL_STAT_MULTIPLIERS[lvl] || 1.0));
+        const minStep = (lvl - 1) + (asc ? 2 : 0) + (evo ? 2 : 0);
         return Math.max(Math.round(baseVal * mult), baseVal + minStep);
     }
 
-    static getEffectiveStats(itemOrId, overrideLevel = null, overrideEvolved = null) {
+    static getEffectiveStats(itemOrId, overrideLevel = null, overrideEvolved = null, overrideAscended = null) {
         const item = this._resolveItem(itemOrId);
         if (!item || !item.stats) return {};
         const maxLvl = this.getMaxLevel(item);
         const lvl = overrideLevel !== null
             ? Math.min(maxLvl, Math.max(1, Math.floor(overrideLevel)))
             : this.getLevel(item);
+        const asc = overrideAscended !== null
+            ? (!!overrideAscended && this.isAscendableRarity(item))
+            : this.isAscended(item);
         const evo = overrideEvolved !== null
-            ? (!!overrideEvolved && this.isEvolvableRarity(item))
+            ? (!!overrideEvolved && (this.isEvolvableRarity(item) || asc))
             : this.isEvolved(item);
 
         const result = {};
         for (const [key, val] of Object.entries(item.stats)) {
-            result[key] = this.scaleStatValue(val, lvl, evo);
+            result[key] = this.scaleStatValue(val, lvl, evo, asc);
         }
         return result;
     }

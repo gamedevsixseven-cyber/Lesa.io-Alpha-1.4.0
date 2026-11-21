@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <defs>
+    <radialGradient id="chronoBg" cx="50%" cy="50%" r="54%">
+      <stop offset="0%" stop-color="#3c2a70"/>
+      <stop offset="60%" stop-color="#1b1442"/>
+      <stop offset="100%" stop-color="#0b091c"/>
+    </radialGradient>
+    <linearGradient id="goldFrame" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#fff3b0"/>
+      <stop offset="45%" stop-color="#fed330"/>
+      <stop offset="100%" stop-color="#c27c0e"/>
+    </linearGradient>
+    <linearGradient id="sandGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#00f2fe"/>
+      <stop offset="50%" stop-color="#fed330"/>
+      <stop offset="100%" stop-color="#ff9f43"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Cosmic Clockwork Backdrop -->
+  <circle cx="64" cy="64" r="60" fill="url(#chronoBg)" stroke="#0f1419" stroke-width="5"/>
+
+  <!-- Outer Temporal Dome Ring -->
+  <circle cx="64" cy="64" r="49" fill="none" stroke="#fed330" stroke-width="3" stroke-dasharray="7 5" opacity="0.85"/>
+  <circle cx="64" cy="64" r="42" fill="none" stroke="#00d2d3" stroke-width="2" opacity="0.65"/>
+
+  <!-- Clock Tick Marks -->
+  <g stroke="#fed330" stroke-width="3" stroke-linecap="round">
+    <line x1="64" y1="15" x2="64" y2="21"/>
+    <line x1="64" y1="107" x2="64" y2="113"/>
+    <line x1="15" y1="64" x2="21" y2="64"/>
+    <line x1="107" y1="64" x2="113" y2="64"/>
+  </g>
+
+  <!-- Hourglass Assembly -->
+  <g transform="rotate(10 64 64)" stroke="#0f1419" stroke-linejoin="round">
+    <!-- Vertical Pillars -->
+    <rect x="43" y="29" width="5" height="70" rx="2" fill="url(#goldFrame)" stroke-width="2.8"/>
+    <rect x="80" y="29" width="5" height="70" rx="2" fill="url(#goldFrame)" stroke-width="2.8"/>
+
+    <!-- Glass Chambers -->
+    <path d="M 48 31 L 80 31 Q 80 54 64 64 Q 80 74 80 97 L 48 97 Q 48 74 64 64 Q 48 54 48 31 Z"
+          fill="#a5b1c2" fill-opacity="0.28" stroke="#dfe6e9" stroke-width="2.5"/>
+
+    <!-- Upper Sand Cone -->
+    <path d="M 52 44 L 76 44 Q 73 56 64 61 Q 55 56 52 44 Z" fill="url(#sandGrad)" stroke="none"/>
+    <!-- Falling Sand Stream -->
+    <line x1="64" y1="61" x2="64" y2="85" stroke="#ffeaa7" stroke-width="3" stroke-linecap="round"/>
+    <!-- Lower Sand Mound -->
+    <path d="M 50 95 Q 64 76 78 95 Z" fill="url(#sandGrad)" stroke="none"/>
+
+    <!-- Ornate Gold Top & Bottom Caps -->
+    <rect x="37" y="23" width="54" height="9" rx="4" fill="url(#goldFrame)" stroke-width="3.5"/>
+    <rect x="37" y="96" width="54" height="9" rx="4" fill="url(#goldFrame)" stroke-width="3.5"/>
+  </g>
+
+  <!-- Temporal Sparkles -->
+  <g fill="#00f2fe" stroke="#0f1419" stroke-width="2">
+    <path d="M 27 37 L 30 43 L 36 46 L 30 49 L 27 55 L 24 49 L 18 46 L 24 43 Z"/>
+    <path d="M 101 73 L 103 78 L 108 80 L 103 82 L 101 87 L 99 82 L 94 80 L 99 78 Z"/>
+  </g>
+</svg>

@@ -13,11 +13,14 @@ class CoopHostSession {
         const name = (guestInfo && guestInfo.name) || 'Player 2';
         const heroType = (guestInfo && guestInfo.heroType) || 'petros';
         this.remotePlayer = new RemotePlayer(game.player.x + 60, game.player.y, heroType, name);
+        this.remotePlayer.applyHeroStats(heroType, guestInfo);
         this.remotePlayer.isHost = false;
 
         this.netIdCounter = 1;
         this.snapshotTimer = 0;
         this.snapshotInterval = 2; // Every 2 frames (~30Hz at 60fps) for crisp responsiveness
+        this._guestShootBurst = [];
+        this._lastGuestSkillTime = 0;
 
         this.setupNetworkHandlers();
         this.hookHostInput();
@@ -51,8 +54,9 @@ class CoopHostSession {
 
         const origDash = this.game.player.dash.bind(this.game.player);
         this.game.player.dash = (effects) => {
-            origDash(effects);
-            this.net.send('HOST_DASH', {});
+            const ok = origDash(effects);
+            if (ok) this.net.send('HOST_DASH', {});
+            return ok;
         };
 
         const origSkill = this.game.player.useSkill.bind(this.game.player);
@@ -60,14 +64,17 @@ class CoopHostSession {
             const p = this.game.player;
             const skillId = p.selectedSkill || 'blade_rush';
             const level = (typeof PlayerSkills !== 'undefined') ? PlayerSkills.getSkillLevel(skillId) : 1;
-            origSkill(enemies, effects, camera, game);
-            this.net.send('HOST_SKILL', {
-                skillId: skillId,
-                level: level,
-                x: Math.round(p.x),
-                y: Math.round(p.y),
-                angle: Number((p.angle || 0).toFixed(2))
-            });
+            const ok = origSkill(enemies, effects, camera, game);
+            if (ok) {
+                this.net.send('HOST_SKILL', {
+                    skillId: skillId,
+                    level: level,
+                    x: Math.round(p.x),
+                    y: Math.round(p.y),
+                    angle: Number((p.angle || 0).toFixed(2))
+                });
+            }
+            return ok;
         };
 
         if (this.game.bossWarningOverlay) {
@@ -149,7 +156,7 @@ class CoopHostSession {
             } else if (type === 'GUEST_SHOOT') {
                 this.handleGuestShoot(payload);
             } else if (type === 'GUEST_DASH') {
-                if (this.game.effects) {
+                if (!this.remotePlayer.isDowned && !this.remotePlayer.isDownedDisconnected && this.game.effects) {
                     if (typeof this.game.effects.addDashTrail === 'function') {
                         this.game.effects.addDashTrail(this.remotePlayer.x, this.remotePlayer.y, this.remotePlayer.radius, this.remotePlayer.heroColor);
                     } else if (typeof this.game.effects.addDust === 'function') {
@@ -157,7 +164,9 @@ class CoopHostSession {
                     }
                 }
             } else if (type === 'GUEST_SKILL') {
-                this.playRemoteSkill(this.remotePlayer, payload, true);
+                if (!this.remotePlayer.isDowned && !this.remotePlayer.isDownedDisconnected && this.game.state === 'PLAYING') {
+                    this.playRemoteSkill(this.remotePlayer, payload, true);
+                }
             } else if (type === 'GUEST_COLLECT_DROP') {
                 this.handleGuestCollectDrop(payload);
             } else if (type === 'GUEST_CUTSCENE_ADVANCE' || type === 'GUEST_CUTSCENE_READY') {
@@ -183,43 +192,86 @@ class CoopHostSession {
         };
     }
 
+    _awardSquadDrop(drop, collectorIsGuest = false) {
+        const p1 = this.game.player;
+        const p2 = this.remotePlayer;
+        if (!drop) return;
+        if (drop.type === 'xp') {
+            const val = Math.max(1, Math.min(200, Math.round(drop.value || 15)));
+            if (p1 && p1.hp > 0) p1.addXP(val);
+            this.net.send('XP_SHARE', { val });
+        } else if (drop.type === 'coin_pouch') {
+            const coins = Math.max(1, Math.min(250, Math.round(drop.value || 20)));
+            if (typeof window !== 'undefined' && window.GameState) window.GameState.addCurrency(coins, 0);
+            this.game.coinsEarnedThisRun = (this.game.coinsEarnedThisRun || 0) + coins;
+            this.net.send('COIN_SHARE', { coins });
+        } else if (drop.type === 'heart') {
+            const target = collectorIsGuest ? p2 : p1;
+            if (target && !target.isDowned) {
+                target.hp = Math.min(target.maxHp, target.hp + (drop.value || 30));
+                if (this.game.effects) this.game.effects.addComicSplash(target.x, target.y - 25, '+HP 💚');
+            }
+        } else if (drop.type === 'magnet' && typeof this.game.vacuumAllXP === 'function') {
+            this.game.vacuumAllXP();
+        } else if (drop.type === 'chrono_core' && p1) {
+            if (typeof WaveSkipperMachine !== 'undefined' && typeof WaveSkipperMachine.grantChronoCore === 'function') {
+                WaveSkipperMachine.grantChronoCore(p1, drop.value || 1, this.game.effects, drop.x, drop.y, this.game);
+            } else {
+                p1.chronoCores = (p1.chronoCores || 0) + (drop.value || 1);
+            }
+        } else if (typeof Drop !== 'undefined' && Drop.MATERIAL_DROP_MAP && Drop.MATERIAL_DROP_MAP[drop.type]) {
+            const matId = Drop.MATERIAL_DROP_MAP[drop.type];
+            const gain = Math.max(1, Math.min(10, Math.floor(drop.value || 1)));
+            if (typeof window !== 'undefined' && window.inventoryManager && typeof window.inventoryManager.awardBattleMaterials === 'function') {
+                window.inventoryManager.awardBattleMaterials({ [matId]: gain }, { game: this.game, x: drop.x, y: drop.y, source: 'arena_drop' });
+            }
+        }
+    }
+
     handleGuestCollectDrop(payload) {
-        if (!payload || typeof payload.id !== 'number') return;
+        if (!payload || typeof payload.id !== 'number' || !this.remotePlayer || this.remotePlayer.isDowned || this.remotePlayer.isDownedDisconnected) return;
         for (let i = 0; i < this.game.drops.length; i++) {
             const d = this.game.drops[i];
-            if (d && d._netId === payload.id) {
+            if (d && !d.dead && d._netId === payload.id) {
+                if (Math.hypot(this.remotePlayer.x - d.x, this.remotePlayer.y - d.y) > 420 && !d.magnetized) return;
                 d.dead = true;
-                if (payload.type === 'magnet' && typeof this.game.vacuumAllXP === 'function') {
-                    this.game.vacuumAllXP();
-                } else if (payload.type === 'chrono_core' && this.game.player) {
-                    if (typeof WaveSkipperMachine !== 'undefined' && typeof WaveSkipperMachine.grantChronoCore === 'function') {
-                        WaveSkipperMachine.grantChronoCore(this.game.player, d.value || 1, this.game.effects, d.x, d.y, this.game);
-                    } else {
-                        this.game.player.chronoCores = (this.game.player.chronoCores || 0) + (d.value || 1);
-                    }
-                }
+                this._awardSquadDrop(d, true);
                 break;
             }
         }
     }
 
     handleGuestShoot(bData) {
-        if (!bData || this.remotePlayer.isDowned || (this.game && this.game.isCutsceneActive && this.game.isCutsceneActive())) return;
+        if (!bData || !this.remotePlayer || this.remotePlayer.isDowned || this.remotePlayer.isDownedDisconnected) return;
+        if (!this.game || this.game.state !== 'PLAYING' || (this.game.isCutsceneActive && this.game.isCutsceneActive())) return;
         if (typeof Bullet === 'undefined') return;
 
+        // Sliding window burst limit against packet flooding (max 24 pellets / 200ms)
+        const now = performance.now();
+        this._guestShootBurst = this._guestShootBurst.filter(t => (now - t) < 200);
+        if (this._guestShootBurst.length >= 24) return;
+        this._guestShootBurst.push(now);
+
+        let bx = Number.isFinite(bData.x) ? bData.x : this.remotePlayer.x;
+        let by = Number.isFinite(bData.y) ? bData.y : this.remotePlayer.y;
+        if (Math.hypot(bx - this.remotePlayer.x, by - this.remotePlayer.y) > 120) {
+            bx = this.remotePlayer.x;
+            by = this.remotePlayer.y;
+        }
+        let vx = Number.isFinite(bData.vx) ? bData.vx : 12;
+        let vy = Number.isFinite(bData.vy) ? bData.vy : 0;
+        const mag = Math.hypot(vx, vy);
+        if (mag > 42) { vx = (vx / mag) * 42; vy = (vy / mag) * 42; }
+        const damage = Math.max(1, Math.min(450, Number(bData.damage) || 25));
+        const speed = Math.max(1, Math.min(42, Number(bData.speed) || 14));
+        const radius = Math.max(3, Math.min(40, Number(bData.radius) || 7));
+        const pierce = Math.max(1, Math.min(10, Math.round(Number(bData.pierce) || 1)));
+        const maxBounces = Math.max(0, Math.min(5, Math.round(Number(bData.maxBounces) || 0)));
+
         const bullet = new Bullet({
-            x: bData.x,
-            y: bData.y,
-            vx: bData.vx,
-            vy: bData.vy,
-            damage: bData.damage || 25,
-            speed: bData.speed || 14,
-            radius: bData.radius || 7,
-            type: bData.type || 'pea',
-            isEnemy: false,
-            pierce: bData.pierce || 1,
-            maxBounces: bData.maxBounces || 0,
-            shooter: this.remotePlayer
+            x: bx, y: by, vx, vy, damage, speed, radius,
+            type: typeof bData.type === 'string' ? bData.type : 'pea',
+            isEnemy: false, pierce, maxBounces, shooter: this.remotePlayer
         });
 
         if (bData.isChargedBubble) bullet.isChargedBubble = true;
@@ -245,38 +297,14 @@ class CoopHostSession {
         p2.update(dt);
 
         // 1.5. Check drops collected by remote guest player on host
-        if (p2 && !p2.isDowned) {
+        if (p2 && !p2.isDowned && !p2.isDownedDisconnected) {
             for (let i = 0; i < this.game.drops.length; i++) {
                 const drop = this.game.drops[i];
                 if (!drop || drop.dead) continue;
                 const dist = Math.hypot(p2.x - drop.x, p2.y - drop.y);
                 if (dist < p2.radius + drop.radius) {
                     drop.dead = true;
-                    if (drop.type === 'heart') {
-                        p2.hp = Math.min(p2.maxHp, p2.hp + (drop.value || 30));
-                        if (this.game.effects) {
-                            this.game.effects.addComicSplash(p2.x, p2.y - 25, '+30 HP 💚');
-                        }
-                    } else if (drop.type === 'magnet' && typeof this.game.vacuumAllXP === 'function') {
-                        this.game.vacuumAllXP();
-                    } else if (drop.type === 'chrono_core' && p1) {
-                        if (typeof WaveSkipperMachine !== 'undefined' && typeof WaveSkipperMachine.grantChronoCore === 'function') {
-                            WaveSkipperMachine.grantChronoCore(p1, drop.value || 1, this.game.effects, drop.x, drop.y, this.game);
-                        } else {
-                            p1.chronoCores = (p1.chronoCores || 0) + (drop.value || 1);
-                        }
-                    } else if (typeof Drop !== 'undefined' && Drop.MATERIAL_DROP_MAP && Drop.MATERIAL_DROP_MAP[drop.type]) {
-                        const matId = Drop.MATERIAL_DROP_MAP[drop.type];
-                        const gain = Math.max(1, Math.floor(drop.value || 1));
-                        if (typeof window !== 'undefined' && window.inventoryManager && typeof window.inventoryManager.awardBattleMaterials === 'function') {
-                            window.inventoryManager.awardBattleMaterials({ [matId]: gain }, {
-                                game: this.game,
-                                x: drop.x,
-                                y: drop.y,
-                                source: 'arena_drop'
-                            });
-                        }
-                    }
+                    this._awardSquadDrop(drop, true);
                 }
             }
         }
@@ -361,8 +389,8 @@ class CoopHostSession {
                 y: safeInt(e.y),
                 vx: safeFloat(e.vx, 2, 0),
                 vy: safeFloat(e.vy, 2, 0),
-                hp: safeInt(e.hp, 0, 1000000, 1),
-                mhp: safeInt(e.maxHp || e.hp, 1, 1000000, 100),
+                hp: safeInt(e.hp, 0, 100000000, 1),
+                mhp: safeInt(e.maxHp || e.hp, 1, 100000000, 100),
                 r: safeInt(e.radius, 5, 500, 24),
                 a: safeFloat(e.angle, 2, 0),
                 hf: (e.hitFlash > 0) ? 1 : 0,
@@ -440,6 +468,18 @@ class CoopHostSession {
                 isDashing: !!p.isDashing
             },
             guestHp: safeInt(this.remotePlayer.hp, 0, 100000, 0),
+            sq: {
+                sc: safeInt(p.score, 0, 200000000, 0),
+                kl: safeInt(p.kills, 0, 1000000, 0),
+                fk: safeInt(p.fatmirKills, 0, 1000000, 0),
+                ck: safeInt(p.casillasKills, 0, 1000000, 0),
+                sk: safeInt(p.skarmogyftosKills, 0, 1000000, 0),
+                kln: safeInt(p.kleanthisKills, 0, 1000, 0),
+                kil: safeInt(p.kiloumpasKills, 0, 1000, 0),
+                rf: safeInt(p.roufKills, 0, 1000, 0),
+                eb: safeInt(p.endlessBossGoldBonus, 0, 1000000, 0),
+                ex: safeInt(p.endlessBossXpBonus, 0, 1000000, 0)
+            },
             enemies: enemiesPayload,
             drops: dropsPayload,
             enemyBullets: enemyBulletsPayload
@@ -449,8 +489,31 @@ class CoopHostSession {
     }
 
     playRemoteSkill(remotePlayer, skillData = {}, isHostAuthoritative = true) {
+        if (isHostAuthoritative) {
+            const sid = typeof skillData.skillId === 'string' ? skillData.skillId : 'blade_rush';
+            const lvl = Math.max(1, Math.min(5, Math.round(Number(skillData.level) || 1)));
+            const cdSec = (typeof PlayerSkills !== 'undefined') ? PlayerSkills.getEffectiveCooldown(sid, lvl) : 7.0;
+            const minGapMs = Math.max(2500, cdSec * 720);
+            const now = performance.now();
+            if (now - this._lastGuestSkillTime < minGapMs) return;
+            this._lastGuestSkillTime = now;
+        }
         if (typeof CoopSkillFx !== 'undefined') {
             CoopSkillFx.playRemoteSkill(this.game, remotePlayer, skillData, isHostAuthoritative);
+        }
+    }
+
+    syncBossCrate(crateId, bossName) {
+        if (crateId && this.net) this.net.send('BOSS_CRATE_REWARD', { crateId, bossName });
+    }
+
+    syncStoryVictory(crestAwarded = false) {
+        if (this.net) {
+            this.net.send('STORY_VICTORY', {
+                crestAwarded: !!crestAwarded,
+                wave: (this.game.waveManager && this.game.waveManager.wave) || 20,
+                gameTime: this.game.gameTime || 0
+            });
         }
     }
 
@@ -468,6 +531,7 @@ class CoopHostSession {
     render(ctx, camera) {
         this.remotePlayer.draw(ctx);
         this.remotePlayer.drawRadarIndicator(ctx, this.game.player, camera);
+        RemotePlayer.drawLocalDownedBanner(ctx, this.game.player);
     }
 }
 

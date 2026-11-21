@@ -14,9 +14,15 @@ class NetworkManager {
         this.localUserData = {
             name: 'Hero',
             heroType: 'psanas',
-            weaponType: 'pea'
+            weaponType: 'pea',
+            heroSkin: 'default',
+            heroStyle: null,
+            starBlessed: false,
+            maxHp: 100,
+            damageReduction: 0
         };
         this.peerUserData = null;
+        this._gracefulTimer = null;
 
         this.onConnectedCallback = null;
         this.onDisconnectedCallback = null;
@@ -69,7 +75,8 @@ class NetworkManager {
             });
 
             this.peer.on('connection', (connection) => {
-                if (this.conn && this.conn.open) {
+                const matchInProgress = (typeof window !== 'undefined' && window.gameInstance && window.gameInstance.coopSession && window.gameInstance.state === 'PLAYING');
+                if ((this.conn && this.conn.open) || matchInProgress) {
                     connection.close();
                     return;
                 }
@@ -287,7 +294,9 @@ class NetworkManager {
         }
 
         // Allow outgoing buffer to flush onto network wire
-        setTimeout(() => {
+        if (this._gracefulTimer) clearTimeout(this._gracefulTimer);
+        this._gracefulTimer = setTimeout(() => {
+            this._gracefulTimer = null;
             this.disconnect();
             this.isGracefulDisconnecting = false;
             if (typeof onDone === 'function') onDone();
@@ -295,6 +304,11 @@ class NetworkManager {
     }
 
     disconnect() {
+        if (this._gracefulTimer) {
+            clearTimeout(this._gracefulTimer);
+            this._gracefulTimer = null;
+        }
+        this.isGracefulDisconnecting = false;
         if (this.connectTimeout) {
             clearTimeout(this.connectTimeout);
             this.connectTimeout = null;

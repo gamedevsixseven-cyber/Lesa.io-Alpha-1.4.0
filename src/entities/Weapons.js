@@ -4,7 +4,7 @@
  */
 
 class WeaponSystem {
-    static SHARED_UNLOCKABLE_IDS = ['bubble', 'm4_carbine', 'spas12', 'boomerang_saw', 'chrono_rifle', 'symbiote', 'carbine', 'dialtone', 'zeus_thunderbolt', 'helios_cannon'];
+    static SHARED_UNLOCKABLE_IDS = ['bubble', 'rusty_smg', 'nail_gun', 'plasma_pistol', 'sawnoff_shotgun', 'frost_cannon', 'm4_carbine', 'spas12', 'boomerang_saw', 'chrono_rifle', 'symbiote', 'carbine', 'dialtone', 'zeus_thunderbolt', 'helios_cannon'];
 
     static isSharedWeapon(weaponType) {
         return this.SHARED_UNLOCKABLE_IDS.includes(weaponType);
@@ -48,6 +48,16 @@ class WeaponSystem {
                 return { baseDelay: 11, baseDamage: 24, radius: 8, extraPierce: 0, maxBounces: 0, speedMultiplier: 1.58, critChanceBonus: 0.12, range: 960 };
             case 'symbiote':
                 return { baseDelay: 14, baseDamage: 28, radius: 9, extraPierce: 0, maxBounces: 0, speedMultiplier: 1.52, critChanceBonus: 0.10, range: 960 };
+            case 'rusty_smg':
+                return { baseDelay: 6, baseDamage: 14, radius: 6, extraPierce: 0, maxBounces: 0, speedMultiplier: 1.38, range: 780 };
+            case 'nail_gun':
+                return { baseDelay: 12, baseDamage: 24, radius: 7, extraPierce: 2, maxBounces: 0, speedMultiplier: 1.44, range: 840 };
+            case 'plasma_pistol':
+                return { baseDelay: 11, baseDamage: 29, radius: 8, extraPierce: 1, maxBounces: 1, speedMultiplier: 1.48, critChanceBonus: 0.10, range: 920 };
+            case 'sawnoff_shotgun':
+                return { baseDelay: 24, baseDamage: 18, radius: 6, extraPierce: 0, maxBounces: 0, speedMultiplier: 1.38, critChanceBonus: 0.08, range: 520 };
+            case 'frost_cannon':
+                return { baseDelay: 17, baseDamage: 42, radius: 10, extraPierce: 1, maxBounces: 0, speedMultiplier: 1.46, critChanceBonus: 0.12, range: 940 };
             case 'pea':
             default:
                 return { baseDelay: 16, baseDamage: 25, radius: 8, extraPierce: 0, maxBounces: 0 };
@@ -156,10 +166,12 @@ class WeaponSystem {
             M4Carbine.drawWeapon(ctx, flash, recoil);
             return true;
         }
-        if (weaponType === 'spas12' && typeof Spas12 !== 'undefined') {
-            Spas12.drawWeapon(ctx, flash, recoil);
-            return true;
-        }
+        if (weaponType === 'spas12' && typeof Spas12 !== 'undefined') { Spas12.drawWeapon(ctx, flash, recoil); return true; }
+        if (weaponType === 'rusty_smg' && typeof StreetUzi !== 'undefined') { StreetUzi.drawWeapon(ctx, flash, recoil); return true; }
+        if (weaponType === 'nail_gun' && typeof VillageNailgun !== 'undefined') { VillageNailgun.drawWeapon(ctx, flash, recoil); return true; }
+        if (weaponType === 'plasma_pistol' && typeof NeonArcPistol !== 'undefined') { NeonArcPistol.drawWeapon(ctx, flash, recoil); return true; }
+        if (weaponType === 'sawnoff_shotgun' && typeof SawnOffShotgun !== 'undefined') { SawnOffShotgun.drawWeapon(ctx, flash, recoil); return true; }
+        if (weaponType === 'frost_cannon' && typeof CryoVortexCannon !== 'undefined') { CryoVortexCannon.drawWeapon(ctx, flash, recoil); return true; }
         if (weaponType === 'boomerang_saw' && typeof BoomerangSawblade !== 'undefined') {
             BoomerangSawblade.drawWeapon(ctx, flash, recoil);
             return true;
@@ -208,6 +220,11 @@ class WeaponSystem {
     static drawBullet(ctx, b) {
         if (b.type === 'm4_carbine' && typeof M4Carbine !== 'undefined') { M4Carbine.drawBullet(ctx, b); return true; }
         if (b.type === 'spas12' && typeof Spas12 !== 'undefined') { Spas12.drawBullet(ctx, b); return true; }
+        if (b.type === 'rusty_smg' && typeof StreetUzi !== 'undefined') { StreetUzi.drawBullet(ctx, b); return true; }
+        if (b.type === 'nail_gun' && typeof VillageNailgun !== 'undefined') { VillageNailgun.drawBullet(ctx, b); return true; }
+        if (b.type === 'plasma_pistol' && typeof NeonArcPistol !== 'undefined') { NeonArcPistol.drawBullet(ctx, b); return true; }
+        if (b.type === 'sawnoff_shotgun' && typeof SawnOffShotgun !== 'undefined') { SawnOffShotgun.drawBullet(ctx, b); return true; }
+        if ((b.type === 'frost_cannon' || b.type === 'cryo_shard') && typeof CryoVortexCannon !== 'undefined') { CryoVortexCannon.drawBullet(ctx, b); return true; }
         if (b.type === 'boomerang_saw' && typeof BoomerangSawblade !== 'undefined') { BoomerangSawblade.drawBullet(ctx, b); return true; }
         if (b.type === 'chrono_rifle' && typeof ChronoRifle !== 'undefined') { ChronoRifle.drawBullet(ctx, b); return true; }
         if ((b.type === 'symbiote' || b.type === 'symbiote_tendril') && typeof SymbioteLauncher !== 'undefined') { SymbioteLauncher.drawBullet(ctx, b); return true; }
@@ -225,6 +242,14 @@ class WeaponSystem {
             HeliosOmegaCannon.onHit(b, e, finalDmg, enemies, effects, game);
         } else if (b.type === 'spas12' && typeof Spas12 !== 'undefined') {
             Spas12.onHit(b, e, finalDmg, enemies, effects, game);
+        } else if (b.type === 'nail_gun' && typeof VillageNailgun !== 'undefined') {
+            VillageNailgun.onHit(b, e, finalDmg, enemies, effects);
+        } else if (b.type === 'plasma_pistol' && typeof NeonArcPistol !== 'undefined') {
+            NeonArcPistol.onHit(b, e, finalDmg, enemies, effects);
+        } else if (b.type === 'sawnoff_shotgun' && typeof SawnOffShotgun !== 'undefined') {
+            SawnOffShotgun.onHit(b, e, finalDmg, enemies, effects);
+        } else if ((b.type === 'frost_cannon' || b.type === 'cryo_shard') && typeof CryoVortexCannon !== 'undefined') {
+            CryoVortexCannon.onHit(b, e, finalDmg, enemies, effects, game);
         } else if (b.type === 'chrono_rifle' && typeof ChronoRifle !== 'undefined') {
             ChronoRifle.onHit(b, e, finalDmg, enemies, effects, game);
         } else if ((b.type === 'symbiote' || b.type === 'symbiote_tendril') && typeof SymbioteLauncher !== 'undefined') {
@@ -277,7 +302,8 @@ class WeaponSystem {
         const passiveCritBonus = (typeof GearPassives !== 'undefined') ? GearPassives.getCritBonus(player) : 0;
         const speedMult = config.speedMultiplier || 1.0;
         const shotSpeed = player.bulletSpeed * speedMult;
-        const adminDmgBoost = !!(typeof window !== 'undefined' && window.AdminCheats && window.AdminCheats.damageBoost);
+        const coopActive = !!(typeof window !== 'undefined' && window.gameInstance && window.gameInstance.coopSession);
+        const adminDmgBoost = !coopActive && !!(typeof window !== 'undefined' && window.AdminCheats && window.AdminCheats.damageBoost);
         const critChance = adminDmgBoost ? 1.0 : Math.min(0.95, player.critChance + passiveCritBonus + (config.critChanceBonus || 0));
         const shotRange = config.range || 900;
 
@@ -321,6 +347,9 @@ class WeaponSystem {
                 ? ((typeof Spas12 !== 'undefined' && Spas12.BREACH_OFFSETS) || [-0.25, -0.175, -0.105, -0.035, 0.035, 0.105, 0.175, 0.25])
                 : ((typeof Spas12 !== 'undefined' && Spas12.PELLET_OFFSETS) || [-0.21, -0.125, -0.042, 0.042, 0.125, 0.21]);
         }
+        if (player.weaponType === 'sawnoff_shotgun') {
+            fanOffsets = (typeof SawnOffShotgun !== 'undefined' && SawnOffShotgun.PELLET_OFFSETS) || [-0.17, -0.055, 0.055, 0.17];
+        }
         const ps = (typeof window !== 'undefined' && window.perkSystem) ? window.perkSystem : null;
         const perkFire = (ps && typeof ps.onWeaponFire === 'function') ? ps.onWeaponFire(player) : null;
         const perkCritBonus = (ps && typeof ps.getCritDamageBonus === 'function') ? ps.getCritDamageBonus(player) : 0;
@@ -331,21 +360,23 @@ class WeaponSystem {
                 const fOff = fanOffsets[fIdx];
                 const jitter = player.weaponType === 'm4_carbine'
                     ? (Math.random() - 0.5) * 0.064
-                    : (player.weaponType === 'spas12' ? (Math.random() - 0.5) * 0.035 : 0);
+                    : (player.weaponType === 'rusty_smg'
+                        ? (Math.random() - 0.5) * 0.15
+                        : ((player.weaponType === 'spas12' || player.weaponType === 'sawnoff_shotgun') ? (Math.random() - 0.5) * 0.035 : 0));
                 const shotAngle = baseAngle + fOff + jitter;
-                const aimAngle = player.weaponType === 'spas12' ? baseAngle : shotAngle;
+                const aimAngle = (player.weaponType === 'spas12' || player.weaponType === 'sawnoff_shotgun') ? baseAngle : shotAngle;
                 const pr = player.radius || 25;
                 let muzzleX = player.x + Math.cos(aimAngle) * (pr + 14);
                 let muzzleY = player.y + Math.sin(aimAngle) * (pr + 14);
-                if (player.weaponType === 'm4_carbine' || player.weaponType === 'spas12' || player.weaponType === 'boomerang_saw' || player.weaponType === 'chrono_rifle' || player.weaponType === 'symbiote' || player.weaponType === 'helios_cannon') {
-                    const tip = player.weaponType === 'boomerang_saw' ? 43 : (player.weaponType === 'm4_carbine' ? 46 : 48);
-                    const gyBase = player.weaponType === 'spas12' ? 2.1 : ((player.weaponType === 'symbiote' || player.weaponType === 'helios_cannon') ? 0 : 1.05);
+                if (player.weaponType === 'm4_carbine' || player.weaponType === 'spas12' || player.weaponType === 'boomerang_saw' || player.weaponType === 'chrono_rifle' || player.weaponType === 'symbiote' || player.weaponType === 'helios_cannon' || player.weaponType === 'rusty_smg' || player.weaponType === 'nail_gun' || player.weaponType === 'plasma_pistol' || player.weaponType === 'sawnoff_shotgun' || player.weaponType === 'frost_cannon') {
+                    const tip = player.weaponType === 'boomerang_saw' ? 43 : (player.weaponType === 'm4_carbine' ? 46 : (player.weaponType === 'rusty_smg' || player.weaponType === 'plasma_pistol' || player.weaponType === 'nail_gun' || player.weaponType === 'sawnoff_shotgun' || player.weaponType === 'frost_cannon' ? 38 : 48));
+                    const gyBase = (player.weaponType === 'spas12' || player.weaponType === 'sawnoff_shotgun') ? 2.1 : ((player.weaponType === 'symbiote' || player.weaponType === 'helios_cannon') ? 0 : 1.05);
                     const gy = Math.cos(aimAngle) < 0 ? gyBase : -gyBase;
                     muzzleX = player.x + Math.cos(aimAngle) * tip - Math.sin(aimAngle) * gy;
                     muzzleY = (player.y - pr * 0.32) + Math.sin(aimAngle) * tip + Math.cos(aimAngle) * gy;
                 }
 
-                const pelletSpeed = player.weaponType === 'spas12' ? shotSpeed * (0.94 + Math.random() * 0.12) : shotSpeed;
+                const pelletSpeed = (player.weaponType === 'spas12' || player.weaponType === 'sawnoff_shotgun') ? shotSpeed * (0.94 + Math.random() * 0.12) : shotSpeed;
                 const isCrit = Math.random() < critChance;
                 let dmg = config.baseDamage * (player.damageMultiplier || 1);
                 if (adminDmgBoost) dmg *= 10;

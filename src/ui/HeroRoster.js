@@ -114,27 +114,14 @@ class HeroRoster {
             const refresh = () => this.updateHeroCardSelection();
             window.EventBus.on('currencyChanged', refresh);
             window.EventBus.on('currencyUpdated', refresh);
+            window.EventBus.on('heroSkinChanged', refresh);
+            window.EventBus.on('battlePassUpdated', refresh);
+            window.EventBus.on('starBlessingUpdated', refresh);
+            window.EventBus.on('starStonesUpdated', refresh);
         }
     }
 
     handleHeroButtonClick(hero, cardEl = null) {
-        const comingSoonHeroes = {
-            'mortigen': { name: 'Mortigen', desc: 'Mortigen is currently preparing his dark abilities and weapon. He will be available in an upcoming update!' }
-        };
-
-        if (comingSoonHeroes[hero]) {
-            if (window.soundEngine) window.soundEngine.playHit();
-            const info = comingSoonHeroes[hero];
-            if (this.ui && typeof this.ui.showFeatureModal === 'function') {
-                this.ui.showFeatureModal(
-                    '⏳ HERO IN TRAINING',
-                    `${info.name} is Coming Soon!`,
-                    info.desc
-                );
-            }
-            return;
-        }
-
         this._syncState();
         const isUnlocked = this.unlockedHeroes.includes(hero);
 
@@ -201,9 +188,12 @@ class HeroRoster {
         if (!this.summaryBar || typeof ModalManager === 'undefined' || !ModalManager.renderTabSummaryBar) return;
 
         const coins = this._getCoins();
+        const starStones = (typeof DungeonManager !== 'undefined' && typeof DungeonManager.getOlympianStarStones === 'function')
+            ? DungeonManager.getOlympianStarStones() : 0;
         const activeName = ((this.ui && this.ui.selectedHero) || 'psanas').toUpperCase();
         ModalManager.renderTabSummaryBar(this.summaryBar, [
             { icon: '🪙', label: 'COINS', val: coins.toLocaleString(), cls: 'tab-pill-gold' },
+            { icon: '🌟', label: 'STAR-STONES', val: starStones.toLocaleString(), cls: 'tab-pill-gold' },
             { icon: '🪖', label: 'UNLOCKED', val: `${ownedCount} / ${playableCount}`, cls: 'tab-pill-green' },
             { icon: '⭐', label: 'ACTIVE', val: activeName }
         ]);
@@ -221,20 +211,41 @@ class HeroRoster {
 
         cards.forEach((card) => {
             const hero = card.getAttribute('data-hero');
-            const isSoon = card.classList.contains('hero-card-coming-soon') || hero === 'mortigen';
-            if (isSoon) {
-                card.classList.add('hero-locked');
-                const matches = (this.activeFilter === 'ALL' || this.activeFilter === 'SOON');
-                card.style.display = matches ? '' : 'none';
-                if (matches) visibleCount++;
-                return;
-            }
-
             playableCount++;
             const equipBtn = card.querySelector('.hero-equip-btn');
             const lockBadge = card.querySelector('.hero-lock-badge');
             const isUnlocked = this.unlockedHeroes.includes(hero);
             if (isUnlocked) ownedCount++;
+
+            const oldBless = card.querySelector('.hero-star-bless-row');
+            if (oldBless) oldBless.remove();
+            if (isUnlocked && typeof HeroStarBlessing !== 'undefined') {
+                const blessed = HeroStarBlessing.isBlessed(hero);
+                const stones = (typeof DungeonManager !== 'undefined') ? DungeonManager.getOlympianStarStones() : 0;
+                const row = document.createElement('div');
+                row.className = 'hero-star-bless-row';
+                if (blessed) {
+                    row.innerHTML = `<span class="hero-star-blessed-tag">★ STAR-BLESSED (+10% • 1x REVIVE)</span>`;
+                } else {
+                    const btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.className = `hero-style-btn hero-star-bless-btn ${stones > 0 ? 'can-bless' : ''}`;
+                    btn.innerHTML = `${typeof UiIcons !== 'undefined' ? UiIcons.i('olympian_star_stone', 'ui-icon-sm') : '🌟'} STAR-BLESS (1 STONE)`;
+                    btn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        const res = HeroStarBlessing.blessHero(hero);
+                        if (!res.success) {
+                            if (window.soundEngine && typeof window.soundEngine.playBuzzer === 'function') window.soundEngine.playBuzzer();
+                            if (typeof ModalManager !== 'undefined' && ModalManager.notifyInsufficient) ModalManager.notifyInsufficient(`⚠️ ${res.reason}`, btn);
+                        } else {
+                            this.updateHeroCardSelection();
+                        }
+                    });
+                    row.appendChild(btn);
+                }
+                if (equipBtn) card.insertBefore(row, equipBtn);
+                else card.appendChild(row);
+            }
 
             if (!isUnlocked) {
                 const heroData = typeof HEROES !== 'undefined' ? HEROES[hero] : null;
@@ -306,13 +317,72 @@ class HeroRoster {
 
     updateHeroStyleButtons() {
         const psgCard = document.querySelector('.hero-select-card[data-hero="psgiannhs"]');
-        if (!psgCard || typeof PsgiannhsHero === 'undefined') return;
-        const activeStyle = PsgiannhsHero.getActiveStyle();
-        const img = psgCard.querySelector('.hero-select-avatar img');
-        if (img) img.src = PsgiannhsHero.getAvatarForStyle(activeStyle);
-        psgCard.querySelectorAll('.hero-style-btn').forEach((btn) => {
-            btn.classList.toggle('active', btn.getAttribute('data-style') === activeStyle);
-        });
+        if (psgCard && typeof PsgiannhsHero !== 'undefined') {
+            const activeStyle = PsgiannhsHero.getActiveStyle();
+            const img = psgCard.querySelector('.hero-select-avatar img');
+            if (img) img.src = PsgiannhsHero.getAvatarForStyle(activeStyle);
+            psgCard.querySelectorAll('.hero-style-btn').forEach((btn) => {
+                btn.classList.toggle('active', btn.getAttribute('data-style') === activeStyle);
+            });
+        }
+
+        if (typeof HeroSkinSystem === 'undefined') return;
+        for (const [heroId, skins] of Object.entries(HeroSkinSystem.SKINS)) {
+            const card = document.querySelector(`.hero-select-card[data-hero="${heroId}"]`);
+            if (!card) continue;
+            const activeSkin = HeroSkinSystem.getActiveSkin(heroId);
+            const activeMeta = HeroSkinSystem.getSkinMeta(heroId, activeSkin);
+
+            const avatarBox = card.querySelector('.hero-select-avatar');
+            if (avatarBox) {
+                let badgePill = avatarBox.querySelector('.hero-skin-badge-pill');
+                if (activeSkin !== 'default' && activeMeta) {
+                    if (!badgePill) {
+                        badgePill = document.createElement('span');
+                        badgePill.className = 'hero-skin-badge-pill';
+                        avatarBox.style.position = 'relative';
+                        avatarBox.appendChild(badgePill);
+                    }
+                    badgePill.textContent = activeMeta.name.toUpperCase();
+                    badgePill.style.borderColor = activeMeta.accent || '#00f5ff';
+                    badgePill.style.color = activeMeta.accent || '#00f5ff';
+                } else if (badgePill) {
+                    badgePill.remove();
+                }
+            }
+
+            let switcher = card.querySelector('.hero-skin-switcher');
+            if (!switcher) {
+                switcher = document.createElement('div');
+                switcher.className = 'hero-style-switcher hero-skin-switcher';
+                const btnTarget = card.querySelector('.hero-equip-btn');
+                if (btnTarget) card.insertBefore(switcher, btnTarget);
+                else card.appendChild(switcher);
+            }
+            switcher.innerHTML = skins.map((s) => {
+                const owned = HeroSkinSystem.isSkinUnlocked(heroId, s.id);
+                const isAct = owned && activeSkin === s.id;
+                const label = owned ? s.name.split(' ')[0].toUpperCase() : `🔒 T${s.tier}`;
+                return `<button type="button" class="hero-style-btn ${isAct ? 'active' : ''}" data-skin-id="${s.id}">${label}</button>`;
+            }).join('');
+
+            switcher.querySelectorAll('[data-skin-id]').forEach((btn) => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const sid = btn.getAttribute('data-skin-id');
+                    if (HeroSkinSystem.isSkinUnlocked(heroId, sid)) {
+                        HeroSkinSystem.setActiveSkin(heroId, sid);
+                        if (window.soundEngine) window.soundEngine.playSelect();
+                    } else {
+                        const meta = HeroSkinSystem.getSkinMeta(heroId, sid);
+                        if (window.soundEngine && typeof window.soundEngine.playGoBack === 'function') window.soundEngine.playGoBack();
+                        if (window.modalManager && typeof window.modalManager.showQuickToast === 'function') {
+                            window.modalManager.showQuickToast(`🔒 Unlock ${meta ? meta.name : 'Skin'} at Battle Pass Tier ${meta ? meta.tier : ''}!`, 1900);
+                        }
+                    }
+                });
+            });
+        }
     }
 
     showHeroesModal() {

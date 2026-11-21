@@ -162,12 +162,14 @@ class Bullet {
             effects.addShockwave(this.x, this.y, 65, this.type === 'zeus_thunderbolt' ? 'rgba(254, 211, 48, 0.8)' : 'rgba(0, 210, 211, 0.7)');
             effects.addSparks(this.x, this.y, '#00d2d3', 9);
             effects.addSparks(this.x, this.y, '#ffffff', 6);
-        } else if (this.type === 'carbine' || this.type === 'm4_carbine' || this.type === 'spas12') {
+        } else if (this.type === 'carbine' || this.type === 'm4_carbine' || this.type === 'spas12' || this.type === 'rusty_smg' || this.type === 'sawnoff_shotgun') {
             effects.addSparks(this.x, this.y, this._spasBreach ? '#ff4757' : '#ffd32a', 7);
             effects.addSparks(this.x, this.y, '#ff9f43', 4);
         } else if (this.type === 'boomerang_saw') {
             effects.addSparks(this.x, this.y, '#ff9f43', 6);
             effects.addSparks(this.x, this.y, '#00f5ff', 4);
+        } else if (this.type === 'frost_cannon' || this.type === 'cryo_shard') {
+            effects.addSparks(this.x, this.y, '#00f5ff', 7); effects.addSparks(this.x, this.y, '#ffffff', 5);
         } else if (this.type === 'chrono_rifle') {
             effects.addSparks(this.x, this.y, '#00f5ff', 6);
             effects.addSparks(this.x, this.y, '#a55eea', 5);
@@ -243,7 +245,7 @@ class Bullet {
             watermelon: '#eb4d4b', bubble: '#70a1ff', pepper: '#ff6b6b', soccer: '#ffffff',
             smoke: '#9b59b6', money_gun: '#f39c12', euro: '#f39c12', carbine: '#f39c12',
             soundwave: '#fed330', dialtone: '#fed330', burger: '#e59b52', lightning: '#00d2d3',
-            greek_flag: '#1e90ff', m4_carbine: '#ffa502', spas12: '#ff6348', boomerang_saw: '#ff9f43', chrono_rifle: '#a55eea', symbiote: '#ff2e63', symbiote_tendril: '#e056fd', zeus_thunderbolt: '#fed330', helios_cannon: '#ff9f43'
+            greek_flag: '#1e90ff', m4_carbine: '#ffa502', spas12: '#ff6348', rusty_smg: '#ff9f43', nail_gun: '#fed330', plasma_pistol: '#00f5ff', sawnoff_shotgun: '#ff9f43', frost_cannon: '#00f5ff', cryo_shard: '#70a1ff', boomerang_saw: '#ff9f43', chrono_rifle: '#a55eea', symbiote: '#ff2e63', symbiote_tendril: '#e056fd', zeus_thunderbolt: '#fed330', helios_cannon: '#ff9f43'
         };
         return map[this.type] || this.color || (this.isEnemy ? '#ff4757' : '#2ed573');
     }

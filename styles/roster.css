@@ -2,6 +2,12 @@
    LESA.IO - HEROES ROSTER, PROFILE, CLOUD & MAIL
    =================================================== */
 
+.hero-star-bless-row { width: 100%; display: flex; justify-content: center; margin: 4px 0 6px; }
+.hero-star-blessed-tag { font-size: 0.64rem; font-weight: 900; padding: 3px 8px; border-radius: 999px; background: linear-gradient(135deg, #f59e0b 0%, #ffd32a 100%); color: #1a1d2b; border: 1.5px solid #1a1d2b; box-shadow: 0 0 8px rgba(255, 211, 42, 0.5); }
+.hero-star-bless-btn { width: 100%; justify-content: center; gap: 4px; font-size: 0.68rem !important; border-color: #e11d48 !important; color: #be123c !important; }
+.hero-star-bless-btn.can-bless { background: linear-gradient(135deg, #e11d48 0%, #f59e0b 100%) !important; color: #ffffff !important; border-color: #1a1d2b !important; }
+
+
 /* ================= CLOUD & SAVE ACCOUNT SECTION ================= */
 
 .settings-cloud-section {

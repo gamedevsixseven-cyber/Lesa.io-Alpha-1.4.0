@@ -10,24 +10,26 @@
 
 class OutsidePerimeterRoads {
     static activeVehicles = [];
-    static spawnTimer = 420; // First drive-by ~7s into Story Mode, then sparse random intervals
+    static spawnTimer = 180; // First drive-by ~3s into gameplay, then crisp random intervals
     static age = 0;
     static _lastScenario = null;
     static _catMeowTimer = 0;
     static _catCooldown = 0;
     static _specWaveTimer = 0;
+    static _specGreetCooldown = 0;
     static _roadDecorSeeded = false;
     static _lamps = [];
     static _crosswalks = [];
 
     static reset() {
         this.activeVehicles = [];
-        this.spawnTimer = 320 + Math.random() * 420;
+        this.spawnTimer = 150 + Math.random() * 150;
         this.age = 0;
         this._lastScenario = null;
         this._catMeowTimer = 0;
         this._catCooldown = 0;
         this._specWaveTimer = 0;
+        this._specGreetCooldown = 0;
     }
 
     static _ensureLayout(arena) {
@@ -68,18 +70,24 @@ class OutsidePerimeterRoads {
         if (this._catMeowTimer > 0) this._catMeowTimer = Math.max(0, this._catMeowTimer - dt);
         if (this._catCooldown > 0) this._catCooldown = Math.max(0, this._catCooldown - dt);
         if (this._specWaveTimer > 0) this._specWaveTimer = Math.max(0, this._specWaveTimer - dt);
+        if (this._specGreetCooldown > 0) this._specGreetCooldown = Math.max(0, this._specGreetCooldown - dt);
 
-        // Story Mode only Easter Eggs (Cat reaction + Non-continuous Road Traffic)
-        if (g.gameMode !== 'story') {
+        // Active on Story Mode & Peaceful Village Endless Waves (< Wave 30)
+        const waveNum = g.waveManager ? (g.waveManager.wave || 1) : 1;
+        if (g.gameMode !== 'story' && !(g.gameMode === 'endless' && waveNum < 30)) {
             this.activeVehicles = [];
             return;
         }
 
         const hh = g.arena.halfHeight;
-        if (g.player && this._catCooldown <= 0) {
-            if (Math.hypot(g.player.x + 520, g.player.y - (hh + 30)) < 280) {
-                this._catMeowTimer = 110;
-                this._catCooldown = 620;
+        if (g.player) {
+            if (this._catCooldown <= 0 && Math.hypot(g.player.x + 520, g.player.y - (hh + 30)) < 380) {
+                this._catMeowTimer = 140;
+                this._catCooldown = 480;
+            }
+            if (this._specGreetCooldown <= 0 && Math.hypot(g.player.x - 320, g.player.y - (hh + 30)) < 380) {
+                this._specWaveTimer = 140;
+                this._specGreetCooldown = 480;
             }
         }
         if (g.player && g.waveState === 'WAVE_CLEARED' && this._specWaveTimer <= 0) {
@@ -88,13 +96,13 @@ class OutsidePerimeterRoads {
 
         if (this.activeVehicles.length > 0) {
             for (let i = this.activeVehicles.length - 1; i >= 0; i--) {
-                if (this._updateVehicle(this.activeVehicles[i], dt, g.arena, g.effects)) {
+                if (this._updateVehicle(this.activeVehicles[i], dt, g.arena, g.effects, g.player)) {
                     this.activeVehicles.splice(i, 1);
                 }
             }
             if (this.activeVehicles.length === 0) {
-                // Non-continuous: pause 13 to 27 seconds before the next random Easter egg
-                this.spawnTimer = 780 + Math.random() * 840;
+                // Pause 4 to 8 seconds before the next perimeter Easter egg
+                this.spawnTimer = 240 + Math.random() * 240;
             }
             return;
         }
@@ -110,11 +118,12 @@ class OutsidePerimeterRoads {
         const no50 = heroType !== '50balos';
         const pool = [];
         if (noPetros) pool.push({ id: 'petros_alone', w: 1.0 });
-        if (noPetros) pool.push({ id: 'petros_wheelie', w: 1.15 });
-        if (noPetros) pool.push({ id: 'petros_police_chase', w: 1.25 });
-        if (noPetros && no50) pool.push({ id: 'petros_and_50balos', w: 1.25 });
-        if (no50) pool.push({ id: '50balos_alone', w: 1.2 });
-        pool.push({ id: 'police_alone', w: 0.55 });
+        if (noPetros) pool.push({ id: 'petros_wheelie', w: 1.35 });
+        if (noPetros) pool.push({ id: 'petros_police_chase', w: 1.4 });
+        if (noPetros && no50) pool.push({ id: 'petros_and_50balos', w: 1.45 });
+        if (no50) pool.push({ id: '50balos_alone', w: 1.3 });
+        if (!noPetros && no50) pool.push({ id: '50balos_police_chase', w: 1.4 });
+        pool.push({ id: 'police_alone', w: 0.45 });
 
         const filtered = (pool.length > 1) ? pool.filter(s => s.id !== this._lastScenario) : pool;
         let total = 0;
@@ -133,24 +142,18 @@ class OutsidePerimeterRoads {
         const roadCenter = 122;
         const spanX = hw + roadCenter;
         const spanY = hh + roadCenter;
-        const startShift = 160 + trailBack;
+        const p = opts.player || null;
         let x = 0; let y = 0; let vx = 0; let vy = 0;
 
-        if (edgeIdx === 0) {
-            x = dirSign > 0 ? -spanX - startShift : spanX + startShift;
-            y = -hh - roadCenter + laneOffset;
+        if (edgeIdx === 0 || edgeIdx === 1) {
+            const leadX = p ? Math.max(-spanX - 180, Math.min(spanX + 180, p.x - dirSign * 780)) : (dirSign > 0 ? -spanX - 160 : spanX + 160);
+            x = leadX - dirSign * trailBack;
+            y = (edgeIdx === 0 ? -hh - roadCenter : hh + roadCenter) + laneOffset;
             vx = dirSign * speed;
-        } else if (edgeIdx === 1) {
-            x = dirSign > 0 ? -spanX - startShift : spanX + startShift;
-            y = hh + roadCenter + laneOffset;
-            vx = dirSign * speed;
-        } else if (edgeIdx === 2) {
-            x = -hw - roadCenter - laneOffset;
-            y = dirSign > 0 ? -spanY - startShift : spanY + startShift;
-            vy = dirSign * speed;
         } else {
-            x = hw + roadCenter - laneOffset;
-            y = dirSign > 0 ? -spanY - startShift : spanY + startShift;
+            const leadY = p ? Math.max(-spanY - 180, Math.min(spanY + 180, p.y - dirSign * 580)) : (dirSign > 0 ? -spanY - 160 : spanY + 160);
+            x = (edgeIdx === 2 ? -hw - roadCenter : hw + roadCenter) - laneOffset;
+            y = leadY - dirSign * trailBack;
             vy = dirSign * speed;
         }
 
@@ -174,8 +177,8 @@ class OutsidePerimeterRoads {
             bubbleColor: opts.bubbleColor || '#ff4785',
             bubbleOffsetY: opts.bubbleOffsetY || -48,
             bubbleShown: false,
-            limitX: spanX + 240,
-            limitY: spanY + 240
+            limitX: spanX + 340,
+            limitY: spanY + 340
         };
     }
 
@@ -187,12 +190,10 @@ class OutsidePerimeterRoads {
 
         let edgeIdx = Math.floor(Math.random() * 4);
         if (p) {
-            const dN = Math.abs(p.y + hh);
-            const dS = Math.abs(hh - p.y);
-            const dW = Math.abs(p.x + hw);
-            const dE = Math.abs(hw - p.x);
+            const dN = Math.abs(p.y + hh), dS = Math.abs(hh - p.y);
+            const dW = Math.abs(p.x + hw), dE = Math.abs(hw - p.x);
             const minD = Math.min(dN, dS, dW, dE);
-            if (minD < 820 && Math.random() < 0.78) {
+            if (minD < 1100 && Math.random() < 0.92) {
                 if (minD === dN) edgeIdx = 0;
                 else if (minD === dS) edgeIdx = 1;
                 else if (minD === dW) edgeIdx = 2;
@@ -201,64 +202,75 @@ class OutsidePerimeterRoads {
         }
 
         const dirSign = Math.random() < 0.5 ? 1 : -1;
-        const mainLane = dirSign * 30;
-        const adjLane = -dirSign * 30;
+        const mainLane = dirSign * 26;
+        const adjLane = -dirSign * 26;
         const scenario = this._pickScenario(p ? p.heroType : '');
         this._lastScenario = scenario;
 
         if (scenario === 'petros_alone') {
             this.activeVehicles = [
-                this._makeVehicleSpec(arena, 'petros_vf185', edgeIdx, dirSign, mainLane, 0, 7.8, {
-                    bubbleText: 'CHILL RIDE 🏍️', bubbleColor: '#ff4785'
+                this._makeVehicleSpec(arena, 'petros_vf185', edgeIdx, dirSign, mainLane, 0, 6.6, {
+                    player: p, bubbleText: 'CHILL RIDE 🏍️', bubbleColor: '#ff4785'
                 })
             ];
         } else if (scenario === 'petros_wheelie') {
             this.activeVehicles = [
-                this._makeVehicleSpec(arena, 'petros_vf185', edgeIdx, dirSign, mainLane, 0, 8.4, {
-                    willWheelie: true, wheelieDelay: 6 + Math.random() * 24, wheelieDur: 115 + Math.random() * 50,
+                this._makeVehicleSpec(arena, 'petros_vf185', edgeIdx, dirSign, mainLane, 0, 7.0, {
+                    player: p, willWheelie: true, wheelieDelay: 4 + Math.random() * 14, wheelieDur: 120 + Math.random() * 45,
                     bubbleText: 'SOUZA!! 🏍️🔥', bubbleColor: '#ff4785'
                 })
             ];
         } else if (scenario === 'petros_police_chase') {
             this.activeVehicles = [
-                this._makeVehicleSpec(arena, 'petros_vf185', edgeIdx, dirSign, mainLane, 0, 9.5, {
-                    willWheelie: Math.random() < 0.65, wheelieDelay: 10, wheelieDur: 80, keepFormation: true,
+                this._makeVehicleSpec(arena, 'petros_vf185', edgeIdx, dirSign, mainLane, 0, 7.5, {
+                    player: p, willWheelie: Math.random() < 0.70, wheelieDelay: 6, wheelieDur: 90, keepFormation: true,
                     bubbleText: 'DEN ME PIANEIS! 💨', bubbleColor: '#ff4785'
                 }),
-                this._makeVehicleSpec(arena, 'police_car', edgeIdx, dirSign, mainLane, 168, 9.4, {
-                    keepFormation: true, bubbleText: 'ΣΤΑΜΑΤΑ ΡΕ!! 🚨', bubbleColor: '#38bdf8', bubbleOffsetY: -62
+                this._makeVehicleSpec(arena, 'police_car', edgeIdx, dirSign, mainLane, 145, 7.45, {
+                    player: p, keepFormation: true, bubbleText: 'ΣΤΑΜΑΤΑ ΡΕ!! 🚨', bubbleColor: '#38bdf8', bubbleOffsetY: -62
+                })
+            ];
+        } else if (scenario === '50balos_police_chase') {
+            this.activeVehicles = [
+                this._makeVehicleSpec(arena, '50balos_cryptonx', edgeIdx, dirSign, mainLane, 0, 7.5, {
+                    player: p, willWheelie: Math.random() < 0.65, wheelieDelay: 6, wheelieDur: 90, keepFormation: true,
+                    bubbleText: 'DEN ME PIANEIS! 💶💨', bubbleColor: '#f8fafc'
+                }),
+                this._makeVehicleSpec(arena, 'police_car', edgeIdx, dirSign, mainLane, 145, 7.45, {
+                    player: p, keepFormation: true, bubbleText: 'ΣΤΑΜΑΤΑ ΡΕ!! 🚨', bubbleColor: '#38bdf8', bubbleOffsetY: -62
                 })
             ];
         } else if (scenario === 'petros_and_50balos') {
             this.activeVehicles = [
-                this._makeVehicleSpec(arena, 'petros_vf185', edgeIdx, dirSign, mainLane, 0, 8.5, {
-                    willWheelie: Math.random() < 0.45, keepFormation: true,
+                this._makeVehicleSpec(arena, 'petros_vf185', edgeIdx, dirSign, mainLane, 0, 7.0, {
+                    player: p, willWheelie: Math.random() < 0.55, keepFormation: true,
                     bubbleText: 'PAME VOLTA! 🏍️', bubbleColor: '#ff4785', bubbleOffsetY: -46
                 }),
-                this._makeVehicleSpec(arena, '50balos_cryptonx', edgeIdx, dirSign, adjLane, 38, 8.55, {
-                    willWheelie: Math.random() < 0.35, keepFormation: true,
-                    bubbleText: 'CRYPTON X!! 🤍💶', bubbleColor: '#f8fafc', bubbleOffsetY: -72
+                this._makeVehicleSpec(arena, '50balos_cryptonx', edgeIdx, dirSign, adjLane, 36, 7.05, {
+                    player: p, willWheelie: Math.random() < 0.45, keepFormation: true,
+                    bubbleText: 'CRYPTON X!! 🤍💶', bubbleColor: '#f8fafc', bubbleOffsetY: -74
                 })
             ];
         } else if (scenario === '50balos_alone') {
-            const stunt = Math.random() < 0.42;
+            const stunt = Math.random() < 0.55;
             this.activeVehicles = [
-                this._makeVehicleSpec(arena, '50balos_cryptonx', edgeIdx, dirSign, mainLane, 0, 8.1, {
-                    willWheelie: stunt, wheelieDelay: 8 + Math.random() * 26, wheelieDur: 95 + Math.random() * 45,
+                this._makeVehicleSpec(arena, '50balos_cryptonx', edgeIdx, dirSign, mainLane, 0, 6.8, {
+                    player: p, willWheelie: stunt, wheelieDelay: 6 + Math.random() * 16, wheelieDur: 100 + Math.random() * 45,
                     bubbleText: stunt ? 'CRYPTON SOUZA!! 💶🔥' : 'WHITE CRYPTON X 🤍', bubbleColor: '#f8fafc'
                 })
             ];
         } else {
             this.activeVehicles = [
-                this._makeVehicleSpec(arena, 'police_car', edgeIdx, dirSign, mainLane, 0, 5.4, {})
+                this._makeVehicleSpec(arena, 'police_car', edgeIdx, dirSign, mainLane, 0, 5.6, { player: p })
             ];
         }
     }
 
-    static _updateVehicle(v, dt, arena, effects) {
+    static _updateVehicle(v, dt, arena, effects, player = null) {
         v.age += dt;
         const horiz = Math.abs(v.vx) >= Math.abs(v.vy);
-        const inArenaSpan = horiz ? (Math.abs(v.x) < arena.halfWidth * 0.88) : (Math.abs(v.y) < arena.halfHeight * 0.88);
+        const nearPlayer = player ? (Math.abs(v.x - player.x) < 760 && Math.abs(v.y - player.y) < 680) : true;
+        const inArenaSpan = nearPlayer && (horiz ? (Math.abs(v.x) < arena.halfWidth * 0.94) : (Math.abs(v.y) < arena.halfHeight * 0.94));
         if (inArenaSpan) {
             if (!v.enteredView) v.enteredView = true;
             v.viewAge += dt;
@@ -407,61 +419,48 @@ class OutsidePerimeterRoads {
             ctx.restore();
         }
 
-        // Story Mode Easter Egg Props: Sleepy Village Cat (-520, hh + 30) & Spectators (320, hh + 30)
-        const catX = -520;
-        const catY = hh + 30;
+        // Roadside Easter Egg Props: Sleepy Village Cat (-520, hh + 30) & Kafenio Spectators (320, hh + 30)
+        const catX = -520, catY = hh + 30;
         if (!camera || camera.isVisible(catX, catY, 80)) {
             ctx.save();
             ctx.translate(catX, catY);
-            ctx.fillStyle = '#e67e22';
-            ctx.strokeStyle = '#18181b';
-            ctx.lineWidth = 2;
+            ctx.fillStyle = '#e74c3c'; ctx.strokeStyle = '#fef08a'; ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.ellipse(0, 3, 20, 11, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+            ctx.scale(1.28, 1.28);
+            ctx.fillStyle = '#e67e22'; ctx.strokeStyle = '#18181b'; ctx.lineWidth = 2;
             ctx.beginPath(); ctx.ellipse(0, 0, 11, 7, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
             ctx.beginPath(); ctx.arc(9, -3, 6, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
-            // Ears
-            ctx.beginPath();
-            ctx.moveTo(5, -7); ctx.lineTo(7, -13); ctx.lineTo(10, -8);
-            ctx.moveTo(11, -8); ctx.lineTo(14, -13); ctx.lineTo(15, -7);
-            ctx.fill(); ctx.stroke();
-            // Tail curve
+            ctx.beginPath(); ctx.moveTo(5, -7); ctx.lineTo(7, -13); ctx.lineTo(10, -8); ctx.moveTo(11, -8); ctx.lineTo(14, -13); ctx.lineTo(15, -7); ctx.fill(); ctx.stroke();
             ctx.strokeStyle = '#d35400'; ctx.lineWidth = 3;
             ctx.beginPath(); ctx.moveTo(-10, 0); ctx.quadraticCurveTo(-18, -6, -14, -11); ctx.stroke();
-            // Floating zzz or MEOW!
-            ctx.font = 'bold 11px Fredoka, sans-serif';
-            ctx.textAlign = 'center';
-            ctx.fillStyle = this._catMeowTimer > 0 ? '#ff9f1a' : '#f8fafc';
-            ctx.strokeStyle = '#18181b'; ctx.lineWidth = 2.5;
-            const txt = this._catMeowTimer > 0 ? 'MEOW! 🐾' : ((Math.floor(this.age / 45) % 2 === 0) ? 'z' : 'zz');
+            ctx.font = 'bold 12px Fredoka, sans-serif'; ctx.textAlign = 'center';
+            ctx.fillStyle = this._catMeowTimer > 0 ? '#ff9f1a' : '#fef08a';
+            ctx.strokeStyle = '#18181b'; ctx.lineWidth = 2.8;
+            const txt = this._catMeowTimer > 0 ? 'MEOW! 🐾' : ((Math.floor(this.age / 45) % 2 === 0) ? 'zZ' : 'zZz');
             ctx.strokeText(txt, 0, -18 - Math.sin(this.age * 0.08) * 3);
             ctx.fillText(txt, 0, -18 - Math.sin(this.age * 0.08) * 3);
             ctx.restore();
         }
 
         // Roadside Spectator Kafenio Bench (South-East sidewalk)
-        const spX = 320;
-        const spY = hh + 30;
+        const spX = 320, spY = hh + 30;
         if (!camera || camera.isVisible(spX, spY, 100)) {
             ctx.save();
             ctx.translate(spX, spY);
-            ctx.fillStyle = '#8d5524';
-            ctx.strokeStyle = '#18181b';
-            ctx.lineWidth = 2.2;
-            ctx.beginPath(); ctx.roundRect(-24, -6, 48, 12, 3); ctx.fill(); ctx.stroke();
-            // Two tiny villagers seated cheering
-            for (const vx of [-11, 11]) {
+            ctx.fillStyle = '#8d5524'; ctx.strokeStyle = '#18181b'; ctx.lineWidth = 2.4;
+            ctx.beginPath(); ctx.roundRect(-28, -7, 56, 14, 3); ctx.fill(); ctx.stroke();
+            for (const vx of [-12, 12]) {
                 const hop = this._specWaveTimer > 0 ? Math.abs(Math.sin(this.age * 0.25 + vx)) * 4 : 0;
                 ctx.fillStyle = vx < 0 ? '#1e90ff' : '#eb4d4b';
-                ctx.beginPath(); ctx.arc(vx, -8 - hop, 7, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+                ctx.beginPath(); ctx.arc(vx, -8 - hop, 7.5, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
                 ctx.fillStyle = '#f5cd79';
-                ctx.beginPath(); ctx.arc(vx, -16 - hop, 5.5, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+                ctx.beginPath(); ctx.arc(vx, -17 - hop, 5.8, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
             }
             if (this._specWaveTimer > 0) {
-                ctx.font = 'bold 11px Fredoka, sans-serif';
-                ctx.textAlign = 'center';
-                ctx.fillStyle = '#fed330';
-                ctx.strokeStyle = '#18181b'; ctx.lineWidth = 2.5;
-                ctx.strokeText('OPA! 👏', 0, -28);
-                ctx.fillText('OPA! 👏', 0, -28);
+                ctx.font = 'bold 12px Fredoka, sans-serif'; ctx.textAlign = 'center';
+                ctx.fillStyle = '#fed330'; ctx.strokeStyle = '#18181b'; ctx.lineWidth = 2.8;
+                ctx.strokeText('OPA! 👏', 0, -30);
+                ctx.fillText('OPA! 👏', 0, -30);
             }
             ctx.restore();
         }
@@ -481,6 +480,10 @@ class OutsidePerimeterRoads {
             ctx.translate(v.x, v.y);
 
             if (v.kind === 'petros_vf185' && typeof VF185Model !== 'undefined') {
+                // Highlight dark obsidian VF185 sharply against dark road asphalt
+                ctx.fillStyle = 'rgba(255, 71, 133, 0.30)';
+                ctx.beginPath(); ctx.ellipse(0, 12, 46, 16, 0, 0, Math.PI * 2); ctx.fill();
+                ctx.scale(1.14, 1.14);
                 const ghostPetros = {
                     x: v.x, y: v.y, vx: v.vx, vy: v.vy,
                     angle: v.angle, vf185Angle: v.angle, _vfWheelSpin: v.spin,
@@ -488,6 +491,9 @@ class OutsidePerimeterRoads {
                 };
                 VF185Model.drawMountedPetros(ghostPetros, ctx, false, v.wheeliePitch);
             } else if (v.kind === '50balos_cryptonx' && typeof CryptonXModel !== 'undefined') {
+                ctx.fillStyle = 'rgba(254, 211, 48, 0.28)';
+                ctx.beginPath(); ctx.ellipse(0, 12, 44, 15, 0, 0, Math.PI * 2); ctx.fill();
+                ctx.scale(1.14, 1.14);
                 const ghost50 = {
                     x: v.x, y: v.y, vx: v.vx, vy: v.vy,
                     angle: v.angle, _spin: v.spin,

@@ -42,7 +42,7 @@ class RemotePlayer {
         this.applyHeroStats(heroType);
     }
 
-    applyHeroStats(heroType) {
+    applyHeroStats(heroType, opts = null) {
         this.heroType = heroType;
         const wasFull = !this.hp || this.hp >= this.maxHp;
         const heroData = (typeof HEROES !== 'undefined' && HEROES[heroType]) ? HEROES[heroType] : null;
@@ -56,6 +56,18 @@ class RemotePlayer {
             this.weaponType = 'pea';
             this.heroColor = '#1e70d6';
             this.damageReduction = heroType === 'petros' ? 0.08 : 0;
+        }
+        if (opts) {
+            if (typeof opts.weaponType === 'string' && opts.weaponType) this.weaponType = opts.weaponType;
+            if (typeof opts.heroSkin === 'string') this.heroSkin = opts.heroSkin;
+            if (opts.heroStyle !== undefined) this.heroStyle = opts.heroStyle;
+            if (typeof opts.starBlessed === 'boolean') this.starBlessed = opts.starBlessed;
+            if (typeof opts.maxHp === 'number' && Number.isFinite(opts.maxHp)) {
+                this.maxHp = Math.max(60, Math.min(1200, Math.round(opts.maxHp)));
+            }
+            if (typeof opts.damageReduction === 'number' && Number.isFinite(opts.damageReduction)) {
+                this.damageReduction = Math.max(0, Math.min(0.70, opts.damageReduction));
+            }
         }
         if (wasFull || this.hp > this.maxHp) this.hp = this.maxHp;
     }
@@ -99,15 +111,20 @@ class RemotePlayer {
 
         if (this.isHost && typeof data.hp === 'number') {
             if (data.hp < this.hp) this.hitFlash = 10;
-            this.hp = data.hp;
+            this.hp = Math.max(0, Math.min(this.maxHp, data.hp));
             this.isDowned = (this.hp <= 0);
         }
-        if (typeof data.maxHp === 'number') this.maxHp = data.maxHp;
+        if (typeof data.maxHp === 'number' && Number.isFinite(data.maxHp)) {
+            this.maxHp = Math.max(60, Math.min(1200, Math.round(data.maxHp)));
+        }
         if (typeof data.isMoving === 'boolean') this.isMoving = data.isMoving;
         if (typeof data.shieldActive === 'boolean') this.shieldActive = data.shieldActive;
         if (typeof data.isDashing === 'boolean') this.isDashing = data.isDashing;
+        if (typeof data.weaponType === 'string' && data.weaponType) this.weaponType = data.weaponType;
+        if (typeof data.heroSkin === 'string') this.heroSkin = data.heroSkin;
+        if (typeof data.starBlessed === 'boolean') this.starBlessed = data.starBlessed;
         if (data.heroType && data.heroType !== this.heroType) {
-            this.applyHeroStats(data.heroType);
+            this.applyHeroStats(data.heroType, data);
         }
     }
 
@@ -202,9 +219,11 @@ class RemotePlayer {
 
     drawRadarIndicator(ctx, localPlayer, camera) {
         if (!camera || !localPlayer) return;
-        // Check if remote player is off screen
-        const halfW = (camera.width || window.innerWidth) / (camera.zoom || 1) / 2;
-        const halfH = (camera.height || window.innerHeight) / (camera.zoom || 1) / 2;
+        const dpr = camera.dpr || 1;
+        const vw = camera.canvas ? (camera.canvas.width / dpr) : window.innerWidth;
+        const vh = camera.canvas ? (camera.canvas.height / dpr) : window.innerHeight;
+        const halfW = vw / (camera.zoom || 1) / 2;
+        const halfH = vh / (camera.zoom || 1) / 2;
         const dx = this.x - localPlayer.x;
         const dy = this.y - localPlayer.y;
 
@@ -246,6 +265,23 @@ class RemotePlayer {
         ctx.strokeText(label, 0, 18);
         ctx.fillText(label, 0, 18);
 
+        ctx.restore();
+    }
+
+    static drawLocalDownedBanner(ctx, localPlayer) {
+        if (!localPlayer || localPlayer.hp > 0) return;
+        ctx.save();
+        ctx.translate(localPlayer.x, localPlayer.y - localPlayer.radius - 36);
+        const pulse = 0.75 + Math.sin(Date.now() / 160) * 0.25;
+        ctx.globalAlpha = pulse;
+        ctx.font = '900 13px Fredoka, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.strokeStyle = '#0f1419';
+        ctx.lineWidth = 4;
+        const msg = '💀 DOWNED! WAITING FOR WAVE CLEAR';
+        ctx.strokeText(msg, 0, 0);
+        ctx.fillStyle = '#ff4757';
+        ctx.fillText(msg, 0, 0);
         ctx.restore();
     }
 }

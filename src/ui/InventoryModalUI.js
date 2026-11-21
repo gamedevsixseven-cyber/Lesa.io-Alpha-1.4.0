@@ -32,6 +32,9 @@ class InventoryModalUI {
             window.EventBus.on('crestsUpdated', () => {
                 if (this.isOpen()) this.render();
             });
+            window.EventBus.on('starStonesUpdated', () => {
+                if (this.isOpen()) this.render();
+            });
         }
     }
 
@@ -344,22 +347,23 @@ class InventoryModalUI {
             ? GearUpgradeManager.getEvolutionStones()
             : 0;
         cardsHtml += this._renderEvolutionStoneCard(evoStones, materials);
-        const starIcon = (typeof UiIcons !== 'undefined') ? UiIcons.i('star', 'inv-mat-img') : '🌟';
+        const starIcon = (typeof UiIcons !== 'undefined') ? UiIcons.i('olympian_star_stone', 'inv-mat-img') : '🌟';
         cardsHtml += `
             <div class="inv-mat-card inv-mat-relic ${starOwned ? 'mat-owned' : 'mat-empty'}" style="--mat-color: #ff4757;">
                 <div class="inv-mat-top">
-                    <span class="inv-mat-badge" style="background: #ff4757;">MYTHIC RELIC</span>
+                    <span class="inv-mat-badge" style="background: linear-gradient(135deg, #e11d48, #f59e0b);">α1.6 MYTHIC RELIC</span>
                     <span class="inv-mat-qty ${starOwned ? 'qty-positive' : 'qty-zero'}">x${starStones.toLocaleString()}</span>
                 </div>
-                <div class="inv-mat-icon-wrap">
+                <div class="inv-mat-icon-wrap" style="border-color: #ff4757;">
                     ${starIcon}
                     ${starOwned ? `<div class="inv-mat-glow" style="background: #ff4757;"></div>` : ''}
                 </div>
                 <div class="inv-mat-name">Olympian Star-Stone</div>
-                <div class="inv-mat-desc">Ultra-rare celestial summit drop radiating pure thunder energy.</div>
-                <div class="inv-mat-used"><strong>Used For:</strong> Future Mythic Awakening (Alpha 1.6)</div>
+                <div class="inv-mat-desc">Ultra-rare celestial summit crystal radiating pure Olympian thunder energy.</div>
+                <div class="inv-mat-used"><strong>Used For:</strong> Hero Star-Blessing &amp; Legendary → Mythic Ascension</div>
                 <div class="inv-mat-sources">
                     <span class="inv-mat-src-chip">Zeus Summit (0.8%)</span>
+                    <span class="inv-mat-src-chip">W40 Boss (1.5%)</span>
                 </div>
             </div>
         `;

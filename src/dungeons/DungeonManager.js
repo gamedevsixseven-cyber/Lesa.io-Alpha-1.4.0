@@ -60,26 +60,33 @@ class DungeonManager {
     }
 
     static getOlympianStarStones() {
-        if (typeof window !== 'undefined' && window.GameState && window.GameState.player) {
-            if (typeof window.GameState.player.olympianStarStones !== 'number') {
+        const gs = (typeof window !== 'undefined' && window.GameState) ? window.GameState.player : null;
+        if (gs) {
+            if (typeof gs.olympianStarStones !== 'number') {
                 const saved = parseInt(localStorage.getItem('lesaio_olympian_star_stones') || '0', 10);
-                window.GameState.player.olympianStarStones = isNaN(saved) ? 0 : saved;
+                gs.olympianStarStones = isNaN(saved) ? 0 : saved;
             }
-            return window.GameState.player.olympianStarStones;
+            return gs.olympianStarStones;
         }
-        const raw = (typeof localStorage !== 'undefined') ? localStorage.getItem('lesaio_olympian_star_stones') : null;
-        return raw ? (parseInt(raw, 10) || 0) : 0;
+        return (typeof localStorage !== 'undefined' && parseInt(localStorage.getItem('lesaio_olympian_star_stones') || '0', 10)) || 0;
     }
 
-    static addOlympianStarStone(qty = 1) {
-        const current = DungeonManager.getOlympianStarStones() + qty;
-        if (typeof window !== 'undefined' && window.GameState && window.GameState.player) {
-            window.GameState.player.olympianStarStones = current;
-        }
-        if (typeof localStorage !== 'undefined') {
-            localStorage.setItem('lesaio_olympian_star_stones', current.toString());
-        }
-        return current;
+    static setOlympianStarStones(val = 0) {
+        const clean = Math.max(0, Math.floor(Number(val) || 0));
+        if (typeof window !== 'undefined' && window.GameState && window.GameState.player) window.GameState.player.olympianStarStones = clean;
+        if (typeof localStorage !== 'undefined') localStorage.setItem('lesaio_olympian_star_stones', clean.toString());
+        if (typeof window !== 'undefined' && window.EventBus) window.EventBus.emit('starStonesUpdated', { count: clean });
+        if (typeof window !== 'undefined' && window.SaveManager && typeof window.SaveManager.saveNow === 'function') window.SaveManager.saveNow();
+        return clean;
+    }
+
+    static addOlympianStarStone(qty = 1) { return DungeonManager.setOlympianStarStones(DungeonManager.getOlympianStarStones() + (Number(qty) || 0)); }
+
+    static spendOlympianStarStone(qty = 1) {
+        const cur = DungeonManager.getOlympianStarStones(), need = Math.max(1, Math.floor(Number(qty) || 1));
+        if (cur < need) return false;
+        DungeonManager.setOlympianStarStones(cur - need);
+        return true;
     }
 
     getCurrentFloorData() {
@@ -294,7 +301,8 @@ class DungeonManager {
 
         // 2. Floor 5 Summit Check: 0.8% Olympian Star-Stone + 8% Evolution Stone Drop
         if (isSummit) {
-            this.rollOlympianStarStone(game);
+            DungeonManager.rollOlympianStarStone(game, 0.008, 'Zeus Summit');
+            this.starStoneAwarded = DungeonManager.starStoneAwarded || this.starStoneAwarded;
             if (typeof GearUpgradeManager !== 'undefined') GearUpgradeManager.tryOlympusSummitEvolutionStoneDrop(game);
         }
 
@@ -369,22 +377,21 @@ class DungeonManager {
         }
     }
 
-    rollOlympianStarStone(game) {
-        const roll = Math.random();
-        const dropChance = 0.008; // 0.8%
-        if (roll < dropChance) {
-            this.starStoneAwarded = true;
-            DungeonManager.addOlympianStarStone(1);
-
-            if (game.effects) {
-                game.effects.addConfetti(game.player.x, game.player.y, 200);
-                game.effects.addShockwave(game.player.x, game.player.y, 140, 'rgba(255, 215, 0, 0.95)');
-                game.effects.addComicSplash(game.player.x, game.player.y - 85, '🌟 OLYMPIAN STAR-STONE ACQUIRED! 🌟');
-            }
-            if (game && game.ui && typeof game.ui.addKillfeed === 'function') {
-                game.ui.addKillfeed('🌟 JACKPOT! You discovered the OLYMPIAN STAR-STONE (0.8%)! 🌟');
-            }
+    static rollOlympianStarStone(game, dropChance = 0.008, sourceLabel = 'Mount Olympus Summit') {
+        if (Math.random() >= dropChance) return false;
+        this.starStoneAwarded = true;
+        DungeonManager.addOlympianStarStone(1);
+        const pct = (dropChance * 100).toFixed(1).replace(/\.0$/, '');
+        if (game && game.effects && game.player) {
+            game.effects.addConfetti(game.player.x, game.player.y, 200);
+            game.effects.addShockwave(game.player.x, game.player.y, 140, 'rgba(255, 215, 0, 0.95)');
+            game.effects.addComicSplash(game.player.x, game.player.y - 85, '🌟 OLYMPIAN STAR-STONE ACQUIRED! 🌟');
         }
+        if (game && game.ui && typeof game.ui.addKillfeed === 'function') {
+            game.ui.addKillfeed(`🌟 JACKPOT! ${sourceLabel} dropped OLYMPIAN STAR-STONE (${pct}%)! 🌟`);
+        }
+        if (typeof window !== 'undefined' && window.soundEngine && typeof window.soundEngine.playLevelUp === 'function') window.soundEngine.playLevelUp();
+        return true;
     }
 
     update(dt, game) {
@@ -573,24 +580,15 @@ class DungeonManager {
             ctx.restore();
         }
 
-        // 4. Mount Olympus Altitude Tracker & Ascent Transitions
         if (this.ascentSystem) {
             const game = (typeof window !== 'undefined') ? window.gameInstance : null;
             this.ascentSystem.renderScreenOverlay(ctx, width, height, game);
         }
-
-        // 5. Summit Aerial Shield / Crystal Counter HUD on Floor 5
         if (this.floor === 5 && typeof ZeusSkyPhase !== 'undefined') {
-            const game = (typeof window !== 'undefined') ? window.gameInstance : null;
-            ZeusSkyPhase.drawCrystalCounterHUD(ctx, width, height, game);
+            ZeusSkyPhase.drawCrystalCounterHUD(ctx, width, height, (typeof window !== 'undefined') ? window.gameInstance : null);
         }
     }
 }
 
-if (typeof window !== 'undefined') {
-    window.DungeonManager = DungeonManager;
-}
-
-if (typeof module !== 'undefined' && module.exports) {
-    module.exports = { DungeonManager, OLYMPUS_FLOORS };
-}
+if (typeof window !== 'undefined') window.DungeonManager = DungeonManager;
+if (typeof module !== 'undefined' && module.exports) module.exports = { DungeonManager, OLYMPUS_FLOORS };

@@ -87,14 +87,30 @@ class ProceduralSynth {
             gain.gain.exponentialRampToValueAtTime(0.01, now + 0.12);
             osc.start(now);
             osc.stop(now + 0.13);
-        } else if (type === 'spas12') {
+        } else if (type === 'spas12' || type === 'sawnoff_shotgun') {
             osc.type = 'sawtooth';
-            osc.frequency.setValueAtTime(340 + Math.random() * 50, now);
+            osc.frequency.setValueAtTime((type === 'sawnoff_shotgun' ? 380 : 340) + Math.random() * 50, now);
             osc.frequency.exponentialRampToValueAtTime(65, now + 0.14);
             gain.gain.setValueAtTime(masterVolume * 0.9, now);
             gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
             osc.start(now);
             osc.stop(now + 0.16);
+        } else if (type === 'rusty_smg' || type === 'nail_gun') {
+            osc.type = 'square';
+            osc.frequency.setValueAtTime((type === 'rusty_smg' ? 1180 : 940) + Math.random() * 140, now);
+            osc.frequency.exponentialRampToValueAtTime(180, now + 0.06);
+            gain.gain.setValueAtTime(masterVolume * 0.52, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.07);
+            osc.start(now);
+            osc.stop(now + 0.08);
+        } else if (type === 'plasma_pistol' || type === 'frost_cannon') {
+            osc.type = type === 'frost_cannon' ? 'triangle' : 'sine';
+            osc.frequency.setValueAtTime((type === 'frost_cannon' ? 1320 : 1550) + Math.random() * 100, now);
+            osc.frequency.exponentialRampToValueAtTime(type === 'frost_cannon' ? 240 : 360, now + 0.09);
+            gain.gain.setValueAtTime(masterVolume * 0.65, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.10);
+            osc.start(now);
+            osc.stop(now + 0.11);
         } else if (type === 'dialtone' || type === 'soundwave') {
             osc.type = 'square';
             osc.frequency.setValueAtTime(697, now);

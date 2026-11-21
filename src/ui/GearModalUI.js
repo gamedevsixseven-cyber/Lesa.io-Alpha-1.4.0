@@ -123,17 +123,19 @@ class GearModalUI {
             if (oldBadge) oldBadge.remove();
 
             if (equipped) {
-                el.classList.add(`gear-slot-${equipped.rarity || 'common'}`);
                 const hasUpgradeSys = typeof GearUpgradeManager !== 'undefined';
+                const effRarity = hasUpgradeSys && typeof GearUpgradeManager.getEffectiveRarity === 'function' ? GearUpgradeManager.getEffectiveRarity(equipped) : (equipped.rarity || 'common');
+                el.classList.add(`gear-slot-${effRarity}`);
                 const maxLvl = hasUpgradeSys ? GearUpgradeManager.getMaxLevel(equipped) : 1;
                 const lvl = hasUpgradeSys ? GearUpgradeManager.getLevel(equipped) : 1;
                 const evolved = hasUpgradeSys ? GearUpgradeManager.isEvolved(equipped) : false;
+                const ascended = hasUpgradeSys && typeof GearUpgradeManager.isAscended === 'function' ? GearUpgradeManager.isAscended(equipped) : false;
                 if (evolved) el.classList.add('is-evolved-card');
 
-                if (maxLvl > 1 || evolved) {
+                if (maxLvl > 1 || evolved || ascended) {
                     const lvlBadge = document.createElement('span');
-                    lvlBadge.className = `gear-slot-lvl-badge ${evolved ? 'is-evolved' : ''}`;
-                    lvlBadge.textContent = evolved ? '★ EVO' : `LV ${lvl}`;
+                    lvlBadge.className = `gear-slot-lvl-badge ${evolved ? 'is-evolved' : (ascended ? 'is-ascended' : '')}`;
+                    lvlBadge.textContent = evolved ? '★ EVO' : (ascended ? '✦ MYTHIC' : `LV ${lvl}`);
                     el.appendChild(lvlBadge);
                 }
 
@@ -222,25 +224,26 @@ class GearModalUI {
         visibleItems.forEach(item => {
             const isEquipped = currentEquipped && currentEquipped.id === item.id;
             const isUnlocked = (typeof GearManager !== 'undefined') ? GearManager.isUnlocked(item.id) : false;
-            const isBossOnly = !!(item.bossUnlock || item.rarity === 'mythic');
-            const isChestOnly = !!(item.chestOnly || item.rarity === 'epic' || item.rarity === 'legendary');
-            const isExclusive = item.rarity === 'exclusive';
+            const baseRarity = item.rarity || 'common';
+            const isBossOnly = !!(item.bossUnlock || baseRarity === 'mythic');
+            const isChestOnly = !!(item.chestOnly || baseRarity === 'epic' || baseRarity === 'legendary');
+            const isExclusive = baseRarity === 'exclusive';
             const canAfford = !isBossOnly && !isChestOnly && !isExclusive && playerCoins >= (item.cost || 0);
-            const rClass = item.rarity || 'common';
-
             const hasUpMgr = typeof GearUpgradeManager !== 'undefined';
+            const rClass = hasUpMgr && typeof GearUpgradeManager.getEffectiveRarity === 'function' ? GearUpgradeManager.getEffectiveRarity(item) : baseRarity;
             const maxLevel = hasUpMgr ? GearUpgradeManager.getMaxLevel(item) : 1;
             const level = hasUpMgr ? GearUpgradeManager.getLevel(item) : 1;
             const isUpgradable = maxLevel > 1;
+            const isAscended = hasUpMgr && typeof GearUpgradeManager.isAscended === 'function' ? GearUpgradeManager.isAscended(item) : false;
             const isEvolved = hasUpMgr ? GearUpgradeManager.isEvolved(item) : false;
             const canUpgradeNext = isUnlocked && isUpgradable && level < maxLevel;
+            const canAscendNow = isUnlocked && hasUpMgr && typeof GearUpgradeManager.canAscendToMythic === 'function' && GearUpgradeManager.canAscendToMythic(item);
             const canEvolveNow = isUnlocked && hasUpMgr && GearUpgradeManager.canEvolve(item);
             const effStats = (typeof GearManager !== 'undefined' && typeof GearManager.getEffectiveStats === 'function')
-                ? GearManager.getEffectiveStats(item)
-                : (item.stats || {});
-            const nextStats = canUpgradeNext
-                ? GearUpgradeManager.getEffectiveStats(item, level + 1, false)
-                : (canEvolveNow ? GearUpgradeManager.getEffectiveStats(item, maxLevel, true) : null);
+                ? GearManager.getEffectiveStats(item) : (item.stats || {});
+            const nextStats = canUpgradeNext ? GearUpgradeManager.getEffectiveStats(item, level + 1, false, isAscended)
+                : (canAscendNow ? GearUpgradeManager.getEffectiveStats(item, maxLevel, false, true)
+                : (canEvolveNow ? GearUpgradeManager.getEffectiveStats(item, maxLevel, true, isAscended) : null));
 
             const card = document.createElement('div');
             card.className = `gear-card rarity-${rClass} ${isEquipped ? 'is-equipped' : ''} ${!isUnlocked ? 'is-locked' : ''} ${isEvolved ? 'is-evolved-card' : ''}`;
@@ -295,23 +298,17 @@ class GearModalUI {
                 ? `<img src="${item.iconImg}" class="gear-card-img" alt="${item.name}">`
                 : `<span class="gear-card-emoji">${item.icon || '🛡️'}</span>`;
 
-            const levelRowHtml = isUpgradable
-                ? this._buildLevelHeaderHtml(level, maxLevel, isEvolved)
-                : '';
-            const upgradeBoxHtml = (isUnlocked && isUpgradable)
-                ? this._buildUpgradeBoxHtml(item, level, maxLevel, isEvolved, playerCoins)
-                : '';
+            const levelRowHtml = isUpgradable ? this._buildLevelHeaderHtml(level, maxLevel, isEvolved, isAscended) : '';
+            const upgradeBoxHtml = (isUnlocked && isUpgradable) ? this._buildUpgradeBoxHtml(item, level, maxLevel, isEvolved, playerCoins, isAscended) : '';
 
             card.innerHTML = `
                 <div class="gear-card-header">
-                    <div class="gear-card-icon-wrap rarity-${rClass}">
-                        ${iconContent}
-                    </div>
+                    <div class="gear-card-icon-wrap rarity-${rClass}">${iconContent}</div>
                     <div class="gear-card-meta">
                         <h4 class="gear-card-name">${item.name}</h4>
                         <span class="gear-card-subname">${item.desc || item.description || ''}</span>
                     </div>
-                    <span class="gear-card-badge badge-${rClass}">${rClass.toUpperCase()}</span>
+                    <span class="gear-card-badge badge-${rClass}">${isAscended ? 'MYTHIC ✦' : rClass.toUpperCase()}</span>
                 </div>
                 ${levelRowHtml}
                 <div class="gear-card-stats">
@@ -327,7 +324,7 @@ class GearModalUI {
             // Click Handlers for Card and Action Buttons
             const btn = card.querySelector('.gear-btn[data-action]');
             const handleAction = (e) => {
-                if (e.target && e.target.closest('[data-gear-upgrade], [data-gear-evolve]')) return;
+                if (e.target && e.target.closest('[data-gear-upgrade], [data-gear-evolve], [data-gear-ascend]')) return;
                 e.stopPropagation();
                 if (isEquipped) {
                     GearManager.unequip(slot);
@@ -402,12 +399,19 @@ class GearModalUI {
                     if (typeof GearUpgradeManager === 'undefined') return;
                     const res = GearUpgradeManager.evolveGear(item.id);
                     if (!res.success) {
-                        if (typeof ModalManager !== 'undefined' && ModalManager.notifyInsufficient && res.reason) {
-                            ModalManager.notifyInsufficient(`⚠️ ${res.reason}`, card);
-                        }
-                        if (window.soundEngine && typeof window.soundEngine.playBuzzer === 'function') {
-                            window.soundEngine.playBuzzer();
-                        }
+                        if (typeof ModalManager !== 'undefined' && ModalManager.notifyInsufficient && res.reason) ModalManager.notifyInsufficient(`⚠️ ${res.reason}`, card);
+                        if (window.soundEngine && typeof window.soundEngine.playBuzzer === 'function') window.soundEngine.playBuzzer();
+                    }
+                });
+            }
+            const ascendBtn = card.querySelector('[data-gear-ascend]');
+            if (ascendBtn) {
+                ascendBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const res = GearUpgradeManager.ascendToMythic(item.id);
+                    if (!res.success) {
+                        if (typeof ModalManager !== 'undefined' && ModalManager.notifyInsufficient && res.reason) ModalManager.notifyInsufficient(`⚠️ ${res.reason}`, card);
+                        if (window.soundEngine && typeof window.soundEngine.playBuzzer === 'function') window.soundEngine.playBuzzer();
                     }
                 });
             }
@@ -427,14 +431,15 @@ class GearModalUI {
         }
         toolbar.style.display = 'flex';
         const stones = GearUpgradeManager.getEvolutionStones();
+        const starStones = (typeof DungeonManager !== 'undefined' && typeof DungeonManager.getOlympianStarStones === 'function') ? DungeonManager.getOlympianStarStones() : 0;
         const stoneIcon = typeof UiIcons !== 'undefined' ? UiIcons.i('evolution_stone', 'ui-icon-sm') : '💎';
-        const hintText = tabName === 'weapon'
-            ? '• Mythic Weapons: Single ★ Evolve (No Level Upgrades)'
-            : '• Rare Lv.2 • Epic Lv.3 • Legendary Lv.4 • Mythic Lv.4 + Evolve ★';
+        const starIc = typeof UiIcons !== 'undefined' ? UiIcons.i('olympian_star_stone', 'ui-icon-sm') : '🌟';
+        const hintText = tabName === 'weapon' ? '• Mythic Weapons: Single ★ Evolve' : '• Lv.4 Legendary + Star-Stone → Mythic';
         toolbar.innerHTML = `
             <div class="gear-evo-stone-pill">
-                ${stoneIcon}
-                <span>Evolution Stones: <strong id="gear-evolution-stone-count">${stones.toLocaleString()}</strong></span>
+                ${stoneIcon} <span>Evo Stones: <strong id="gear-evolution-stone-count">${stones.toLocaleString()}</strong></span>
+                <span style="opacity:0.4;">|</span>
+                ${starIc} <span>Star-Stones: <strong>${starStones.toLocaleString()}</strong></span>
                 <span style="opacity:0.82;font-weight:700;font-size:0.74rem;">${hintText}</span>
             </div>
             <button type="button" id="gear-open-forge-btn" class="gear-evo-craft-link">⚒️ FORGE STONES</button>
@@ -464,26 +469,19 @@ class GearModalUI {
         }
     }
 
-    static _buildLevelHeaderHtml(level, maxLevel, isEvolved) {
+    static _buildLevelHeaderHtml(level, maxLevel, isEvolved, isAscended = false) {
         const isMax = level >= maxLevel;
-        const pillCls = isEvolved ? 'is-evolved' : (isMax ? 'is-max' : '');
-        const label = isEvolved
-            ? '★ EVOLVED AWAKENED'
-            : (isMax ? `LV ${level}/${maxLevel} MAX` : `LV ${level}/${maxLevel}`);
+        const pillCls = isEvolved ? 'is-evolved' : (isAscended ? 'is-ascended' : (isMax ? 'is-max' : ''));
+        const label = isEvolved ? '★ EVOLVED AWAKENED' : (isAscended ? '✦ ASCENDED MYTHIC' : (isMax ? `LV ${level}/${maxLevel} MAX` : `LV ${level}/${maxLevel}`));
         let pips = '';
         for (let i = 1; i <= maxLevel; i++) {
             const cls = isEvolved ? 'is-evolved' : (i <= level ? 'is-filled' : '');
             pips += `<span class="gear-lvl-pip ${cls}"></span>`;
         }
-        return `
-            <div class="gear-card-lvl-row">
-                <span class="gear-lvl-pill ${pillCls}">${label}</span>
-                <span class="gear-lvl-pips" aria-label="Level ${level} of ${maxLevel}">${pips}</span>
-            </div>
-        `;
+        return `<div class="gear-card-lvl-row"><span class="gear-lvl-pill ${pillCls}">${label}</span><span class="gear-lvl-pips" aria-label="Level ${level} of ${maxLevel}">${pips}</span></div>`;
     }
 
-    static _buildUpgradeBoxHtml(item, level, maxLevel, isEvolved, playerCoins) {
+    static _buildUpgradeBoxHtml(item, level, maxLevel, isEvolved, playerCoins, isAscended = false) {
         if (typeof GearUpgradeManager === 'undefined') return '';
         if (isEvolved) {
             return `
@@ -521,6 +519,13 @@ class GearModalUI {
             `;
         }
 
+        if (typeof GearUpgradeManager.canAscendToMythic === 'function' && GearUpgradeManager.canAscendToMythic(item)) {
+            const cost = GearUpgradeManager.getAscendCost(item);
+            const haveStars = (typeof DungeonManager !== 'undefined') ? DungeonManager.getOlympianStarStones() : 0;
+            const coinShort = playerCoins < cost.coins, starShort = haveStars < cost.starStones;
+            const starIc = typeof UiIcons !== 'undefined' ? UiIcons.i('olympian_star_stone', 'ui-icon-sm') : '🌟';
+            return `<div class="gear-upgrade-box"><div class="gear-upgrade-cost-line"><span class="gear-cost-chip ${starShort ? 'is-short' : ''}">${starIc} ${cost.starStones} Star-Stone</span><span class="gear-cost-chip ${coinShort ? 'is-short' : ''}">${coinIcon} ${cost.coins.toLocaleString()}</span></div><button type="button" class="gear-btn gear-btn-ascend ${(!coinShort && !starShort) ? '' : 'disabled'}" data-gear-ascend="${item.id}">✦ ASCEND → MYTHIC</button></div>`;
+        }
         if (GearUpgradeManager.isEvolvableRarity(item)) {
             const cost = GearUpgradeManager.getEvolveCost(item);
             const haveStones = GearUpgradeManager.getEvolutionStones();

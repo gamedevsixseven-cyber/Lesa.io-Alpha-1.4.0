@@ -218,6 +218,9 @@ class QuestManager {
         if (this.ui && this.ui.currencyManager) {
             this.ui.currencyManager.updateUI(true);
         }
+        if (typeof window !== 'undefined' && window.EventBus) {
+            window.EventBus.emit('questClaimed', { questId: quest.id, quest });
+        }
 
         this.showClaimNotification(quest);
         this.renderSideCardQuests();

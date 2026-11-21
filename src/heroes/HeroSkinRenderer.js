@@ -47,6 +47,11 @@ class HeroSkinRenderer {
             ctx.rotate(Math.sin(moveAngle - angle) * leanAmount);
         }
 
+        // 1.5 Hero Star-Blessing Constellation Aura (Bottom Layer)
+        if (typeof HeroStarBlessing !== 'undefined') {
+            HeroStarBlessing.drawBlessingAura(player, ctx, r, flash);
+        }
+
         // 2. Animated Stepping Legs (Bottom Layer)
         HeroSkinRenderer.drawAnimatedLegs(player, ctx, r, walkCycle, moving, facingLeft, heroType, flash);
 
@@ -93,13 +98,14 @@ class HeroSkinRenderer {
 
         // Fetch styling tokens from dedicated hero module
         const heroModule = HeroSkinRenderer.getHeroModule(heroType);
-        const legConfig = heroModule ? heroModule.getLegsConfig() : {
+        const rawLegCfg = heroModule ? heroModule.getLegsConfig() : {
             pantsColor: '#1a1a1c',
             pantsAccent: '#2a2a2e',
             shoePrimary: '#111113',
             shoeAccent: '#c8d6e5',
             isHighTop: true
         };
+        const legConfig = (typeof HeroSkinSystem !== 'undefined') ? HeroSkinSystem.getLegOverride(heroType, player, rawLegCfg) : rawLegCfg;
         const legHipWidth = (legConfig && typeof legConfig.hipWidth === 'number') ? legConfig.hipWidth : hipWidth;
 
         // Draw Left Leg & Shoe
@@ -241,6 +247,12 @@ class HeroSkinRenderer {
         } else {
             HeroSkinRenderer.drawPsanasLikeness(ctx, r, flash, dir, isBack);
         }
+        if (typeof HeroSkinSystem !== 'undefined') {
+            HeroSkinSystem.drawSkinOverlay(player, ctx, r, flash, facingLeft, isBack, heroType);
+        }
+        if (typeof HeroArmorRenderer !== 'undefined') {
+            HeroArmorRenderer.drawTorso(player, ctx, r, flash, facingLeft, isBack, heroType);
+        }
 
         ctx.restore();
     }
@@ -267,17 +279,22 @@ class HeroSkinRenderer {
         const heroModule = HeroSkinRenderer.getHeroModule(heroType);
         if (heroModule && typeof heroModule.drawCustomArmsAndWeapon === 'function') {
             heroModule.drawCustomArmsAndWeapon(ctx, r, flash, recoil, bladeTimer, player, weaponType);
+            if (typeof HeroArmorRenderer !== 'undefined') {
+                HeroArmorRenderer.drawCustomArmOverlay(ctx, r, flash, player);
+            }
             if (bladeTimer > 0) {
                 HeroSkinRenderer.drawBladeRushKnife(ctx, flash, bladeTimer);
             }
             ctx.restore();
             return;
         }
-        const armConfig = heroModule ? heroModule.getArmConfig(flash, player) : {
+        const rawArmConfig = heroModule ? heroModule.getArmConfig(flash, player) : {
             sleeveColor: null,
             cuffColor: '#1e1e24',
             skinColor: flash ? '#ffffff' : '#d49b6a'
         };
+        const skinArm = (typeof HeroSkinSystem !== 'undefined') ? HeroSkinSystem.getArmOverride(heroType, player, rawArmConfig, flash) : rawArmConfig;
+        const armConfig = (typeof HeroArmorRenderer !== 'undefined') ? HeroArmorRenderer.getArmOverride(player, skinArm, flash) : skinArm;
 
         // 1. Off-Hand / Support Arm (Foregrip Arm reaching under barrel)
         HeroSkinRenderer.drawSupportArm(ctx, r, armConfig.skinColor, armConfig.sleeveColor, armConfig.cuffColor, flash, armConfig);

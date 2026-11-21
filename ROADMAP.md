@@ -31,10 +31,10 @@
                                        │
                                        ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│ 💎 PHASE 3 — ALPHA 1.5 (NEXT): Epic & Legendary Gear, Fusion & Evolution    │
-│ ├─ Epic (🟣) gear with Signature Passives & Legendary (🟠) S-Tier relics    │
-│ ├─ 3-to-1 Duplicate Merging / Fusion in the Armory                          │
-│ ├─ Materials & Keys Backpack Tab (Stackable keys, crafting shards & stones) │
+│ 💎 PHASE 3 — ALPHA 1.5 (COMPLETED ✅): Endgame Gear, Battle Pass & Evolution │
+│ ├─ Epic (🟣), Legendary (🟠), & Mythic (🔴) Gear + Signature Passives        │
+│ ├─ 5-Floor Mount Olympus Ascent, Crests & 30-Tier Free/Paid Battle Pass     │
+│ ├─ Materials Backpack Tab, Evolution Stones & Visible Equipped Armor        │
 │ ├─ 🌟 "Evolution Stone" System (Hard-to-get craftable evolution catalyst)   │
 │ │   ├─ Evolves Hero stats permanently                                       │
 │ │   └─ Unlocks Hero Signature Special Ability ("Q" on PC / Mobile button)   │
@@ -45,11 +45,10 @@
                                        │
                                        ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│ 🔴 PHASE 4 — ALPHA 1.6: Mythic Awakening & The Olympian Star-Stone          │
-│ ├─ 🔴 Mythic (Awakened) Tier with radiant animations & level cap 40         │
-│ ├─ The Olympian Star-Stone ultra-rare drop (0.8%)                           │
-│ ├─ Awakened Mythic Capstones (Phantom Phalanx, Levitation, Geysers)         │
-│ └─ "Frappé Bean Infusion" Socketing System (1–2 bean sockets per relic)     │
+│ 🔴 PHASE 4 — ALPHA 1.6 (ACTIVE 🚀): Mythic Awakening & Olympian Star-Stone  │
+│ ├─ 🌟 Olympian Star-Stone Drops: Zeus Summit (0.8%) & W40 Boss (1.5%)       │
+│ ├─ ✨ Hero Star-Blessing (+10% All Stats, 1x Match Revive & Halo Aura)      │
+│ └─ ✦ Legendary (🟠 Lv.4) ➔ Mythic (🔴 1.80x Stats) Gear Ascension          │
 └──────────────────────────────────────┬──────────────────────────────────────┘
                                        │
                                        ▼
@@ -157,12 +156,10 @@
 
 ---
 
-### 🔴 Alpha 1.6: Mythic Awakening & Socketing
-* **Mythic (🔴) Awakened Tier**: Radiates pulsing comic energy particles; unlocked only via endgame progression.
-* **Olympian Star-Stone**: Ultra-rare drop from Wave 20+ boss chests (0.8% drop rate) used to ascend Legendary items into Mythic relics.
-* **"Frappé Bean Infusion" Socketing**:
-  * Mythic gear features 1–2 bean sockets.
-  * Socketable beans: *Dark Roast* (+Crit Multiplier), *Blonde Roast* (+Move Speed), *Decaf* (+Damage Reduction).
+### 🔴 Alpha 1.6 (ACTIVE 🚀): Mythic Awakening & The Olympian Star-Stone
+* **Olympian Star-Stone**: Ultra-rare drop from Zeus Summit (`0.8%`) and Wave 40 Endless Boss (`1.5%`).
+* **Hero Star-Blessing**: Infuse `1x Olympian Star-Stone` into any unlocked hero for `+10% Max HP / Damage / Speed`, `1x` automatic match revival shield, and a celestial constellation halo.
+* **Legendary ➔ Mythic Ascension**: Upgrade maxed `Lv.4 Legendary` gear into `Ascended Mythic` (`1.80x` base stats & Mythic evolution eligibility) with `1x Olympian Star-Stone` + `30,000 Coins`.
 
 ---
 

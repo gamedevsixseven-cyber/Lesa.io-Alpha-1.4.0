@@ -28,6 +28,8 @@ class SaveManager {
             window.EventBus.on('upgradesUpdated', () => this.requestSave());
             window.EventBus.on('skillLevelsChanged', () => this.requestSave());
             window.EventBus.on('cosmeticsUpdated', () => this.requestSave());
+            window.EventBus.on('battlePassUpdated', () => this.requestSave());
+            window.EventBus.on('heroSkinChanged', () => this.requestSave());
             window.EventBus.on('saveRequested', () => this.saveNow());
         }
     }

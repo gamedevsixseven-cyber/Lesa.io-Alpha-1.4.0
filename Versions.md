@@ -8,7 +8,7 @@ This file tracks the total lines of code and game architecture state across ever
 
 | Metric | Current Value |
 |---|---|
-| **Active Version** | **Alpha 1.5.15 (Mount Olympus Ascent, Endgame Gear, Friends/Cloud Sync, Boss Weapons & Psanas Rework)** |
+| **Active Version** | **Alpha 1.6.0 (In Progress 🚀 — Alpha 1.5 Officially Completed ✅)** |
 | **Milestone Banner** | 🔥 **OVER 53,800 LINES OF EXECUTABLE & WEB CODE (`55,300+` WITH DOCS)!** |
 | **Total Code Lines (`JS+CSS+HTML+PS1+CS`)** | **53,880 lines** across **164 files** (`53,172 lines` core web app `JS+CSS+HTML`) |
 | **Total Project Lines (incl. `.md`)** | **55,344 lines** across **171 files** *(plus `75` `.svg` icons / `451` lines & `manifest.json` / `19` lines)* |

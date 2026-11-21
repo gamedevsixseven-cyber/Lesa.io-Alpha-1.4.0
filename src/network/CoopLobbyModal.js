@@ -23,8 +23,24 @@ class CoopLobbyModal {
         const gs = (typeof window !== 'undefined') ? window.GameState : null;
         const name = (gs && gs.player && gs.player.name) || localStorage.getItem('lesaio_player_name') || 'Hero';
         const heroType = (gs && gs.player && gs.player.selectedHero) || 'psanas';
-        const weaponType = (gs && gs.player && (gs.player.selectedWeapon || gs.player.weaponType)) || localStorage.getItem('lesaio_selected_weapon') || 'pea';
-        return { name, heroType, weaponType };
+        const weaponType = (typeof WeaponSystem !== 'undefined')
+            ? WeaponSystem.resolveEquippedWeapon((typeof HEROES !== 'undefined' && HEROES[heroType]) ? HEROES[heroType].weaponType : 'pea')
+            : ((gs && gs.player && (gs.player.selectedWeapon || gs.player.weaponType)) || localStorage.getItem('lesaio_selected_weapon') || 'pea');
+        const heroSkin = (typeof HeroSkinSystem !== 'undefined') ? HeroSkinSystem.getActiveSkin(heroType) : 'default';
+        const heroStyle = (heroType === 'psgiannhs' && typeof PsgiannhsHero !== 'undefined') ? PsgiannhsHero.getActiveStyle() : null;
+        const starBlessed = (typeof HeroStarBlessing !== 'undefined' && HeroStarBlessing.isBlessed) ? !!HeroStarBlessing.isBlessed(heroType) : false;
+
+        let maxHp = (typeof HEROES !== 'undefined' && HEROES[heroType] && HEROES[heroType].hp) || 100;
+        const upgrades = (gs && gs.player && gs.player.upgrades) || {};
+        maxHp += (upgrades.maxHealth || 0) * 6;
+        let damageReduction = (typeof HEROES !== 'undefined' && HEROES[heroType] && HEROES[heroType].damageReduction) || 0;
+        if (typeof GearManager !== 'undefined') {
+            const eq = GearManager.getEquippedTotalStats();
+            maxHp += (eq.maxHp || 0);
+            damageReduction = Math.min(0.55, damageReduction + (eq.damageReduction || 0) / 100);
+        }
+        if (starBlessed) maxHp = Math.round(maxHp * 1.10);
+        return { name, heroType, weaponType, heroSkin, heroStyle, starBlessed, maxHp: Math.min(1200, Math.round(maxHp)), damageReduction };
     }
 
     ensureModalMarkup() {
@@ -148,14 +164,21 @@ class CoopLobbyModal {
             btnStory.classList.remove('selected');
         });
 
-        // Copy button
+        // Copy button (with fallback when Clipboard API unavailable on HTTP LAN)
         const copyBtn = document.getElementById('coop-copy-code-btn');
         copyBtn.addEventListener('click', () => {
-            if (this.roomCode) {
-                navigator.clipboard.writeText(this.roomCode).then(() => {
-                    if (typeof UiIcons !== 'undefined') UiIcons.setRichText(copyBtn, '✅ COPIED!', 'ui-icon-sm'); else copyBtn.textContent = '✅ COPIED!';
-                    setTimeout(() => { if (typeof UiIcons !== 'undefined') UiIcons.setRichText(copyBtn, '📋 COPY CODE', 'ui-icon-sm'); else copyBtn.textContent = '📋 COPY CODE'; }, 2000);
-                });
+            if (!this.roomCode) return;
+            const markCopied = () => {
+                if (typeof UiIcons !== 'undefined') UiIcons.setRichText(copyBtn, '✅ COPIED!', 'ui-icon-sm'); else copyBtn.textContent = '✅ COPIED!';
+                setTimeout(() => { if (typeof UiIcons !== 'undefined') UiIcons.setRichText(copyBtn, '📋 COPY CODE', 'ui-icon-sm'); else copyBtn.textContent = '📋 COPY CODE'; }, 2000);
+            };
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(this.roomCode).then(markCopied).catch(() => {});
+            } else {
+                const ta = document.createElement('textarea');
+                ta.value = this.roomCode; document.body.appendChild(ta); ta.select();
+                try { document.execCommand('copy'); markCopied(); } catch (e) {}
+                document.body.removeChild(ta);
             }
         });
 
@@ -346,6 +369,7 @@ class CoopLobbyModal {
             gameMode: this.selectedMode,
             hostName: u.name,
             hostHero: u.heroType,
+            hostInfo: u,
             mapSeed: mapSeed
         });
 
@@ -380,6 +404,7 @@ class CoopLobbyModal {
         const u = this.getLocalUserData();
         const gameMode = payload.gameMode || 'story';
         const mapSeed = payload.mapSeed || 123456;
+        const hostData = payload.hostInfo || this.peerData || { name: payload.hostName || 'Host', heroType: payload.hostHero || 'psanas' };
 
         if (window.gameInstance) {
             window.gameInstance.isCoopGuest = true;
@@ -387,7 +412,7 @@ class CoopLobbyModal {
             if (window.gameInstance.arena && typeof window.gameInstance.arena.reseed === 'function') {
                 window.gameInstance.arena.reseed(mapSeed);
             }
-            window.gameInstance.coopSession = new CoopGuestSession(window.gameInstance, window.networkManager, this.peerData, mapSeed);
+            window.gameInstance.coopSession = new CoopGuestSession(window.gameInstance, window.networkManager, hostData, mapSeed);
             if (window.gameInstance.ui) {
                 window.gameInstance.ui.addKillfeed(`🤝 CO-OP MATCH STARTED (${gameMode.toUpperCase()})`);
             }

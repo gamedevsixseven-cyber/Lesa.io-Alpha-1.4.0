@@ -19,7 +19,7 @@ class AdminCheatsService {
      * Applied each frame in the Game update loop.
      */
     applyToUpdate(game, dt) {
-        if (!game || !game.player) return;
+        if (!game || !game.player || game.coopSession) return;
         const p = game.player;
 
         if (this.godMode) {
@@ -101,7 +101,7 @@ class AdminCheatsService {
      * Nuke all active enemies currently in the arena.
      */
     nukeArena(game) {
-        if (!game || !Array.isArray(game.enemies) || game.enemies.length === 0) return 0;
+        if (!game || game.coopSession || !Array.isArray(game.enemies) || game.enemies.length === 0) return 0;
         const count = game.enemies.length;
 
         for (let i = game.enemies.length - 1; i >= 0; i--) {

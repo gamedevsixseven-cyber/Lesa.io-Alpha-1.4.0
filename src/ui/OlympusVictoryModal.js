@@ -122,8 +122,13 @@ class OlympusVictoryModal {
         const g = (typeof window !== 'undefined') ? window.gameInstance : null;
         if (spoilsEl) {
             const mats = (g && g.materialsEarnedThisRun) ? Object.entries(g.materialsEarnedThisRun).filter(([, q]) => q > 0) : [];
-            if (mats.length > 0) {
-                spoilsEl.innerHTML = mats.map(([matId, qty]) => {
+            const dm = g.waveManager && g.waveManager.dungeonManager;
+            const starAwarded = !!(dm && dm.starStoneAwarded);
+            const starChip = starAwarded
+                ? `<span class="olympus-spoil-chip" style="border-color:#ff4757; color:#ffd32a;">${typeof UiIcons !== 'undefined' ? UiIcons.i('olympian_star_stone', 'ui-icon-sm') : '🌟'} +1 OLYMPIAN STAR-STONE!</span>`
+                : '';
+            if (mats.length > 0 || starAwarded) {
+                const matChips = mats.map(([matId, qty]) => {
                     const def = (typeof MaterialRegistry !== 'undefined') ? MaterialRegistry.get(matId) : null;
                     const ic = def && def.iconKey && typeof UiIcons !== 'undefined'
                         ? UiIcons.i(def.iconKey, 'ui-icon-sm')
@@ -131,6 +136,7 @@ class OlympusVictoryModal {
                     const label = def ? def.name : matId;
                     return `<span class="olympus-spoil-chip">${ic} +${qty} ${label}</span>`;
                 }).join('');
+                spoilsEl.innerHTML = starChip + matChips;
             } else {
                 const chestIc = typeof UiIcons !== 'undefined' ? UiIcons.i('crate', 'ui-icon-sm') : '';
                 spoilsEl.innerHTML = `<span class="olympus-spoil-chip">${chestIc} All 5 Olympus Floor Chests &amp; Summit Spoils Claimed!</span>`;

@@ -325,55 +325,17 @@ class ModalManager {
         if (totalHp) totalHp.textContent = calculatedHp;
         if (totalDef) totalDef.textContent = `${calculatedDef}%`;
 
-        const weaponNames = {
-            pea: 'Pea Slingshot',
-            watermelon: 'Melon Cannon',
-            pepper: 'Chili Blaster',
-            bubble: 'Bubble Gun',
-            money_gun: 'Money Gun',
-            burger: 'Burger Toss',
-            lightning: 'Lightning Strike',
-            greek_flag: 'Greek Flag',
-            m4_carbine: 'M4 Carbine',
-            spas12: 'SPAS-12',
-            boomerang_saw: 'Boomerang Sawblade',
-            chrono_rifle: 'Chrono Stutter Rifle',
-            symbiote: 'Symbiote Launcher',
-            carbine: "Kiloumpas's Carbine",
-            dialtone: "Rouf's Dial-Tone Blaster",
-            zeus_thunderbolt: "Zeus's Master Thunderbolt",
-            helios_cannon: 'Helios Omega Cannon'
-        };
-        const weaponImages = {
-            pea: 'assets/WeaponIcons/PeaSlingshot.png',
-            watermelon: 'assets/WeaponIcons/MelonCannon.png',
-            pepper: 'assets/WeaponIcons/ChilliBlaster.png',
-            bubble: 'assets/WeaponIcons/BubbleGun.png',
-            money_gun: 'assets/WeaponIcons/MoneyGun.png',
-            burger: 'assets/WeaponIcons/BurgerToss.png',
-            lightning: 'assets/WeaponIcons/LightningStrike.png',
-            greek_flag: 'assets/WeaponIcons/GreekFlag.png',
-            m4_carbine: 'assets/WeaponIcons/M4Carbine.png',
-            spas12: 'assets/WeaponIcons/Spas12.png',
-            boomerang_saw: 'assets/WeaponIcons/BoomerangSawblade.png',
-            chrono_rifle: 'assets/WeaponIcons/ChronoRifle.png',
-            symbiote: 'assets/WeaponIcons/SymbioteLauncher.png',
-            carbine: 'assets/WeaponIcons/KiloumpasCarbine.png',
-            dialtone: 'assets/WeaponIcons/RoufBlaster.png',
-            zeus_thunderbolt: 'assets/WeaponIcons/ZeusThunderbolt.png',
-            helios_cannon: 'assets/WeaponIcons/HeliosOmegaCannon.png'
-        };
-
+        const resolvedWepName = weaponData.name || rawWeaponData.name || 'Pea Slingshot';
+        const resolvedWepImg = weaponData.image || rawWeaponData.image || 'assets/WeaponIcons/PeaSlingshot.png';
         const weaponNameEl = document.getElementById('gear-equipped-weapon-name');
         const weaponImgEl = document.getElementById('gear-slot-weapon-img');
         const weaponEmojiEl = document.getElementById('gear-slot-weapon-emoji');
-        const resolvedWepName = weaponNames[weaponType] || 'Pea Slingshot';
         if (typeof WeaponEvolutionManager !== 'undefined') {
             WeaponEvolutionManager.updateWeaponSlotUI(weaponType, resolvedWepName);
         } else if (weaponNameEl) {
             weaponNameEl.textContent = resolvedWepName;
         }
-        if (weaponImgEl) weaponImgEl.src = weaponImages[weaponType] || 'assets/WeaponIcons/PeaSlingshot.png';
+        if (weaponImgEl) weaponImgEl.src = resolvedWepImg;
         if (weaponEmojiEl) weaponEmojiEl.textContent = '';
 
         // Filter cards so other heroes' default weapons are hidden
@@ -549,7 +511,9 @@ class ModalManager {
             return;
         }
 
-        if (ui.starterPackModal && ui.starterPackModal.modal && !ui.starterPackModal.modal.classList.contains('hidden')) {
+        if (ui.battlePassModalUI && ui.battlePassModalUI.modal && !ui.battlePassModalUI.modal.classList.contains('hidden')) {
+            ui.battlePassModalUI.hide();
+        } else if (ui.starterPackModal && ui.starterPackModal.modal && !ui.starterPackModal.modal.classList.contains('hidden')) {
             ui.starterPackModal.hide();
         } else if (this.weaponsModal && !this.weaponsModal.classList.contains('hidden')) {
             this.hideWeaponsModal();

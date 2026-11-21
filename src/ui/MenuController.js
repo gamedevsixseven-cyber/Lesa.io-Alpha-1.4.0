@@ -21,6 +21,7 @@ class MenuController {
         // Listen for hero and crest changes
         if (typeof window !== 'undefined' && window.EventBus) {
             window.EventBus.on('heroSelected', () => this.updateHeroAvatarUI());
+            window.EventBus.on('heroSkinChanged', () => this.updateHeroAvatarUI());
             window.EventBus.on('crestsUpdated', () => this.updateAscentCrestBadge());
         }
     }
@@ -256,17 +257,16 @@ class MenuController {
             });
         }
 
+        const openBattlePass = () => {
+            if (window.soundEngine) window.soundEngine.playSelect();
+            if (this.ui && this.ui.battlePassModalUI) {
+                this.ui.battlePassModalUI.show();
+            }
+        };
         const bpBtn = document.getElementById('view-battle-pass-btn');
-        if (bpBtn) {
-            bpBtn.addEventListener('click', () => {
-                if (window.soundEngine) window.soundEngine.playSelect();
-                this.ui.modalManager.showFeatureModal(
-                    '👑 SEASON 1 BATTLE PASS',
-                    'Tier Progression Rewards',
-                    'Tier 1 / 30: Reach tier 5 to unlock exclusive Psogas fiery skins!'
-                );
-            });
-        }
+        if (bpBtn) bpBtn.addEventListener('click', openBattlePass);
+        const bpBotBtn = document.getElementById('btn-battle-pass');
+        if (bpBotBtn) bpBotBtn.addEventListener('click', openBattlePass);
 
         const spBtn = document.getElementById('starter-pack-card');
         if (spBtn) {
@@ -453,6 +453,12 @@ class MenuController {
         const path = avatarMap[hero] || avatarMap.psanas;
         if (this.menuAvatarImg) this.menuAvatarImg.src = path;
         if (this.hudAvatarImg) this.hudAvatarImg.src = path;
+        const menuFrame = document.querySelector('.player-avatar-frame-menu');
+        if (menuFrame && typeof HeroSkinSystem !== 'undefined') {
+            const sk = HeroSkinSystem.getActiveSkin(hero);
+            const meta = HeroSkinSystem.getSkinMeta(hero, sk);
+            menuFrame.style.borderColor = (sk !== 'default' && meta && meta.accent) ? meta.accent : '';
+        }
     }
 
     initAudioAutoplay() {

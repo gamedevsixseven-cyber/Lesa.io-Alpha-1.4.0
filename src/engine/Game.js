@@ -429,9 +429,10 @@ class Game {
 
         // Drops Compaction
         let dWrite = 0;
+        const canPickDrops = !(this.coopSession && this.player && this.player.hp <= 0);
         for (let i = 0; i < this.drops.length; i++) {
             const drop = this.drops[i];
-            drop.update(dt, this.player, this.effects);
+            if (canPickDrops) drop.update(dt, this.player, this.effects); else drop.age += dt;
             if (!drop.dead) this.drops[dWrite++] = drop;
         }
         this.drops.length = dWrite;

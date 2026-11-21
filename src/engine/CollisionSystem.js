@@ -108,7 +108,7 @@ class CollisionSystem {
                                 const hit = obs.hitTestCircle ? obs.hitTestCircle(b.x, b.y, b.radius) : null;
                                 if (hit) {
                                     if (typeof WeaponSystem !== 'undefined' && WeaponSystem.onObstacleHit(b, obs, effects, game)) { break; }
-                                    const destroyed = obs.takeDamage(b.damage, effects, game);
+                                    const destroyed = !game.isCoopGuest ? obs.takeDamage(b.damage, effects, game) : false;
                                     if (destroyed && obs.type === 'crate') {
                                         game.drops.push(new Drop(obs.x, obs.y, 'xp', 20));
                                         if (Math.random() < 0.35) game.drops.push(new Drop(obs.x, obs.y, 'heart', 25));
@@ -275,7 +275,7 @@ class CollisionSystem {
                         obs.triggerMushroom(p, effects);
                     } else if (obs.type === 'crate' || obs.type === 'barrel' || obs.type === 'tree' || obs.type === 'building') {
                         if (obs.type !== 'tree' && obs.type !== 'building' && (p.isBladeRushing || p.vf185Active)) {
-                            const destroyed = obs.takeDamage(85, effects, game);
+                            const destroyed = !game.isCoopGuest ? obs.takeDamage(85, effects, game) : false;
                             if (destroyed && obs.type === 'crate') {
                                 game.drops.push(new Drop(obs.x, obs.y, 'xp', 20));
                                 if (Math.random() < 0.35) game.drops.push(new Drop(obs.x, obs.y, 'heart', 25));
@@ -381,11 +381,10 @@ class CollisionSystem {
         } else if (enemy.type === 'kleanthis') {
             player.kleanthisKills = (player.kleanthisKills || 0) + 1;
             player.score += 300;
-            if (!enemy.crateAwarded) {
+            if (!enemy.crateAwarded && !game.isCoopGuest) {
                 enemy.crateAwarded = true;
-                if (typeof window !== 'undefined' && window.inventoryManager) {
-                    window.inventoryManager.addCrate('boss_crate_normal', 1);
-                }
+                if (typeof window !== 'undefined' && window.inventoryManager) window.inventoryManager.addCrate('boss_crate_normal', 1);
+                if (game.coopSession && game.coopSession.syncBossCrate) game.coopSession.syncBossCrate('boss_crate_normal', 'Kleanthis');
             }
             if (game.ui && typeof game.ui.addKillfeed === 'function') {
                 game.ui.addKillfeed(`${heroName} conquered Kleanthis! 🎩`);
@@ -404,9 +403,8 @@ class CollisionSystem {
             player.score += 600;
             if (!enemy.crateAwarded) {
                 enemy.crateAwarded = true;
-                if (typeof window !== 'undefined' && window.inventoryManager) {
-                    window.inventoryManager.addCrate('boss_crate_hard', 1);
-                }
+                if (typeof window !== 'undefined' && window.inventoryManager) window.inventoryManager.addCrate('boss_crate_hard', 1);
+                if (!game.isCoopGuest && game.coopSession && game.coopSession.syncBossCrate) game.coopSession.syncBossCrate('boss_crate_hard', 'Rouf');
             }
             if (game.ui && typeof game.ui.addKillfeed === 'function') {
                 game.ui.addKillfeed(`${heroName} busted Rouf! 🚨`);
@@ -428,11 +426,10 @@ class CollisionSystem {
         } else if (enemy.type === 'kiloumpas') {
             player.kiloumpasKills = (player.kiloumpasKills || 0) + 1;
             player.score += 450;
-            if (!enemy.crateAwarded) {
+            if (!enemy.crateAwarded && !game.isCoopGuest) {
                 enemy.crateAwarded = true;
-                if (typeof window !== 'undefined' && window.inventoryManager) {
-                    window.inventoryManager.addCrate('boss_crate_normal', 1);
-                }
+                if (typeof window !== 'undefined' && window.inventoryManager) window.inventoryManager.addCrate('boss_crate_normal', 1);
+                if (game.coopSession && game.coopSession.syncBossCrate) game.coopSession.syncBossCrate('boss_crate_normal', 'Kiloumpas');
             }
             if (game.ui && typeof game.ui.addKillfeed === 'function') {
                 game.ui.addKillfeed(`${heroName} out-slugged Kiloumpas! 👴`);

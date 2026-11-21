@@ -320,6 +320,9 @@ class WaveManager {
                 if (this.gameMode === 'story' && this.isRoufBossWave()) {
                     // Story mode officially concludes at Wave 20!
                     this.waveState = 'STORY_COMPLETED';
+                    if (game && game.coopSession && !game.isCoopGuest && typeof game.coopSession.syncStoryVictory === 'function') {
+                        game.coopSession.syncStoryVictory(this.roufCrestAwarded);
+                    }
                     if (game && game.ui && typeof game.ui.startCreditsSequence === 'function') {
                         game.ui.startCreditsSequence(game.player, this.wave, game.gameTime);
                     } else if (game && game.ui && typeof game.ui.showStoryVictoryModal === 'function') {

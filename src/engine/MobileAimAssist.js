@@ -135,9 +135,15 @@ class MobileAimAssist {
                     nerobalonaki: { img: 'assets/SkillsIcons/NerobalonakiSkill.png', label: 'WATER', isWater: true },
                     blade_rush: { img: 'assets/SkillsIcons/BladeRushSkill.png', label: 'BLADE', isWater: false },
                     seismic_quake: { img: 'assets/SkillsIcons/SeismicQuakeSkill.png', label: 'QUAKE', isWater: false },
+                    chair_throw: { img: 'assets/SkillsIcons/ChairThrowSkill.svg', label: 'CHAIR', isWater: false },
+                    komboloi_vortex: { img: 'assets/SkillsIcons/KomboloiVortexSkill.svg', label: 'BEADS', isWater: false },
+                    ouzo_flambe: { img: 'assets/SkillsIcons/OuzoFlambeSkill.svg', label: 'FLAMBÉ', isWater: false },
+                    donkey_stampede: { img: 'assets/SkillsIcons/DonkeyStampedeSkill.svg', label: 'DONKEY', isWater: false },
+                    bouzouki_decoy: { img: 'assets/SkillsIcons/BouzoukiDecoySkill.svg', label: 'BEATS', isWater: false },
                     yaya_scream: { img: 'assets/SkillsIcons/YayaScreamSkill.png', label: 'SCREAM', isWater: false },
                     frappes: { img: 'assets/SkillsIcons/FrappesSkill.png', label: 'FRAPPES', isWater: false },
                     frappes_plus: { img: 'assets/SkillsIcons/FrappesSkill.png', label: 'FRAPPES+', isWater: false },
+                    chrono_hourglass: { img: 'assets/SkillsIcons/ChronoHourglassSkill.svg', label: 'CHRONO', isWater: false },
                     wrath_of_olympus: { img: 'assets/SkillsIcons/WrathOfOlympusSkill.svg', label: 'ZEUS', isWater: false }
                 };
                 const mcfg = mobileSkills[skillKey] || mobileSkills.blade_rush;

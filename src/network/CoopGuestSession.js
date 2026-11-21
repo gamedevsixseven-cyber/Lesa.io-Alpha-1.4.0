@@ -13,6 +13,7 @@ class CoopGuestSession {
         const name = (hostInfo && hostInfo.name) || 'Host';
         const heroType = (hostInfo && hostInfo.heroType) || 'psanas';
         this.remotePlayer = new RemotePlayer(game.player.x - 60, game.player.y, heroType, name);
+        this.remotePlayer.applyHeroStats(heroType, hostInfo);
         this.remotePlayer.isHost = true;
 
         this.inputSyncTimer = 0;
@@ -104,6 +105,20 @@ class CoopGuestSession {
                         syncCoop: false
                     });
                 }
+            } else if (type === 'XP_SHARE') {
+                if (payload && payload.val > 0 && this.game.player) this.game.player.addXP(Math.min(200, Math.round(payload.val)));
+            } else if (type === 'COIN_SHARE') {
+                if (payload && payload.coins > 0) {
+                    const c = Math.min(250, Math.round(payload.coins));
+                    if (typeof window !== 'undefined' && window.GameState) window.GameState.addCurrency(c, 0);
+                    this.game.coinsEarnedThisRun = (this.game.coinsEarnedThisRun || 0) + c;
+                    if (this.game.effects && this.game.player) this.game.effects.addPopup(this.game.player.x, this.game.player.y - 24, `+${c} 🪙`, '#ffd32a', 22);
+                }
+            } else if (type === 'STORY_VICTORY') {
+                if (payload && payload.crestAwarded && typeof window !== 'undefined' && window.ascentCrestManager) window.ascentCrestManager.awardStoryBossCrest();
+                if (this.game.waveManager) this.game.waveManager.waveState = 'STORY_COMPLETED';
+                if (this.game.ui && typeof this.game.ui.startCreditsSequence === 'function') this.game.ui.startCreditsSequence(this.game.player, payload.wave || 20, payload.gameTime || this.game.gameTime);
+                else if (this.game.ui && typeof this.game.ui.showStoryVictoryModal === 'function') this.game.ui.showStoryVictoryModal(this.game.player, payload.wave || 20, payload.gameTime || this.game.gameTime);
             } else if (type === 'ZEUS_REWARD_UNLOCK') {
                 if (typeof ZeusSkyPhase !== 'undefined' && typeof ZeusSkyPhase.grantZeusFirstKillRewards === 'function') {
                     ZeusSkyPhase.grantZeusFirstKillRewards(null, this.game);
@@ -216,27 +231,21 @@ class CoopGuestSession {
             return bullets;
         };
 
-        // Intercept Dash
+        // Intercept Dash & Skill (only transmit when actually activated & alive)
         const origDash = this.game.player.dash.bind(this.game.player);
         this.game.player.dash = (effects) => {
-            origDash(effects);
-            this.net.send('GUEST_DASH', {});
+            const ok = origDash(effects);
+            if (ok) this.net.send('GUEST_DASH', {});
+            return ok;
         };
-
-        // Intercept Skill
         const origSkill = this.game.player.useSkill.bind(this.game.player);
         this.game.player.useSkill = (enemies, effects, camera, game) => {
             const p = this.game.player;
             const skillId = p.selectedSkill || 'blade_rush';
             const level = (typeof PlayerSkills !== 'undefined') ? PlayerSkills.getSkillLevel(skillId) : 1;
-            origSkill(enemies, effects, camera, game);
-            this.net.send('GUEST_SKILL', {
-                skillId: skillId,
-                level: level,
-                x: Math.round(p.x),
-                y: Math.round(p.y),
-                angle: Number((p.angle || 0).toFixed(2))
-            });
+            const ok = origSkill(enemies, effects, camera, game);
+            if (ok) this.net.send('GUEST_SKILL', { skillId, level, x: Math.round(p.x), y: Math.round(p.y), angle: Number((p.angle || 0).toFixed(2)) });
+            return ok;
         };
     }
 
@@ -308,12 +317,20 @@ class CoopGuestSession {
             }
         }
 
-        // 3. Sync Wave Info & HUD
+        // 3. Sync Wave Info, Squad Stats & HUD
         if (this.game.waveManager) {
             this.game.waveManager.wave = data.wave;
             this.game.waveManager.waveState = data.wState;
             this.game.waveManager.waveTotalEnemies = data.wTotal;
             this.game.waveManager.waveEnemiesKilled = data.wKilled;
+        }
+        if (data.sq && this.game.player) {
+            const p = this.game.player, sq = data.sq;
+            p.score = Math.max(p.score || 0, sq.sc || 0); p.kills = Math.max(p.kills || 0, sq.kl || 0);
+            p.fatmirKills = Math.max(p.fatmirKills || 0, sq.fk || 0); p.casillasKills = Math.max(p.casillasKills || 0, sq.ck || 0);
+            p.skarmogyftosKills = Math.max(p.skarmogyftosKills || 0, sq.sk || 0); p.kleanthisKills = Math.max(p.kleanthisKills || 0, sq.kln || 0);
+            p.kiloumpasKills = Math.max(p.kiloumpasKills || 0, sq.kil || 0); p.roufKills = Math.max(p.roufKills || 0, sq.rf || 0);
+            p.endlessBossGoldBonus = Math.max(p.endlessBossGoldBonus || 0, sq.eb || 0); p.endlessBossXpBonus = Math.max(p.endlessBossXpBonus || 0, sq.ex || 0);
         }
 
         // 3.5. Sync Boss Warning Overlay from Snapshot Authority
@@ -433,38 +450,21 @@ class CoopGuestSession {
                 const netVy = Number.isFinite(eb.vy) ? eb.vy : 0;
 
                 if (!b && typeof Bullet !== 'undefined') {
-                    b = new Bullet({
-                        x: netX,
-                        y: netY,
-                        vx: netVx,
-                        vy: netVy,
-                        radius: Number.isFinite(eb.r) ? eb.r : 10,
-                        type: eb.t || 'soccer',
-                        isEnemy: true,
-                        damage: 15
-                    });
+                    b = new Bullet({ x: netX, y: netY, vx: netVx, vy: netVy, radius: Number.isFinite(eb.r) ? eb.r : 10, type: eb.t || 'soccer', isEnemy: true, damage: 15 });
                     b._netId = netId;
                     this.game.bullets.push(b);
                 } else if (b) {
-                    b.vx = netVx;
-                    b.vy = netVy;
+                    b.vx = netVx; b.vy = netVy;
                     const driftSq = (netX - b.x) ** 2 + (netY - b.y) ** 2;
-                    if (driftSq > 3600) {
-                        b.x = netX;
-                        b.y = netY;
-                    } else {
-                        b.x += (netX - b.x) * 0.35;
-                        b.y += (netY - b.y) * 0.35;
-                    }
+                    if (driftSq > 3600) { b.x = netX; b.y = netY; }
+                    else { b.x += (netX - b.x) * 0.35; b.y += (netY - b.y) * 0.35; }
                 }
             }
 
             // Despawn enemy bullets no longer on host
             for (let i = 0; i < this.game.bullets.length; i++) {
                 const b = this.game.bullets[i];
-                if (b && b.isEnemy && b._netId && !incomingBulletIds.has(b._netId)) {
-                    b.dead = true;
-                }
+                if (b && b.isEnemy && b._netId && !incomingBulletIds.has(b._netId)) b.dead = true;
             }
         }
 
@@ -492,9 +492,12 @@ class CoopGuestSession {
                     drop._netId = dNet.id;
                     const origCollect = drop.onCollect.bind(drop);
                     drop.onCollect = (player, effects) => {
-                        origCollect(player, effects);
+                        if (player && player.hp <= 0) return;
+                        const dtType = dNet.t || 'xp';
+                        if (dtType === 'heart' || dtType === 'star' || dtType === 'shield') origCollect(player, effects);
+                        else if (window.soundEngine) window.soundEngine.playPickup(dtType === 'coin_pouch' ? 'coin' : 'xp');
                         this.collectedDropIds.add(dNet.id);
-                        this.net.send('GUEST_COLLECT_DROP', { id: dNet.id, type: dNet.t || 'xp' });
+                        this.net.send('GUEST_COLLECT_DROP', { id: dNet.id });
                     };
                     this.game.drops.push(drop);
                 } else if (drop && drop.magnetized) {
@@ -506,44 +509,26 @@ class CoopGuestSession {
 
             for (let i = this.game.drops.length - 1; i >= 0; i--) {
                 const d = this.game.drops[i];
-                if (d._netId && (!incomingDropIds.has(d._netId) || this.collectedDropIds.has(d._netId))) {
-                    this.game.drops.splice(i, 1);
-                }
+                if (d._netId && (!incomingDropIds.has(d._netId) || this.collectedDropIds.has(d._netId))) this.game.drops.splice(i, 1);
             }
-
-            // Cleanup collected IDs once host confirms drop is gone from snapshot
-            for (const id of this.collectedDropIds) {
-                if (!incomingDropIds.has(id)) {
-                    this.collectedDropIds.delete(id);
-                }
-            }
+            for (const id of this.collectedDropIds) { if (!incomingDropIds.has(id)) this.collectedDropIds.delete(id); }
         }
 
         // 5. Double KO check
-        if (this.game.player.hp <= 0 && this.remotePlayer.isDowned && this.game.state === 'PLAYING') {
-            this.game.gameOver();
-        }
+        if (this.game.player.hp <= 0 && this.remotePlayer.isDowned && this.game.state === 'PLAYING') this.game.gameOver();
     }
 
     update(dt) {
-        // Update host remote player interpolation
         this.remotePlayer.update(dt);
-
-        // Send local guest state to Host at ~30Hz
         this.inputSyncTimer++;
         if (this.inputSyncTimer >= 2) {
             this.inputSyncTimer = 0;
             const p = this.game.player;
             this.net.send('GUEST_STATE', {
-                x: Math.round(p.x),
-                y: Math.round(p.y),
-                vx: Number((p.vx || 0).toFixed(2)),
-                vy: Number((p.vy || 0).toFixed(2)),
+                x: Math.round(p.x), y: Math.round(p.y),
+                vx: Number((p.vx || 0).toFixed(2)), vy: Number((p.vy || 0).toFixed(2)),
                 angle: Number((p.angle || 0).toFixed(2)),
-                isMoving: !!p.isMoving,
-                shieldActive: !!p.shieldActive,
-                isDashing: !!p.isDashing,
-                heroType: p.heroType
+                isMoving: !!p.isMoving, shieldActive: !!p.shieldActive, isDashing: !!p.isDashing, heroType: p.heroType
             });
         }
     }
@@ -552,33 +537,26 @@ class CoopGuestSession {
         // Render host remote partner
         this.remotePlayer.draw(ctx);
         this.remotePlayer.drawRadarIndicator(ctx, this.game.player, camera);
+        RemotePlayer.drawLocalDownedBanner(ctx, this.game.player);
     }
 
     spawnEnemyByType(type, x, y) {
         const t = (type || '').toLowerCase();
         if ((t === 'fatmir' || t === 'skatmir') && typeof Fatmir !== 'undefined') return new Fatmir(x, y);
-        if (t === 'casillas' && typeof Casillas !== 'undefined') return new Casillas(x, y);
-        if (t === 'skarmogyftos' && typeof Skarmogyftos !== 'undefined') return new Skarmogyftos(x, y);
-        if (t === 'psaltis' && typeof Psaltis !== 'undefined') return new Psaltis(x, y);
         if (t === 'astynomos' && typeof Astynomos !== 'undefined') return new Astynomos(x, y, 1.0, false);
         if (t === 'mat_officer' && typeof Astynomos !== 'undefined') return new Astynomos(x, y, 1.0, true);
-        if (t === 'kleanthis' && typeof Kleanthis !== 'undefined') return new Kleanthis(x, y);
-        if (t === 'kiloumpas' && typeof Kiloumpas !== 'undefined') return new Kiloumpas(x, y);
-        if (t === 'rouf' && typeof Rouf !== 'undefined') return new Rouf(x, y);
-        if (t === 'frost_wolf' && typeof FrostWolf !== 'undefined') return new FrostWolf(x, y);
-        if (t === 'ice_golem' && typeof IceGolem !== 'undefined') return new IceGolem(x, y);
-        if (t === 'casillas_sentinel' && typeof CasillasSentinel !== 'undefined') return new CasillasSentinel(x, y);
-        if (t === 'ravine_chieftain' && typeof RavineChieftain !== 'undefined') return new RavineChieftain(x, y);
-        if (t === 'frost_titan' && typeof FrostTitan !== 'undefined') return new FrostTitan(x, y);
-        if (t === 'kiloumpas_berserker' && typeof KiloumpasBerserker !== 'undefined') return new KiloumpasBerserker(x, y);
-        if (t === 'zeus' && typeof ZeusBoss !== 'undefined') return new ZeusBoss(x, y);
-        if (t === 'zeus_crystal' && typeof ZeusCrystal !== 'undefined') return new ZeusCrystal(x, y);
-        if (typeof EndlessWaveDirector !== 'undefined') {
-            const endlessEnemy = EndlessWaveDirector.spawnByType(t, x, y, 1.0);
-            if (endlessEnemy) return endlessEnemy;
-        }
-        if (typeof Fatmir !== 'undefined') return new Fatmir(x, y);
-        return null;
+        const ctors = {
+            casillas: typeof Casillas !== 'undefined' ? Casillas : null, skarmogyftos: typeof Skarmogyftos !== 'undefined' ? Skarmogyftos : null,
+            psaltis: typeof Psaltis !== 'undefined' ? Psaltis : null, kleanthis: typeof Kleanthis !== 'undefined' ? Kleanthis : null,
+            kiloumpas: typeof Kiloumpas !== 'undefined' ? Kiloumpas : null, rouf: typeof Rouf !== 'undefined' ? Rouf : null,
+            frost_wolf: typeof FrostWolf !== 'undefined' ? FrostWolf : null, ice_golem: typeof IceGolem !== 'undefined' ? IceGolem : null,
+            casillas_sentinel: typeof CasillasSentinel !== 'undefined' ? CasillasSentinel : null, ravine_chieftain: typeof RavineChieftain !== 'undefined' ? RavineChieftain : null,
+            frost_titan: typeof FrostTitan !== 'undefined' ? FrostTitan : null, kiloumpas_berserker: typeof KiloumpasBerserker !== 'undefined' ? KiloumpasBerserker : null,
+            zeus: typeof ZeusBoss !== 'undefined' ? ZeusBoss : null, zeus_crystal: typeof ZeusCrystal !== 'undefined' ? ZeusCrystal : null
+        };
+        if (ctors[t]) return new ctors[t](x, y);
+        if (typeof EndlessWaveDirector !== 'undefined') { const e = EndlessWaveDirector.spawnByType(t, x, y, 1.0); if (e) return e; }
+        return typeof Fatmir !== 'undefined' ? new Fatmir(x, y) : null;
     }
 
     playRemoteSkill(remotePlayer, skillData = {}) {

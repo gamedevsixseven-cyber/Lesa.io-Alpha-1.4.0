@@ -257,6 +257,20 @@
     font-weight: 900;
 }
 
+.gear-btn-ascend {
+    background: linear-gradient(135deg, #be123c 0%, #7c3aed 55%, #f59e0b 100%);
+    color: #ffffff;
+    border: 2px solid #1e272e;
+    box-shadow: 0 3px 0 #1e272e, 0 0 12px rgba(225, 29, 72, 0.45);
+    font-weight: 900;
+}
+
+.gear-lvl-pill.is-ascended, .gear-slot-lvl-badge.is-ascended {
+    background: linear-gradient(135deg, #e11d48 0%, #9333ea 100%);
+    color: #ffffff;
+    border-color: #fde047;
+}
+
 .gear-btn-evolve:hover:not(:disabled):not(.disabled) {
     filter: brightness(1.08);
     transform: translateY(-1px);

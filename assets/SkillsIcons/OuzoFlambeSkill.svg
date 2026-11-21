@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <!-- Cartoon Blue Flame Aura Pool -->
+  <ellipse cx="32" cy="51" rx="24" ry="8" fill="#0ea5e9" fill-opacity="0.45" stroke="#00f5ff" stroke-width="2.4"/>
+  <!-- Dancing Outer & Inner Blue Fire Tongues -->
+  <path d="M12 49 C10 34 22 28 24 14 C30 22 33 17 38 9 C44 20 54 30 52 49 Z" fill="#0284c7" stroke="#1a1d2b" stroke-width="2.8" stroke-linejoin="round"/>
+  <path d="M18 49 C18 38 26 31 32 20 C38 31 46 38 46 49 Z" fill="#00f5ff"/>
+  <!-- Tilted Frosted Emerald Ouzo Bottle -->
+  <g transform="rotate(-24 32 34)" stroke="#1a1d2b" stroke-width="2.4" stroke-linejoin="round">
+    <rect x="28" y="12" width="8" height="10" rx="2" fill="#10ac84"/>
+    <path d="M26 22 L38 22 L40 28 L40 48 Q32 52 24 48 L24 28 Z" fill="#1dd1a1"/>
+    <rect x="25.5" y="30" width="13" height="10" rx="1.5" fill="#fef3c7" stroke-width="1.6"/>
+    <rect x="27" y="33" width="10" height="3" fill="#0284c7" stroke="none"/>
+  </g>
+  <!-- Spark Highlights -->
+  <circle cx="48" cy="18" r="2.2" fill="#e0f2fe"/>
+  <circle cx="16" cy="24" r="1.8" fill="#00f5ff"/>
+</svg>

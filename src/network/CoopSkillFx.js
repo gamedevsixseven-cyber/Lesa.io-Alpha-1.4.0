@@ -5,11 +5,13 @@
 
 class CoopSkillFx {
     static playRemoteSkill(game, remotePlayer, skillData = {}, isHostAuthoritative = false) {
-        if (!remotePlayer || !game) return;
-        const skillId = skillData.skillId || 'blade_rush';
-        const level = skillData.level || 1;
-        const x = Number.isFinite(skillData.x) ? skillData.x : remotePlayer.x;
-        const y = Number.isFinite(skillData.y) ? skillData.y : remotePlayer.y;
+        if (!remotePlayer || !game || remotePlayer.isDowned || remotePlayer.isDownedDisconnected) return;
+        const skillId = typeof skillData.skillId === 'string' ? skillData.skillId : 'blade_rush';
+        const level = Math.max(1, Math.min(5, Math.round(Number(skillData.level) || 1)));
+        let x = Number.isFinite(skillData.x) ? skillData.x : remotePlayer.x;
+        let y = Number.isFinite(skillData.y) ? skillData.y : remotePlayer.y;
+        const offsetDist = Math.hypot(x - remotePlayer.x, y - remotePlayer.y);
+        if (offsetDist > 220) { x = remotePlayer.x; y = remotePlayer.y; }
         const angle = Number.isFinite(skillData.angle) ? skillData.angle : (remotePlayer.angle || 0);
         const fx = game.effects;
         const cam = game.camera;
@@ -129,6 +131,18 @@ class CoopSkillFx {
                 const targetEnemies = isHostAuthoritative && game && game.enemies ? game.enemies : [];
                 WrathOfOlympusSkill.execute({ x, y, angle, damageMultiplier: 1, invulnerableTimer: 0, skillCooldown: 0, maxSkillCooldown: 0 }, level, targetEnemies, fx, cam, game);
             }
+        } else if (skillId === 'chair_throw' && typeof ChairThrowSkill !== 'undefined') {
+            ChairThrowSkill.execute({ x, y, angle, damageMultiplier: 1, skillCooldown: 0, maxSkillCooldown: 0 }, level, isHostAuthoritative && game ? game.enemies : [], fx, cam, game);
+        } else if (skillId === 'komboloi_vortex' && typeof KomboloiVortexSkill !== 'undefined') {
+            KomboloiVortexSkill.execute(remotePlayer, level, isHostAuthoritative && game ? game.enemies : [], fx, cam, game);
+        } else if (skillId === 'ouzo_flambe' && typeof OuzoFlambeSkill !== 'undefined') {
+            OuzoFlambeSkill.execute({ x, y, angle, damageMultiplier: 1, skillCooldown: 0, maxSkillCooldown: 0 }, level, isHostAuthoritative && game ? game.enemies : [], fx, cam, game);
+        } else if (skillId === 'donkey_stampede' && typeof DonkeyStampedeSkill !== 'undefined') {
+            DonkeyStampedeSkill.execute({ x, y, angle, damageMultiplier: 1, skillCooldown: 0, maxSkillCooldown: 0 }, level, isHostAuthoritative && game ? game.enemies : [], fx, cam, game);
+        } else if (skillId === 'bouzouki_decoy' && typeof BouzoukiDecoySkill !== 'undefined') {
+            BouzoukiDecoySkill.execute({ x, y, angle, damageMultiplier: 1, skillCooldown: 0, maxSkillCooldown: 0 }, level, isHostAuthoritative && game ? game.enemies : [], fx, cam, game);
+        } else if (skillId === 'chrono_hourglass' && typeof ChronosHourglassSkill !== 'undefined') {
+            ChronosHourglassSkill.execute({ x, y, angle, damageMultiplier: 1, skillCooldown: 0, maxSkillCooldown: 0 }, level, isHostAuthoritative && game ? game.enemies : [], fx, cam, game);
         } else {
             // Blade Rush (default)
             const reach = 75 + (level - 1) * 8;

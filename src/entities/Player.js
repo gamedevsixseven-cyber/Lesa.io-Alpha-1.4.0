@@ -97,7 +97,7 @@ class Player {
             this.name = d.name; this.radius = d.radius; this.archetypeSpeed = d.speed;
             this.archetypeMaxHp = d.hp; this.weaponType = d.weapon; this.heroColor = d.color;
         }
-        this.heroStyle = (type === 'psgiannhs' && typeof PsgiannhsHero !== 'undefined') ? PsgiannhsHero.getActiveStyle() : null; this.archetypeDamageReduction = (heroData && heroData.damageReduction) || (type === 'petros' ? 0.08 : 0);
+        this.heroStyle = (type === 'psgiannhs' && typeof PsgiannhsHero !== 'undefined') ? PsgiannhsHero.getActiveStyle() : null; this.heroSkin = (typeof HeroSkinSystem !== 'undefined') ? HeroSkinSystem.getActiveSkin(type) : 'default'; this.archetypeDamageReduction = (heroData && heroData.damageReduction) || (type === 'petros' ? 0.08 : 0);
         this.baseDamageReduction = this.archetypeDamageReduction; this.damageReduction = this.baseDamageReduction;
 
         if (type === 'kitsos') {
@@ -141,7 +141,7 @@ class Player {
         this.maxDashCooldown = Math.max(72, Math.round((this.baseMaxDashCooldown || 180) * (1 - (s.dashCooldown || 0) / 100)));
         this.magnetRadius = (this.baseMagnetRadius || 140) + (s.magnetRadius || 0);
         if (typeof window !== 'undefined' && window.perkSystem && typeof window.perkSystem.applyPlayerStatModifiers === 'function') window.perkSystem.applyPlayerStatModifiers(this, true);
-        if (typeof HeroUltimates !== 'undefined') HeroUltimates.reapplyActiveBuffs(this);
+        if (typeof HeroUltimates !== 'undefined') HeroUltimates.reapplyActiveBuffs(this); if (typeof HeroStarBlessing !== 'undefined') HeroStarBlessing.applyPlayerBlessing(this);
     }
 
     update(dt = 1, input = null, camera = null, effects = null, arena = null) {
@@ -246,7 +246,7 @@ class Player {
                 effects.addComicSplash(this.x, this.y - 30, '💫 STUNNED!');
                 effects.addSparks(this.x, this.y - 15, '#fed330', 2);
             }
-        } else if (this.isGrabbed) {
+        } else if (this.hp <= 0 || this.isGrabbed) {
             this.vx = 0;
             this.vy = 0;
             this.isMoving = false;
@@ -382,8 +382,8 @@ class Player {
     }
 
     dash(effects = null) {
-        if (this.dashCooldown > 0 || this.isDashing || this.stunTimer > 0 || this.isGrabbed || this.isAirborne) return;
-        if (window.gameInstance && window.gameInstance.isCutsceneActive && window.gameInstance.isCutsceneActive()) return;
+        if (this.hp <= 0 || this.dashCooldown > 0 || this.isDashing || this.stunTimer > 0 || this.isGrabbed || this.isAirborne) return false;
+        if (window.gameInstance && window.gameInstance.isCutsceneActive && window.gameInstance.isCutsceneActive()) return false;
 
         this.isDashing = true;
         this.dashTimer = this.dashDuration;
@@ -405,13 +405,10 @@ class Player {
         if (window.soundEngine) window.soundEngine.playPlayerDash();
         if (typeof CombatRenderFX !== 'undefined') CombatRenderFX.onDashStart(this, effects);
         else if (effects) { effects.addDust(this.x, this.y, 8, 12); effects.addComicSplash(this.x, this.y - 30, 'WHOOSH!'); }
+        return true;
     }
 
-    applyKnockback(vx, vy, duration = 24) {
-        this.knockbackVx = vx;
-        this.knockbackVy = vy;
-        this.knockbackTimer = duration;
-    }
+    applyKnockback(vx, vy, duration = 24) { this.knockbackVx = vx; this.knockbackVy = vy; this.knockbackTimer = duration; }
 
     launchAirborne(vx, vy, vz = 17.5, damage = 38) {
         this.isGrabbed = false;
@@ -437,9 +434,10 @@ class Player {
     }
 
     useSkill(enemies = [], effects = null, camera = null, game = null) {
-        if (this.stunTimer > 0 || this.isGrabbed || this.isAirborne) return;
-        if (window.gameInstance && window.gameInstance.isCutsceneActive && window.gameInstance.isCutsceneActive()) return;
+        if (this.hp <= 0 || this.skillCooldown > 0 || this.isBladeRushing || this.frappesFrenzyTimer > 0 || this.stunTimer > 0 || this.isGrabbed || this.isAirborne) return false;
+        if (window.gameInstance && window.gameInstance.isCutsceneActive && window.gameInstance.isCutsceneActive()) return false;
         if (typeof PlayerSkills !== 'undefined') PlayerSkills.execute(this, enemies, effects, camera, game);
+        return this.skillCooldown > 0;
     }
 
     useUlt(enemies = [], effects = null, camera = null, game = null) {
@@ -507,7 +505,7 @@ class Player {
         if (typeof window !== 'undefined' && window.perkSystem) {
             window.perkSystem.onPlayerDamage(this, actualDamage, effects, camera, window.gameInstance);
         }
-        if (typeof GearPassives !== 'undefined') { GearPassives.onPlayerDamaged(this, actualDamage, effects, window.gameInstance); GearPassives.tryPreventFatalHit(this, effects); }
+        if (typeof GearPassives !== 'undefined') { GearPassives.onPlayerDamaged(this, actualDamage, effects, window.gameInstance); GearPassives.tryPreventFatalHit(this, effects); } if (this.hp <= 0 && typeof HeroStarBlessing !== 'undefined') HeroStarBlessing.tryStarRevive(this, effects);
 
         if (this.hp <= 0) {
             window.soundEngine.playGameOver();
@@ -529,13 +527,8 @@ class Player {
     activatePepperFrenzy(durationMs = 7000) { this.frenzyTimer = durationMs / 16.6; }
 
     addXP(amount) {
-        this.xp += amount;
-        this.score += amount * 10;
-        this.happyTimer = 20;
-        if (this.xp >= this.xpNeeded) {
-            this.levelUp();
-            return true;
-        }
+        this.xp += amount; this.score += amount * 10; this.happyTimer = 20;
+        if (this.xp >= this.xpNeeded) { this.levelUp(); return true; }
         return false;
     }
 
@@ -557,7 +550,7 @@ class Player {
     }
 
     fireChargedBubble(effects = null) {
-        if (!window.gameInstance) return;
+        if (!window.gameInstance || this.hp <= 0) return;
         const chargeRatio = Math.min(1.0, Math.max(0.35, this.bubbleCharge || 1.0));
         const shotAngle = this.angle;
         const muzzleX = this.x + Math.cos(shotAngle) * (this.radius + 24);

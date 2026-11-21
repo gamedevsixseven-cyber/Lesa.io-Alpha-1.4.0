@@ -380,6 +380,13 @@ class EndlessWaveDirector {
                     window.inventoryManager.awardBattleMaterials(bossMats, { game, x: enemy.x, y: enemy.y, source: 'endless_boss', sourceName: `${enemy.name} Bounty` });
                 }
             }
+            const wNum = game.waveManager ? game.waveManager.wave : 0;
+            if (wNum === 40 && !enemy.isMiniBoss && !enemy._starStoneChecked && !game.isCoopGuest) {
+                enemy._starStoneChecked = true;
+                if (typeof DungeonManager !== 'undefined' && typeof DungeonManager.rollOlympianStarStone === 'function') {
+                    DungeonManager.rollOlympianStarStone(game, 0.015, `${enemy.name || 'W40 Boss'} (W40)`);
+                }
+            }
 
             const orbCount = enemy.isMiniBoss ? 5 : 7;
             for (let i = 0; i < orbCount; i++) {

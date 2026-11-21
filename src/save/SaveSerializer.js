@@ -43,9 +43,13 @@ class SaveSerializer {
                 unlockedGear: (typeof GearManager !== 'undefined') ? Array.from(GearManager.getUnlockedList() || []) : Array.from(state.player.unlockedGear || []),
                 gearLevels: (typeof GearUpgradeManager !== 'undefined') ? GearUpgradeManager.getAllLevels() : (state.player.gearLevels || {}),
                 evolvedGear: (typeof GearUpgradeManager !== 'undefined') ? GearUpgradeManager.getEvolvedList() : Array.from(state.player.evolvedGear || []),
+                ascendedGear: (typeof GearUpgradeManager !== 'undefined') ? GearUpgradeManager.getAscendedList() : Array.from(state.player.ascendedGear || []),
                 evolvedWeapons: (typeof WeaponEvolutionManager !== 'undefined') ? WeaponEvolutionManager.getEvolvedList() : Array.from(state.player.evolvedWeapons || []),
                 evolutionStones: (typeof GearUpgradeManager !== 'undefined') ? GearUpgradeManager.getEvolutionStones() : (state.player.evolutionStones || 0),
+                starBlessedHeroes: (typeof HeroStarBlessing !== 'undefined') ? HeroStarBlessing.getBlessedList() : Array.from(state.player.starBlessedHeroes || []),
                 cosmetics: (typeof CosmeticManager !== 'undefined') ? CosmeticManager.getState() : (state.player.cosmetics || null),
+                heroSkins: (typeof HeroSkinSystem !== 'undefined') ? HeroSkinSystem.getState() : (state.player.heroSkins || null),
+                battlePass: (typeof window !== 'undefined' && window.battlePassManager) ? window.battlePassManager.getState() : (state.player.battlePass || null),
                 materials: (typeof window !== 'undefined' && window.inventoryManager && typeof window.inventoryManager.getMaterials === 'function')
                     ? window.inventoryManager.getMaterials()
                     : ((typeof MaterialRegistry !== 'undefined') ? MaterialRegistry.normalizeMap(state.player.materials) : { ...(state.player.materials || {}) }),
@@ -181,6 +185,16 @@ class SaveSerializer {
                     localStorage.setItem('lesaio_gear_levels', JSON.stringify(mergedLevels));
                 }
             }
+            if (Array.isArray(p.ascendedGear)) {
+                const mergedAsc = Array.from(new Set([...(state.player.ascendedGear || []), ...p.ascendedGear]));
+                if (typeof GearUpgradeManager !== 'undefined') state.player.ascendedGear = GearUpgradeManager.setAscendedList(mergedAsc);
+                else { state.player.ascendedGear = mergedAsc; localStorage.setItem('lesaio_ascended_gear', JSON.stringify(mergedAsc)); }
+            }
+            if (Array.isArray(p.starBlessedHeroes)) {
+                const mergedBlessed = Array.from(new Set([...(state.player.starBlessedHeroes || []), ...p.starBlessedHeroes]));
+                if (typeof HeroStarBlessing !== 'undefined') state.player.starBlessedHeroes = HeroStarBlessing.setBlessedList(mergedBlessed);
+                else { state.player.starBlessedHeroes = mergedBlessed; localStorage.setItem('lesaio_star_blessed_heroes', JSON.stringify(mergedBlessed)); }
+            }
             if (Array.isArray(p.evolvedGear)) {
                 const mergedEvo = Array.from(new Set([...(state.player.evolvedGear || []), ...p.evolvedGear]));
                 if (typeof GearUpgradeManager !== 'undefined') {
@@ -219,6 +233,14 @@ class SaveSerializer {
                     unlockedFrames: [...curC.unlockedFrames, ...(p.cosmetics.unlockedFrames || [])],
                     unlockedCoins: [...curC.unlockedCoins, ...(p.cosmetics.unlockedCoins || [])]
                 }, false);
+            }
+            if (p.heroSkins && typeof p.heroSkins === 'object' && typeof HeroSkinSystem !== 'undefined') {
+                HeroSkinSystem.applyState(p.heroSkins);
+            }
+            if (p.battlePass && typeof p.battlePass === 'object') {
+                state.player.battlePass = p.battlePass;
+                if (typeof window !== 'undefined' && window.battlePassManager) window.battlePassManager.applyState(p.battlePass);
+                else if (typeof localStorage !== 'undefined') localStorage.setItem('lesaio_battle_pass_s1', JSON.stringify(p.battlePass));
             }
 
             if (p.materials && typeof p.materials === 'object') {

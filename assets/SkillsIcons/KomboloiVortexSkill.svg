@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <circle cx="32" cy="32" r="26" fill="#0984e3" opacity="0.18"/>
+  <!-- Swirling Vortex Orbit -->
+  <ellipse cx="32" cy="32" rx="23" ry="15" transform="rotate(-18 32 32)" stroke="#00f5ff" stroke-width="3.2" stroke-dasharray="10 6" stroke-linecap="round"/>
+  <ellipse cx="32" cy="32" rx="18" ry="11" transform="rotate(-18 32 32)" stroke="#fed330" stroke-width="2.2" opacity="0.8"/>
+  <!-- Crimson Silk Tassel -->
+  <path d="M16 42 C10 48 11 55 15 57 C19 54 22 48 19 43 Z" fill="#e11d48" stroke="#1a1d2b" stroke-width="2.2" stroke-linejoin="round"/>
+  <!-- Glowing Amber Worry Beads -->
+  <g stroke="#1a1d2b" stroke-width="2.2">
+    <circle cx="22" cy="18" r="5.5" fill="#f59e0b"/><circle cx="20.5" cy="16.5" r="1.6" fill="#fff7ae" stroke="none"/>
+    <circle cx="38" cy="15" r="5.5" fill="#fbbf24"/><circle cx="36.5" cy="13.5" r="1.6" fill="#fff7ae" stroke="none"/>
+    <circle cx="51" cy="24" r="5.8" fill="#f59e0b"/><circle cx="49.5" cy="22.5" r="1.7" fill="#fff7ae" stroke="none"/>
+    <circle cx="47" cy="40" r="5.5" fill="#d97706"/><circle cx="45.5" cy="38.5" r="1.6" fill="#fef08a" stroke="none"/>
+    <circle cx="32" cy="46" r="5.8" fill="#fbbf24"/><circle cx="30.5" cy="44.5" r="1.7" fill="#fff7ae" stroke="none"/>
+    <circle cx="17" cy="38" r="5.6" fill="#f59e0b"/><circle cx="15.5" cy="36.5" r="1.6" fill="#fff7ae" stroke="none"/>
+  </g>
+</svg>
