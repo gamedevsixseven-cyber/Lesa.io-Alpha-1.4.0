@@ -6,7 +6,7 @@
 class Game {
     constructor(canvas, ui) {
         this.canvas = canvas;
-        this.ctx = canvas.getContext('2d');
+        this.ctx = (typeof MobilePerf !== 'undefined' && typeof MobilePerf.createContext === 'function') ? MobilePerf.createContext(canvas) : canvas.getContext('2d');
         this.ui = ui;
 
         // Core Subsystems

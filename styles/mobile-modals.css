@@ -510,33 +510,5 @@
         touch-action: pan-x pan-y !important;
         overscroll-behavior-x: contain !important;
     }
-
-    /* Quick Mobile Auto-Fire Toggle Button */
-    #mobile-autofire-btn {
-        position: absolute;
-        bottom: 158px;
-        right: 12px;
-        width: auto !important;
-        min-width: 72px;
-        height: 30px !important;
-        padding: 0 10px !important;
-        border-radius: 999px !important;
-        border: 2.5px solid #1e272e;
-        background: linear-gradient(135deg, #2f3542 0%, #57606f 100%);
-        color: #ffffff;
-        font-family: 'Luckiest Guy', cursive, sans-serif;
-        font-size: 10px;
-        letter-spacing: 0.5px;
-        box-shadow: 0 3px 0 #1e272e, 0 4px 10px rgba(0, 0, 0, 0.35);
-        flex-direction: row !important;
-        gap: 4px;
-        z-index: 135;
-    }
-
-    #mobile-autofire-btn.is-on {
-        background: linear-gradient(135deg, #00b894 0%, #00cec9 100%);
-        border-color: #074b83;
-        box-shadow: 0 3px 0 #1e272e, 0 0 10px rgba(0, 206, 201, 0.55);
-    }
 }
 

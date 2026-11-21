@@ -35,19 +35,36 @@ class MobilePerf {
         return this.isMobile;
     }
 
-    static getCanvasDpr() {
+    static getCanvasDpr(cssW = 0, cssH = 0) {
         const raw = (typeof window !== 'undefined' && window.devicePixelRatio) || 1;
-        return this.isMobile ? Math.min(raw, 1.25) : Math.min(raw, 2);
+        if (!this.isMobile) return Math.min(raw, 2);
+        const w = cssW || (typeof window !== 'undefined' && window.innerWidth) || 844;
+        const h = cssH || (typeof window !== 'undefined' && window.innerHeight) || 390;
+        // Up to 2.0x Retina sharpness on mobile constrained by a 1.65M physical pixel GPU budget
+        const budgetDpr = Math.sqrt(1650000 / Math.max(1, w * h));
+        const targetCap = Math.max(1.35, Math.min(2.0, budgetDpr));
+        return Math.min(raw, targetCap);
     }
 
     static getGroundCacheScale() {
-        return this.isMobile ? 0.5 : 1.0;
+        return this.isMobile ? 0.75 : 1.0;
     }
 
     static getAtlasConfig() {
         return this.isMobile
-            ? { pageSize: 1024, maxPages: 4, dprCap: 1.0 }
+            ? { pageSize: 1536, maxPages: 4, dprCap: 1.75 }
             : { pageSize: 2048, maxPages: 8, dprCap: 2.0 };
+    }
+
+    /**
+     * Create 2D canvas context with mobile GPU compositor hints (opaque backbuffer + low-latency scanout).
+     */
+    static createContext(canvas) {
+        if (!canvas) return null;
+        if (this.isMobile) {
+            return canvas.getContext('2d', { alpha: false, desynchronized: true }) || canvas.getContext('2d');
+        }
+        return canvas.getContext('2d');
     }
 
     static releaseCanvas(canvas) {
@@ -68,7 +85,7 @@ class MobilePerf {
         const vv = (this.isMobile && typeof window !== 'undefined') ? window.visualViewport : null;
         const cssW = Math.max(1, Math.round((vv && vv.width) ? vv.width : window.innerWidth));
         const cssH = Math.max(1, Math.round((vv && vv.height) ? vv.height : window.innerHeight));
-        const dpr = this.getCanvasDpr();
+        const dpr = this.getCanvasDpr(cssW, cssH);
 
         game.dpr = dpr;
         game.canvas.width = Math.max(1, Math.floor(cssW * dpr));
@@ -78,8 +95,9 @@ class MobilePerf {
 
         if (game.ctx) {
             game.ctx.imageSmoothingEnabled = true;
-            game.ctx.imageSmoothingQuality = this.isMobile ? 'low' : 'high';
+            game.ctx.imageSmoothingQuality = this.isMobile ? 'medium' : 'high';
         }
+        if (game.arena) game.arena._mobileTilePatternCtx = null;
         if (game.camera) {
             game.camera.dpr = dpr;
             game.camera.zoomPunch = 0;
@@ -130,7 +148,10 @@ class MobilePerf {
      */
     static buildMobileGroundTile(arena) {
         if (!arena || typeof document === 'undefined') return null;
-        const size = 500;
+        const canScalePattern = typeof DOMMatrix === 'function' && typeof CanvasPattern !== 'undefined' && CanvasPattern.prototype && typeof CanvasPattern.prototype.setTransform === 'function';
+        const supScale = canScalePattern ? 1.5 : 1.0;
+        const size = Math.round(500 * supScale);
+        arena._mobileTileSupScale = supScale;
         let tile = arena._mobileTileCanvas;
         if (!tile) {
             tile = document.createElement('canvas');
@@ -144,7 +165,7 @@ class MobilePerf {
         const gCtx = tile.getContext('2d');
         if (!gCtx) return null;
         gCtx.imageSmoothingEnabled = true;
-        gCtx.imageSmoothingQuality = 'low';
+        gCtx.imageSmoothingQuality = 'medium';
 
         const tex1 = (typeof Arena !== 'undefined' && Arena.floorTexture1) ? Arena.floorTexture1 : null;
         const tex2 = (typeof Arena !== 'undefined' && Arena.floorTextureGrass2) ? Arena.floorTextureGrass2 : null;
@@ -161,10 +182,10 @@ class MobilePerf {
             arena._mobileTexReady = false;
         }
 
-        // Seamless 100px tactical grid baked onto the 500x500 tile
-        const step = arena.tileSize || 100;
+        // Seamless 100px tactical grid baked onto the supersampled pattern tile
+        const step = (arena.tileSize || 100) * supScale;
         gCtx.strokeStyle = 'rgba(40, 140, 50, 0.24)';
-        gCtx.lineWidth = 2.0;
+        gCtx.lineWidth = 2.0 * supScale;
         gCtx.beginPath();
         for (let x = 0; x < size; x += step) {
             gCtx.moveTo(x, 0);
@@ -221,7 +242,11 @@ class MobilePerf {
 
         if (arena._mobileTileCanvas && arena._mobileTileCanvas.width > 0) {
             if (!arena._mobileTilePattern || arena._mobileTilePatternCtx !== ctx) {
-                arena._mobileTilePattern = ctx.createPattern(arena._mobileTileCanvas, 'repeat');
+                const pat = ctx.createPattern(arena._mobileTileCanvas, 'repeat');
+                if (pat && arena._mobileTileSupScale > 1 && typeof DOMMatrix === 'function' && typeof pat.setTransform === 'function') {
+                    pat.setTransform(new DOMMatrix().scale(1 / arena._mobileTileSupScale));
+                }
+                arena._mobileTilePattern = pat;
                 arena._mobileTilePatternCtx = ctx;
             }
             if (arena._mobileTilePattern) {

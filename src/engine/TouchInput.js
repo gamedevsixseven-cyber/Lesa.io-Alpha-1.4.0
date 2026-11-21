@@ -72,7 +72,6 @@ class TouchInput {
         this.dashBtn = document.getElementById('mobile-dash-btn');
         this.skillBtn = document.getElementById('mobile-skill-btn');
         this.bubbleBtn = document.getElementById('mobile-bubble-charge-btn');
-        this.autoFireBtn = document.getElementById('mobile-autofire-btn');
         this.dashRing = this.dashBtn ? this.dashBtn.querySelector('.dash-ring') : null;
         this.skillRing = this.skillBtn ? this.skillBtn.querySelector('.skill-ring') : null;
         this.bubbleRing = this.bubbleBtn ? this.bubbleBtn.querySelector('.bubble-charge-ring') : null;
@@ -92,10 +91,6 @@ class TouchInput {
     updateAutoFireState() {
         if (this.container) {
             this.container.classList.toggle('autofire-active', !!this.autoFireEnabled);
-        }
-        if (this.autoFireBtn) {
-            this.autoFireBtn.classList.toggle('is-on', !!this.autoFireEnabled);
-            this.autoFireBtn.textContent = this.autoFireEnabled ? '🎯 AUTO ON' : '🎯 AUTO OFF';
         }
         if (!this.autoFireEnabled && !this.isShooting) {
             this.lockedTarget = null;
@@ -313,21 +308,6 @@ class TouchInput {
             this.bubbleBtn.addEventListener('pointerleave', (e) => {
                 if (this.isBubbleChargeHeld && !this.bubbleBtn.hasPointerCapture?.(e.pointerId)) {
                     releaseCharge(e);
-                }
-            });
-        }
-
-        // 6. Quick Auto-Fire Toggle Button (Mobile HUD)
-        if (this.autoFireBtn) {
-            this.autoFireBtn.addEventListener('pointerdown', (e) => {
-                e.stopPropagation();
-                if (navigator.vibrate) navigator.vibrate(14);
-                this.autoFireEnabled = !this.autoFireEnabled;
-                localStorage.setItem('lesaio_autofire', String(this.autoFireEnabled));
-                this.updateAutoFireState();
-                if (window.soundEngine && typeof window.soundEngine.playSelect === 'function') window.soundEngine.playSelect();
-                if (window.uiController && window.uiController.settingsManager && typeof window.uiController.settingsManager.updateSettingsUI === 'function') {
-                    window.uiController.settingsManager.updateSettingsUI();
                 }
             });
         }
