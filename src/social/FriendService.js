@@ -558,6 +558,16 @@ class FriendService {
         }
     }
 
+    setPendingInvite(inviteId) {
+        this._pendingAcceptedInviteId = inviteId || null;
+    }
+
+    dismissPendingInvite() {
+        const id = this._pendingAcceptedInviteId;
+        this._pendingAcceptedInviteId = null;
+        if (id) return this.dismissInvite(id);
+    }
+
     async dismissInvite(inviteId) {
         const db = this.getDb();
         if (!db || !inviteId) return;

@@ -44,7 +44,7 @@
     <link rel="stylesheet" href="styles/inventory.css?v=1.5.27">
     <link rel="stylesheet" href="styles/tabs-shared.css?v=1.5.62">
     <link rel="stylesheet" href="styles/loading.css">
-    <link rel="stylesheet" href="styles/mobile.css?v=1.7.2">
+    <link rel="stylesheet" href="styles/mobile.css?v=1.7.7">
     <link rel="stylesheet" href="styles/mobile-modals.css?v=1.5.79">
     <link rel="stylesheet" href="styles/mobile-settings.css?v=1.6.23">
     <link rel="stylesheet" href="src/admin/admin.css?v=1.6.15">
@@ -3198,7 +3198,8 @@
     <!-- 2. CORE MESSAGING & CANONICAL STATE -->
     <script src="src/core/EventBus.js?v=1.2.2"></script>
     <script src="src/core/MobilePerf.js?v=1.6.5"></script>
-    <script src="src/core/AutoUpdater.js?v=1.6.23"></script>
+    <script src="src/core/MobileAdaptivePerf.js?v=1.7.7"></script>
+    <script src="src/core/AutoUpdater.js?v=1.7.7"></script>
     <script src="src/save/SaveMigration.js?v=1.7.6"></script>
     <script src="src/core/GameState.js?v=1.7.6"></script>
     <script src="src/progression/PerkProgression.js?v=1.5.36"></script>
@@ -3250,7 +3251,7 @@
     <script src="src/entities/ComicPopupCache.js?v=1.5.65"></script>
     <script src="src/entities/CombatRenderFX.js?v=1.6.7"></script>
     <script src="src/entities/CombatJuiceFX.js?v=1.5.69"></script>
-    <script src="src/entities/Effects.js?v=1.5.69"></script>
+    <script src="src/entities/Effects.js?v=1.7.7"></script>
     <script src="src/entities/Bullet.js?v=1.5.69"></script>
     <script src="src/entities/Drop.js?v=1.6.6"></script>
     <script src="src/entities/FoliageRenderer.js?v=1.5.26"></script>
@@ -3285,7 +3286,7 @@
     <script src="src/skills/HeroUltimates.js?v=1.5.74"></script>
     <script src="src/entities/PlayerSkills.js?v=1.6.2"></script>
     <script src="src/entities/Player.js?v=1.6.16"></script>
-    <script src="src/entities/RemotePlayer.js?v=1.6.7"></script>
+    <script src="src/entities/RemotePlayer.js?v=1.7.7"></script>
 
     <!-- 6. ENEMIES -->
     <script src="src/enemies/EnemyBase.js?v=1.5.66"></script>
@@ -3362,7 +3363,7 @@
     <script src="src/ui/PublicProfileModal.js?v=1.6.18"></script>
     <script src="src/ui/LeaderboardModal.js?v=1.6.18"></script>
     <script src="src/ui/ModalManager.js?v=1.6.23"></script>
-    <script src="src/ui/HUDController.js?v=1.6.2"></script>
+    <script src="src/ui/HUDController.js?v=1.7.7"></script>
     <script src="src/ui/ProfileManager.js?v=1.7.3"></script>
     <script src="src/ui/HeroRoster.js?v=1.6.0"></script>
     <script src="src/ui/SkillManager.js?v=1.6.2"></script>
@@ -3389,27 +3390,29 @@
 
     <!-- 8.7. MOBILE TOUCH SUBSYSTEM -->
     <script src="src/engine/MobileAimAssist.js?v=1.6.22"></script>
-    <script src="src/engine/TouchInput.js?v=1.6.22"></script>
+    <script src="src/engine/TouchInput.js?v=1.7.7"></script>
 
     <!-- 8.8. MULTIPLAYER CO-OP SUBSYSTEM (PLAYTEST) -->
     <script src="src/libs/peerjs.min.js"></script>
-    <script src="src/network/NetworkManager.js?v=1.7.5"></script>
+    <script src="src/network/CoopNetTransport.js?v=1.7.7"></script>
+    <script src="src/network/CoopSnapshotSync.js?v=1.7.7"></script>
+    <script src="src/network/NetworkManager.js?v=1.7.7"></script>
     <script src="src/network/CoopSkillFx.js?v=1.6.4"></script>
     <script src="src/network/CoopDropSync.js?v=1.6.8"></script>
-    <script src="src/network/CoopCombatFx.js?v=1.6.8"></script>
+    <script src="src/network/CoopCombatFx.js?v=1.7.7"></script>
     <script src="src/network/CoopPauseSync.js?v=1.7.5"></script>
-    <script src="src/network/CoopHostSession.js?v=1.7.5"></script>
-    <script src="src/network/CoopGuestSession.js?v=1.7.5"></script>
-    <script src="src/network/CoopLobbyModal.js?v=1.6.7"></script>
+    <script src="src/network/CoopHostSession.js?v=1.7.7"></script>
+    <script src="src/network/CoopGuestSession.js?v=1.7.7"></script>
+    <script src="src/network/CoopLobbyModal.js?v=1.7.7"></script>
 
     <!-- 8.9. FRIENDS & ONLINE PLAYER ID SUBSYSTEM -->
-    <script src="src/social/FriendService.js?v=1.7.4"></script>
+    <script src="src/social/FriendService.js?v=1.7.7"></script>
     <script src="src/ui/FriendsCardRenderer.js?v=1.6.22"></script>
-    <script src="src/ui/FriendsModal.js?v=1.6.22"></script>
+    <script src="src/ui/FriendsModal.js?v=1.7.7"></script>
 
     <!-- 9. GAME COORDINATOR & BOOTSTRAP -->
     <script src="src/engine/WaveSkipperMachine.js?v=1.6.22"></script>
-    <script src="src/engine/Game.js?v=1.7.5"></script>
+    <script src="src/engine/Game.js?v=1.7.7"></script>
     <script src="src/main.js?v=1.7.5"></script>
 </body>
 

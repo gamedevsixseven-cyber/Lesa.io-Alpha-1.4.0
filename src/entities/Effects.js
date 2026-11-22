@@ -171,6 +171,7 @@ class EffectsManager {
     }
 
     addDust(x, y, count = 2, spread = 5) {
+        if (count <= 2 && typeof MobileAdaptivePerf !== 'undefined' && MobileAdaptivePerf.shouldThrottleAmbientParticle() && this.particles.length >= (this.MAX_PARTICLES >> 1)) return;
         if (!this.isCameraVisible(x, y, 40)) return;
         const spawnCount = Math.min(count, Math.max(0, this.MAX_PARTICLES - this.particles.length));
 

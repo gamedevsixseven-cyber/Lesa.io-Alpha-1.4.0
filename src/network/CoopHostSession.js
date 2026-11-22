@@ -256,9 +256,10 @@ class CoopHostSession {
             return;
         }
 
-        // 5. Broadcast State Snapshot to Guest (adaptively throttle under heavy wave/drop load)
-        const loadCount = (this.game.enemies ? this.game.enemies.length : 0) + (this.game.drops ? this.game.drops.length : 0);
-        const effInterval = (loadCount > 80 || (this.net && this.net.latency > 110)) ? 3 : this.snapshotInterval;
+        // 5. Broadcast State Snapshot to Guest (adaptively throttle under heavy wave/drop/cellular load)
+        const effInterval = (typeof CoopSnapshotSync !== 'undefined')
+            ? CoopSnapshotSync.getAdaptiveInterval(this)
+            : (((this.game.enemies ? this.game.enemies.length : 0) + (this.game.drops ? this.game.drops.length : 0) > 80 || (this.net && this.net.latency > 110)) ? 3 : this.snapshotInterval);
         this.snapshotTimer++;
         if (this.snapshotTimer >= effInterval) {
             this.snapshotTimer = 0;
@@ -269,6 +270,7 @@ class CoopHostSession {
     broadcastSnapshot() {
         const p = this.game.player;
         const wm = this.game.waveManager;
+        this._snapshotSeq = (this._snapshotSeq || 0) + 1;
 
         const safeInt = (v, min = -2000000, max = 2000000, fallback = 0) => {
             if (typeof v !== 'number' || !Number.isFinite(v)) return fallback;
@@ -280,35 +282,28 @@ class CoopHostSession {
             return Number(v.toFixed(decimals));
         };
 
-        // Collect enemies (compact payload with predictive velocities)
-        const enemiesPayload = [];
-        for (let i = 0; i < this.game.enemies.length; i++) {
-            const e = this.game.enemies[i];
-            if (!e || e.dead) continue;
-            if (!e._netId) e._netId = this.netIdCounter++;
-            const eRow = {
-                id: safeInt(e._netId, 1, 2000000000, 1),
-                t: (typeof e.type === 'string' && e.type) ? e.type : 'fatmir',
-                st: e.subType || '',
-                x: safeInt(e.x),
-                y: safeInt(e.y),
-                vx: safeFloat(e.vx, 2, 0),
-                vy: safeFloat(e.vy, 2, 0),
-                hp: safeInt(e.hp, 0, 100000000, 1),
-                mhp: safeInt(e.maxHp || e.hp, 1, 100000000, 100),
-                r: safeInt(e.radius, 5, 500, 24),
-                a: safeFloat(e.angle, 2, 0),
-                hf: (e.hitFlash > 0) ? 1 : 0,
-                b: e.isBoss ? 1 : (e.isMiniBoss ? 2 : 0),
-                fly: e.isFlying ? 1 : 0,
-                n: e.name || ''
-            };
-            if (e._lilXasFleeing) eRow.fl = 1;
-            if ((e._earPainTimer || 0) > 0) eRow.ep = 1;
-            if (e.isLilXasSpeaker) { eRow.si = e.speakerIndex || 0; eRow.mp = e.musicPlaying ? 1 : 0; }
-            if (e.isLilXas && typeof LilXasAttacksFX !== 'undefined') { eRow.lx = LilXasAttacksFX.serializeBossNet(e); }
-            enemiesPayload.push(eRow);
-        }
+        // Collect enemies (compact delta-metadata payload with predictive velocities)
+        const enemiesPayload = (typeof CoopSnapshotSync !== 'undefined')
+            ? CoopSnapshotSync.buildCompactEnemies(this, this._snapshotSeq)
+            : (() => {
+                const list = [];
+                for (let i = 0; i < this.game.enemies.length; i++) {
+                    const e = this.game.enemies[i];
+                    if (!e || e.dead) continue;
+                    if (!e._netId) e._netId = this.netIdCounter++;
+                    list.push({
+                        id: safeInt(e._netId, 1, 2000000000, 1),
+                        t: (typeof e.type === 'string' && e.type) ? e.type : 'fatmir',
+                        st: e.subType || '', x: safeInt(e.x), y: safeInt(e.y),
+                        vx: safeFloat(e.vx, 2, 0), vy: safeFloat(e.vy, 2, 0),
+                        hp: safeInt(e.hp, 0, 100000000, 1), mhp: safeInt(e.maxHp || e.hp, 1, 100000000, 100),
+                        r: safeInt(e.radius, 5, 500, 24), a: safeFloat(e.angle, 2, 0),
+                        hf: (e.hitFlash > 0) ? 1 : 0, b: e.isBoss ? 1 : (e.isMiniBoss ? 2 : 0),
+                        fly: e.isFlying ? 1 : 0, n: e.name || ''
+                    });
+                }
+                return list;
+            })();
 
         // Collect drops (prioritize special pickups/magnetized gems & cap to keep packets lightweight on late waves)
         const dropsPayload = [];
@@ -366,6 +361,7 @@ class CoopHostSession {
             : null;
 
         const snapshot = {
+            seq: this._snapshotSeq,
             mapSeed: safeInt(this.mapSeed, 1, 2000000000, 123456),
             deadObs: deadObsArray,
             bWarn: (this.game.bossWarningOverlay && this.game.bossWarningOverlay.active) ? (this.game.bossWarningOverlay.bossName || 'KLEANTHIS THE REBETIS') : '',
@@ -425,7 +421,7 @@ class CoopHostSession {
             enemyBullets: enemyBulletsPayload
         };
 
-        this.net.send('HOST_SNAPSHOT', snapshot, { droppable: true });
+        this.net.send('HOST_SNAPSHOT', snapshot, { droppable: true, fast: true });
     }
 
     playRemoteSkill(remotePlayer, skillData = {}, isHostAuthoritative = true) {

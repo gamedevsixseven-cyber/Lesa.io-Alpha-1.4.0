@@ -163,6 +163,12 @@ class RemotePlayer {
 
     setTargetState(data) {
         if (!data) return;
+        if (typeof data.seq === 'number' && Number.isFinite(data.seq)) {
+            const prevSeq = this._lastRxSeq || 0;
+            if (data.seq < prevSeq && (prevSeq - data.seq) < 100000) return;
+            this._lastRxSeq = data.seq;
+        }
+        this._lastNetRxMs = performance.now();
         if (typeof data.x === 'number') this.targetX = data.x;
         if (typeof data.y === 'number') this.targetY = data.y;
         if (typeof data.vx === 'number') this.vx = data.vx;
@@ -205,10 +211,14 @@ class RemotePlayer {
     update(dt) {
         const normDt = dt || 1.0;
 
-        // Predictive Dead Reckoning: extrapolate target coordinates with velocity
+        // Clamped Dead Reckoning: cap extrapolation window on cellular packet stalls to prevent rubberbanding
         if (this.isMoving && (this.vx || this.vy)) {
-            this.targetX += (this.vx || 0) * normDt;
-            this.targetY += (this.vy || 0) * normDt;
+            const netAgeMs = this._lastNetRxMs ? (performance.now() - this._lastNetRxMs) : 0;
+            if (netAgeMs < 160) {
+                const scale = netAgeMs > 70 ? Math.max(0.15, 1 - (netAgeMs - 70) / 100) : 1.0;
+                this.targetX += (this.vx || 0) * normDt * scale;
+                this.targetY += (this.vy || 0) * normDt * scale;
+            }
         }
 
         // Adaptive responsive lerp: tighter convergence to eliminate dragging lag

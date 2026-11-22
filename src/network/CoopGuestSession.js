@@ -222,6 +222,9 @@ class CoopGuestSession {
 
     applyHostSnapshot(data) {
         if (!data) return;
+        if (typeof CoopSnapshotSync !== 'undefined' && !CoopSnapshotSync.shouldAcceptSeq(this, '_lastRxSnapSeq', data.seq)) {
+            return;
+        }
 
         // 0. Seeded Arena Map Sync
         if (data.mapSeed && this.appliedMapSeed !== data.mapSeed) {
@@ -328,101 +331,40 @@ class CoopGuestSession {
             LilXasEvent.applyCoopSnapshot(data.lx || null, this.game);
         }
 
-        // 4. Synchronize Enemies with per-frame target lerp coordinates
+        // 4. Synchronize Enemies with zero-GC delta reconstruction & interpolation
         if (Array.isArray(data.enemies)) {
-            if (!Array.isArray(this.game.enemies)) this.game.enemies = [];
-            const incomingIds = new Set();
-            const existingMap = new Map();
-            for (let i = 0; i < this.game.enemies.length; i++) {
-                const e = this.game.enemies[i];
-                if (e && e._netId) existingMap.set(e._netId, e);
-            }
-
-            for (let i = 0; i < data.enemies.length; i++) {
-                const eNet = data.enemies[i];
-                if (!eNet || typeof eNet.id !== 'number') continue;
-                incomingIds.add(eNet.id);
-
-                let enemy = existingMap.get(eNet.id);
-                const netX = Number.isFinite(eNet.x) ? eNet.x : 0;
-                const netY = Number.isFinite(eNet.y) ? eNet.y : 0;
-                const netAngle = Number.isFinite(eNet.a) ? eNet.a : 0;
-
-                if (!enemy) {
-                    // Spawn mirrored enemy locally
-                    enemy = this.spawnEnemyByType(eNet.t, netX, netY);
+            if (typeof CoopSnapshotSync !== 'undefined') {
+                CoopSnapshotSync.applyGuestEnemies(this, data.enemies);
+            } else {
+                if (!Array.isArray(this.game.enemies)) this.game.enemies = [];
+                const incomingIds = new Set();
+                const existingMap = new Map();
+                for (let i = 0; i < this.game.enemies.length; i++) {
+                    const e = this.game.enemies[i];
+                    if (e && e._netId) existingMap.set(e._netId, e);
+                }
+                for (let i = 0; i < data.enemies.length; i++) {
+                    const eNet = data.enemies[i];
+                    if (!eNet || typeof eNet.id !== 'number') continue;
+                    incomingIds.add(eNet.id);
+                    let enemy = existingMap.get(eNet.id);
+                    const netX = Number.isFinite(eNet.x) ? eNet.x : 0;
+                    const netY = Number.isFinite(eNet.y) ? eNet.y : 0;
+                    if (!enemy) {
+                        enemy = this.spawnEnemyByType(eNet.t, netX, netY);
+                        if (enemy) { enemy._netId = eNet.id; enemy.x = netX; enemy.y = netY; enemy.dead = false; this.game.enemies.push(enemy); }
+                    }
                     if (enemy) {
-                        enemy._netId = eNet.id;
-                        if (eNet.st) enemy.subType = eNet.st;
-                        if (eNet.n) enemy.name = eNet.n;
-                        enemy.targetX = netX;
-                        enemy.targetY = netY;
-                        enemy.vx = Number.isFinite(eNet.vx) ? eNet.vx : 0;
-                        enemy.vy = Number.isFinite(eNet.vy) ? eNet.vy : 0;
-                        enemy.targetAngle = netAngle;
-                        enemy.x = netX;
-                        enemy.y = netY;
-                        enemy.angle = netAngle;
+                        enemy.targetX = netX; enemy.targetY = netY;
+                        enemy.vx = Number.isFinite(eNet.vx) ? eNet.vx : 0; enemy.vy = Number.isFinite(eNet.vy) ? eNet.vy : 0;
+                        enemy.targetAngle = Number.isFinite(eNet.a) ? eNet.a : 0;
+                        enemy.hp = Number.isFinite(eNet.hp) ? eNet.hp : enemy.hp;
                         enemy.dead = false;
-                        this.game.enemies.push(enemy);
                     }
                 }
-
-                if (enemy) {
-                    enemy.targetX = netX;
-                    enemy.targetY = netY;
-                    enemy.vx = Number.isFinite(eNet.vx) ? eNet.vx : 0;
-                    enemy.vy = Number.isFinite(eNet.vy) ? eNet.vy : 0;
-                    enemy.targetAngle = netAngle;
-                    if (!Number.isFinite(enemy.x)) enemy.x = netX;
-                    if (!Number.isFinite(enemy.y)) enemy.y = netY;
-                    if (!Number.isFinite(enemy.angle)) enemy.angle = netAngle;
-                    enemy.hp = Number.isFinite(eNet.hp) ? eNet.hp : enemy.hp;
-                    enemy.maxHp = Number.isFinite(eNet.mhp) ? eNet.mhp : enemy.maxHp;
-                    enemy.dead = false; // CRITICAL: alive on host means alive on guest!
-                    if (eNet.r && Number.isFinite(eNet.r)) enemy.radius = eNet.r;
-                    if (eNet.fly !== undefined) {
-                        enemy.isFlying = !!eNet.fly;
-                        enemy.isAirborneImmune = !!eNet.fly;
-                        enemy.flyHeight = eNet.fly ? 1 : 0;
-                    }
-                    if (eNet.hf) enemy.hitFlash = 8;
-                    enemy._lilXasFleeing = !!eNet.fl;
-                    enemy._earPainTimer = eNet.ep ? 10 : 0;
-                    if (enemy._lilXasFleeing && typeof LilXasCutsceneFX !== 'undefined' && (!enemy._guestBloodNext || performance.now() > enemy._guestBloodNext)) {
-                        enemy._guestBloodNext = performance.now() + 180;
-                        LilXasCutsceneFX.spawnGroundBlood(enemy.x, enemy.y, enemy.radius || 24);
-                    }
-                    if (enemy.isLilXasSpeaker) {
-                        enemy.speakerIndex = eNet.si || 0;
-                        enemy.musicPlaying = !!eNet.mp;
-                    }
-                    if (eNet.lx && enemy.isLilXas && typeof LilXasAttacksFX !== 'undefined') {
-                        LilXasAttacksFX.applyBossNet(enemy, eNet.lx);
-                    }
-                }
-            }
-
-            // Remove enemies no longer present on host (triggering death pop & weapon death FX)
-            for (let i = this.game.enemies.length - 1; i >= 0; i--) {
-                const e = this.game.enemies[i];
-                if (e && e._netId && !incomingIds.has(e._netId)) {
-                    e.dead = true;
-                    try {
-                        if (!e._deathPopped && this.game.effects && typeof this.game.effects.addDeathPop === 'function' && Number.isFinite(e.x) && Number.isFinite(e.y)) {
-                            e._deathPopped = true;
-                            this.game.effects.addDeathPop(e.x, e.y, e.radius || 24, e.color, e.isBoss || e.isMiniBoss);
-                        }
-                        if (e._chronoStasisTimer > 0 && typeof ChronoRifle !== 'undefined' && typeof ChronoRifle._shatter === 'function') {
-                            e._chronoStasisTimer = 0; ChronoRifle._shatter(e, this.game);
-                        }
-                        if ((e._symbioteHost || e._symbioteTimer > 0) && typeof SymbioteLauncher !== 'undefined') {
-                            SymbioteLauncher.onEnemyDeath(e, this.game);
-                        }
-                    } catch (fxErr) {
-                        console.warn('[CoopGuestSession] Enemy death FX skipped:', fxErr);
-                    }
-                    this.game.enemies.splice(i, 1);
+                for (let i = this.game.enemies.length - 1; i >= 0; i--) {
+                    const e = this.game.enemies[i];
+                    if (e && e._netId && !incomingIds.has(e._netId)) { e.dead = true; this.game.enemies.splice(i, 1); }
                 }
             }
         }
@@ -495,10 +437,13 @@ class CoopGuestSession {
         this.remotePlayer.update(dt);
         this._syncLocalHeal();
         this.inputSyncTimer++;
-        if (this.inputSyncTimer >= 2) {
+        const stateEvery = (this.net && this.net.latency > 180) ? 3 : 2;
+        if (this.inputSyncTimer >= stateEvery) {
             this.inputSyncTimer = 0;
+            this._guestSeq = (this._guestSeq || 0) + 1;
             const p = this.game.player;
             this.net.send('GUEST_STATE', {
+                seq: this._guestSeq,
                 x: Math.round(p.x), y: Math.round(p.y),
                 vx: Number((p.vx || 0).toFixed(2)), vy: Number((p.vy || 0).toFixed(2)),
                 angle: Number((p.angle || 0).toFixed(2)),
@@ -507,7 +452,7 @@ class CoopGuestSession {
                 armorEvolved: !!p.armorEvolved, weaponEvolved: !!p.weaponEvolved,
                 heroSkin: p.heroSkin || 'default', starBlessed: !!p._starBlessed,
                 bubbleCharge: p.isChargingBubble ? Number((p.bubbleCharge || 0).toFixed(2)) : 0
-            }, { droppable: true });
+            }, { droppable: true, fast: true });
         }
     }
 

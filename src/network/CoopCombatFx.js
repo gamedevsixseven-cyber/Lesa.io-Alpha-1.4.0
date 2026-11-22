@@ -10,27 +10,39 @@ class CoopCombatFx {
 
     static emitBullets(net, msgType, bullets) {
         if (!net || !net.connected || !Array.isArray(bullets) || bullets.length === 0) return;
-        for (let i = 0; i < bullets.length; i++) {
-            const b = bullets[i];
-            if (!b) continue;
-            const isMuzzle = (b.type !== 'spas12' && b.type !== 'sawnoff_shotgun') || i === 0;
-            net.send(msgType, {
-                x: Math.round(b.x), y: Math.round(b.y),
-                vx: Number((b.vx || 0).toFixed(2)), vy: Number((b.vy || 0).toFixed(2)),
-                damage: Math.round(b.damage || 25), speed: Number((b.speed || 14).toFixed(2)),
-                radius: Math.round(b.radius || 7), type: b.type || 'pea',
-                pierce: b.pierce || 1, maxBounces: b.maxBounces || 0,
-                range: Math.round(b.maxRange || 900),
-                isChargedBubble: !!b.isChargedBubble, isCrit: !!b.isCrit,
-                isWeaponEvolved: !!b.isWeaponEvolved, isSkyBolt: !!b.isSkyBolt,
-                isSingularityCore: !!b.isSingularityCore, isSpasBreach: !!b._spasBreach,
-                isPermafrostShard: !!b.isPermafrostShard, isCryoShard: !!b.isCryoShard,
-                isExplosiveMitts: !!b.isExplosiveMitts, muzzle: isMuzzle
-            }, { droppable: true });
+        const packBullet = (b, idx) => ({
+            x: Math.round(b.x), y: Math.round(b.y),
+            vx: Number((b.vx || 0).toFixed(2)), vy: Number((b.vy || 0).toFixed(2)),
+            damage: Math.round(b.damage || 25), speed: Number((b.speed || 14).toFixed(2)),
+            radius: Math.round(b.radius || 7), type: b.type || 'pea',
+            pierce: b.pierce || 1, maxBounces: b.maxBounces || 0,
+            range: Math.round(b.maxRange || 900),
+            isChargedBubble: !!b.isChargedBubble, isCrit: !!b.isCrit,
+            isWeaponEvolved: !!b.isWeaponEvolved, isSkyBolt: !!b.isSkyBolt,
+            isSingularityCore: !!b.isSingularityCore, isSpasBreach: !!b._spasBreach,
+            isPermafrostShard: !!b.isPermafrostShard, isCryoShard: !!b.isCryoShard,
+            isExplosiveMitts: !!b.isExplosiveMitts,
+            muzzle: (b.type !== 'spas12' && b.type !== 'sawnoff_shotgun') || idx === 0
+        });
+        const sendOpts = { droppable: true, maxBufferedBytes: 196608 };
+        if (bullets.length === 1) {
+            if (bullets[0]) net.send(msgType, packBullet(bullets[0], 0), sendOpts);
+            return;
         }
+        const batch = [];
+        for (let i = 0; i < bullets.length; i++) {
+            if (bullets[i]) batch.push(packBullet(bullets[i], i));
+        }
+        if (batch.length > 0) net.send(msgType, { batch }, sendOpts);
     }
 
     static spawnRemoteBullet(session, bData, isHostAuthoritative = false) {
+        if (bData && Array.isArray(bData.batch)) {
+            for (let i = 0; i < bData.batch.length; i++) {
+                this.spawnRemoteBullet(session, bData.batch[i], isHostAuthoritative);
+            }
+            return;
+        }
         const game = session && session.game;
         const rp = session && session.remotePlayer;
         if (!game || !bData || !rp || rp.isDowned || rp.isDownedDisconnected) return;

@@ -96,6 +96,7 @@ class Game {
     resize() {
         if (typeof MobilePerf !== 'undefined') {
             MobilePerf.applyCanvasSettings(this);
+            if (typeof MobileAdaptivePerf !== 'undefined') MobileAdaptivePerf.applyAdaptiveCanvasScale(this);
             return;
         }
         const dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -158,7 +159,10 @@ class Game {
         if (!this.isCoopGuest) {
             this.waveManager.startWave(1, this.player, this.enemies, this.effects);
         }
-        if (this.touchInput) this.touchInput.show();
+        if (this.touchInput) {
+            this.touchInput.show();
+            if (typeof MobileAdaptivePerf !== 'undefined') MobileAdaptivePerf.resetSession(this);
+        }
     }
 
     pauseGame(pausedByName = null, isRemote = false) {
@@ -317,8 +321,9 @@ class Game {
             this.waveManager.update(dt, this);
         }
 
-        // Input & Aiming
-        this.input.updateWorldMouse(this.camera);
+        // Input & Aiming (run mobile auto-fire/aim before player shoot for zero-frame lag)
+        if (this.touchInput && typeof this.touchInput.preUpdate === 'function') this.touchInput.preUpdate();
+        if (!this.touchInput || !this.touchInput.isTouchDevice) this.input.updateWorldMouse(this.camera);
         if (this.input.mouse.leftDown && !this.isCutsceneActive()) {
             const newBullets = this.player.shoot(this.effects);
             if (newBullets) this.bullets.push(...newBullets);
@@ -350,25 +355,15 @@ class Game {
 
         // Enemies Compaction
         if (this.isCoopGuest) {
-            for (let i = 0; i < this.enemies.length; i++) {
-                const enemy = this.enemies[i];
-                if (Number.isFinite(enemy.targetX) && Number.isFinite(enemy.targetY)) {
-                    if (enemy.vx || enemy.vy) { enemy.targetX += enemy.vx * dt; enemy.targetY += enemy.vy * dt; }
-                    const lerp = Math.min(1.0, 0.55 * dt);
-                    enemy.x += (enemy.targetX - enemy.x) * lerp;
-                    enemy.y += (enemy.targetY - enemy.y) * lerp;
-                    if (Number.isFinite(enemy.targetAngle)) {
-                        let diff = enemy.targetAngle - (Number.isFinite(enemy.angle) ? enemy.angle : 0);
-                        while (diff < -Math.PI) diff += Math.PI * 2;
-                        while (diff > Math.PI) diff -= Math.PI * 2;
-                        enemy.angle = (Number.isFinite(enemy.angle) ? enemy.angle : 0) + diff * lerp;
-                    }
-                    enemy.walkCycle = (Number.isFinite(enemy.walkCycle) ? enemy.walkCycle : 0) + 0.22 * dt;
+            if (typeof CoopSnapshotSync !== 'undefined') {
+                CoopSnapshotSync.stepGuestEnemies(this, dt);
+            } else {
+                const lerp = Math.min(1.0, 0.55 * dt);
+                for (let i = 0; i < this.enemies.length; i++) {
+                    const e = this.enemies[i];
+                    if (Number.isFinite(e.targetX) && Number.isFinite(e.targetY)) { e.x += (e.targetX - e.x) * lerp; e.y += (e.targetY - e.y) * lerp; }
+                    e.dead = false; if (e.hitFlash > 0) e.hitFlash -= dt;
                 }
-                enemy.age = (enemy.age || 0) + dt;
-                if (enemy._lilXasFleeing) enemy._earBleedAge = (enemy._earBleedAge || 0) + dt;
-                enemy.dead = false;
-                if (enemy.hitFlash > 0) enemy.hitFlash -= dt;
             }
         } else {
             let eWrite = 0;
@@ -575,8 +570,10 @@ class Game {
     }
 
     loop(currentTime) {
+        const frameMs = currentTime - this.lastTime;
+        if (typeof MobileAdaptivePerf !== 'undefined') MobileAdaptivePerf.sampleFrame(this, frameMs);
         const speedMult = (window.AdminCheats ? window.AdminCheats.gameSpeed : 1.0);
-        const dt = Math.max(0, Math.min((currentTime - this.lastTime) / 16.666, 2.5)) * speedMult;
+        const dt = Math.max(0, Math.min(frameMs / 16.666, 2.5)) * speedMult;
         this.lastTime = currentTime;
         try { this.update(dt); } catch (err) { console.error("Game update error caught:", err); }
         try {

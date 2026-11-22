@@ -260,6 +260,11 @@ class CoopLobbyModal {
             }
         };
 
+        window.networkManager.onStatusCallback = (msg) => {
+            const statusEl = (this.activeTab === 'host') ? document.getElementById('coop-host-status') : document.getElementById('coop-join-status');
+            if (statusEl && msg && !window.networkManager.connected) statusEl.textContent = msg;
+        };
+
         // Listen for Guest MATCH_START
         window.networkManager.onMessageCallback = (type, payload) => {
             if (type === 'MATCH_START' && !window.networkManager.isHost) {
@@ -291,9 +296,15 @@ class CoopLobbyModal {
         const dotEl = document.getElementById('coop-host-dot');
         const startBtn = document.getElementById('coop-start-btn');
 
-        if (statusEl) statusEl.textContent = 'Waiting for partner to join...';
+        if (statusEl) statusEl.textContent = '⏳ Opening room on server...';
         if (dotEl) dotEl.classList.remove('connected');
         if (startBtn) startBtn.disabled = true;
+
+        window.networkManager.waitUntilReady(6500).then((ready) => {
+            if (!window.networkManager || !window.networkManager.isHost || window.networkManager.connected) return;
+            const liveStatus = document.getElementById('coop-host-status');
+            if (liveStatus && ready) liveStatus.textContent = 'Waiting for partner to join...';
+        });
 
         if (window.friendService) {
             window.friendService.setPresenceStatus('Hosting Co-op', this.roomCode);
@@ -320,6 +331,9 @@ class CoopLobbyModal {
             if (typeof UiIcons !== 'undefined') UiIcons.setRichText(btn, `📨 ${f.name}`, 'ui-icon-sm'); else btn.textContent = `📨 ${f.name}`;
             btn.onclick = async () => {
                 btn.disabled = true;
+                btn.textContent = '⏳ Opening...';
+                const ready = window.networkManager ? await window.networkManager.waitUntilReady(6500) : true;
+                if (!ready) { btn.disabled = false; btn.textContent = `Retry ${f.name}`; return; }
                 await fs.sendCoopInvite(f.uid, this.roomCode, this.selectedMode || 'story');
                 btn.textContent = `✓ Sent to ${f.name}`;
             };
@@ -327,10 +341,26 @@ class CoopLobbyModal {
         });
     }
 
+    joinRoomWithCode(roomCode, inviteId = null) {
+        if (!roomCode) return;
+        if (window.friendService && typeof window.friendService.setPendingInvite === 'function') {
+            window.friendService.setPendingInvite(inviteId);
+        }
+        this.activeTab = 'join';
+        this.show();
+        const input = document.getElementById('coop-join-code-input');
+        const btn = document.getElementById('coop-connect-btn');
+        if (input) input.value = String(roomCode).trim().toUpperCase();
+        if (btn) btn.click();
+    }
+
     handlePeerConnected(isHost, peerInfo) {
         this.peerData = peerInfo;
         const partnerName = (peerInfo && peerInfo.name) || 'Teammate';
         const partnerHero = (peerInfo && peerInfo.heroType) || 'petros';
+        if (!isHost && window.friendService && typeof window.friendService.dismissPendingInvite === 'function') {
+            window.friendService.dismissPendingInvite();
+        }
 
         if (isHost) {
             const statusEl = document.getElementById('coop-host-status');

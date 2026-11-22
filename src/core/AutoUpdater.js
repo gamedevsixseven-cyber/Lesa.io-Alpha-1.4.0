@@ -51,7 +51,11 @@ class AutoUpdater {
 
     static _canSafelyReload() {
         const g = window.gameInstance;
-        return !g || (g.state !== 'PLAYING' && g.state !== 'PAUSED');
+        if (g && (g.state === 'PLAYING' || g.state === 'PAUSED')) return false;
+        const coopEl = typeof document !== 'undefined' ? document.getElementById('coop-modal') : null;
+        if (coopEl && !coopEl.classList.contains('hidden')) return false;
+        if (window.networkManager && (window.networkManager.connected || window.networkManager.connecting)) return false;
+        return true;
     }
 
     static checkForUpdate(force = false) {

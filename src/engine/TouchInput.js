@@ -196,7 +196,8 @@ class TouchInput {
                 this.joystickBase.classList.add('active');
             }
             if (this.joystickKnob) {
-                this.joystickKnob.style.transform = `translate(0px, 0px)`;
+                if (typeof MobileAdaptivePerf !== 'undefined') MobileAdaptivePerf.clearQueuedTransform(this.joystickKnob);
+                else this.joystickKnob.style.transform = 'translate3d(0px, 0px, 0)';
             }
 
             this.updateJoystick(pt.x, pt.y);
@@ -219,7 +220,8 @@ class TouchInput {
                 this.joystickBase.classList.remove('active');
             }
             if (this.joystickKnob) {
-                this.joystickKnob.style.transform = `translate(0px, 0px)`;
+                if (typeof MobileAdaptivePerf !== 'undefined') MobileAdaptivePerf.clearQueuedTransform(this.joystickKnob);
+                else this.joystickKnob.style.transform = 'translate3d(0px, 0px, 0)';
             }
         };
 
@@ -244,16 +246,17 @@ class TouchInput {
                     this.aimBase.classList.add('active');
                 }
                 if (this.aimKnob) {
-                    this.aimKnob.style.transform = `translate(0px, 0px)`;
+                    if (typeof MobileAdaptivePerf !== 'undefined') MobileAdaptivePerf.clearQueuedTransform(this.aimKnob);
+                    else this.aimKnob.style.transform = 'translate3d(0px, 0px, 0)';
                 }
 
-                this.updateAim(pt.x, pt.y);
+                this.updateAim(pt.x, pt.y, true);
             });
 
             this.aimZone.addEventListener('pointermove', (e) => {
                 if (e.pointerId !== this.aimPointerId) return;
                 const pt = this._mapClientPoint(e);
-                this.updateAim(pt.x, pt.y);
+                this.updateAim(pt.x, pt.y, false);
             });
 
             const releaseAim = (e) => {
@@ -266,7 +269,8 @@ class TouchInput {
                     this.aimBase.classList.remove('active');
                 }
                 if (this.aimKnob) {
-                    this.aimKnob.style.transform = `translate(0px, 0px)`;
+                    if (typeof MobileAdaptivePerf !== 'undefined') MobileAdaptivePerf.clearQueuedTransform(this.aimKnob);
+                    else this.aimKnob.style.transform = 'translate3d(0px, 0px, 0)';
                 }
 
                 // Stop firing weapon
@@ -386,7 +390,10 @@ class TouchInput {
         if (distance < this.deadzone) {
             this.movement = { dx: 0, dy: 0 };
             this.isMoving = false;
-            if (this.joystickKnob) this.joystickKnob.style.transform = `translate(0px, 0px)`;
+            if (this.joystickKnob) {
+                if (typeof MobileAdaptivePerf !== 'undefined') MobileAdaptivePerf.clearQueuedTransform(this.joystickKnob);
+                else this.joystickKnob.style.transform = 'translate3d(0px, 0px, 0)';
+            }
             return;
         }
 
@@ -396,7 +403,8 @@ class TouchInput {
         const knobY = Math.sin(angle) * clampedDist;
 
         if (this.joystickKnob) {
-            this.joystickKnob.style.transform = `translate(${knobX}px, ${knobY}px)`;
+            if (typeof MobileAdaptivePerf !== 'undefined') MobileAdaptivePerf.queueTransform3d(this.joystickKnob, knobX, knobY);
+            else this.joystickKnob.style.transform = `translate3d(${knobX}px, ${knobY}px, 0)`;
         }
 
         // Normalized movement vector
@@ -408,7 +416,7 @@ class TouchInput {
         this.isMoving = true;
     }
 
-    updateAim(clientX, clientY) {
+    updateAim(clientX, clientY, triggerImmediateShot = false) {
         const deltaX = clientX - this.aimOrigin.x;
         const deltaY = clientY - this.aimOrigin.y;
         const distance = Math.hypot(deltaX, deltaY);
@@ -425,13 +433,16 @@ class TouchInput {
             knobY = Math.sin(angle) * clampedDist;
             this.lockedTarget = null;
         } else if (player && typeof MobileAimAssist !== 'undefined') {
-            const target = MobileAimAssist.findTarget(this.game, player, this.autoAimMaxDistance);
+            const target = (!triggerImmediateShot && typeof MobileAdaptivePerf !== 'undefined')
+                ? MobileAdaptivePerf.getThrottledAimTarget(this, player, this.autoAimMaxDistance)
+                : MobileAimAssist.findTarget(this.game, player, this.autoAimMaxDistance);
             this.lockedTarget = target;
             if (target) angle = Math.atan2(target.y - player.y, target.x - player.x);
         }
 
         if (this.aimKnob) {
-            this.aimKnob.style.transform = `translate(${knobX}px, ${knobY}px)`;
+            if (typeof MobileAdaptivePerf !== 'undefined') MobileAdaptivePerf.queueTransform3d(this.aimKnob, knobX, knobY);
+            else this.aimKnob.style.transform = `translate3d(${knobX}px, ${knobY}px, 0)`;
         }
 
         this.aimAngle = angle;
@@ -439,14 +450,16 @@ class TouchInput {
 
         if (player) player.angle = angle;
         if (this.game && this.game.input && this.game.input.mouse) {
-            this.game.input.mouse.leftDown = !(player && (player.isChargingBubble || this.isBubbleChargeHeld));
+            const canFire = !(player && (player.isChargingBubble || this.isBubbleChargeHeld));
+            this.game.input.mouse.leftDown = canFire;
+            if (triggerImmediateShot && canFire && this.game.input.onShootCallback) {
+                this.game.input.onShootCallback();
+            }
         }
     }
 
-    update(dt) {
+    preUpdate() {
         if (!this.game || this.game.state !== 'PLAYING') return;
-
-        // Freeze touch controls and auto-fire when cutscene is active
         if (typeof this.game.isCutsceneActive === 'function' && this.game.isCutsceneActive()) {
             if (this.game.input) this.game.input.mouse.leftDown = false;
             this.isShooting = false;
@@ -455,12 +468,14 @@ class TouchInput {
             if (this.bubbleBtn) this.bubbleBtn.classList.remove('pressed');
             return;
         }
-
-        // Auto-Fire for Mobile: if enabled in settings and not currently aiming manually with right stick
         if (this.isTouchDevice && this.autoFireEnabled && !this.isShooting && this.game.player) {
             this.updateAutoFire();
         }
+    }
 
+    update(dt) {
+        if (!this.game || this.game.state !== 'PLAYING') return;
+        if (typeof this.game.isCutsceneActive === 'function' && this.game.isCutsceneActive()) return;
         this.updateCooldowns();
     }
 
@@ -549,8 +564,14 @@ class TouchInput {
     resetActiveTouches() {
         if (this.joystickBase) this.joystickBase.classList.remove('active');
         if (this.aimBase) this.aimBase.classList.remove('active');
-        if (this.joystickKnob) this.joystickKnob.style.transform = 'translate(0px, 0px)';
-        if (this.aimKnob) this.aimKnob.style.transform = 'translate(0px, 0px)';
+        if (this.joystickKnob) {
+            if (typeof MobileAdaptivePerf !== 'undefined') MobileAdaptivePerf.clearQueuedTransform(this.joystickKnob);
+            else this.joystickKnob.style.transform = 'translate3d(0px, 0px, 0)';
+        }
+        if (this.aimKnob) {
+            if (typeof MobileAdaptivePerf !== 'undefined') MobileAdaptivePerf.clearQueuedTransform(this.aimKnob);
+            else this.aimKnob.style.transform = 'translate3d(0px, 0px, 0)';
+        }
         if (this.bubbleBtn) this.bubbleBtn.classList.remove('pressed');
         if (this.dashBtn) this.dashBtn.classList.remove('pressed');
         if (this.skillBtn) this.skillBtn.classList.remove('pressed');

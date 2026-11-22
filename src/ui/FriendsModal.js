@@ -417,8 +417,7 @@ class FriendsModal {
         wrap.querySelectorAll('[data-decline]').forEach(b => b.addEventListener('click', () => this.service.removeOrDeclineFriendship(b.dataset.decline)));
         wrap.querySelectorAll('[data-dismiss]').forEach(b => b.addEventListener('click', () => this.service.dismissInvite(b.dataset.dismiss)));
         wrap.querySelectorAll('[data-join]').forEach(b => b.addEventListener('click', () => {
-            this.service.dismissInvite(b.dataset.inv);
-            this.joinRoomCode(b.dataset.join);
+            this.joinRoomCode(b.dataset.join, b.dataset.inv);
         }));
     }
 
@@ -502,25 +501,34 @@ class FriendsModal {
         if (window.coopLobbyModal) {
             window.coopLobbyModal.activeTab = 'host';
             window.coopLobbyModal.show();
+            const statusEl = document.getElementById('coop-host-status');
+            if (statusEl) statusEl.textContent = `⏳ Opening room before inviting ${friendName}...`;
+            const ready = await window.networkManager.waitUntilReady(6500);
             const code = window.coopLobbyModal.roomCode;
             const mode = window.coopLobbyModal.selectedMode || 'story';
-            if (code) {
+            if (ready && code && window.networkManager.isHost) {
                 await this.service.sendCoopInvite(friendUid, code, mode);
-                const statusEl = document.getElementById('coop-host-status');
-                if (statusEl) {
+                if (statusEl && !window.networkManager.connected) {
                     if (typeof UiIcons !== 'undefined') UiIcons.setRichText(statusEl, `📨 Invite sent to ${friendName}! Waiting to connect...`, 'ui-icon-sm');
                     else statusEl.textContent = `📨 Invite sent to ${friendName}! Waiting to connect...`;
                 }
+            } else if (statusEl) {
+                statusEl.textContent = '⚠️ Could not register room on signaling server — please try again.';
             }
         }
     }
 
-    joinRoomCode(roomCode) {
+    joinRoomCode(roomCode, inviteId = null) {
         if (!roomCode) return;
         this.hide();
         if (this.toastEl) this.toastEl.classList.add('hidden');
+        if (this.service && typeof this.service.setPendingInvite === 'function') this.service.setPendingInvite(inviteId);
         if (!window.coopLobbyModal && typeof CoopLobbyModal !== 'undefined') window.coopLobbyModal = new CoopLobbyModal();
         if (!window.coopLobbyModal) return;
+        if (typeof window.coopLobbyModal.joinRoomWithCode === 'function') {
+            window.coopLobbyModal.joinRoomWithCode(roomCode, inviteId);
+            return;
+        }
         window.coopLobbyModal.activeTab = 'join';
         window.coopLobbyModal.show();
         const tabJoin = document.getElementById('coop-tab-join'), input = document.getElementById('coop-join-code-input'), btn = document.getElementById('coop-connect-btn');
@@ -534,7 +542,7 @@ class FriendsModal {
         if (window.gameInstance && window.gameInstance.state === 'PLAYING') return;
         this.toastEl.innerHTML = typeof FriendsCardRenderer !== 'undefined' ? FriendsCardRenderer.buildInviteToastHtml(invite) : '';
         this.toastEl.classList.remove('hidden');
-        document.getElementById('toast-join-coop-btn').onclick = () => { this.service.dismissInvite(invite.id); this.joinRoomCode(invite.roomCode); };
+        document.getElementById('toast-join-coop-btn').onclick = () => { this.joinRoomCode(invite.roomCode, invite.id); };
         document.getElementById('toast-dismiss-coop-btn').onclick = () => { this.service.dismissInvite(invite.id); this.toastEl.classList.add('hidden'); };
     }
 
