@@ -115,6 +115,9 @@ class SaveManager {
         if (typeof SaveMigration !== 'undefined') {
             SaveMigration.recordLocalMutation();
         }
+        if (typeof window !== 'undefined' && window.cloudSave && typeof window.cloudSave.markLocalMutationDirty === 'function') {
+            window.cloudSave.markLocalMutationDirty();
+        }
 
         if (this.saveDebounceTimer) {
             clearTimeout(this.saveDebounceTimer);

@@ -22,9 +22,18 @@ class CloudSaveService {
         this.currentUser = null;
         this.hasCompletedInitialSync = false;
         this.isHydratingAuth = false;
+        this.hasUnflushedLocalMutation = false;
+        this.lastLocalMutationDirtyAt = 0;
+        this._localMutationVersion = 0;
         this._activeListenerUid = null;
 
         this.init();
+    }
+
+    markLocalMutationDirty() {
+        this._localMutationVersion = (this._localMutationVersion || 0) + 1;
+        this.hasUnflushedLocalMutation = true;
+        this.lastLocalMutationDirtyAt = Date.now();
     }
 
     init() {
@@ -155,41 +164,26 @@ class CloudSaveService {
         if (!user.uid) return false;
 
         this._pendingCloudSaves = (this._pendingCloudSaves || 0) + 1;
+        const saveVer = this._localMutationVersion || 0;
         try {
             const userDocRef = this.db.collection('players').doc(user.uid);
-            // Never overwrite an un-downloaded cloud doc with local Lv.1 defaults before initial sync
             if (!this.hasCompletedInitialSync) {
                 const preSnap = await userDocRef.get().catch(() => null);
+                this.hasCompletedInitialSync = true;
                 if (preSnap && preSnap.exists) {
-                    this.applyCloudData(preSnap.data());
-                } else {
-                    this.hasCompletedInitialSync = true;
+                    const preData = preSnap.data();
+                    if (!this.lastCloudData) this.lastCloudData = preData;
+                    this.applyCloudData(preData);
                 }
             }
             this.lastLocalSaveTimestamp = Date.now();
 
             const fTag = (typeof PlayerIdentity !== 'undefined') ? PlayerIdentity.getOnlineTag(user.uid) : '#HERO00';
             const fTagClean = (typeof PlayerIdentity !== 'undefined') ? PlayerIdentity.normalizeTag(fTag) : 'HERO00';
-            let payload;
-            if (typeof SaveSerializer !== 'undefined' && typeof SaveSerializer.buildCloudPayload === 'function') {
-                payload = SaveSerializer.buildCloudPayload(saveData, user, { friendTag: fTag, friendTagClean: fTagClean }, this.lastCloudData);
-            } else {
-                const rawInput = (saveData && typeof saveData === 'object') ? saveData : {};
-                const gsP = (typeof window !== 'undefined' && window.GameState && window.GameState.player) ? window.GameState.player : {};
-                const p = rawInput.player || rawInput;
-                const pCoins = p.coins !== undefined ? p.coins : (gsP.coins ?? (parseInt(localStorage.getItem('lesaio_coins') || '0', 10) || 0));
-                const pGems = p.gems !== undefined ? p.gems : (p.diamonds !== undefined ? p.diamonds : (gsP.gems ?? (parseInt(localStorage.getItem('lesaio_gems') || '0', 10) || 0)));
-                const pLevel = p.accountLevel !== undefined ? p.accountLevel : ((rawInput.itemId === undefined && p.level !== undefined) ? p.level : (gsP.accountLevel ?? 1));
-                const pXp = p.accountXp !== undefined ? p.accountXp : (p.xp !== undefined ? p.xp : (gsP.accountXp ?? 0));
-                const pSkills = p.skillLevels || gsP.skillLevels || { blade_rush: 1, nerobalonaki: 1 };
-                const pName = p.name || p.playerName || gsP.name || localStorage.getItem('lesaio_player_name') || 'Psanas';
-                payload = {
-                    ...rawInput, playerName: pName, playerNameLower: pName.toLowerCase(), friendTag: fTag, friendTagClean: fTagClean,
-                    coins: pCoins, gold: pCoins, gems: pGems, diamonds: pGems, level: pLevel, xp: pXp, skillLevels: pSkills,
-                    player: { ...gsP, ...(rawInput.player || {}), coins: pCoins, gold: pCoins, gems: pGems, diamonds: pGems, accountLevel: pLevel, accountXp: pXp, skillLevels: pSkills },
-                    ...(user.email ? { email: user.email } : {})
-                };
-            }
+            const rawIn = (saveData && typeof saveData === 'object') ? saveData : {};
+            const payload = (typeof SaveSerializer !== 'undefined' && typeof SaveSerializer.buildCloudPayload === 'function')
+                ? SaveSerializer.buildCloudPayload(rawIn, user, { friendTag: fTag, friendTagClean: fTagClean }, this.lastCloudData)
+                : { ...rawIn, friendTag: fTag, friendTagClean: fTagClean, ...(user.email ? { email: user.email } : {}) };
 
             this.lastSavedGems = payload.gems;
             this.lastSavedCoins = payload.coins;
@@ -202,6 +196,9 @@ class CloudSaveService {
                 lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
             }, { merge: true });
 
+            if ((this._localMutationVersion || 0) === saveVer) {
+                this.hasUnflushedLocalMutation = false;
+            }
             return true;
         } catch (error) {
             console.error('Cloud Save Error:', error);
@@ -274,9 +271,73 @@ class CloudSaveService {
         }
     }
 
+    _pickIncomingCurrency(primaryNum, aliasNum, lastPrimary, lastAlias, curVal, preferLocal) {
+        if (preferLocal) return { incoming: undefined, seenPrimary: curVal, seenAlias: curVal };
+        const hasP = primaryNum !== undefined && !isNaN(primaryNum);
+        const hasA = aliasNum !== undefined && !isNaN(aliasNum);
+        let incoming;
+        if (lastPrimary === undefined && lastAlias === undefined) {
+            if (hasP && hasA && primaryNum !== aliasNum) incoming = Math.max(primaryNum, aliasNum);
+            else if (hasP) incoming = primaryNum;
+            else if (hasA) incoming = aliasNum;
+        } else {
+            const pChanged = hasP && primaryNum !== lastPrimary;
+            const aChanged = hasA && aliasNum !== lastAlias;
+            if (pChanged && aChanged) incoming = primaryNum;
+            else if (pChanged) incoming = primaryNum;
+            else if (aChanged && (!hasP || primaryNum === lastPrimary)) incoming = aliasNum;
+        }
+        return {
+            incoming,
+            seenPrimary: hasP ? primaryNum : lastPrimary,
+            seenAlias: hasA ? aliasNum : lastAlias
+        };
+    }
+
+    _syncCloudCurrency(kind, data, pData, preferLocal) {
+        const isGems = kind === 'gems';
+        const lsKey = isGems ? 'lesaio_gems' : 'lesaio_coins';
+        const seenKeyP = isGems ? 'lastSeenGems' : 'lastSeenCoins';
+        const seenKeyA = isGems ? 'lastSeenDiamonds' : 'lastSeenGold';
+        const aliasKey = isGems ? 'diamonds' : 'gold';
+        const curVal = (window.GameState && typeof window.GameState.player[kind] === 'number')
+            ? window.GameState.player[kind] : parseInt(localStorage.getItem(lsKey) || '0', 10);
+        const readInt = (k) => {
+            const raw = data[k] !== undefined ? data[k] : (pData && pData[k] !== undefined ? pData[k] : undefined);
+            return raw !== undefined ? parseInt(raw, 10) : undefined;
+        };
+        const res = this._pickIncomingCurrency(readInt(kind), readInt(aliasKey), this[seenKeyP], this[seenKeyA], curVal, preferLocal);
+        this[seenKeyP] = res.seenPrimary;
+        this[seenKeyA] = res.seenAlias;
+        if (res.incoming === undefined || isNaN(res.incoming) || res.incoming === curVal) return false;
+
+        const nextVal = Math.max(0, res.incoming);
+        localStorage.setItem(lsKey, nextVal.toString());
+        if (window.GameState) window.GameState.player[kind] = nextVal;
+        const el = document.getElementById(isGems ? 'menu-gem-text' : 'menu-coin-text');
+        if (el) el.textContent = nextVal.toLocaleString();
+        if (isGems) {
+            const renEl = document.getElementById('rename-current-gems');
+            if (renEl) renEl.textContent = `Your Gems: 💎 ${nextVal.toLocaleString()}`;
+        }
+        this._animatePill(isGems ? '.gem-pill' : '.coin-pill');
+        const gsP = window.GameState && window.GameState.player;
+        this._emitCloudCurrency(isGems ? (gsP && gsP.coins) || 0 : nextVal, isGems ? nextVal : (gsP && gsP.gems) || 0, isGems ? 0 : nextVal - curVal, isGems ? nextVal - curVal : 0);
+        this[seenKeyP] = this[seenKeyA] = nextVal;
+        if (isGems) this.lastSavedGems = nextVal; else this.lastSavedCoins = nextVal;
+        this._reconcileDoc({ [kind]: nextVal, [aliasKey]: nextVal, [`player.${kind}`]: nextVal, [`player.${aliasKey}`]: nextVal });
+        return true;
+    }
+
     applyCloudData(data) {
         if (!data) return;
-        if ((this._pendingCloudSaves || 0) > 0 && Date.now() - (this.lastLocalSaveTimestamp || 0) < 4000) return;
+        const now = Date.now();
+        const hasPendingDebounce = !!(typeof window !== 'undefined' && window.SaveManager && window.SaveManager.saveDebounceTimer);
+        if (hasPendingDebounce || this.hasUnflushedLocalMutation || ((this._pendingCloudSaves || 0) > 0 && now - (this.lastLocalSaveTimestamp || 0) < 4000) || (now - (this.lastLocalMutationDirtyAt || 0) < 4000)) {
+            this.lastCloudData = data;
+            this.hasCompletedInitialSync = true;
+            return;
+        }
         this.lastCloudData = data;
         const isInitialSync = !this.hasCompletedInitialSync;
         this.hasCompletedInitialSync = true;
@@ -288,88 +349,15 @@ class CloudSaveService {
             _preferLocal = !!SaveMigration.reconcileCloudSnapshot(data, window.GameState, isInitialSync).preferLocalCurrencies;
         }
 
-        // 1. Live Gems / Diamonds Sync
-        const curGems = (window.GameState && typeof window.GameState.player.gems === 'number')
-            ? window.GameState.player.gems
-            : parseInt(localStorage.getItem('lesaio_gems') || '0', 10);
-        const rawDiamonds = data.diamonds !== undefined ? data.diamonds : (data.player && data.player.diamonds !== undefined ? data.player.diamonds : undefined);
-        const rawGems = data.gems !== undefined ? data.gems : (data.player && data.player.gems !== undefined ? data.player.gems : undefined);
-        const numDiamonds = rawDiamonds !== undefined ? parseInt(rawDiamonds, 10) : undefined;
-        const numGems = rawGems !== undefined ? parseInt(rawGems, 10) : undefined;
-
-        let incomingGems = undefined;
-        if (_preferLocal) {
-            if (!isNaN(curGems)) { this.lastSeenDiamonds = curGems; this.lastSeenGems = curGems; }
-        } else if (this.lastSeenDiamonds === undefined && this.lastSeenGems === undefined) {
-            if (numDiamonds !== undefined && !isNaN(numDiamonds)) incomingGems = numDiamonds;
-            else if (numGems !== undefined && !isNaN(numGems)) incomingGems = numGems;
-        } else {
-            if (numDiamonds !== undefined && !isNaN(numDiamonds) && numDiamonds !== this.lastSeenDiamonds) incomingGems = numDiamonds;
-            else if (numGems !== undefined && !isNaN(numGems) && numGems !== this.lastSeenGems) incomingGems = numGems;
-        }
-
-        if (numDiamonds !== undefined && !isNaN(numDiamonds)) this.lastSeenDiamonds = numDiamonds;
-        if (numGems !== undefined && !isNaN(numGems)) this.lastSeenGems = numGems;
-
-        if (incomingGems !== undefined && !isNaN(incomingGems) && incomingGems !== curGems) {
-            localStorage.setItem('lesaio_gems', incomingGems.toString());
-            if (window.GameState) window.GameState.player.gems = incomingGems;
-            const gemEl = document.getElementById('menu-gem-text');
-            if (gemEl) gemEl.textContent = incomingGems.toLocaleString();
-            const renameGemsEl = document.getElementById('rename-current-gems');
-            if (renameGemsEl) renameGemsEl.textContent = `Your Gems: 💎 ${incomingGems.toLocaleString()}`;
-            this._animatePill('.gem-pill');
-            this._emitCloudCurrency((window.GameState && window.GameState.player.coins) || 0, incomingGems, 0, incomingGems - curGems);
-            this.lastSeenDiamonds = incomingGems;
-            this.lastSeenGems = incomingGems;
-            this.lastSavedGems = incomingGems;
-            changed = true;
-            this._reconcileDoc({ diamonds: incomingGems, gems: incomingGems, 'player.gems': incomingGems, 'player.diamonds': incomingGems });
-        }
-
-        // 2. Live Coins / Gold Sync
-        const curCoins = (window.GameState && typeof window.GameState.player.coins === 'number')
-            ? window.GameState.player.coins
-            : parseInt(localStorage.getItem('lesaio_coins') || '0', 10);
-        const rawGold = data.gold !== undefined ? data.gold : (data.player && data.player.gold !== undefined ? data.player.gold : undefined);
-        const rawCoins = data.coins !== undefined ? data.coins : (data.player && data.player.coins !== undefined ? data.player.coins : undefined);
-        const numGold = rawGold !== undefined ? parseInt(rawGold, 10) : undefined;
-        const numCoins = rawCoins !== undefined ? parseInt(rawCoins, 10) : undefined;
-
-        let incomingCoins = undefined;
-        if (_preferLocal) {
-            if (!isNaN(curCoins)) { this.lastSeenCoins = curCoins; this.lastSeenGold = curCoins; }
-        } else if (this.lastSeenCoins === undefined && this.lastSeenGold === undefined) {
-            if (numCoins !== undefined && !isNaN(numCoins)) incomingCoins = numCoins;
-            else if (numGold !== undefined && !isNaN(numGold)) incomingCoins = numGold;
-        } else {
-            if (numCoins !== undefined && !isNaN(numCoins) && numCoins !== this.lastSeenCoins) incomingCoins = numCoins;
-            else if (numGold !== undefined && !isNaN(numGold) && numGold !== this.lastSeenGold) incomingCoins = numGold;
-        }
-
-        if (numCoins !== undefined && !isNaN(numCoins)) this.lastSeenCoins = numCoins;
-        if (numGold !== undefined && !isNaN(numGold)) this.lastSeenGold = numGold;
-
-        if (incomingCoins !== undefined && !isNaN(incomingCoins) && incomingCoins !== curCoins) {
-            localStorage.setItem('lesaio_coins', incomingCoins.toString());
-            if (window.GameState) window.GameState.player.coins = incomingCoins;
-            const coinEl = document.getElementById('menu-coin-text');
-            if (coinEl) coinEl.textContent = incomingCoins.toLocaleString();
-            this._animatePill('.coin-pill');
-            this._emitCloudCurrency(incomingCoins, (window.GameState && window.GameState.player.gems) || 0, incomingCoins - curCoins, 0);
-            this.lastSeenCoins = incomingCoins;
-            this.lastSeenGold = incomingCoins;
-            this.lastSavedCoins = incomingCoins;
-            changed = true;
-            this._reconcileDoc({ coins: incomingCoins, gold: incomingCoins, 'player.coins': incomingCoins, 'player.gold': incomingCoins });
-        }
+        const pObj = data.player && typeof data.player === 'object' ? data.player : null;
+        if (this._syncCloudCurrency('gems', data, pObj, _preferLocal)) changed = true;
+        if (this._syncCloudCurrency('coins', data, pObj, _preferLocal)) changed = true;
 
         // 3. Live Player / Account Level Sync
         const curLevel = (window.GameState && typeof window.GameState.player.accountLevel === 'number')
             ? window.GameState.player.accountLevel
             : parseInt(localStorage.getItem('lesaio_account_level') || '1', 10);
 
-        const pObj = (data.player && typeof data.player === 'object') ? data.player : null;
         const wiped = (typeof SaveMigration !== 'undefined') && SaveMigration.wasWipedByDev(data, 0);
         const lvlNums = [data.level, data.accountLevel, pObj && pObj.accountLevel, pObj && pObj.level]
             .map(v => parseInt(v, 10)).filter(n => Number.isFinite(n) && n >= 1);

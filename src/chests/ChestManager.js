@@ -207,6 +207,9 @@ class ChestManager {
 
         this.save();
         this.render();
+        if (typeof window !== 'undefined' && window.SaveManager && typeof window.SaveManager.saveNow === 'function') {
+            window.SaveManager.saveNow();
+        }
 
         if (window.soundEngine && typeof window.soundEngine.playPickup === 'function') {
             window.soundEngine.playPickup('diamond');
@@ -246,6 +249,9 @@ class ChestManager {
 
         this.save();
         this.render();
+        if (typeof window !== 'undefined' && window.SaveManager && typeof window.SaveManager.saveNow === 'function') {
+            window.SaveManager.saveNow();
+        }
 
         if (window.soundEngine && typeof window.soundEngine.playPickup === 'function') {
             window.soundEngine.playPickup('diamond');
@@ -354,10 +360,13 @@ class ChestManager {
         const def = CHEST_TYPES[slot.type] || CHEST_TYPES.common;
         const loot = this.rollAndGrantLootForDef(def, false);
 
-        // 5. Empty slot
+        // 5. Empty slot & flush updated balance/inventory immediately
         this.slots[slotIndex] = null;
         this.save();
         this.render();
+        if (typeof window !== 'undefined' && window.SaveManager && typeof window.SaveManager.saveNow === 'function') {
+            window.SaveManager.saveNow();
+        }
         if (typeof window !== 'undefined' && window.inventoryModalUI && typeof window.inventoryModalUI.render === 'function') {
             window.inventoryModalUI.render();
         }
@@ -400,7 +409,7 @@ class ChestManager {
         if (!chosen) return null;
 
         if (typeof WeaponSystem !== 'undefined' && typeof WeaponSystem.unlockWeapon === 'function') {
-            WeaponSystem.unlockWeapon(chosen.id, { silent: true });
+            WeaponSystem.unlockWeapon(chosen.id, { silent: true, deferSave: true });
         }
         return { ...chosen, rarityKey: (chosen.rarity || 'Rare').toLowerCase() };
     }

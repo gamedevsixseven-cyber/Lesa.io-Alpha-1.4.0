@@ -145,6 +145,15 @@ class GameState {
 
     _touchMutation() {
         if (typeof SaveMigration !== 'undefined') SaveMigration.recordLocalMutation();
+        if (typeof window !== 'undefined' && window.cloudSave && typeof window.cloudSave.markLocalMutationDirty === 'function') {
+            window.cloudSave.markLocalMutationDirty();
+        }
+    }
+
+    save() {
+        if (typeof window !== 'undefined' && window.SaveManager && typeof window.SaveManager.requestSave === 'function') {
+            window.SaveManager.requestSave();
+        }
     }
 
     /**

@@ -446,3 +446,88 @@
         letter-spacing: 3px;
     }
 }
+
+/* ================= CO-OP PAUSE READY & LEAVE POPUP ================= */
+.pause-coop-status-pill {
+    margin: 0 auto 14px;
+    padding: 8px 16px;
+    max-width: 92%;
+    background: #1e272e;
+    color: #dfe6e9;
+    border: 3px solid var(--dark-outline);
+    border-radius: 14px;
+    font-weight: 800;
+    font-size: 0.92rem;
+    letter-spacing: 0.4px;
+    box-shadow: 2px 3px 0 var(--dark-outline);
+}
+
+.pause-coop-status-pill.is-one-ready {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.pause-coop-status-pill.is-all-ready {
+    background: #d4edda;
+    color: #155724;
+}
+
+#resume-btn.is-coop-waiting {
+    background: linear-gradient(180deg, #ffd32a, #ffa801);
+    color: #1e272e;
+}
+
+#resume-btn.is-coop-all-ready {
+    background: linear-gradient(180deg, #2ed573, #1e9e52);
+    color: #ffffff;
+}
+
+.coop-left-popup {
+    position: fixed;
+    top: 22px;
+    left: 50%;
+    transform: translateX(-50%) translateY(-18px);
+    opacity: 0;
+    background: linear-gradient(180deg, #ff5e57, #d63031);
+    color: #ffffff;
+    border: 3.5px solid var(--dark-outline);
+    border-radius: 18px;
+    padding: 11px 22px;
+    font-family: 'Luckiest Guy', cursive;
+    font-size: 1.25rem;
+    letter-spacing: 0.6px;
+    text-shadow: 2px 2px 0 var(--dark-outline);
+    box-shadow: 0 5px 0 var(--dark-outline), 0 10px 24px rgba(0, 0, 0, 0.45);
+    z-index: 10050;
+    pointer-events: none;
+    white-space: nowrap;
+    max-width: 92vw;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition: opacity 0.24s ease, transform 0.24s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.coop-left-popup.is-visible {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
+
+.coop-left-popup.is-fading {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-14px);
+}
+
+@media (max-width: 768px) {
+    .pause-coop-status-pill {
+        font-size: 0.78rem;
+        padding: 5px 10px;
+        margin-bottom: 8px;
+    }
+
+    .coop-left-popup {
+        top: 12px;
+        font-size: 0.95rem;
+        padding: 8px 16px;
+        border-width: 2.5px;
+    }
+}

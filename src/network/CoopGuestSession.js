@@ -22,6 +22,9 @@ class CoopGuestSession {
         this._pendingHealUntil = 0;
         this._preHealHp = 0;
         this._trackedHp = (game && game.player && Number.isFinite(game.player.hp)) ? game.player.hp : 100;
+        this.pauseReadyState = { by: '', readyCount: 0, totalPlayers: 2, localReady: false, resuming: false };
+        this._resumeTimer = null;
+        this._hostLeftNotified = false;
 
         if (this.game.cutsceneOverlay) {
             this.game.cutsceneOverlay.totalPlayers = 2;
@@ -58,11 +61,11 @@ class CoopGuestSession {
             } else if (type === 'HOST_SKILL') {
                 this.playRemoteSkill(this.remotePlayer, payload);
             } else if (type === 'HOST_QUIT_MATCH') {
-                this.handleHostQuit();
-            } else if (type === 'NET_PAUSE') {
-                this.game.pauseGame(payload.by, true);
+                this.handleHostQuit(payload && payload.name);
+            } else if (type === 'NET_PAUSE' || type === 'NET_PAUSE_STATE') {
+                this._applyPauseState(payload || {});
             } else if (type === 'NET_RESUME') {
-                this.game.resumeGame(true);
+                this._triggerSynchronizedResume(payload || {});
             } else if (type === 'CUTSCENE_TRIGGER') {
                 if (this.game.cutsceneOverlay && typeof this.game.cutsceneOverlay.startCutscene === 'function') {
                     this.game.cutsceneOverlay.startCutscene(payload.cutsceneId, payload.opts || {});
@@ -152,47 +155,37 @@ class CoopGuestSession {
         if (typeof CoopCombatFx !== 'undefined') CoopCombatFx.spawnRemoteBullet(this, bData, false);
     }
 
-    handleHostQuit(reason = 'Host left the game') {
-        this.game.state = 'MENU';
-        this.game.isCoopGuest = false;
-        this.game.coopSession = null;
-        if (typeof LilXasEvent !== 'undefined') LilXasEvent.reset();
-
-        if (this.game.cutsceneOverlay) {
-            this.game.cutsceneOverlay.totalPlayers = 1;
-            this.game.cutsceneOverlay.setReadyState(0, 1, false);
-            this.game.cutsceneOverlay.onRequestAdvance = null;
-            if (typeof this.game.cutsceneOverlay.endCutscene === 'function') {
-                this.game.cutsceneOverlay.endCutscene();
-            }
-        }
-
-        if (this.net && typeof this.net.disconnect === 'function') {
-            this.net.disconnect();
-        }
-
-        if (this.game.ui) {
-            this.game.ui.showMenuScreen();
-            this.game.ui.hideModals();
-            this.game.ui.addKillfeed('⚠️ Host left the match. Returned to Main Screen.');
-        }
-
-        if (window.soundEngine) {
-            window.soundEngine.stopBGM();
-            window.soundEngine.startMenuBGM();
-        }
+    handleHostQuit(explicitName = null) {
+        if (typeof CoopPauseSync !== 'undefined') CoopPauseSync.guestHandleHostLeft(this, explicitName);
     }
 
-    sendPause(playerName) { this.net.send('NET_PAUSE', { by: playerName }); }
-    sendResume() { this.net.send('NET_RESUME', {}); }
+    getPauseUIState(fallbackBy = null) {
+        return { ...this.pauseReadyState, by: this.pauseReadyState.by || fallbackBy || 'Partner' };
+    }
+
+    sendPause(playerName) {
+        if (this._resumeTimer) { clearTimeout(this._resumeTimer); this._resumeTimer = null; }
+        this.pauseReadyState = { by: playerName || 'Partner', readyCount: 0, totalPlayers: 2, localReady: false, resuming: false };
+        this.net.send('NET_PAUSE', { by: playerName });
+    }
+
+    _applyPauseState(payload) { if (typeof CoopPauseSync !== 'undefined') CoopPauseSync.guestApplyPauseState(this, payload); }
+    requestToggleResumeReady() { if (typeof CoopPauseSync !== 'undefined') CoopPauseSync.guestToggleReady(this); }
+    _triggerSynchronizedResume(payload) { if (typeof CoopPauseSync !== 'undefined') CoopPauseSync.guestTriggerResume(this, payload); }
+    sendResume() { this.requestToggleResumeReady(); }
 
     leaveMatch() {
+        this._hostLeftNotified = true;
+        if (this._resumeTimer) { clearTimeout(this._resumeTimer); this._resumeTimer = null; }
+        const guestName = (this.game && this.game.player && this.game.player.name) || 'Player 2';
         if (this.game.cutsceneOverlay) {
             this.game.cutsceneOverlay.totalPlayers = 1;
             this.game.cutsceneOverlay.setReadyState(0, 1, false);
             this.game.cutsceneOverlay.onRequestAdvance = null;
         }
-        if (this.net && typeof this.net.disconnect === 'function') {
+        if (this.net && typeof this.net.disconnectGracefully === 'function') {
+            this.net.disconnectGracefully('guest_left', null, 'GUEST_QUIT_MATCH', { reason: 'guest_left', name: guestName });
+        } else if (this.net && typeof this.net.disconnect === 'function') {
             this.net.disconnect();
         }
     }

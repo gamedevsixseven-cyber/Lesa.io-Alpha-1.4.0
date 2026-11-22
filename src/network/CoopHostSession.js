@@ -25,6 +25,11 @@ class CoopHostSession {
         this.snapshotInterval = 2; // Every 2 frames (~30Hz at 60fps) for crisp responsiveness
         this._guestShootBurst = [];
         this._lastGuestSkillTime = 0;
+        this.pauseReadyPlayers = new Set();
+        this.pausedByName = '';
+        this._pauseResuming = false;
+        this._resumeTimer = null;
+        this._peerLeftNotified = false;
 
         this.setupNetworkHandlers();
         this.hookHostInput();
@@ -139,9 +144,11 @@ class CoopHostSession {
             if (type === 'GUEST_STATE') {
                 this.remotePlayer.setTargetState(payload);
             } else if (type === 'NET_PAUSE') {
-                this.game.pauseGame(payload.by, true);
-            } else if (type === 'NET_RESUME') {
-                this.game.resumeGame(true);
+                this.onNetworkPause(payload);
+            } else if (type === 'NET_RESUME_READY' || type === 'NET_RESUME') {
+                this.onNetworkResumeReady(payload);
+            } else if (type === 'GUEST_QUIT_MATCH') {
+                this._handleGuestLeft(payload && payload.name);
             } else if (type === 'GUEST_SHOOT') {
                 this.handleGuestShoot(payload);
             } else if (type === 'GUEST_DASH') {
@@ -178,21 +185,12 @@ class CoopHostSession {
         };
 
         this.net.onDisconnectedCallback = (reason) => {
-            if (this.game.ui) {
-                this.game.ui.addKillfeed(`⚠️ ${this.remotePlayer.name} left the match. Continuing solo...`);
-            }
-            this.remotePlayer.hp = 0;
-            this.remotePlayer.isDowned = true;
-            this.remotePlayer.isDownedDisconnected = true;
-            if (this.game.cutsceneOverlay) {
-                this.game.cutsceneOverlay.totalPlayers = 1;
-                this.game.cutsceneOverlay.setReadyState(0, 1, false);
-                if (this.cutsceneReadyPlayers && this.cutsceneReadyPlayers.has('host')) {
-                    this.game.cutsceneOverlay.forceAdvance();
-                }
-            }
-            this.game.coopSession = null;
+            this._handleGuestLeft();
         };
+    }
+
+    _handleGuestLeft(explicitName = null) {
+        if (typeof CoopPauseSync !== 'undefined') CoopPauseSync.hostHandleGuestLeft(this, explicitName);
     }
 
     _awardSquadDrop(drop, collectorIsGuest = false) {
@@ -459,13 +457,44 @@ class CoopHostSession {
         }
     }
 
-    sendPause(playerName) { this.net.send('NET_PAUSE', { by: playerName }); }
-    sendResume() { this.net.send('NET_RESUME', {}); }
+    getPauseUIState(fallbackBy = null) {
+        const total = this.getTotalPlayers();
+        return {
+            by: this.pausedByName || fallbackBy || 'Hero',
+            readyCount: this.pauseReadyPlayers.size,
+            totalPlayers: total,
+            localReady: this.pauseReadyPlayers.has('host'),
+            resuming: this._pauseResuming
+        };
+    }
+
+    sendPause(playerName) { if (typeof CoopPauseSync !== 'undefined') CoopPauseSync.hostSendPause(this, playerName); }
+    onNetworkPause(payload) { if (typeof CoopPauseSync !== 'undefined') CoopPauseSync.hostOnNetworkPause(this, payload); }
+
+    requestToggleResumeReady() {
+        if (this.game.state !== 'PAUSED' || this._pauseResuming) return;
+        if (this.pauseReadyPlayers.has('host')) this.pauseReadyPlayers.delete('host');
+        else this.pauseReadyPlayers.add('host');
+        if (typeof CoopPauseSync !== 'undefined') CoopPauseSync.hostEvaluatePause(this);
+    }
+
+    onNetworkResumeReady(payload) {
+        if (this.game.state !== 'PAUSED' || this._pauseResuming) return;
+        if (payload && payload.ready === false) this.pauseReadyPlayers.delete('guest');
+        else this.pauseReadyPlayers.add('guest');
+        if (typeof CoopPauseSync !== 'undefined') CoopPauseSync.hostEvaluatePause(this);
+    }
+
+    sendResume() { this.requestToggleResumeReady(); }
+
     abortMatch() {
+        this._peerLeftNotified = true;
+        if (this._resumeTimer) { clearTimeout(this._resumeTimer); this._resumeTimer = null; }
+        const hostName = (this.game && this.game.player && this.game.player.name) || 'Host';
         if (this.net && typeof this.net.disconnectGracefully === 'function') {
-            this.net.disconnectGracefully('Host left the match');
+            this.net.disconnectGracefully('Host left the match', null, 'HOST_QUIT_MATCH', { reason: 'host_left', name: hostName });
         } else if (this.net) {
-            try { this.net.send('HOST_QUIT_MATCH', { reason: 'host_left' }); } catch (e) { }
+            try { this.net.send('HOST_QUIT_MATCH', { reason: 'host_left', name: hostName }); } catch (e) { }
             setTimeout(() => { if (this.net) this.net.disconnect(); }, 100);
         }
     }

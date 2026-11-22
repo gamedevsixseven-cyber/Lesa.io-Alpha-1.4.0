@@ -50,7 +50,7 @@
     <link rel="stylesheet" href="src/admin/admin.css?v=1.6.15">
     <link rel="stylesheet" href="styles/credits.css?v=1.4.0">
     <link rel="stylesheet" href="styles/gamemode.css?v=1.5.0">
-    <link rel="stylesheet" href="styles/coop.css?v=1.4.4">
+    <link rel="stylesheet" href="styles/coop.css?v=1.7.5">
     <link rel="stylesheet" href="styles/tribute.css?v=1.4.0">
     <link rel="stylesheet" href="styles/friends.css?v=1.6.22">
     <link rel="stylesheet" href="styles/olympus-altar.css?v=1.5.13">
@@ -3153,7 +3153,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
     <script src="src/save/PlayerIdentity.js?v=1.7.4"></script>
-    <script src="src/firebase.js?v=1.7.4"></script>
+    <script src="src/firebase.js?v=1.7.6"></script>
 
     <!-- GAME SCRIPTS IN CLEAN DEPENDENCY ORDER -->
     <!-- 1. DATA DEFINITIONS -->
@@ -3199,15 +3199,15 @@
     <script src="src/core/EventBus.js?v=1.2.2"></script>
     <script src="src/core/MobilePerf.js?v=1.6.5"></script>
     <script src="src/core/AutoUpdater.js?v=1.6.23"></script>
-    <script src="src/save/SaveMigration.js?v=1.7.4"></script>
-    <script src="src/core/GameState.js?v=1.6.14"></script>
+    <script src="src/save/SaveMigration.js?v=1.7.6"></script>
+    <script src="src/core/GameState.js?v=1.7.6"></script>
     <script src="src/progression/PerkProgression.js?v=1.5.36"></script>
     <script src="src/progression/CosmeticManager.js?v=1.5.49"></script>
     <script src="src/dungeons/AscentCrestManager.js?v=1.5.14"></script>
     <script src="src/core/CharacterSprites.js?v=1.5.26"></script>
     <script src="src/engine/SpriteAtlasCache.js?v=1.5.66"></script>
     <script src="src/save/SaveSerializer.js?v=1.7.4"></script>
-    <script src="src/save/SaveManager.js?v=1.7.4"></script>
+    <script src="src/save/SaveManager.js?v=1.7.6"></script>
     <script src="src/save/AccountSyncManager.js?v=1.7.4"></script>
     <script src="src/gear/GearManager.js?v=1.6.14"></script>
     <script src="src/gear/GearUpgradeManager.js?v=1.6.0"></script>
@@ -3256,7 +3256,7 @@
     <script src="src/entities/FoliageRenderer.js?v=1.5.26"></script>
     <script src="src/entities/Obstacle.js?v=1.6.6"></script>
     <script src="src/entities/WaterPuddle.js?v=1.2.2"></script>
-    <script src="src/entities/Weapons.js?v=1.6.7"></script>
+    <script src="src/entities/Weapons.js?v=1.7.6"></script>
     <script src="src/heroes/HeroSkinSystem.js?v=1.5.83"></script>
     <script src="src/heroes/PsanasHero.js?v=1.2.2"></script>
     <script src="src/heroes/PetrosHero.js?v=1.2.2"></script>
@@ -3346,7 +3346,7 @@
 
     <!-- 7. PROGRESSION & PROFILE -->
     <script src="src/ui/UiIcons.js?v=1.6.0"></script>
-    <script src="src/progression/CurrencyManager.js?v=1.2.2"></script>
+    <script src="src/progression/CurrencyManager.js?v=1.7.6"></script>
     <script src="src/progression/QuestManager.js?v=1.5.80"></script>
     <script src="src/progression/BattlePassManager.js?v=1.7.5"></script>
     <script src="src/ui/BattlePassModalUI.js?v=1.6.22"></script>
@@ -3375,9 +3375,9 @@
     <script src="src/ui/BossWarningOverlay.js?v=1.5.16"></script>
     <script src="src/ui/CinematicCutsceneOverlay.js?v=1.6.21"></script>
     <script src="src/ui/CreditsScreen.js?v=1.6.18"></script>
-    <script src="src/chests/ChestManager.js?v=1.5.72"></script>
+    <script src="src/chests/ChestManager.js?v=1.7.6"></script>
     <script src="src/ui/ChestModalUI.js?v=1.5.61"></script>
-    <script src="src/progression/InventoryManager.js?v=1.5.36"></script>
+    <script src="src/progression/InventoryManager.js?v=1.7.6"></script>
     <script src="src/ui/InventoryModalUI.js?v=1.6.0"></script>
     <script src="src/ui/TributeManager.js?v=1.5.31"></script>
 
@@ -3393,12 +3393,13 @@
 
     <!-- 8.8. MULTIPLAYER CO-OP SUBSYSTEM (PLAYTEST) -->
     <script src="src/libs/peerjs.min.js"></script>
-    <script src="src/network/NetworkManager.js?v=1.6.8"></script>
+    <script src="src/network/NetworkManager.js?v=1.7.5"></script>
     <script src="src/network/CoopSkillFx.js?v=1.6.4"></script>
     <script src="src/network/CoopDropSync.js?v=1.6.8"></script>
     <script src="src/network/CoopCombatFx.js?v=1.6.8"></script>
-    <script src="src/network/CoopHostSession.js?v=1.6.21"></script>
-    <script src="src/network/CoopGuestSession.js?v=1.6.21"></script>
+    <script src="src/network/CoopPauseSync.js?v=1.7.5"></script>
+    <script src="src/network/CoopHostSession.js?v=1.7.5"></script>
+    <script src="src/network/CoopGuestSession.js?v=1.7.5"></script>
     <script src="src/network/CoopLobbyModal.js?v=1.6.7"></script>
 
     <!-- 8.9. FRIENDS & ONLINE PLAYER ID SUBSYSTEM -->
@@ -3408,8 +3409,8 @@
 
     <!-- 9. GAME COORDINATOR & BOOTSTRAP -->
     <script src="src/engine/WaveSkipperMachine.js?v=1.6.22"></script>
-    <script src="src/engine/Game.js?v=1.7.4"></script>
-    <script src="src/main.js?v=1.6.23"></script>
+    <script src="src/engine/Game.js?v=1.7.5"></script>
+    <script src="src/main.js?v=1.7.5"></script>
 </body>
 
 </html>

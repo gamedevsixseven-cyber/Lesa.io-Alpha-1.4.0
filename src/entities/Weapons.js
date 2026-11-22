@@ -132,7 +132,9 @@ class WeaponSystem {
         }
 
         if (!alreadyOwned && typeof window !== 'undefined') {
-            if (window.cloudSave && window.cloudSave.currentUser && typeof window.cloudSave.saveToCloud === 'function') {
+            if (!ctxOptions.deferSave && window.SaveManager && typeof window.SaveManager.requestSave === 'function') {
+                window.SaveManager.requestSave();
+            } else if (!ctxOptions.deferSave && window.cloudSave && window.cloudSave.currentUser && typeof window.cloudSave.saveToCloud === 'function') {
                 window.cloudSave.saveToCloud({ unlockedWeapons: list });
             }
             if (window.uiController && window.uiController.modalManager && typeof window.uiController.modalManager.updateWeaponsModal === 'function') {

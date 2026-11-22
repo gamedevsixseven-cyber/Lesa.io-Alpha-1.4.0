@@ -26,16 +26,25 @@ class CurrencyManager {
     }
 
     handleCurrencyChanged(data) {
-        if (data.coinsDelta !== 0 && this.menuCoinText) {
-            this.animateNumber(this.menuCoinText, data.oldCoins, data.coins, 900, this.coinPill);
+        if (!data || typeof data !== 'object') return;
+        const p = (this.gameState && this.gameState.player) ? this.gameState.player : {};
+        const coins = Number.isFinite(Number(data.coins)) && Number.isFinite(Number(data.coinsDelta)) ? Number(data.coins) : (p.coins || 0);
+        const oldCoins = Number.isFinite(Number(data.oldCoins)) ? Number(data.oldCoins) : coins;
+        const coinsDelta = Number.isFinite(Number(data.coinsDelta)) ? Number(data.coinsDelta) : 0;
+        const gems = Number.isFinite(Number(data.gems)) && Number.isFinite(Number(data.gemsDelta)) ? Number(data.gems) : (p.gems || 0);
+        const oldGems = Number.isFinite(Number(data.oldGems)) ? Number(data.oldGems) : gems;
+        const gemsDelta = Number.isFinite(Number(data.gemsDelta)) ? Number(data.gemsDelta) : 0;
+
+        if (coinsDelta !== 0 && this.menuCoinText) {
+            this.animateNumber(this.menuCoinText, oldCoins, coins, 900, this.coinPill);
         } else if (this.menuCoinText) {
-            this.menuCoinText.textContent = data.coins.toLocaleString();
+            this.menuCoinText.textContent = coins.toLocaleString();
         }
 
-        if (data.gemsDelta !== 0 && this.menuGemText) {
-            this.animateNumber(this.menuGemText, data.oldGems, data.gems, 900, this.gemPill);
+        if (gemsDelta !== 0 && this.menuGemText) {
+            this.animateNumber(this.menuGemText, oldGems, gems, 900, this.gemPill);
         } else if (this.menuGemText) {
-            this.menuGemText.textContent = data.gems.toLocaleString();
+            this.menuGemText.textContent = gems.toLocaleString();
         }
     }
 

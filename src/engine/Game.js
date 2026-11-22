@@ -55,6 +55,7 @@ class Game {
             if (this.state === 'PLAYING') {
                 this.pauseGame();
             } else if (this.state === 'PAUSED') {
+                if (typeof document !== 'undefined' && !document.getElementById('settings-modal')?.classList.contains('hidden')) return;
                 this.resumeGame();
             }
         };
@@ -164,25 +165,26 @@ class Game {
         if (this.state === 'PLAYING') {
             this.state = 'PAUSED';
             const name = pausedByName || (this.player ? this.player.name : 'Hero');
-            this.ui.showPauseModal(name);
-            if (this.touchInput) this.touchInput.hide();
-            if (typeof LilXasEvent !== 'undefined') LilXasEvent.setPaused(true);
             if (this.coopSession && !isRemote && typeof this.coopSession.sendPause === 'function') {
                 this.coopSession.sendPause(name);
             }
+            this.ui.showPauseModal(name);
+            if (this.touchInput) this.touchInput.hide();
+            if (typeof LilXasEvent !== 'undefined') LilXasEvent.setPaused(true);
         }
     }
 
     resumeGame(isRemote = false) {
         if (this.state === 'PAUSED') {
+            if (this.coopSession && !isRemote && typeof this.coopSession.requestToggleResumeReady === 'function') {
+                this.coopSession.requestToggleResumeReady();
+                return;
+            }
             this.state = 'PLAYING';
             this.ui.hideModals();
             this.lastTime = performance.now();
             if (this.touchInput) this.touchInput.show();
             if (typeof LilXasEvent !== 'undefined') LilXasEvent.setPaused(false);
-            if (this.coopSession && !isRemote && typeof this.coopSession.sendResume === 'function') {
-                this.coopSession.sendResume();
-            }
         }
     }
 

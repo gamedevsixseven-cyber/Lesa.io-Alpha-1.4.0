@@ -330,6 +330,7 @@ class UIController {
         if (subtitleEl) {
             subtitleEl.textContent = pausedBy ? `⏸ ${pausedBy.toUpperCase()} PAUSED THE GAME` : 'Catch your breath!';
         }
+        if (typeof CoopPauseSync !== 'undefined') CoopPauseSync.syncPauseModal(pausedBy);
         if (this.pauseModal) this.pauseModal.classList.remove('hidden');
     }
 

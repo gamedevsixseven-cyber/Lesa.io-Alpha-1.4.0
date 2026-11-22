@@ -271,6 +271,9 @@ class InventoryManager {
             window.soundEngine.playLevelUp();
         }
         this._notifyInventoryUpdated({ chestType, loot, gemCost });
+        if (typeof window !== 'undefined' && window.SaveManager && typeof window.SaveManager.saveNow === 'function') {
+            window.SaveManager.saveNow();
+        }
         return loot;
     }
 
@@ -387,10 +390,12 @@ class InventoryManager {
             ChestModalUI.showLoot(def, loot);
         }
 
-        // 7. Fire Events & Re-render Inventory UI
+        // 7. Fire Events & Re-render Inventory UI (GameState.addCurrency already emitted currencyChanged with total balances)
         if (typeof window !== 'undefined' && window.EventBus) {
             window.EventBus.emit('inventoryUpdated', { crateId, loot });
-            window.EventBus.emit('currencyChanged', { coins, gems });
+        }
+        if (typeof window !== 'undefined' && window.SaveManager && typeof window.SaveManager.saveNow === 'function') {
+            window.SaveManager.saveNow();
         }
 
         if (typeof window !== 'undefined' && window.inventoryModalUI && typeof window.inventoryModalUI.render === 'function') {

@@ -87,6 +87,10 @@ class SaveMigration {
         if (this.safeGetInt('lesaio_max_wave', 1, 1) > 1) return true;
         if (this.safeGetInt('lesaio_evolution_stones', 0, 0) > 0) return true;
         if (this.safeGetInt('lesaio_olympian_star_stones', 0, 0) > 0) return true;
+        const rawCoins = localStorage.getItem('lesaio_coins');
+        if (rawCoins !== null && this.safeGetInt('lesaio_coins', 1500, 0) !== 1500) return true;
+        const rawGems = localStorage.getItem('lesaio_gems');
+        if (rawGems !== null && this.safeGetInt('lesaio_gems', 50, 0) !== 50) return true;
         const heroes = this.safeGetJson('lesaio_unlocked_heroes', null);
         if (Array.isArray(heroes) && heroes.length > 1) return true;
         const weapons = this.safeGetJson('lesaio_unlocked_weapons', null);
@@ -534,14 +538,18 @@ class SaveMigration {
         const localTs = Math.max(localMutationTs, Number(localSave && localSave.timestamp) || 0);
         const cloudScore = this.scoreCloudDoc(data);
         const localScore = Math.max(this.scoreCloudDoc(gs), this.scoreCloudDoc(localSave));
+        const curCoins = gs && gs.player ? (Number(gs.player.coins) || 0) : this.safeGetInt('lesaio_coins', 1500, 0);
+        const curGems = gs && gs.player ? (Number(gs.player.gems) || 0) : this.safeGetInt('lesaio_gems', 50, 0);
+        const cloudCoins = Number.isFinite(numCoins) ? numCoins : (Number.isFinite(numGold) ? numGold : 0);
+        const cloudGems = Number.isFinite(numGems) ? numGems : (Number.isFinite(numDiamonds) ? numDiamonds : 0);
+        const wiped = this.wasWipedByDev(data, localTs);
 
+        const localRicherCurr = !wiped && (curCoins > cloudCoins || curGems > cloudGems) && localTs >= cloudTs - 2000;
         const preferLocalCurrencies = Boolean(
             isInitialSync &&
             this.hasEstablishedProgress() &&
-            !hasConsoleCurrencyDiff &&
-            cloudTs > 0 &&
-            localTs > cloudTs + 2000 &&
-            localScore >= cloudScore
+            !wiped &&
+            (localRicherCurr || (!hasConsoleCurrencyDiff && cloudTs > 0 && localTs > cloudTs + 2000 && localScore >= cloudScore))
         );
 
         if ((isInitialSync || cloudScore > localScore) && gs && typeof SaveSerializer !== 'undefined' && typeof SaveSerializer.mergeProgressOnly === 'function') {

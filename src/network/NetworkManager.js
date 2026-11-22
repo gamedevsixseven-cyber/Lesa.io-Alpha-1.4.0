@@ -292,13 +292,13 @@ class NetworkManager {
         }
     }
 
-    disconnectGracefully(reason = 'Host left the match', onDone = null) {
+    disconnectGracefully(reason = 'Host left the match', onDone = null, packetType = 'HOST_QUIT_MATCH', packetPayload = null) {
         if (this.isGracefulDisconnecting) return;
         this.isGracefulDisconnecting = true;
 
         if (this.connected) {
             try {
-                this.send('HOST_QUIT_MATCH', { reason });
+                this.send(packetType, packetPayload || { reason });
             } catch (e) {}
         }
 
