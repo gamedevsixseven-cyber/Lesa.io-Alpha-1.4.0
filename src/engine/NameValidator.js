@@ -210,6 +210,14 @@ class NameValidator {
         return set;
     }
 
+    _withTimeout(promise, ms = 2200, fallback = null) {
+        let timer = null;
+        return Promise.race([
+            promise,
+            new Promise((resolve) => { timer = setTimeout(() => resolve(fallback), ms); })
+        ]).finally(() => { if (timer) clearTimeout(timer); });
+    }
+
     /**
      * Check if the name is already claimed by another online player (case-insensitive)
      */
@@ -228,47 +236,40 @@ class NameValidator {
             if (owner && !selfUids.has(owner)) return takenResp;
         } catch (_) {}
 
-        // 2. Check live Firebase Firestore across both `usernames` index and `players` directory
-        if (typeof window !== 'undefined' && window.cloudSave && window.cloudSave.isInitialized && window.cloudSave.db) {
+        // 2. Check live Firebase Firestore in parallel with strict timeout (never hang on offline/stalled connections)
+        const isOnline = (typeof navigator === 'undefined' || navigator.onLine !== false);
+        if (isOnline && typeof window !== 'undefined' && window.cloudSave && window.cloudSave.isInitialized && window.cloudSave.db) {
             const db = window.cloudSave.db;
-
-            // A. Direct username reservation doc
-            try {
-                const doc = await db.collection('usernames').doc(lower).get();
-                if (doc.exists) {
-                    const data = doc.data() || {};
-                    if (data.uid && !selfUids.has(data.uid)) return takenResp;
-                }
-            } catch (err) {
-                console.warn('Firestore usernames check notice:', err);
-            }
-
-            // B. Live `players` directory (catches all existing players even before username doc registration)
-            try {
-                const snap = await db.collection('players').where('playerNameLower', '==', lower).limit(5).get();
+            const hasConflict = (snap) => {
                 let conflict = false;
-                snap.forEach((doc) => {
-                    if (!doc.exists) return;
-                    const data = doc.data() || {};
-                    const docUid = data.uid || doc.id;
-                    if (!selfUids.has(doc.id) && !selfUids.has(docUid)) conflict = true;
-                });
-                if (conflict) return takenResp;
-
-                // Fallback exact-case check for legacy player docs missing `playerNameLower`
-                if (snap.empty) {
-                    const legacySnap = await db.collection('players').where('playerName', '==', trimmed).limit(5).get();
-                    legacySnap.forEach((doc) => {
+                if (snap && typeof snap.forEach === 'function') {
+                    snap.forEach((doc) => {
                         if (!doc.exists) return;
                         const data = doc.data() || {};
                         const docUid = data.uid || doc.id;
                         if (!selfUids.has(doc.id) && !selfUids.has(docUid)) conflict = true;
                     });
-                    if (conflict) return takenResp;
                 }
-            } catch (err) {
-                console.warn('Firestore players name check notice:', err);
+                return conflict;
+            };
+
+            const usernameQ = db.collection('usernames').doc(lower).get().catch(() => null);
+            const lowerQ = db.collection('players').where('playerNameLower', '==', lower).limit(5).get().catch(() => null);
+            const legacyQ = (trimmed !== lower)
+                ? db.collection('players').where('playerName', '==', trimmed).limit(5).get().catch(() => null)
+                : Promise.resolve(null);
+
+            const [uDoc, lowerSnap, legacySnap] = await this._withTimeout(
+                Promise.all([usernameQ, lowerQ, legacyQ]),
+                2200,
+                [null, null, null]
+            );
+
+            if (uDoc && uDoc.exists) {
+                const data = uDoc.data() || {};
+                if (data.uid && !selfUids.has(data.uid)) return takenResp;
             }
+            if (hasConflict(lowerSnap) || hasConflict(legacySnap)) return takenResp;
         }
 
         return { isValid: true };
@@ -303,26 +304,32 @@ class NameValidator {
             } catch (_) {}
         }
 
-        if (typeof window !== 'undefined' && window.cloudSave && window.cloudSave.isInitialized && window.cloudSave.db) {
+        const isOnline = (typeof navigator === 'undefined' || navigator.onLine !== false);
+        if (isOnline && typeof window !== 'undefined' && window.cloudSave && window.cloudSave.isInitialized && window.cloudSave.db) {
             const db = window.cloudSave.db;
             try {
                 if (previousName) {
                     const prevLower = String(previousName).trim().toLowerCase();
                     if (prevLower && prevLower !== lower) {
-                        const prevDoc = await db.collection('usernames').doc(prevLower).get();
-                        if (prevDoc.exists && prevDoc.data() && selfUids.has(prevDoc.data().uid)) {
-                            await db.collection('usernames').doc(prevLower).delete();
+                        const prevDoc = await this._withTimeout(db.collection('usernames').doc(prevLower).get().catch(() => null), 2000, null);
+                        if (prevDoc && prevDoc.exists && prevDoc.data() && selfUids.has(prevDoc.data().uid)) {
+                            await this._withTimeout(
+                                db.collection('usernames').doc(prevLower).set({ uid: '', released: true }, { merge: true }).catch(() => {}),
+                                2000,
+                                null
+                            );
                         }
                     }
                 }
-                const curDoc = await db.collection('usernames').doc(lower).get();
-                if (!curDoc.exists || !curDoc.data() || !curDoc.data().uid || selfUids.has(curDoc.data().uid)) {
-                    await db.collection('usernames').doc(lower).set({
-                        displayName: trimmed,
-                        nameLower: lower,
-                        uid: myUid,
-                        claimedAt: firebase.firestore.FieldValue.serverTimestamp()
-                    }, { merge: true });
+                const curDoc = await this._withTimeout(db.collection('usernames').doc(lower).get().catch(() => null), 2000, null);
+                if (!curDoc || !curDoc.exists || !curDoc.data() || !curDoc.data().uid || selfUids.has(curDoc.data().uid)) {
+                    const ts = (typeof firebase !== 'undefined' && firebase.firestore && firebase.firestore.FieldValue)
+                        ? firebase.firestore.FieldValue.serverTimestamp() : Date.now();
+                    await this._withTimeout(
+                        db.collection('usernames').doc(lower).set({ displayName: trimmed, nameLower: lower, uid: myUid, claimedAt: ts }, { merge: true }).catch(() => {}),
+                        2500,
+                        null
+                    );
                 }
             } catch (err) {
                 console.warn('Firestore username registration notice:', err);

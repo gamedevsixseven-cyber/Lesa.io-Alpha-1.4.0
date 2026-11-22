@@ -203,6 +203,38 @@ class ProfileManager {
         if (window.soundEngine && typeof window.soundEngine.playGoBack === 'function') window.soundEngine.playGoBack();
     }
 
+    async _verifyAndClaimName(btn, errEl, val, prevName = null, beforeClaimFn = null) {
+        this._submittingName = true;
+        const origHtml = btn ? btn.innerHTML : '';
+        if (btn) { btn.disabled = true; btn.textContent = 'CHECKING...'; }
+        try {
+            const nv = (typeof window !== 'undefined') ? window.nameValidator : null;
+            const needUniqueCheck = nv && typeof nv.checkUniqueName === 'function'
+                && (!prevName || val.toLowerCase() !== prevName.toLowerCase());
+            if (needUniqueCheck) {
+                let timer = null;
+                const uniqueRes = await Promise.race([
+                    nv.checkUniqueName(val),
+                    new Promise((resolve) => { timer = setTimeout(() => resolve({ isValid: true }), 2600); })
+                ]).finally(() => { if (timer) clearTimeout(timer); });
+                if (uniqueRes && !uniqueRes.isValid) {
+                    this._showNameError(errEl, uniqueRes.reason || 'Name taken!');
+                    return false;
+                }
+            }
+            if (beforeClaimFn && !beforeClaimFn()) return false;
+            if (nv && typeof nv.claimName === 'function') {
+                nv.claimName(val, prevName).catch(() => {});
+            }
+            return true;
+        } catch (_) {
+            return true;
+        } finally {
+            this._submittingName = false;
+            if (btn) { btn.disabled = false; btn.innerHTML = origHtml; }
+        }
+    }
+
     async handleFirstTimeNameSubmit() {
         if (this._submittingName) return;
         const input = document.getElementById('initial-name-input');
@@ -217,22 +249,8 @@ class ProfileManager {
             return;
         }
 
-        this._submittingName = true;
-        const origHtml = btn ? btn.innerHTML : '';
-        if (btn) { btn.disabled = true; btn.textContent = 'CHECKING...'; }
-        try {
-            if (typeof window !== 'undefined' && window.nameValidator && typeof window.nameValidator.checkUniqueName === 'function') {
-                const uniqueRes = await window.nameValidator.checkUniqueName(val);
-                if (!uniqueRes.isValid) {
-                    this._showNameError(errorEl, uniqueRes.reason || 'Name taken!');
-                    return;
-                }
-                await window.nameValidator.claimName(val);
-            }
-        } finally {
-            this._submittingName = false;
-            if (btn) { btn.disabled = false; btn.innerHTML = origHtml; }
-        }
+        const ok = await this._verifyAndClaimName(btn, errorEl, val);
+        if (!ok) return;
 
         if (this.gameState) {
             this.gameState.player.name = val;
@@ -270,30 +288,14 @@ class ProfileManager {
             return;
         }
 
-        this._submittingName = true;
-        const origHtml = btn ? btn.innerHTML : '';
-        if (btn) { btn.disabled = true; btn.textContent = 'CHECKING...'; }
-        try {
-            if (val.toLowerCase() !== prevName.toLowerCase() && typeof window !== 'undefined' && window.nameValidator && typeof window.nameValidator.checkUniqueName === 'function') {
-                const uniqueRes = await window.nameValidator.checkUniqueName(val);
-                if (!uniqueRes.isValid) {
-                    this._showNameError(err, uniqueRes.reason || 'Name taken!');
-                    return;
-                }
-            }
-
+        const ok = await this._verifyAndClaimName(btn, err, val, prevName, () => {
             if (this.gameState.player.gems < 100) {
                 this._showNameError(err, 'Not enough Gems! (Requires 100 💎)');
-                return;
+                return false;
             }
-
-            if (typeof window !== 'undefined' && window.nameValidator && typeof window.nameValidator.claimName === 'function') {
-                await window.nameValidator.claimName(val, prevName);
-            }
-        } finally {
-            this._submittingName = false;
-            if (btn) { btn.disabled = false; btn.innerHTML = origHtml; }
-        }
+            return true;
+        });
+        if (!ok) return;
 
         this.gameState.spendGems(100);
         this.gameState.player.name = val;
