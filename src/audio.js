@@ -86,12 +86,13 @@ class SoundEngine {
         this._lastKeyMs = {};
         this._creditsActive = false;
         this._creditsFadeToken = 0;
+        this._creditsGain = 1.0;
+        this.bgmCtrl = (typeof BgmController !== 'undefined') ? new BgmController(this) : null;
 
         // Unlock Web Audio Context on user interaction (browser policy)
         const events = ['click', 'pointerdown', 'mousedown', 'keydown', 'touchstart'];
         const unlockAudio = () => {
             this.init();
-            // Menu music only plays after loading hits 100% and main menu is shown
             const menuEl = document.getElementById('menu-screen');
             const isMenuVisible = menuEl && !menuEl.classList.contains('hidden');
             if (window.loadingScreen && window.loadingScreen.isDone && isMenuVisible) {
@@ -111,12 +112,27 @@ class SoundEngine {
             const AudioContext = window.AudioContext || window.webkitAudioContext;
             if (AudioContext) this.ctx = new AudioContext();
         }
-        if (this.ctx && this.ctx.state === 'suspended') {
+        if (this.ctx && this.ctx.state !== 'running') {
             this.ctx.resume().catch(() => {});
         }
         if (this.ctx && !this.critAudioBuffer && !this.critBufferLoading) {
             this.loadCritBuffer();
         }
+    }
+
+    registerBgmElement(audioEl, scale = 1.0) {
+        if (this.bgmCtrl) this.bgmCtrl.register(audioEl, scale);
+    }
+
+    unregisterBgmElement(audioEl) {
+        if (this.bgmCtrl) this.bgmCtrl.unregister(audioEl);
+    }
+
+    _syncAllBgmOutputs() {
+        if (this.bgmCtrl) { this.bgmCtrl.syncAll(); return; }
+        const v = (this.muted || this.bgmMuted) ? 0 : this.bgmVolume;
+        if (this.menuMusic) { this.menuMusic.muted = v <= 0.001; this.menuMusic.volume = v; }
+        if (this.creditsMusic) { this.creditsMusic.muted = v <= 0.001; this.creditsMusic.volume = v * this._creditsGain; }
     }
 
     loadCritBuffer() {
@@ -157,51 +173,36 @@ class SoundEngine {
         this.bgmVolume = Math.max(0, Math.min(1, val));
         localStorage.setItem('lesaio_bgm_volume', this.bgmVolume.toString());
         localStorage.setItem('lesaio_music_volume', this.bgmVolume.toString());
-        if (window.GameState && window.GameState.settings) {
-            window.GameState.settings.musicVolume = this.bgmVolume;
-        }
-        if (!this.bgmMuted && !this.muted) {
-            this.menuMusic.volume = this.bgmVolume;
-            if (this.creditsMusic) this.creditsMusic.volume = this.bgmVolume;
+        if (window.GameState && window.GameState.settings) window.GameState.settings.musicVolume = this.bgmVolume;
+        this.init();
+        this._syncAllBgmOutputs();
+        const menuInactive = this.bgmCtrl ? !this.bgmCtrl.isSlotActive('menu') : (this.menuMusic && this.menuMusic.paused);
+        if (!this.muted && !this.bgmMuted && this.bgmVolume > 0 && menuInactive) {
+            const menuEl = document.getElementById('menu-screen');
+            if (menuEl && !menuEl.classList.contains('hidden') && (!window.gameInstance || window.gameInstance.state === 'MENU')) this.startMenuBGM();
         }
     }
 
     setMuted(muted) {
-        this.muted = muted;
-        localStorage.setItem('lesaio_muted', muted);
+        this.muted = !!muted;
+        localStorage.setItem('lesaio_muted', String(this.muted));
         this.updateSfxVolumes();
-        if (muted) {
-            this.stopBGM();
-            this.stopMenuBGM();
-            this.stopCreditsBGM();
-        } else if (!this.bgmMuted) {
-            if (window.gameInstance && window.gameInstance.state === 'PLAYING') {
-                this.startBGM();
-            } else {
-                this.startMenuBGM();
-            }
+        this._syncAllBgmOutputs();
+        if (this.muted) { this.stopBGM(); this.stopMenuBGM(); this.stopCreditsBGM(); }
+        else if (!this.bgmMuted) {
+            if (window.gameInstance && window.gameInstance.state === 'PLAYING') this.startBGM();
+            else this.startMenuBGM();
         }
     }
 
     setBgmMuted(bgmMuted) {
-        this.bgmMuted = bgmMuted;
-        localStorage.setItem('lesaio_bgm_muted', bgmMuted);
-        if (bgmMuted) {
-            this.menuMusic.volume = 0;
-            if (this.creditsMusic) this.creditsMusic.volume = 0;
-            this.stopBGM();
-            this.stopMenuBGM();
-            this.stopCreditsBGM();
-        } else {
-            this.menuMusic.volume = this.bgmVolume;
-            if (this.creditsMusic) this.creditsMusic.volume = this.bgmVolume;
-            if (!this.muted) {
-                if (window.gameInstance && window.gameInstance.state === 'PLAYING') {
-                    this.startBGM();
-                } else {
-                    this.startMenuBGM();
-                }
-            }
+        this.bgmMuted = !!bgmMuted;
+        localStorage.setItem('lesaio_bgm_muted', String(this.bgmMuted));
+        this._syncAllBgmOutputs();
+        if (this.bgmMuted) { this.stopBGM(); this.stopMenuBGM(); this.stopCreditsBGM(); }
+        else if (!this.muted) {
+            if (window.gameInstance && window.gameInstance.state === 'PLAYING') this.startBGM();
+            else this.startMenuBGM();
         }
     }
 
@@ -209,26 +210,25 @@ class SoundEngine {
 
     startMenuBGM() {
         if (this.muted || this.bgmMuted || this.bgmVolume <= 0) return;
-        // Strict Guard: Menu music ONLY plays when the main menu is actively shown
         const menuScreen = document.getElementById('menu-screen');
-        if (!menuScreen || menuScreen.classList.contains('hidden') || menuScreen.style.display === 'none') {
+        if (!menuScreen || menuScreen.classList.contains('hidden') || menuScreen.style.display === 'none') return;
+        if (typeof document !== 'undefined' && (document.hidden || document.visibilityState === 'hidden')) return;
+        this.init();
+        if (this.bgmCtrl && this.bgmCtrl.playTrack('menu', 'Audio/MenuSoundtrack1Default.mp3', { loop: true, scale: 1.0, fallbackAudio: this.menuMusic })) {
+            this._syncAllBgmOutputs();
             return;
         }
-        this.init();
+        this._syncAllBgmOutputs();
         try {
             this.menuMusic.currentTime = this.menuMusic.currentTime || 0;
-            this.menuMusic.volume = this.bgmVolume;
-            const playPromise = this.menuMusic.play();
-            if (playPromise !== undefined) {
-                playPromise.catch(() => {});
-            }
-        } catch (e) {}
+            const p = this.menuMusic.play();
+            if (p && p.catch) p.catch(() => {});
+        } catch (_) {}
     }
 
     stopMenuBGM() {
-        try {
-            this.menuMusic.pause();
-        } catch (e) {}
+        if (this.bgmCtrl) this.bgmCtrl.stopTrack('menu', false);
+        try { this.menuMusic.pause(); } catch (_) {}
     }
 
     startCreditsBGM(fadeInDuration = 2.5) {
@@ -239,65 +239,57 @@ class SoundEngine {
         try {
             this.stopBGM();
             this.stopMenuBGM();
-            const track = this.creditsMusic;
-            if (track) {
-                track.currentTime = 0;
-                const getTargetVol = () => (this.muted || this.bgmMuted ? 0 : Math.max(0, Math.min(1, this.bgmVolume)));
-
-                const beginFade = () => {
+            this._creditsGain = fadeInDuration > 0 ? 0 : 1.0;
+            const syncCred = () => this.bgmCtrl ? this.bgmCtrl.syncAll() : this._syncAllBgmOutputs();
+            const beginFade = () => {
+                if (!this._creditsActive || this._creditsFadeToken !== fadeToken) return;
+                if (fadeInDuration <= 0) { this._creditsGain = 1.0; syncCred(); return; }
+                let fadeStart = null;
+                const fade = (now) => {
                     if (!this._creditsActive || this._creditsFadeToken !== fadeToken) return;
-                    if (fadeInDuration <= 0) {
-                        track.volume = getTargetVol();
-                        return;
-                    }
-                    let fadeStart = null;
-                    const fade = (now) => {
-                        if (!this._creditsActive || this._creditsFadeToken !== fadeToken || !this.creditsMusic) return;
-                        if (this.creditsMusic.paused) {
-                            // Keep waiting if audio decoder is still starting/buffering
-                            requestAnimationFrame(fade);
-                            return;
-                        }
-                        if (fadeStart === null) fadeStart = now;
-                        const progress = Math.max(0, Math.min((now - fadeStart) / (fadeInDuration * 1000), 1.0));
-                        this.creditsMusic.volume = Math.max(0, Math.min(1, getTargetVol() * progress));
-                        if (progress < 1.0) requestAnimationFrame(fade);
-                    };
-                    requestAnimationFrame(fade);
+                    const mobSlot = this.bgmCtrl && this.bgmCtrl._slots && this.bgmCtrl._slots.credits;
+                    const playingBuf = mobSlot && mobSlot.wantPlaying;
+                    if (!playingBuf && this.creditsMusic && this.creditsMusic.paused) { requestAnimationFrame(fade); return; }
+                    if (fadeStart === null) fadeStart = now;
+                    this._creditsGain = Math.max(0, Math.min((now - fadeStart) / (fadeInDuration * 1000), 1.0));
+                    syncCred();
+                    if (this._creditsGain < 1.0) requestAnimationFrame(fade);
                 };
-
-                track.volume = fadeInDuration > 0 ? 0 : getTargetVol();
-                const playPromise = track.play();
-                if (playPromise !== undefined) {
-                    playPromise.then(beginFade).catch(() => {
-                        // Retry once on the next user gesture if autoplay was blocked
-                        if (!this._creditsActive || this._creditsFadeToken !== fadeToken) return;
-                        const retry = () => {
-                            window.removeEventListener('pointerdown', retry);
-                            window.removeEventListener('keydown', retry);
-                            if (!this._creditsActive || this._creditsFadeToken !== fadeToken) return;
-                            const p = track.play();
-                            if (p && p.then) p.then(beginFade).catch(() => {});
-                        };
-                        window.addEventListener('pointerdown', retry, { once: true, passive: true });
-                        window.addEventListener('keydown', retry, { once: true, passive: true });
-                    });
-                } else {
-                    beginFade();
-                }
+                requestAnimationFrame(fade);
+            };
+            if (this.bgmCtrl && this.bgmCtrl.playTrack('credits', encodeURI('Audio/Lesa.io (Credits).mp3'), { loop: false, scale: this._creditsGain, reset: true, fallbackAudio: this.creditsMusic })) {
+                syncCred();
+                beginFade();
+                return;
             }
-        } catch (e) {}
+            const track = this.creditsMusic;
+            if (!track) return;
+            track.currentTime = 0;
+            syncCred();
+            const p = track.play();
+            if (p !== undefined) {
+                p.then(beginFade).catch(() => {
+                    if (!this._creditsActive || this._creditsFadeToken !== fadeToken) return;
+                    const retry = () => {
+                        window.removeEventListener('pointerdown', retry);
+                        window.removeEventListener('keydown', retry);
+                        if (!this._creditsActive || this._creditsFadeToken !== fadeToken) return;
+                        const rp = track.play();
+                        if (rp && rp.then) rp.then(beginFade).catch(() => {});
+                    };
+                    window.addEventListener('pointerdown', retry, { once: true, passive: true });
+                    window.addEventListener('keydown', retry, { once: true, passive: true });
+                });
+            } else { beginFade(); }
+        } catch (_) {}
     }
 
     stopCreditsBGM() {
         this._creditsActive = false;
         this._creditsFadeToken++;
-        try {
-            if (this.creditsMusic) {
-                this.creditsMusic.pause();
-                this.creditsMusic.currentTime = 0;
-            }
-        } catch (e) {}
+        this._creditsGain = 1.0;
+        if (this.bgmCtrl) this.bgmCtrl.stopTrack('credits', true);
+        try { if (this.creditsMusic) { this.creditsMusic.pause(); this.creditsMusic.currentTime = 0; } } catch (_) {}
     }
 
     playStartGame() {
@@ -557,10 +549,7 @@ class SoundEngine {
 
     stopBGM() {
         this.bgmPlaying = false;
-        if (this.bgmTimer) {
-            clearTimeout(this.bgmTimer);
-            this.bgmTimer = null;
-        }
+        if (this.bgmTimer) { clearTimeout(this.bgmTimer); this.bgmTimer = null; }
     }
 }
 

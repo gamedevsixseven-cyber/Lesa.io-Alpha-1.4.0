@@ -80,21 +80,28 @@ class SettingsManager {
 
 
         if (this.musicSlider) {
-            this.musicSlider.addEventListener('input', (e) => {
+            const onMusicChange = (e) => {
                 const val = parseInt(e.target.value, 10);
-                window.soundEngine.setBgmVolume(val / 100);
+                if (window.soundEngine) {
+                    if (typeof window.soundEngine.init === 'function') window.soundEngine.init();
+                    window.soundEngine.setBgmVolume(val / 100);
+                }
                 if (this.musicValText) this.musicValText.textContent = `${val}%`;
-            });
+            };
+            this.musicSlider.addEventListener('input', onMusicChange);
+            this.musicSlider.addEventListener('change', onMusicChange);
         }
 
         if (this.sfxSlider) {
-            this.sfxSlider.addEventListener('input', (e) => {
+            const onSfxInput = (e) => {
                 const val = parseInt(e.target.value, 10);
-                window.soundEngine.setMasterVolume(val / 100);
+                if (window.soundEngine) window.soundEngine.setMasterVolume(val / 100);
                 if (this.sfxValText) this.sfxValText.textContent = `${val}%`;
-            });
-            this.sfxSlider.addEventListener('change', () => {
-                window.soundEngine.playSelect();
+            };
+            this.sfxSlider.addEventListener('input', onSfxInput);
+            this.sfxSlider.addEventListener('change', (e) => {
+                onSfxInput(e);
+                if (window.soundEngine) window.soundEngine.playSelect();
             });
         }
 
@@ -261,7 +268,7 @@ class SettingsManager {
         // Fallback Quick-Link mode if Firebase API key hasn't been pasted yet
         const playerName = localStorage.getItem('lesaio_player_name') || 'Hero';
         const defaultEmail = `${playerName.toLowerCase().replace(/[^a-z0-9]/g, '')}@gmail.com`;
-        
+
         const enteredEmail = prompt('Enter your Google Account email to bind your game progress:', defaultEmail);
         if (!enteredEmail || !enteredEmail.includes('@')) {
             if (enteredEmail !== null) alert('Please enter a valid email address.');
@@ -274,7 +281,7 @@ class SettingsManager {
         localStorage.setItem('lesaio_google_linked', 'true');
         localStorage.setItem('lesaio_google_email', enteredEmail);
         localStorage.setItem('lesaio_google_name', formattedName);
-        
+
         this.syncCloudSave(true);
         window.soundEngine.playPickup('star');
         alert(`🎉 Google Account linked successfully!\n\nEmail: ${enteredEmail}\nYour progress is now secured to the cloud.`);

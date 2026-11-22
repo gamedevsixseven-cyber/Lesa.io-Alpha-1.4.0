@@ -509,6 +509,9 @@ class UIController {
         if (typeof ProfileCosmeticsUI !== 'undefined') {
             ProfileCosmeticsUI.refreshHeaderPreview();
         }
+        if (typeof AutoUpdater !== 'undefined') {
+            AutoUpdater.checkForUpdate();
+        }
     }
 }
 

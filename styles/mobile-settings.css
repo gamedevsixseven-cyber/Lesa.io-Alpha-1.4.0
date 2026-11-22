@@ -144,6 +144,22 @@
     #settings-modal .modal-actions {
         margin-top: 8px !important;
     }
+    #settings-modal .slider-control-group {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-shrink: 0;
+    }
+    #settings-modal .comic-slider {
+        touch-action: none !important;
+        width: 120px;
+        height: 16px;
+        cursor: pointer;
+    }
+    #settings-modal .comic-slider::-webkit-slider-thumb {
+        width: 26px;
+        height: 26px;
+    }
 
     /* Graphics Quality Segmented Pills (Low / Med / High) */
     .mob-preset-group {

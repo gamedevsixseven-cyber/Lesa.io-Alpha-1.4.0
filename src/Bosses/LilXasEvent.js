@@ -405,11 +405,13 @@ class LilXasEvent {
             const idx = (typeof forcedIdx === 'number' && forcedIdx >= 0 && forcedIdx < this.TRACKS.length)
                 ? forcedIdx : Math.floor(Math.random() * this.TRACKS.length);
             this.activeTrackIdx = idx;
-            const audio = new Audio(encodeURI(this.TRACKS[idx]));
+            const trackUrl = encodeURI(this.TRACKS[idx]);
+            const audio = new Audio(trackUrl);
             audio.loop = true;
-            const baseVol = se ? Math.max(se.masterVolume || 0.5, se.bgmVolume || 0.4) : 0.65;
-            audio.volume = Math.max(0.15, Math.min(1, baseVol * 0.9));
             this.audio = audio;
+            if (se && se.bgmCtrl && se.bgmCtrl.playTrack('lilXas', trackUrl, { loop: true, scale: 0.9, reset: true, fallbackAudio: audio })) return;
+            if (se && typeof se.registerBgmElement === 'function') se.registerBgmElement(audio, 0.9);
+            else audio.volume = se ? Math.max(0, Math.min(1, se.bgmVolume * 0.9)) : 0.6;
             const p = audio.play();
             if (p && p.catch) p.catch(() => {});
         } catch (_) {}
@@ -483,18 +485,25 @@ class LilXasEvent {
     }
 
     static setPaused(paused) {
-        if (!this.audio) return;
-        try {
-            if (paused) this.audio.pause();
-            else if (this.active && (this.phase === 'BLAST_SONG' || (this.stage && this.stage.musicPlaying))) {
-                const se = window.soundEngine;
-                if (!se || (!se.muted && !se.bgmMuted)) this.audio.play().catch(() => {});
-            }
-        } catch (_) {}
+        const se = (typeof window !== 'undefined') ? window.soundEngine : null;
+        if (paused) {
+            if (se && se.bgmCtrl) se.bgmCtrl.stopTrack('lilXas', false);
+            if (this.audio) try { this.audio.pause(); } catch (_) {}
+            return;
+        }
+        if (this.active && (this.phase === 'BLAST_SONG' || (this.stage && this.stage.musicPlaying))) {
+            if (se && (se.muted || se.bgmMuted || se.bgmVolume <= 0)) return;
+            const url = encodeURI(this.TRACKS[this.activeTrackIdx || 0] || this.TRACKS[0]);
+            if (se && se.bgmCtrl && se.bgmCtrl.playTrack('lilXas', url, { loop: true, scale: 0.9, fallbackAudio: this.audio })) return;
+            if (this.audio) try { this.audio.play().catch(() => {}); } catch (_) {}
+        }
     }
 
     static stopMusic() {
+        const se = (typeof window !== 'undefined') ? window.soundEngine : null;
+        if (se && se.bgmCtrl) se.bgmCtrl.stopTrack('lilXas', true);
         if (!this.audio) return;
+        if (se && typeof se.unregisterBgmElement === 'function') se.unregisterBgmElement(this.audio);
         try {
             this.audio.pause();
             this.audio.currentTime = 0;

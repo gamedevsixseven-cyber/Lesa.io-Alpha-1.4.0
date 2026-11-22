@@ -134,20 +134,9 @@ class ModalManager {
     toggleAudioMute() {
         if (!window.soundEngine) return;
 
-        const currentMuted = window.soundEngine.muted;
-        const newMuted = !currentMuted;
-
-        window.soundEngine.muted = newMuted;
-        window.soundEngine.bgmMuted = newMuted;
-        localStorage.setItem('lesaio_muted', newMuted.toString());
-        localStorage.setItem('lesaio_bgm_muted', newMuted.toString());
-
-        if (window.soundEngine.menuMusic) {
-            window.soundEngine.menuMusic.volume = newMuted ? 0 : window.soundEngine.bgmVolume;
-        }
-        if (window.soundEngine.creditsMusic) {
-            window.soundEngine.creditsMusic.volume = newMuted ? 0 : window.soundEngine.bgmVolume;
-        }
+        const newMuted = !window.soundEngine.muted;
+        if (typeof window.soundEngine.setMuted === 'function') window.soundEngine.setMuted(newMuted);
+        if (typeof window.soundEngine.setBgmMuted === 'function') window.soundEngine.setBgmMuted(newMuted);
 
         this.showQuickToast(newMuted ? '🔇 Audio Muted [M]' : '🔊 Audio Enabled [M]');
     }
