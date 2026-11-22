@@ -15,7 +15,8 @@ class CoopDropSync {
             if (p1 && p1.hp > 0) p1.addXP(val);
             if (session.net) session.net.send('XP_SHARE', { val });
         } else if (drop.type === 'coin_pouch') {
-            const coins = Math.max(1, Math.min(250, Math.round(drop.value || 20)));
+            const eventGoldMult = (typeof EventManager !== 'undefined') ? EventManager.getGoldMultiplier() : 1.0;
+            const coins = Math.max(1, Math.min(500, Math.round((drop.value || 20) * eventGoldMult)));
             if (typeof window !== 'undefined' && window.GameState) window.GameState.addCurrency(coins, 0);
             game.coinsEarnedThisRun = (game.coinsEarnedThisRun || 0) + coins;
             if (session.net) session.net.send('COIN_SHARE', { coins });

@@ -1,0 +1,433 @@
+/* =========================================================
+   LESA.IO - LIVE EVENTS HUB MODAL & EVENT MULTIPLIER BADGES
+   Warm Comic Arcade theme matched to Lesa.io's core UI
+   ========================================================= */
+
+#events-modal .events-panel {
+    background: linear-gradient(180deg, #fff9e6 0%, #fff0c4 100%);
+    border: 4.5px solid var(--dark-outline, #1e272e);
+    border-radius: 28px;
+    box-shadow: 7px 7px 0 var(--dark-outline, #1e272e), 0 18px 44px rgba(0, 0, 0, 0.65);
+    max-width: 760px;
+    width: 94%;
+    padding: 18px 20px 18px;
+    color: #1e272e;
+    display: flex;
+    flex-direction: column;
+    max-height: 90vh;
+    max-height: 90dvh;
+    overflow: hidden;
+}
+
+.events-header-banner {
+    background: linear-gradient(135deg, #fed330 0%, #f7b731 50%, #fa8231 100%);
+    border: 3.5px solid var(--dark-outline, #1e272e);
+    border-radius: 18px;
+    box-shadow: 0 4px 0 var(--dark-outline, #1e272e);
+    padding: 10px 52px 10px 16px;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    text-align: left;
+    flex-shrink: 0;
+}
+
+.events-header-left { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+
+.events-modal-title {
+    margin: 0;
+    font-family: 'Luckiest Guy', cursive, sans-serif;
+    font-size: 1.85rem;
+    color: #ffffff;
+    -webkit-text-stroke: 2px #1e272e;
+    text-shadow: 3px 3px 0 #1e272e;
+    letter-spacing: 0.8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    line-height: 1.05;
+}
+
+.events-header-sub {
+    margin: 0;
+    font-family: 'Fredoka', sans-serif;
+    font-size: 0.84rem;
+    font-weight: 800;
+    color: #2b241d;
+    letter-spacing: 0.3px;
+}
+
+/* Segmented Flip-Clock Widget */
+.events-clock-box {
+    background: #2b241d;
+    border: 2.5px solid #1e272e;
+    border-radius: 14px;
+    padding: 5px 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    box-shadow: 0 3px 0 #1e272e;
+    flex-shrink: 0;
+}
+.events-clock-label {
+    font-family: 'Fredoka', sans-serif;
+    font-size: 0.65rem;
+    font-weight: 900;
+    color: #fed330;
+    letter-spacing: 0.8px;
+}
+.events-clock-box.is-live .events-clock-label { color: #2ed573; }
+.events-clock-digits { display: flex; gap: 5px; align-items: center; }
+.ev-cd-unit {
+    background: #1a1510;
+    border: 1.5px solid #4a3d2f;
+    border-radius: 7px;
+    padding: 2px 6px;
+    display: flex;
+    align-items: baseline;
+    gap: 2px;
+}
+.ev-cd-unit strong {
+    font-family: 'Luckiest Guy', cursive, sans-serif;
+    font-size: 1rem;
+    color: #ffffff;
+    line-height: 1;
+}
+.ev-cd-unit small {
+    font-family: 'Fredoka', sans-serif;
+    font-size: 0.62rem;
+    font-weight: 900;
+    color: #fed330;
+}
+
+/* Sub-Tabs Bar */
+.events-tabs-bar {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 10px;
+    flex-shrink: 0;
+}
+.events-tab-btn {
+    flex: 1;
+    background: #efe4c4;
+    border: 2.5px solid #1e272e;
+    border-radius: 12px;
+    color: #4b5563;
+    padding: 7px 10px;
+    font-family: 'Luckiest Guy', cursive, sans-serif;
+    font-size: 0.9rem;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    box-shadow: 0 3px 0 #1e272e;
+    transition: transform 0.1s ease, background 0.15s ease;
+}
+.events-tab-btn:hover:not(.active) { background: #f9efc8; color: #1e272e; }
+.events-tab-btn.active {
+    background: linear-gradient(180deg, #fed330 0%, #f7b731 100%);
+    color: #1e272e;
+    box-shadow: 0 4px 0 #1e272e;
+    transform: translateY(-1px);
+}
+
+.events-list {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    overflow-y: auto;
+    padding: 2px 3px 4px 2px;
+    margin-bottom: 12px;
+    touch-action: pan-y;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Featured Event Card */
+.event-card {
+    background: #ffffff;
+    border: 3.5px solid var(--dark-outline, #1e272e);
+    border-radius: 20px;
+    box-shadow: 0 4px 0 var(--dark-outline, #1e272e);
+    padding: 14px 16px;
+    text-align: left;
+    display: flex;
+    flex-direction: column;
+    gap: 11px;
+    position: relative;
+}
+.event-card.is-live {
+    background: linear-gradient(180deg, #ffffff 0%, #fff8dc 100%);
+    box-shadow: 0 0 0 2px #fed330, 0 5px 0 #1e272e;
+}
+.event-card.is-ended { opacity: 0.8; background: #f1f2f6; }
+
+.event-card-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+.event-card-title-row { display: flex; align-items: center; gap: 10px; }
+.event-card-emblem {
+    width: 46px;
+    height: 46px;
+    border-radius: 14px;
+    background: linear-gradient(180deg, #fed330 0%, #fa8231 100%);
+    border: 2.5px solid #1e272e;
+    box-shadow: 0 3px 0 #1e272e;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+.event-card-icon-img { width: 26px; height: 26px; object-fit: contain; }
+.event-card-headings { display: flex; flex-direction: column; gap: 2px; }
+.event-type-tag {
+    font-family: 'Fredoka', sans-serif;
+    font-size: 0.74rem;
+    font-weight: 900;
+    color: #d35400;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+}
+.event-card-title {
+    margin: 0;
+    font-family: 'Luckiest Guy', cursive, sans-serif;
+    font-size: 1.5rem;
+    color: #1e272e;
+    letter-spacing: 0.6px;
+    line-height: 1.05;
+}
+
+.event-status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 11px;
+    border-radius: 999px;
+    border: 2px solid #1e272e;
+    font-family: 'Luckiest Guy', cursive, sans-serif;
+    font-size: 0.8rem;
+    letter-spacing: 0.5px;
+    box-shadow: 0 2px 0 #1e272e;
+    flex-shrink: 0;
+}
+.event-status-pill.is-live { background: #2ed573; color: #052e16; animation: eventLivePulse 1.5s infinite ease-in-out; }
+.event-status-pill.is-upcoming { background: #fed330; color: #1e272e; }
+.event-status-pill.is-ended { background: #ced6e0; color: #2f3542; }
+
+@keyframes eventLivePulse {
+    0%, 100% { box-shadow: 0 2px 0 #1e272e, 0 0 0 0 rgba(46, 213, 115, 0.5); }
+    50% { box-shadow: 0 2px 0 #1e272e, 0 0 12px 2px rgba(46, 213, 115, 0.8); }
+}
+
+.event-card-desc {
+    margin: 0;
+    font-family: 'Fredoka', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: #4b5563;
+    line-height: 1.4;
+}
+
+/* 3-Column Multiplier Showcase */
+.event-multipliers-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 9px; }
+.event-mult-chip {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 9px 11px;
+    border-radius: 14px;
+    border: 2.5px solid #1e272e;
+    box-shadow: 0 3px 0 #1e272e;
+}
+.ev-chip-icon { width: 24px; height: 24px; flex-shrink: 0; }
+.ev-chip-body { display: flex; flex-direction: column; min-width: 0; }
+.event-mult-chip.is-xp { background: linear-gradient(180deg, #e0f2fe 0%, #bae6fd 100%); }
+.event-mult-chip.is-gold { background: linear-gradient(180deg, #fef3c7 0%, #fde68a 100%); }
+.event-mult-chip.is-mats { background: linear-gradient(180deg, #ede9fe 0%, #ddd6fe 100%); }
+.event-mult-val {
+    font-family: 'Luckiest Guy', cursive, sans-serif;
+    font-size: 1.12rem;
+    color: #1e272e;
+    line-height: 1.05;
+}
+.event-mult-scope {
+    font-family: 'Fredoka', sans-serif;
+    font-size: 0.7rem;
+    font-weight: 800;
+    color: #374151;
+}
+
+/* Boosted Materials Strip */
+.ev-mats-strip {
+    background: #2b241d;
+    border: 2.5px solid #1e272e;
+    border-radius: 14px;
+    padding: 8px 11px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+.ev-mats-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-family: 'Luckiest Guy', cursive, sans-serif;
+    font-size: 0.78rem;
+    color: #fed330;
+    letter-spacing: 0.5px;
+}
+.ev-mats-list { display: flex; gap: 6px; flex-wrap: wrap; }
+.ev-mat-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: #1a1510;
+    border: 2px solid #4a3d2f;
+    border-radius: 999px;
+    padding: 3px 9px;
+    font-family: 'Fredoka', sans-serif;
+    font-size: 0.74rem;
+    font-weight: 800;
+    color: #ffffff;
+}
+.ev-mat-ico { width: 15px; height: 15px; object-fit: contain; }
+
+.event-card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+.event-mode-tag, .event-auto-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-family: 'Fredoka', sans-serif;
+    font-size: 0.78rem;
+    font-weight: 800;
+    color: #2f3542;
+    background: #f1f2f6;
+    border: 2px solid #1e272e;
+    border-radius: 10px;
+    padding: 4px 10px;
+}
+.event-auto-tag { background: #e8fff1; color: #052e16; }
+
+/* Breakdown Tab */
+.ev-breakdown-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-family: 'Luckiest Guy', cursive, sans-serif;
+    font-size: 0.92rem;
+    color: #1e272e;
+    padding: 2px 4px;
+}
+.ev-state-chip {
+    font-family: 'Fredoka', sans-serif;
+    font-size: 0.72rem;
+    font-weight: 900;
+    padding: 2px 9px;
+    border-radius: 999px;
+    border: 2px solid #1e272e;
+    background: #fed330;
+}
+.ev-state-chip.is-live { background: #2ed573; color: #052e16; }
+.ev-breakdown-list { display: flex; flex-direction: column; gap: 7px; text-align: left; }
+.ev-break-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: #ffffff;
+    border: 2.5px solid #1e272e;
+    border-radius: 13px;
+    padding: 8px 12px;
+    box-shadow: 0 2.5px 0 #1e272e;
+}
+.ev-break-row.is-gold { border-left: 7px solid #f59e0b; }
+.ev-break-row.is-xp { border-left: 7px solid #0284c7; }
+.ev-break-row.is-mats { border-left: 7px solid #8b5cf6; }
+.ev-break-ico {
+    width: 30px; height: 30px; border-radius: 9px; background: #fff4cf; border: 2px solid #1e272e;
+    display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.ev-break-title { font-family: 'Luckiest Guy', cursive, sans-serif; font-size: 0.95rem; color: #1e272e; }
+.ev-break-sub { font-family: 'Fredoka', sans-serif; font-size: 0.78rem; font-weight: 700; color: #57606f; }
+.ev-break-sub strong { color: #059669; font-weight: 900; }
+
+/* Schedule Tab */
+.ev-schedule-list { display: flex; flex-direction: column; gap: 8px; text-align: left; }
+.ev-phase-card {
+    background: #ffffff;
+    border: 2.5px solid #1e272e;
+    border-radius: 14px;
+    padding: 10px 13px;
+    box-shadow: 0 3px 0 #1e272e;
+}
+.ev-phase-card.is-active { background: #fff8dc; box-shadow: 0 0 0 2px #fed330, 0 3px 0 #1e272e; }
+.ev-phase-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 3px; }
+.ev-phase-tag { font-family: 'Fredoka', sans-serif; font-size: 0.74rem; font-weight: 900; color: #d35400; }
+.ev-phase-badge {
+    font-family: 'Luckiest Guy', cursive, sans-serif;
+    font-size: 0.68rem;
+    padding: 2px 8px;
+    border-radius: 999px;
+    border: 1.5px solid #1e272e;
+    background: #efe4c4;
+}
+.ev-phase-card.is-active .ev-phase-badge { background: #2ed573; color: #052e16; }
+.ev-phase-title { margin: 0 0 2px 0; font-family: 'Luckiest Guy', cursive, sans-serif; font-size: 1.05rem; color: #1e272e; }
+.ev-phase-desc { margin: 0; font-family: 'Fredoka', sans-serif; font-size: 0.8rem; font-weight: 700; color: #4b5563; }
+
+/* Menu Button Badge & Match End Pills */
+.events-btn-badge.is-live { background: #2ed573; color: #052e16; font-size: 0.62rem; padding: 2px 6px; border-radius: 999px; }
+.events-btn-badge.is-upcoming { background: #fa8231; color: #ffffff; font-size: 0.58rem; padding: 2px 5px; border-radius: 999px; white-space: nowrap; }
+#btn-events.has-live-event { box-shadow: 0 0 0 2px #2ed573, var(--shadow-solid); }
+.event-reward-pill {
+    background: #2ed573; color: #052e16; border: 2px solid #1e272e; border-radius: 999px;
+    padding: 1px 7px; font-family: 'Luckiest Guy', cursive, sans-serif; font-size: 0.72rem;
+    letter-spacing: 0.4px; box-shadow: 0 2px 0 #1e272e; white-space: nowrap;
+}
+
+@media screen and (max-width: 680px) {
+    .event-multipliers-grid { grid-template-columns: 1fr; }
+}
+
+@media screen and (max-height: 540px), screen and (pointer: coarse) and (max-height: 700px) {
+    #events-modal .events-panel { padding: 8px 11px; border-width: 3px; border-radius: 16px; }
+    .events-header-banner { padding: 6px 40px 6px 10px; margin-bottom: 6px; border-width: 2.5px; border-radius: 12px; gap: 6px; }
+    .events-modal-title { font-size: 1.15rem; -webkit-text-stroke: 1.2px #1e272e; }
+    .events-header-sub { font-size: 0.66rem; }
+    .events-clock-box { padding: 3px 7px; border-radius: 10px; }
+    .ev-cd-unit { padding: 1px 4px; }
+    .ev-cd-unit strong { font-size: 0.78rem; }
+    .ev-cd-unit small { font-size: 0.52rem; }
+    .events-tabs-bar { gap: 6px; margin-bottom: 6px; }
+    .events-tab-btn { padding: 4px 6px; font-size: 0.72rem; border-width: 2px; border-radius: 9px; }
+    .events-list { margin-bottom: 6px; gap: 6px; }
+    .event-card { padding: 8px 10px; gap: 6px; border-width: 2.5px; border-radius: 13px; }
+    .event-card-emblem { width: 32px; height: 32px; border-radius: 9px; }
+    .event-card-icon-img { width: 18px; height: 18px; }
+    .event-card-title { font-size: 1rem; }
+    .event-card-desc { font-size: 0.7rem; line-height: 1.25; }
+    .event-multipliers-grid { grid-template-columns: repeat(3, 1fr); gap: 5px; }
+    .event-mult-chip { padding: 4px 6px; border-radius: 9px; border-width: 2px; gap: 5px; }
+    .ev-chip-icon { width: 16px; height: 16px; }
+    .event-mult-val { font-size: 0.82rem; }
+    .event-mult-scope { font-size: 0.56rem; }
+    .ev-mats-strip { padding: 5px 8px; border-radius: 10px; }
+    .ev-mats-label { font-size: 0.64rem; }
+    .ev-mat-pill { font-size: 0.62rem; padding: 2px 6px; }
+    .event-mode-tag, .event-auto-tag { font-size: 0.62rem; padding: 2px 7px; }
+    .ev-break-row { padding: 5px 8px; gap: 7px; }
+    .ev-break-title { font-size: 0.78rem; }
+    .ev-break-sub { font-size: 0.66rem; }
+    .ev-phase-card { padding: 6px 9px; }
+    .ev-phase-title { font-size: 0.85rem; }
+    .ev-phase-desc { font-size: 0.68rem; }
+    .event-reward-pill { font-size: 0.6rem; padding: 1px 5px; }
+}

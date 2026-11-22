@@ -125,7 +125,7 @@ class CoopGuestSession {
                 if (payload && payload.val > 0 && this.game.player) this.game.player.addXP(Math.min(200, Math.round(payload.val)));
             } else if (type === 'COIN_SHARE') {
                 if (payload && payload.coins > 0) {
-                    const c = Math.min(250, Math.round(payload.coins));
+                    const c = Math.min(500, Math.round(payload.coins));
                     if (typeof window !== 'undefined' && window.GameState) window.GameState.addCurrency(c, 0);
                     this.game.coinsEarnedThisRun = (this.game.coinsEarnedThisRun || 0) + c;
                     if (this.game.effects && this.game.player) this.game.effects.addPopup(this.game.player.x, this.game.player.y - 24, `+${c} 🪙`, '#ffd32a', 22);

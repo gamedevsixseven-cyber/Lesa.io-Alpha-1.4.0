@@ -45,12 +45,13 @@
     <link rel="stylesheet" href="styles/tabs-shared.css?v=1.5.62">
     <link rel="stylesheet" href="styles/loading.css">
     <link rel="stylesheet" href="styles/mobile.css?v=1.7.7">
-    <link rel="stylesheet" href="styles/mobile-modals.css?v=1.5.79">
+    <link rel="stylesheet" href="styles/mobile-modals.css?v=1.8.4">
     <link rel="stylesheet" href="styles/mobile-settings.css?v=1.6.23">
     <link rel="stylesheet" href="src/admin/admin.css?v=1.6.15">
     <link rel="stylesheet" href="styles/credits.css?v=1.4.0">
     <link rel="stylesheet" href="styles/gamemode.css?v=1.5.0">
-    <link rel="stylesheet" href="styles/coop.css?v=1.7.5">
+    <link rel="stylesheet" href="styles/coop.css?v=1.8.4">
+    <link rel="stylesheet" href="styles/events.css?v=1.8.8">
     <link rel="stylesheet" href="styles/tribute.css?v=1.4.0">
     <link rel="stylesheet" href="styles/friends.css?v=1.8.2">
     <link rel="stylesheet" href="styles/olympus-altar.css?v=1.5.13">
@@ -58,7 +59,7 @@
     <link rel="stylesheet" href="styles/boss-rewards.css?v=1.5.73">
     <link rel="stylesheet" href="styles/cosmetics.css?v=1.5.49">
     <link rel="stylesheet" href="styles/cosmetics-fx.css?v=1.5.49">
-    <link rel="stylesheet" href="styles/cosmetics-advanced.css?v=1.5.75">
+    <link rel="stylesheet" href="styles/cosmetics-advanced.css?v=1.8.6">
     <link rel="stylesheet" href="styles/battlepass.css?v=1.6.22">
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -311,6 +312,7 @@
                 <button id="btn-events" class="bottom-square-btn">
                     <span class="bot-btn-icon"><img src="assets/ui-icons/calendar.svg" class="ui-icon" alt=""></span>
                     <span class="bot-btn-text">EVENTS</span>
+                    <span id="events-badge" class="badge-notify events-btn-badge hidden"></span>
                 </button>
             </div>
 
@@ -751,8 +753,9 @@
                 <!-- Co-op Playtest Trigger Button -->
                 <div id="mode-coop-btn-wrap" class="mode-coop-btn-wrap">
                     <button id="open-coop-btn" class="mode-coop-trigger-btn" type="button">
-                        <span><img src="assets/ui-icons/handshake.svg" class="ui-icon ui-icon-sm" alt=""></span> CO-OP
-                        MULTIPLAYER (PLAYTEST)
+                        <span class="mode-coop-icon"><img src="assets/ui-icons/handshake.svg" class="ui-icon ui-icon-sm" alt=""></span>
+                        <span class="mode-coop-label">CO-OP MULTIPLAYER</span>
+                        <span class="mode-coop-pill">2P ONLINE</span>
                     </button>
                 </div>
             </div>
@@ -2197,6 +2200,30 @@
             </div>
         </div>
 
+        <!-- ================= LIVE EVENTS MODAL ================= -->
+        <div id="events-modal" class="modal-overlay hidden">
+            <div class="modal-panel events-panel">
+                <button class="modal-close-x-btn" title="Close (Esc)" aria-label="Close">✕</button>
+                <div class="events-header-banner">
+                    <div class="events-header-left">
+                        <h2 class="events-modal-title"><img src="assets/ui-icons/calendar.svg" class="ui-icon ui-icon-title" alt=""> LIVE EVENTS</h2>
+                        <p id="events-header-sub" class="events-header-sub">Special scheduled bonus events</p>
+                    </div>
+                    <div id="events-header-clock" class="events-clock-box"></div>
+                </div>
+                <div id="events-tabs-bar" class="events-tabs-bar">
+                    <button type="button" class="events-tab-btn active" data-events-tab="featured">LAUNCH EVENT</button>
+                    <button type="button" class="events-tab-btn" data-events-tab="breakdown">BOOST BREAKDOWN</button>
+                    <button type="button" class="events-tab-btn" data-events-tab="schedule">CALENDAR</button>
+                </div>
+                <div id="events-modal-list" class="events-list"></div>
+                <div class="modal-actions">
+                    <button id="events-play-btn" class="comic-btn comic-btn-primary">CHOOSE MODE</button>
+                    <button id="close-events-btn" class="comic-btn">DONE</button>
+                </div>
+            </div>
+        </div>
+
         <!-- ================= PAUSE MODAL ================= -->
         <div id="pause-modal" class="modal-overlay hidden">
             <div class="modal-panel">
@@ -2876,6 +2903,7 @@
                                 class="ui-icon ui-icon-sm" alt=""> Coins Earned:</span>
                         <span id="stat-coins-earned" class="stat-value"
                             style="color: #feb400; font-weight: 900;">+0</span>
+                        <span id="stat-coins-event-pill" class="event-reward-pill hidden"></span>
                     </div>
                     <div class="stat-box stat-reward-box"
                         style="grid-column: span 2; background: rgba(52, 152, 219, 0.12); border: 2px solid #3498db;">
@@ -2883,6 +2911,7 @@
                                 class="ui-icon ui-icon-sm" alt=""> XP Earned:</span>
                         <span id="stat-xp-earned" class="stat-value" style="color: #3498db; font-weight: 900;">+0
                             XP</span>
+                        <span id="stat-xp-event-pill" class="event-reward-pill hidden"></span>
                     </div>
                 </div>
 
@@ -3005,6 +3034,7 @@
                                 class="ui-icon ui-icon-sm" alt=""> Coins Earned:</span>
                         <span id="olympus-victory-coins" class="stat-value"
                             style="color: #b45309; font-weight: 900;">+0</span>
+                        <span id="olympus-coins-event-pill" class="event-reward-pill hidden"></span>
                     </div>
                     <div class="stat-box stat-reward-box"
                         style="grid-column: span 2; background: rgba(52, 152, 219, 0.14); border: 2px solid #0284c7;">
@@ -3012,6 +3042,7 @@
                                 class="ui-icon ui-icon-sm" alt=""> XP Earned:</span>
                         <span id="olympus-victory-xp" class="stat-value" style="color: #0369a1; font-weight: 900;">+0
                             XP</span>
+                        <span id="olympus-xp-event-pill" class="event-reward-pill hidden"></span>
                     </div>
                     <div class="olympus-victory-spoils-box">
                         <span class="olympus-victory-spoils-title">MOUNT OLYMPUS SPOILS</span>
@@ -3188,11 +3219,11 @@
     <script src="src/data/gear.js?v=1.5.8"></script>
     <script src="src/data/gearEndgame.js?v=1.5.33"></script>
     <script src="src/data/chests.js?v=1.5.67"></script>
-    <script src="src/data/materials.js?v=1.5.36"></script>
+    <script src="src/data/materials.js?v=1.8.8"></script>
     <script src="src/data/bossRanks.js?v=1.5.16"></script>
     <script src="src/data/profile_cosmetics.js?v=1.5.49"></script>
-    <script src="src/data/profile_cosmetics_ext.js?v=1.5.75"></script>
-    <script src="src/ui/CosmeticEffectsEngine.js?v=1.5.75"></script>
+    <script src="src/data/profile_cosmetics_ext.js?v=1.8.5"></script>
+    <script src="src/ui/CosmeticEffectsEngine.js?v=1.8.6"></script>
     <script src="src/data/creditsData.js?v=1.4.1"></script>
 
     <!-- 2. CORE MESSAGING & CANONICAL STATE -->
@@ -3202,8 +3233,9 @@
     <script src="src/core/AutoUpdater.js?v=1.8.3"></script>
     <script src="src/save/SaveMigration.js?v=1.7.6"></script>
     <script src="src/core/GameState.js?v=1.7.6"></script>
-    <script src="src/progression/PerkProgression.js?v=1.5.36"></script>
+    <script src="src/progression/PerkProgression.js?v=1.8.5"></script>
     <script src="src/progression/CosmeticManager.js?v=1.5.49"></script>
+    <script src="src/progression/EventManager.js?v=1.8.8"></script>
     <script src="src/dungeons/AscentCrestManager.js?v=1.5.14"></script>
     <script src="src/core/CharacterSprites.js?v=1.5.26"></script>
     <script src="src/engine/SpriteAtlasCache.js?v=1.5.66"></script>
@@ -3253,7 +3285,7 @@
     <script src="src/entities/CombatJuiceFX.js?v=1.5.69"></script>
     <script src="src/entities/Effects.js?v=1.7.7"></script>
     <script src="src/entities/Bullet.js?v=1.5.69"></script>
-    <script src="src/entities/Drop.js?v=1.6.6"></script>
+    <script src="src/entities/Drop.js?v=1.8.7"></script>
     <script src="src/entities/FoliageRenderer.js?v=1.5.26"></script>
     <script src="src/entities/Obstacle.js?v=1.6.6"></script>
     <script src="src/entities/WaterPuddle.js?v=1.2.2"></script>
@@ -3337,7 +3369,7 @@
     <script src="src/Bosses/LilXasAttacksFX.js?v=1.6.21"></script>
     <script src="src/Bosses/LilXasSpeaker.js?v=1.6.17"></script>
     <script src="src/Bosses/LilXasBoss.js?v=1.6.17"></script>
-    <script src="src/Bosses/LilXasEvent.js?v=1.6.23"></script>
+    <script src="src/Bosses/LilXasEvent.js?v=1.8.5"></script>
     <script src="src/dungeons/OlympusBossRenderer.js?v=1.5.51"></script>
     <script src="src/dungeons/OlympusEarlyBosses.js?v=1.5.14"></script>
     <script src="src/dungeons/DungeonBosses.js?v=1.5.14"></script>
@@ -3349,7 +3381,7 @@
     <script src="src/ui/UiIcons.js?v=1.6.0"></script>
     <script src="src/progression/CurrencyManager.js?v=1.7.6"></script>
     <script src="src/progression/QuestManager.js?v=1.5.80"></script>
-    <script src="src/progression/BattlePassManager.js?v=1.8.1"></script>
+    <script src="src/progression/BattlePassManager.js?v=1.8.7"></script>
     <script src="src/ui/BattlePassModalUI.js?v=1.8.1"></script>
     <script src="src/profile/StatsManager.js?v=1.5.55"></script>
 
@@ -3357,12 +3389,12 @@
     <script src="src/ui/DevIntro.js?v=1.2.2"></script>
     <script src="src/ui/LoadingScreen.js?v=1.2.2"></script>
     <script src="src/ui/BossRewardModalUI.js?v=1.5.72"></script>
-    <script src="src/ui/OlympusVictoryModal.js?v=1.6.0"></script>
+    <script src="src/ui/OlympusVictoryModal.js?v=1.8.7"></script>
     <script src="src/ui/GearModalUI.js?v=1.6.0"></script>
     <script src="src/ui/ProfileCosmeticsUI.js?v=1.5.55"></script>
     <script src="src/ui/PublicProfileModal.js?v=1.6.18"></script>
     <script src="src/ui/LeaderboardModal.js?v=1.6.18"></script>
-    <script src="src/ui/ModalManager.js?v=1.6.23"></script>
+    <script src="src/ui/ModalManager.js?v=1.8.7"></script>
     <script src="src/ui/HUDController.js?v=1.7.7"></script>
     <script src="src/ui/ProfileManager.js?v=1.7.3"></script>
     <script src="src/ui/HeroRoster.js?v=1.6.0"></script>
@@ -3372,7 +3404,7 @@
     <script src="src/ui/MailManager.js?v=1.5.10"></script>
     <script src="src/ui/StarterPackModal.js?v=1.5.10"></script>
     <script src="src/ui/SettingsManager.js?v=1.7.4"></script>
-    <script src="src/ui/MenuController.js?v=1.7.2"></script>
+    <script src="src/ui/MenuController.js?v=1.8.8"></script>
     <script src="src/ui/BossWarningOverlay.js?v=1.5.16"></script>
     <script src="src/ui/CinematicCutsceneOverlay.js?v=1.8.0"></script>
     <script src="src/ui/CreditsScreen.js?v=1.8.0"></script>
@@ -3398,12 +3430,12 @@
     <script src="src/network/CoopSnapshotSync.js?v=1.8.0"></script>
     <script src="src/network/NetworkManager.js?v=1.7.7"></script>
     <script src="src/network/CoopSkillFx.js?v=1.7.8"></script>
-    <script src="src/network/CoopDropSync.js?v=1.6.8"></script>
+    <script src="src/network/CoopDropSync.js?v=1.8.7"></script>
     <script src="src/network/CoopCombatFx.js?v=1.7.7"></script>
     <script src="src/network/CoopPauseSync.js?v=1.7.5"></script>
     <script src="src/network/CoopHostSession.js?v=1.8.0"></script>
-    <script src="src/network/CoopGuestSession.js?v=1.8.0"></script>
-    <script src="src/network/CoopLobbyModal.js?v=1.7.9"></script>
+    <script src="src/network/CoopGuestSession.js?v=1.8.7"></script>
+    <script src="src/network/CoopLobbyModal.js?v=1.8.4"></script>
 
     <!-- 8.9. FRIENDS & ONLINE PLAYER ID SUBSYSTEM -->
     <script src="src/social/FriendService.js?v=1.7.7"></script>
@@ -3412,7 +3444,7 @@
 
     <!-- 9. GAME COORDINATOR & BOOTSTRAP -->
     <script src="src/engine/WaveSkipperMachine.js?v=1.6.22"></script>
-    <script src="src/engine/Game.js?v=1.8.0"></script>
+    <script src="src/engine/Game.js?v=1.8.7"></script>
     <script src="src/main.js?v=1.8.0"></script>
 </body>
 

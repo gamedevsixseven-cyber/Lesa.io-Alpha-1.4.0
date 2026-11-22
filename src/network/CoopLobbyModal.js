@@ -78,8 +78,8 @@ class CoopLobbyModal {
             <div class="coop-panel">
                 <div class="coop-header">
                     <div class="coop-title-wrap">
-                        <h2 class="coop-title">${typeof UiIcons !== 'undefined' ? UiIcons.i('handshake', 'ui-icon-title') : '🤝'} CO-OP PLAYTEST</h2>
-                        <span class="coop-badge">1-Day Test</span>
+                        <h2 class="coop-title">${typeof UiIcons !== 'undefined' ? UiIcons.i('handshake', 'ui-icon-title') : '🤝'} CO-OP SQUAD</h2>
+                        <span class="coop-badge">2P ONLINE</span>
                     </div>
                     <button id="coop-close-btn" class="coop-close-btn" title="Close">✕</button>
                 </div>
@@ -110,7 +110,7 @@ class CoopLobbyModal {
                         <span id="coop-host-status">Waiting for partner to join...</span>
                     </div>
 
-                    <div id="coop-friend-quicklist" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;"></div>
+                    <div id="coop-friend-quicklist" class="coop-friend-quicklist"></div>
 
                     <button id="coop-start-btn" class="coop-launch-btn" disabled>START CO-OP BATTLE</button>
                 </div>
@@ -329,11 +329,11 @@ class CoopLobbyModal {
             container.innerHTML = '';
             return;
         }
-        container.innerHTML = `<span style="font-size:11px;color:#94a3b8;width:100%;">INVITE ONLINE FRIENDS:</span>`;
+        container.innerHTML = `<span class="coop-friends-label">INVITE ONLINE FRIENDS:</span>`;
         onlineFriends.slice(0, 4).forEach((f) => {
             const btn = document.createElement('button');
             btn.type = 'button';
-            btn.className = 'friend-btn friend-btn-primary';
+            btn.className = 'coop-friend-chip-btn';
             if (typeof UiIcons !== 'undefined') UiIcons.setRichText(btn, `📨 ${f.name}`, 'ui-icon-sm'); else btn.textContent = `📨 ${f.name}`;
             btn.onclick = async () => {
                 btn.disabled = true;

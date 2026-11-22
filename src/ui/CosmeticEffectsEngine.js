@@ -70,6 +70,21 @@ class CosmeticEffectsEngine {
                 <polyline class="cos-bolt b2" points="262,8 244,36 256,42 232,84" fill="none" stroke="#38bdf8" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>`;
         }
+        if (theme === 'lil_xas') {
+            return `<svg viewBox="0 0 300 90" preserveAspectRatio="none" class="cos-fx-svg cos-lilxas-svg">
+                <g class="cos-lx-beam b1"><polygon points="56,90 12,-10 74,-10" fill="rgba(0, 245, 255, 0.22)"/></g>
+                <g class="cos-lx-beam b2"><polygon points="210,90 155,-10 232,-10" fill="rgba(224, 86, 253, 0.24)"/></g>
+                <line class="cos-lx-laser" x1="-20" y1="45" x2="320" y2="45" stroke="#00f5ff" stroke-width="1.5" opacity="0.6"/>
+                <path class="cos-star cos-lx-flash f1" d="M46 22l2.5 7 7 2.5-7 2.5-2.5 7-2.5-7-7-2.5 7-2.5z" fill="#ffffff"/>
+                <path class="cos-star cos-lx-flash f2" d="M188 18l2.2 6 6 2.2-6 2.2-2.2 6-2.2-6-6-2.2 6-2.2z" fill="#fde047"/>
+                <text class="cos-lx-note n1" x="88" y="68" fill="#00f5ff" font-size="13" font-weight="900">♪</text>
+                <text class="cos-lx-note n2" x="148" y="72" fill="#f472b6" font-size="14" font-weight="900">♫</text>
+                <text class="cos-lx-note n3" x="202" y="64" fill="#fde047" font-size="12" font-weight="900">♪</text>
+            </svg>
+            <div class="cos-lx-eq" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
+            <div class="cos-lx-vinyl" aria-hidden="true"></div>
+            <img class="cos-lilxas-face" src="assets/Cosmetics/LilXasBannerFace.png" alt="Lil Xas" draggable="false">`;
+        }
         if (theme === 'cosmic' || theme === 'apex_nova') {
             const isApex = theme === 'apex_nova';
             return `<svg viewBox="0 0 300 90" preserveAspectRatio="none" class="cos-fx-svg">

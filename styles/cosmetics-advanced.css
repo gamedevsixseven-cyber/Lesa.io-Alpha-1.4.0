@@ -178,6 +178,119 @@
     border-color: #fed330 !important;
 }
 
+@keyframes cosLxPulse {
+    0%, 100% { box-shadow: 0 0 0 2px #140826, 0 0 14px rgba(224, 86, 253, 0.72), inset 0 0 12px rgba(0, 245, 255, 0.22); border-color: #e056fd !important; }
+    50% { box-shadow: 0 0 0 2px #140826, 0 0 22px rgba(0, 245, 255, 0.9), inset 0 0 16px rgba(253, 224, 71, 0.26); border-color: #00f5ff !important; }
+}
+@keyframes cosLxBeamA {
+    0%, 100% { transform: rotate(-16deg); opacity: 0.45; }
+    50% { transform: rotate(22deg); opacity: 0.88; }
+}
+@keyframes cosLxBeamB {
+    0%, 100% { transform: rotate(18deg); opacity: 0.82; }
+    50% { transform: rotate(-20deg); opacity: 0.42; }
+}
+@keyframes cosLxLaser {
+    0% { transform: translateY(-42px) rotate(-3deg); opacity: 0; }
+    20%, 80% { opacity: 0.72; }
+    100% { transform: translateY(44px) rotate(3deg); opacity: 0; }
+}
+@keyframes cosLxFlash {
+    0%, 72%, 100% { opacity: 0.08; transform: scale(0.55) rotate(0deg); }
+    76% { opacity: 1; transform: scale(1.45) rotate(18deg); filter: drop-shadow(0 0 8px #ffffff); }
+    82% { opacity: 0.18; transform: scale(0.75) rotate(32deg); }
+}
+@keyframes cosLxNoteFloat {
+    0% { transform: translateY(10px) rotate(-10deg) scale(0.75); opacity: 0; }
+    22% { opacity: 0.95; }
+    100% { transform: translateY(-54px) rotate(14deg) scale(1.15); opacity: 0; }
+}
+@keyframes cosLxEqBounce {
+    0% { transform: scaleY(0.22); }
+    100% { transform: scaleY(1); }
+}
+@keyframes cosLxVinylSpin {
+    0% { transform: translateY(-50%) rotate(0deg); }
+    100% { transform: translateY(-50%) rotate(360deg); }
+}
+@keyframes cosLxFaceBeat {
+    0%, 100% { transform: translateY(-50%) scale(1); }
+    35% { transform: translateY(-50%) scale(1.06); }
+}
+
+.cos-banner-lil-xas {
+    background: linear-gradient(110deg, transparent 28%, rgba(0, 245, 255, 0.34) 47%, rgba(250, 204, 21, 0.3) 53%, transparent 72%),
+                repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.04) 0 2px, transparent 2px 6px),
+                radial-gradient(circle at 86% 50%, rgba(224, 86, 253, 0.68), transparent 54%),
+                linear-gradient(135deg, #0b041c 0%, #4c1d95 44%, #be185d 82%, #130b2e 100%) !important;
+    background-size: 210% 100%, 100% 100%, 100% 100%, 170% 170% !important;
+    animation: cosGleamTrack 3.1s ease-in-out infinite, cosLxPulse 2.4s ease-in-out infinite;
+    border-color: #e056fd !important;
+}
+
+.cos-lx-beam.b1 { transform-origin: 56px 90px; animation: cosLxBeamA 3.4s ease-in-out infinite; }
+.cos-lx-beam.b2 { transform-origin: 210px 90px; animation: cosLxBeamB 2.9s ease-in-out infinite; }
+.cos-lx-laser { animation: cosLxLaser 2.7s linear infinite; }
+.cos-lx-flash { transform-box: fill-box; transform-origin: center; animation: cosLxFlash 3.1s ease-in-out infinite; }
+.cos-lx-flash.f2 { animation-delay: 1.55s; animation-duration: 2.7s; }
+.cos-lx-note { animation: cosLxNoteFloat 2.6s linear infinite; opacity: 0; }
+.cos-lx-note.n2 { animation-delay: 0.9s; animation-duration: 2.3s; }
+.cos-lx-note.n3 { animation-delay: 1.7s; animation-duration: 2.9s; }
+
+.cos-lx-eq {
+    position: absolute; left: 10px; bottom: 0; height: 34%; display: flex; align-items: flex-end; gap: 3px; opacity: 0.72;
+}
+.cos-lx-eq span {
+    width: 4px; height: 100%; border-radius: 2px 2px 0 0; transform-origin: bottom center;
+    background: linear-gradient(to top, #00f5ff 0%, #e056fd 65%, #fde047 100%);
+    animation: cosLxEqBounce 0.55s ease-in-out infinite alternate;
+}
+.cos-lx-eq span:nth-child(2) { animation-duration: 0.38s; }
+.cos-lx-eq span:nth-child(3) { animation-duration: 0.72s; }
+.cos-lx-eq span:nth-child(4) { animation-duration: 0.44s; }
+.cos-lx-eq span:nth-child(5) { animation-duration: 0.62s; }
+.cos-lx-eq span:nth-child(6) { animation-duration: 0.34s; }
+.cos-lx-eq span:nth-child(7) { animation-duration: 0.68s; }
+.cos-lx-eq span:nth-child(8) { animation-duration: 0.48s; }
+
+.cos-lx-vinyl {
+    position: absolute; right: 32px; top: 50%; height: 78%; max-height: 72px; aspect-ratio: 1 / 1; border-radius: 50%;
+    background: radial-gradient(circle, #fde047 0 18%, #18181b 19% 23%, transparent 24%),
+                repeating-radial-gradient(circle, #18181b 0 3px, #27272a 4px 5px);
+    border: 2px solid rgba(250, 204, 21, 0.85);
+    box-shadow: 0 0 10px rgba(250, 204, 21, 0.5);
+    animation: cosLxVinylSpin 2.6s linear infinite;
+}
+
+.cos-lilxas-face {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    height: 82%;
+    max-height: 76px;
+    aspect-ratio: 1 / 1;
+    object-fit: cover;
+    border-radius: 50%;
+    pointer-events: none;
+    filter: drop-shadow(0 0 10px rgba(224, 86, 253, 0.85)) drop-shadow(0 2px 4px rgba(0, 0, 0, 0.8));
+    opacity: 0.96;
+    animation: cosLxFaceBeat 1.25s ease-in-out infinite;
+}
+
+.friend-card .cos-lilxas-face,
+.friends-id-banner .cos-lilxas-face,
+.lb-item .cos-lilxas-face {
+    opacity: 0.55;
+    right: 6px;
+}
+.friend-card .cos-lx-vinyl,
+.friends-id-banner .cos-lx-vinyl,
+.lb-item .cos-lx-vinyl {
+    opacity: 0.45;
+    right: 26px;
+}
+
 /* ==================== ORBITAL SVG AVATAR FRAME DECORATORS ==================== */
 .player-avatar-frame-menu,
 .prof-avatar-wrap,

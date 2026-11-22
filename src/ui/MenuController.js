@@ -222,8 +222,8 @@ class MenuController {
                 if (window.soundEngine) window.soundEngine.playSelect();
                 this.ui.modalManager.showFeatureModal(
                     '🛡️ CLANS & GUILDS',
-                    'Team battle arena',
-                    'Join forces with other heroes to tackle giant Boss Skatmirs together.'
+                    'Coming soon!',
+                    'Coming soon!\n\nVillage Clans are currently in the works — get ready to squad up in a future update!'
                 );
             });
         }
@@ -232,11 +232,15 @@ class MenuController {
         if (eventsBtn) {
             eventsBtn.addEventListener('click', () => {
                 if (window.soundEngine) window.soundEngine.playSelect();
-                this.ui.modalManager.showFeatureModal(
-                    '📅 WEEKEND EVENTS',
-                    'Special game modes',
-                    'Event: Double XP Meadow Mayhem starting soon!'
-                );
+                if (typeof EventManager !== 'undefined' && typeof EventManager.showModal === 'function') {
+                    EventManager.showModal();
+                } else {
+                    this.ui.modalManager.showFeatureModal(
+                        '📅 LIVE EVENTS',
+                        'Special scheduled events',
+                        'Launch Event (Dec 1 – Dec 7): 1.5x XP & 2.0x Gold!'
+                    );
+                }
             });
         }
 

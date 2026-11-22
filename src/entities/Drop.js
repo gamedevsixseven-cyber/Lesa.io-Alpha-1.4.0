@@ -100,7 +100,8 @@ class Drop {
         } else if (this.type === 'coin_pouch') {
             const gearGoldMult = (typeof GearPassives !== 'undefined') ? GearPassives.getGoldMultiplier() : 1.0;
             const perkGoldMult = (typeof window !== 'undefined' && window.perkSystem && typeof window.perkSystem.getCoinMultiplier === 'function') ? window.perkSystem.getCoinMultiplier() : 1.0;
-            const coins = Math.round((this.value || 20) * gearGoldMult * perkGoldMult);
+            const eventGoldMult = (typeof EventManager !== 'undefined') ? EventManager.getGoldMultiplier() : 1.0;
+            const coins = Math.round((this.value || 20) * gearGoldMult * perkGoldMult * eventGoldMult);
             if (window.GameState) window.GameState.addCurrency(coins, 0);
             const g = window.gameInstance;
             if (g) {

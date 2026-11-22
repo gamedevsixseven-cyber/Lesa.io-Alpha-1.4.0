@@ -83,6 +83,18 @@
             isUnlocked: (s) => (s.defeatedBosses.mecha_kolossos || 0) > 0 || s.endlessMaxWave >= 41
         },
         {
+            id: 'banner_lil_xas',
+            name: 'Lil Xas VIP',
+            rarity: 'mythic',
+            cssClass: 'cos-banner-lil-xas',
+            fxTheme: 'lil_xas',
+            desc: 'Limited VIP concert banner featuring Lil Xas himself in neon autotune overdrive.',
+            unlockHint: 'Defeat the Secret Easter Egg Boss: Lil Xas',
+            targetVal: () => 1,
+            currentVal: (s) => ((s.defeatedBosses && s.defeatedBosses.lil_xas) || 0) > 0 ? 1 : 0,
+            isUnlocked: (s) => ((s.defeatedBosses && s.defeatedBosses.lil_xas) || 0) > 0
+        },
+        {
             id: 'banner_holo_prisma',
             name: 'Holographic Foil',
             rarity: 'celestial',

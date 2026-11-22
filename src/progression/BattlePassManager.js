@@ -329,9 +329,13 @@ class BattlePassManager {
             const type = data && data.enemyType;
             const bonus = (type === 'kleanthis' || type === 'rouf' || type === 'zeus' || type === 'kolossos') ? 45
                 : ((type === 'kiloumpas') ? 25 : 2);
-            this.addXp(bonus, 'kill');
+            const eventXpMult = (typeof EventManager !== 'undefined') ? EventManager.getXpMultiplier() : 1.0;
+            this.addXp(Math.round(bonus * eventXpMult), 'kill');
         });
-        window.EventBus.on('waveCompleted', () => this.addXp(35, 'wave'));
+        window.EventBus.on('waveCompleted', () => {
+            const eventXpMult = (typeof EventManager !== 'undefined') ? EventManager.getXpMultiplier() : 1.0;
+            this.addXp(Math.round(35 * eventXpMult), 'wave');
+        });
         window.EventBus.on('questClaimed', () => this.addXp(120, 'quest'));
     }
 

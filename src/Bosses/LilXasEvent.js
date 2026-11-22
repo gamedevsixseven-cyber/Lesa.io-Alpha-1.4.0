@@ -392,6 +392,10 @@ class LilXasEvent {
         if (game && game.ui && typeof game.ui.addKillfeed === 'function') {
             game.ui.addKillfeed('🔇 Silenced LIL XAS & Smashed the Speakers! (+8,000 pts & Insane Boss Crate!)');
         }
+        if (boss) boss._featRecorded = true;
+        if (typeof window !== 'undefined' && window.GameState && typeof window.GameState.recordBossDefeat === 'function') {
+            window.GameState.recordBossDefeat('lil_xas');
+        }
         this.active = false;
         this.phase = 'IDLE';
     }
@@ -480,6 +484,9 @@ class LilXasEvent {
                 g.effects.addComicSplash(payload.x || 0, (payload.y || 0) - 60, '🔇 CONCERT CANCELED! 🏆');
             }
             if (g.ui && typeof g.ui.addKillfeed === 'function') g.ui.addKillfeed('🔇 Silenced LIL XAS & Smashed the Speakers! (+8,000 pts & Insane Boss Crate!)');
+            if (typeof window !== 'undefined' && window.GameState && typeof window.GameState.recordBossDefeat === 'function') {
+                window.GameState.recordBossDefeat('lil_xas');
+            }
             this.active = false; this.phase = 'IDLE'; this.cameraTarget = null;
         }
     }

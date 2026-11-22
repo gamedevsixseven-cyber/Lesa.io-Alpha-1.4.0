@@ -229,7 +229,8 @@ class Game {
 
         const upgrades = (typeof window !== 'undefined' && window.GameState && window.GameState.player && window.GameState.player.upgrades) || {};
         const goldBonusLvl = upgrades.goldBonus || 0;
-        const goldMultiplier = (1 + (goldBonusLvl * 0.03)) * (typeof GearPassives !== 'undefined' ? GearPassives.getGoldMultiplier() : 1.0) * ((typeof window !== 'undefined' && window.perkSystem && window.perkSystem.getCoinMultiplier) ? window.perkSystem.getCoinMultiplier() : 1.0);
+        const eventGoldMult = (typeof EventManager !== 'undefined') ? EventManager.getGoldMultiplier() : 1.0;
+        const goldMultiplier = (1 + (goldBonusLvl * 0.03)) * (typeof GearPassives !== 'undefined' ? GearPassives.getGoldMultiplier() : 1.0) * ((typeof window !== 'undefined' && window.perkSystem && window.perkSystem.getCoinMultiplier) ? window.perkSystem.getCoinMultiplier() : 1.0) * eventGoldMult;
         const earnedCoins = Math.round(baseGold * goldMultiplier);
         const displayedCoins = earnedCoins + (this.coinsEarnedThisRun || 0);
 
@@ -244,7 +245,8 @@ class Game {
         const wavesXP = wavesCleared * 35;
         const killsXP = totalKills * 2;
         const bossXP = (kleanthisDefeated * 250) + (kiloumpasDefeated * 150) + (roufDefeated * 350) + ((this.player && this.player.endlessBossXpBonus) || 0);
-        const earnedXP = Math.round((wavesXP + killsXP + bossXP) * ((typeof window !== 'undefined' && window.perkSystem && window.perkSystem.getXpMultiplier) ? window.perkSystem.getXpMultiplier() : 1.0));
+        const eventXpMult = (typeof EventManager !== 'undefined') ? EventManager.getXpMultiplier() : 1.0;
+        const earnedXP = Math.round((wavesXP + killsXP + bossXP) * ((typeof window !== 'undefined' && window.perkSystem && window.perkSystem.getXpMultiplier) ? window.perkSystem.getXpMultiplier() : 1.0) * eventXpMult);
 
         // Credit earned XP to player's persistent Account Level & persist immediately
         if (typeof window !== 'undefined' && window.GameState && earnedXP > 0) {

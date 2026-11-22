@@ -522,6 +522,9 @@ class ModalManager {
             ui.profileManager.hideProfileModal();
         } else if (ui.mailManager && ui.mailManager.mailModal && !ui.mailManager.mailModal.classList.contains('hidden')) {
             ui.mailManager.hideMailModal();
+        } else if (document.getElementById('events-modal') && !document.getElementById('events-modal').classList.contains('hidden')) {
+            if (typeof EventManager !== 'undefined') EventManager.hideModal();
+            else document.getElementById('events-modal').classList.add('hidden');
         } else if (ui.dailyQuestsModal && !ui.dailyQuestsModal.classList.contains('hidden')) {
             ui.hideDailyQuestsModal();
         } else if (ui.settingsManager && ui.settingsManager.settingsModal && !ui.settingsManager.settingsModal.classList.contains('hidden')) {

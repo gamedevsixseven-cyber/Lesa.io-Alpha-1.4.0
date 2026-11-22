@@ -110,6 +110,7 @@ class OlympusVictoryModal {
 
         this._renderSpoilsAndBossBanner();
         this._updateRestartButtonLabel();
+        if (typeof EventManager !== 'undefined') EventManager.syncEndScreenBadges();
 
         if (window.soundEngine && typeof window.soundEngine.playLevelUp === 'function') {
             window.soundEngine.playLevelUp();

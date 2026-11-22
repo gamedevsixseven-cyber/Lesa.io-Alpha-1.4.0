@@ -231,9 +231,13 @@ class MaterialRegistry {
 
     static applyDropLuckBonus(rewardMap, options = {}) {
         if (!rewardMap || typeof rewardMap !== 'object') return rewardMap;
-        const luck = (typeof window !== 'undefined' && window.perkSystem && typeof window.perkSystem.getMaterialDropLuckBonus === 'function')
+        const perkLuck = (typeof window !== 'undefined' && window.perkSystem && typeof window.perkSystem.getMaterialDropLuckBonus === 'function')
             ? Math.max(0, window.perkSystem.getMaterialDropLuckBonus())
             : 0;
+        const eventLuck = (typeof EventManager !== 'undefined' && typeof EventManager.getMaterialLuckBonus === 'function')
+            ? Math.max(0, EventManager.getMaterialLuckBonus())
+            : 0;
+        const luck = perkLuck + eventLuck;
         if (luck <= 0) return rewardMap;
         const isZeusSummit = options.source === 'olympus_floor' && options.sourceName === 'Olympus F5';
         const eligibleKeys = Object.keys(rewardMap).filter((k) => rewardMap[k] > 0 && (k !== 'ambrosia_spark' || isZeusSummit));
@@ -244,7 +248,7 @@ class MaterialRegistry {
 
     /**
      * Capped physical floor material drop roll for regular / elite non-boss enemies.
-     * Heavily tuned down so materials remain scarce and deliberate.
+     * Heavily tuned down so materials remain scarce and deliberate (mildly boosted during Events).
      */
     static maybeDropForEnemy(game, enemy) {
         if (!game || game.isCoopGuest || !enemy || enemy._matDropChecked || typeof Drop === 'undefined') return;
@@ -255,16 +259,23 @@ class MaterialRegistry {
         const mode = game.gameMode || 'story';
         if (!wm || mode === 'dungeons') return;
 
+        const eventLuck = (typeof EventManager !== 'undefined' && typeof EventManager.getMaterialLuckBonus === 'function')
+            ? Math.max(0, EventManager.getMaterialLuckBonus())
+            : 0;
+        const hasMatBoost = eventLuck > 0;
         const wave = Math.max(1, wm.wave || 1);
-        const maxPerWave = mode === 'endless' ? (wave >= 12 ? 1 : 0) : (wave >= 10 && wave % 2 === 0 ? 1 : 0);
+        const maxPerWave = mode === 'endless'
+            ? (hasMatBoost ? (wave >= 16 ? 2 : (wave >= 8 ? 1 : 0)) : (wave >= 12 ? 1 : 0))
+            : (hasMatBoost ? (wave >= 6 && wave % 2 === 0 ? 1 : 0) : (wave >= 10 && wave % 2 === 0 ? 1 : 0));
         if (maxPerWave <= 0 || (wm.waveMatDrops || 0) >= maxPerWave) return;
 
         const eliteTypes = new Set(['kafeneio_tank', 'dimotiki_enforcer', 'psaltis', 'skarmogyftos']);
         const total = Math.max(8, wm.waveTotalEnemies || 12);
         const baseChance = Math.min(0.018, 0.18 / total);
-        const luckMult = (typeof window !== 'undefined' && window.perkSystem && typeof window.perkSystem.getMaterialDropLuckBonus === 'function')
-            ? (1 + Math.max(0, window.perkSystem.getMaterialDropLuckBonus()))
-            : 1.0;
+        const perkLuck = (typeof window !== 'undefined' && window.perkSystem && typeof window.perkSystem.getMaterialDropLuckBonus === 'function')
+            ? Math.max(0, window.perkSystem.getMaterialDropLuckBonus())
+            : 0;
+        const luckMult = 1 + perkLuck + eventLuck;
         const chance = (eliteTypes.has(enemy.type) ? Math.min(0.04, baseChance * 1.8) : baseChance) * luckMult;
 
         if (Math.random() < chance) {

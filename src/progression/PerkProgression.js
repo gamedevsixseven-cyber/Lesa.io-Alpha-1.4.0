@@ -17,6 +17,7 @@ class PerkProgression {
         frost_titan: 'Boreas the Frost Titan (Olympus F3)',
         kiloumpas_berserker: 'Kiloumpas Berserker (Olympus F4)',
         zeus: 'Zeus (Olympus Floor 5)',
+        lil_xas: 'Lil Xas (Rare Easter Egg)',
         endless_mini_boss: 'Endless Mini-Boss',
         endless_boss: 'Endless Main Boss'
     };
