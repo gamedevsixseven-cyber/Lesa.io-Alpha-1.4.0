@@ -2,6 +2,15 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    // Strict Primary Developer gate (authenticated via Firebase Google Auth)
+    function isPrimaryDev() {
+      return request.auth != null
+        && (request.auth.uid == 'RLqBTfjZATZzePCPDyNCrUGCYrs2'
+            || (request.auth.token.email != null
+                && request.auth.token.email_verified == true
+                && request.auth.token.email.lower() == 'gamedevsixseven@gmail.com'));
+    }
+
     // Admin list: ONLY editable inside Firebase Console. Clients cannot list or write.
     match /admins/{docId} {
       allow get: if request.auth != null
@@ -14,19 +23,19 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
-    // Player saves, Online IDs, Name search, and live presence
-    // Clients can never grant themselves isAdmin via players/{id}
+    // Player saves, Online IDs, Name search, Leaderboards, and live presence
+    // Clients can never grant themselves isAdmin via players/{id}; ONLY Primary Dev can delete accounts
     match /players/{playerId} {
       allow read: if true;
       allow create: if !('isAdmin' in request.resource.data) || request.resource.data.isAdmin == false;
       allow update: if !request.resource.data.diff(resource.data).affectedKeys().hasAny(['isAdmin']);
-      allow delete: if false;
+      allow delete: if isPrimaryDev();
     }
 
-    // Unique player name registry
+    // Unique player name registry; ONLY Primary Dev can purge username reservations
     match /usernames/{nameId} {
       allow read, create, update: if true;
-      allow delete: if false;
+      allow delete: if isPrimaryDev();
     }
 
     // Mutual friend requests and accepted friendships

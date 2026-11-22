@@ -195,35 +195,79 @@ class NameValidator {
         return { isValid: true };
     }
 
+    _getSelfUids(currentUid = null) {
+        const set = new Set();
+        if (currentUid) set.add(currentUid);
+        if (typeof window !== 'undefined' && window.cloudSave) {
+            if (typeof window.cloudSave.getEffectivePlayerUid === 'function') set.add(window.cloudSave.getEffectivePlayerUid());
+            if (window.cloudSave.currentUser && window.cloudSave.currentUser.uid) set.add(window.cloudSave.currentUser.uid);
+        }
+        if (typeof localStorage !== 'undefined') {
+            const stored = localStorage.getItem('lesaio_player_uid');
+            if (stored) set.add(stored);
+        }
+        set.delete(''); set.delete(null); set.delete(undefined);
+        return set;
+    }
+
     /**
-     * Check if the name is already claimed by another player
+     * Check if the name is already claimed by another online player (case-insensitive)
      */
     async checkUniqueName(name, currentUid = null) {
-        const lower = name.trim().toLowerCase();
+        const trimmed = String(name || '').trim();
+        const lower = trimmed.toLowerCase();
+        if (!lower) return { isValid: false, reason: 'Name cannot be empty!' };
 
-        // 1. Check local claimed names
-        const localClaimed = JSON.parse(localStorage.getItem('lesaio_claimed_names') || '{}');
-        if (localClaimed[lower] && localClaimed[lower] !== (localStorage.getItem('lesaio_player_uid') || 'local_user')) {
-            return { isValid: false, reason: 'This name is already taken by another player! 👤' };
-        }
+        const selfUids = this._getSelfUids(currentUid);
+        const takenResp = { isValid: false, reason: 'Name taken! Another online player already uses this name.' };
 
-        // 2. Check live Firebase Firestore if connected
-        if (window.cloudSave && window.cloudSave.isInitialized && window.cloudSave.db) {
+        // 1. Check local claimed names on same browser/device
+        try {
+            const localClaimed = JSON.parse(localStorage.getItem('lesaio_claimed_names') || '{}');
+            const owner = localClaimed[lower];
+            if (owner && !selfUids.has(owner)) return takenResp;
+        } catch (_) {}
+
+        // 2. Check live Firebase Firestore across both `usernames` index and `players` directory
+        if (typeof window !== 'undefined' && window.cloudSave && window.cloudSave.isInitialized && window.cloudSave.db) {
+            const db = window.cloudSave.db;
+
+            // A. Direct username reservation doc
             try {
-                const usernameDocRef = window.cloudSave.db.collection('usernames').doc(lower);
-                const doc = await usernameDocRef.get();
-
+                const doc = await db.collection('usernames').doc(lower).get();
                 if (doc.exists) {
-                    const data = doc.data();
-                    const user = window.cloudSave.currentUser;
-                    const myUid = currentUid || (user ? user.uid : null) || localStorage.getItem('lesaio_player_uid');
-
-                    if (data.uid && data.uid !== myUid) {
-                        return { isValid: false, reason: 'This name is already taken by another player! 👤' };
-                    }
+                    const data = doc.data() || {};
+                    if (data.uid && !selfUids.has(data.uid)) return takenResp;
                 }
             } catch (err) {
-                console.warn('Firestore username uniqueness check fallback:', err);
+                console.warn('Firestore usernames check notice:', err);
+            }
+
+            // B. Live `players` directory (catches all existing players even before username doc registration)
+            try {
+                const snap = await db.collection('players').where('playerNameLower', '==', lower).limit(5).get();
+                let conflict = false;
+                snap.forEach((doc) => {
+                    if (!doc.exists) return;
+                    const data = doc.data() || {};
+                    const docUid = data.uid || doc.id;
+                    if (!selfUids.has(doc.id) && !selfUids.has(docUid)) conflict = true;
+                });
+                if (conflict) return takenResp;
+
+                // Fallback exact-case check for legacy player docs missing `playerNameLower`
+                if (snap.empty) {
+                    const legacySnap = await db.collection('players').where('playerName', '==', trimmed).limit(5).get();
+                    legacySnap.forEach((doc) => {
+                        if (!doc.exists) return;
+                        const data = doc.data() || {};
+                        const docUid = data.uid || doc.id;
+                        if (!selfUids.has(doc.id) && !selfUids.has(docUid)) conflict = true;
+                    });
+                    if (conflict) return takenResp;
+                }
+            } catch (err) {
+                console.warn('Firestore players name check notice:', err);
             }
         }
 
@@ -231,29 +275,55 @@ class NameValidator {
     }
 
     /**
-     * Register / Claim the username in Firestore & Local storage
+     * Register / Claim the username in Firestore & Local storage (and release previous name if renamed)
      */
-    async claimName(name) {
-        const lower = name.trim().toLowerCase();
-        const myUid = (window.cloudSave && window.cloudSave.currentUser ? window.cloudSave.currentUser.uid : null) 
-                      || localStorage.getItem('lesaio_player_uid') 
-                      || `user_${Math.random().toString(36).substr(2, 9)}`;
+    async claimName(name, previousName = null) {
+        const trimmed = String(name || '').trim();
+        const lower = trimmed.toLowerCase();
+        if (!lower) return;
 
-        localStorage.setItem('lesaio_player_uid', myUid);
+        const selfUids = this._getSelfUids();
+        const myUid = (typeof window !== 'undefined' && window.cloudSave && typeof window.cloudSave.getEffectivePlayerUid === 'function' && window.cloudSave.getEffectivePlayerUid())
+            || (typeof localStorage !== 'undefined' && localStorage.getItem('lesaio_player_uid'))
+            || `user_${Math.random().toString(36).substr(2, 9)}`;
+        selfUids.add(myUid);
 
-        // Update local registry
-        const localClaimed = JSON.parse(localStorage.getItem('lesaio_claimed_names') || '{}');
-        localClaimed[lower] = myUid;
-        localStorage.setItem('lesaio_claimed_names', JSON.stringify(localClaimed));
-
-        // Save to Firestore if available
-        if (window.cloudSave && window.cloudSave.isInitialized && window.cloudSave.db) {
+        if (typeof localStorage !== 'undefined') {
+            localStorage.setItem('lesaio_player_uid', myUid);
             try {
-                await window.cloudSave.db.collection('usernames').doc(lower).set({
-                    displayName: name.trim(),
-                    uid: myUid,
-                    claimedAt: firebase.firestore.FieldValue.serverTimestamp()
-                }, { merge: true });
+                const localClaimed = JSON.parse(localStorage.getItem('lesaio_claimed_names') || '{}');
+                if (previousName) {
+                    const prevLower = String(previousName).trim().toLowerCase();
+                    if (prevLower && prevLower !== lower && selfUids.has(localClaimed[prevLower])) {
+                        delete localClaimed[prevLower];
+                    }
+                }
+                localClaimed[lower] = myUid;
+                localStorage.setItem('lesaio_claimed_names', JSON.stringify(localClaimed));
+            } catch (_) {}
+        }
+
+        if (typeof window !== 'undefined' && window.cloudSave && window.cloudSave.isInitialized && window.cloudSave.db) {
+            const db = window.cloudSave.db;
+            try {
+                if (previousName) {
+                    const prevLower = String(previousName).trim().toLowerCase();
+                    if (prevLower && prevLower !== lower) {
+                        const prevDoc = await db.collection('usernames').doc(prevLower).get();
+                        if (prevDoc.exists && prevDoc.data() && selfUids.has(prevDoc.data().uid)) {
+                            await db.collection('usernames').doc(prevLower).delete();
+                        }
+                    }
+                }
+                const curDoc = await db.collection('usernames').doc(lower).get();
+                if (!curDoc.exists || !curDoc.data() || !curDoc.data().uid || selfUids.has(curDoc.data().uid)) {
+                    await db.collection('usernames').doc(lower).set({
+                        displayName: trimmed,
+                        nameLower: lower,
+                        uid: myUid,
+                        claimedAt: firebase.firestore.FieldValue.serverTimestamp()
+                    }, { merge: true });
+                }
             } catch (err) {
                 console.warn('Firestore username registration notice:', err);
             }

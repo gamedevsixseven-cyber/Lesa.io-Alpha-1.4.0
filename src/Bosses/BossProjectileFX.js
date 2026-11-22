@@ -25,7 +25,10 @@ const BOSS_PROJECTILE_SPECS = {
     boreas_frost_lance: { mode: 'beam', trail: 'cryo', trailCol: '#00f5ff', sparkA: '#00f5ff', sparkB: '#ffffff', shock: 'rgba(129, 236, 236, 0.72)', splat: ['rgba(129, 236, 236, 0.78)', '#0984e3'] },
     boreas_icicle_shard: { mode: 'spin', spin: 0.26, trail: 'cryo', trailCol: '#81ecec', sparkA: '#81ecec', sparkB: '#ffffff', splat: ['#81ecec', '#ffffff'] },
     berserker_alpine_boulder: { mode: 'spin', spin: 0.14, trail: 'gravel', trailCol: '#74b9ff', sparkA: '#95a5a6', sparkB: '#dff9fb', shock: 'rgba(116, 185, 255, 0.75)', dust: true, crack: true, splat: ['#636e72', '#dff9fb'] },
-    berserker_frost_round: { mode: 'beam', trail: 'frost_tracer', trailCol: '#74b9ff', sparkA: '#74b9ff', sparkB: '#dfe6e9', splat: ['#636e72', '#74b9ff'] }
+    berserker_frost_round: { mode: 'beam', trail: 'frost_tracer', trailCol: '#74b9ff', sparkA: '#74b9ff', sparkB: '#dfe6e9', splat: ['#636e72', '#74b9ff'] },
+    bio_acid: { mode: 'spin', spin: 0.28, trail: 'venom', trailCol: '#2ed573', sparkA: '#2ed573', sparkB: '#bef264', shock: 'rgba(46, 213, 115, 0.78)', splat: ['#10ac84', '#bef264'] },
+    lil_xas_note: { mode: 'spin', spin: 0.14, trail: 'siren', trailCol: '#e056fd', sparkA: '#e056fd', sparkB: '#00f5ff', shock: 'rgba(224, 86, 253, 0.78)', splat: ['#e056fd', '#00f5ff'] },
+    lil_xas_vinyl: { mode: 'spin', spin: 0.34, trail: 'gold', trailCol: '#facc15', sparkA: '#facc15', sparkB: '#e056fd', shock: 'rgba(250, 204, 21, 0.84)', splat: ['#facc15', '#18181b'] }
 };
 
 class BossProjectileFX {
@@ -191,8 +194,42 @@ class BossProjectileFX {
             case 'boreas_icicle_shard': return this.drawIcicleShard(ctx, r);
             case 'berserker_alpine_boulder': return this.drawAlpineBoulder(ctx, r);
             case 'berserker_frost_round': return this.drawFrostRound(ctx, r);
+            case 'bio_acid': return this.drawBioAcid(ctx, r);
+            case 'lil_xas_note': return this.drawLilXasNote(ctx, b, r);
+            case 'lil_xas_vinyl': return this.drawLilXasVinyl(ctx, r);
             default: return false;
         }
+    }
+
+    static drawLilXasVinyl(ctx, r) {
+        ctx.fillStyle = '#09090b'; ctx.strokeStyle = '#facc15'; ctx.lineWidth = 2.4;
+        ctx.beginPath(); ctx.arc(0, 0, r * 1.12, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        ctx.strokeStyle = '#e056fd'; ctx.lineWidth = 1.4;
+        ctx.beginPath(); ctx.arc(0, 0, r * 0.72, 0, Math.PI * 1.3); ctx.stroke();
+        ctx.fillStyle = '#facc15'; ctx.beginPath(); ctx.arc(0, 0, r * 0.4, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#09090b'; ctx.beginPath(); ctx.arc(0, 0, r * 0.14, 0, Math.PI * 2); ctx.fill();
+        return true;
+    }
+
+    static drawLilXasNote(ctx, b, r) {
+        ctx.fillStyle = 'rgba(224, 86, 253, 0.32)';
+        ctx.beginPath(); ctx.arc(0, 0, r * 1.45, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = b.color || '#e056fd'; ctx.strokeStyle = '#141418'; ctx.lineWidth = 2.2;
+        ctx.beginPath(); ctx.arc(0, 0, r * 0.96, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        ctx.font = `900 ${Math.round(r * 1.35)}px sans-serif`;
+        ctx.fillStyle = '#ffffff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText('♫', 0, 1);
+        return true;
+    }
+
+    static drawBioAcid(ctx, r) {
+        ctx.fillStyle = 'rgba(46, 213, 115, 0.30)';
+        ctx.beginPath(); ctx.arc(0, 0, r * 1.38, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#10ac84'; ctx.strokeStyle = '#141418'; ctx.lineWidth = 2.2;
+        ctx.beginPath(); ctx.arc(0, 0, r * 0.94, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = '#bef264';
+        ctx.beginPath(); ctx.arc(-r * 0.24, -r * 0.24, r * 0.34, 0, Math.PI * 2); ctx.fill();
+        return true;
     }
 
     static drawSkewer(ctx, r) {

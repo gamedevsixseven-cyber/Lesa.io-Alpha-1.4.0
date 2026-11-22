@@ -44,6 +44,7 @@ class AdminPanelController {
         this.bindSpawnerControls();
         this.bindEconomyControls();
         this.bindAdminManagement();
+        this.bindDevAccountControls();
     }
 
     /**
@@ -113,10 +114,16 @@ class AdminPanelController {
         this.modal.classList.remove('hidden');
         if (window.soundEngine) window.soundEngine.playSelect();
 
+        const isPrimaryDev = !!(window.AdminAuth && typeof window.AdminAuth.isPrimaryDevUser === 'function' && window.AdminAuth.isPrimaryDevUser());
         const adminEmailTag = document.getElementById('admin-current-user-email');
         if (adminEmailTag && authResult.user) {
-            const badge = authResult.isTestingOverride ? 'Testing Access (Temp)' : 'Verified Admin';
+            const badge = authResult.isTestingOverride ? 'Testing Access (Temp)' : (isPrimaryDev ? 'Primary Dev' : 'Verified Admin');
             adminEmailTag.textContent = `${authResult.user.email || authResult.user.uid} (${badge})`;
+        }
+
+        const devSection = document.getElementById('admin-dev-account-section');
+        if (devSection) {
+            devSection.classList.toggle('hidden', !isPrimaryDev);
         }
 
         this.startTelemetry();
@@ -252,6 +259,15 @@ class AdminPanelController {
             });
         });
 
+        const lilXasBtn = document.getElementById('admin-btn-spawn-lilxas');
+        if (lilXasBtn) {
+            lilXasBtn.addEventListener('click', () => {
+                const ok = window.AdminCheats.spawnLilXasEasterEgg(window.gameInstance);
+                this.showToast(ok ? '🎤 Triggered Lil Xas Concert Easter Egg!' : 'Could not trigger Lil Xas event.', ok ? 'ok' : 'warn');
+                if (ok) this.close();
+            });
+        }
+
         this.modal.querySelectorAll('.admin-drop-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const dropType = e.currentTarget.getAttribute('data-drop');
@@ -360,6 +376,109 @@ class AdminPanelController {
                 addAdminBtn.disabled = false;
                 addAdminBtn.textContent = 'GRANT ADMIN ACCESS';
             }
+        });
+    }
+
+    _escHtml(str) {
+        const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+        return String(str || '').replace(/[&<>'"]/g, ch => map[ch]);
+    }
+
+    bindDevAccountControls() {
+        const searchBtn = document.getElementById('admin-btn-lookup-account');
+        const queryInput = document.getElementById('admin-dev-account-query');
+        const resultsEl = document.getElementById('admin-dev-account-results');
+        if (!searchBtn || !queryInput || !resultsEl) return;
+
+        const runLookup = async () => {
+            const q = queryInput.value.trim();
+            if (!q) {
+                this.showToast('Enter a player Name, #Tag, Email, or UID to search.', 'warn');
+                return;
+            }
+            try {
+                searchBtn.disabled = true;
+                searchBtn.textContent = 'SEARCHING...';
+                const matches = await window.DevAccountManager.lookupAccounts(q);
+                this._renderDevAccountResults(matches, resultsEl);
+            } catch (err) {
+                resultsEl.innerHTML = `<div class="admin-dev-empty">${this._escHtml(err.message)}</div>`;
+                this.showToast(err.message, 'error');
+            } finally {
+                searchBtn.disabled = false;
+                searchBtn.textContent = 'FIND ACCOUNT';
+            }
+        };
+
+        searchBtn.addEventListener('click', runLookup);
+        queryInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                runLookup();
+            }
+        });
+    }
+
+    _renderDevAccountResults(accounts, container) {
+        if (!Array.isArray(accounts) || accounts.length === 0) {
+            container.innerHTML = '<div class="admin-dev-empty">No matching accounts found in Firestore.</div>';
+            return;
+        }
+        container.innerHTML = accounts.map((acc, idx) => `
+            <div class="admin-dev-acc-card">
+                <div class="admin-dev-acc-meta">
+                    <div class="admin-dev-acc-title">${this._escHtml(acc.name)} <span style="color:#fed330;">${this._escHtml(acc.tag)}</span> ${acc.isAdmin ? '<span style="color:#2ed573;font-size:0.74rem;">[ADMIN]</span>' : ''}</div>
+                    <div class="admin-dev-acc-sub">UID: ${this._escHtml(acc.uid)}${acc.email ? ` | Email: ${this._escHtml(acc.email)}` : ''}</div>
+                    <div class="admin-dev-acc-sub">Lv.${acc.level} | 🪙 ${acc.coins.toLocaleString()} | 💎 ${acc.gems.toLocaleString()} | 🏆 Score: ${acc.highScore.toLocaleString()} | 🔥 W${acc.endlessWave} | ⚔️ ${acc.totalKills.toLocaleString()}</div>
+                </div>
+                <div class="admin-dev-acc-actions">
+                    <button type="button" class="admin-control-btn btn-warning admin-dev-wipe-btn" data-idx="${idx}">WIPE LV.1</button>
+                    <button type="button" class="admin-control-btn btn-danger admin-dev-delete-btn" data-idx="${idx}">DELETE EVERYWHERE</button>
+                </div>
+            </div>
+        `).join('');
+
+        container.querySelectorAll('.admin-dev-wipe-btn').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const acc = accounts[parseInt(btn.getAttribute('data-idx'), 10)];
+                if (!acc) return;
+                if (!confirm(`⚠️ WIPE ACCOUNT TO LV.1?\n\nPlayer: ${acc.name} (${acc.tag})\nUID: ${acc.uid}\n\nResets cloud progression, coins, gems, heroes, gear, skins & leaderboard scores to Lv.1 starter state.`)) return;
+                try {
+                    btn.disabled = true;
+                    btn.textContent = 'WIPING...';
+                    await window.DevAccountManager.wipeAccount(acc);
+                    this.showToast(`Wiped ${acc.name} (${acc.tag}) to Lv.1 & cleared leaderboard stats.`, 'warn');
+                    document.getElementById('admin-btn-lookup-account')?.click();
+                } catch (err) {
+                    btn.disabled = false;
+                    btn.textContent = 'WIPE LV.1';
+                    this.showToast(`Wipe failed: ${err.message}`, 'error');
+                }
+            });
+        });
+
+        container.querySelectorAll('.admin-dev-delete-btn').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const acc = accounts[parseInt(btn.getAttribute('data-idx'), 10)];
+                if (!acc) return;
+                const typed = prompt(`🚨 PERMANENTLY DELETE ACCOUNT EVERYWHERE?\n\nPlayer: ${acc.name} (${acc.tag})\nUID: ${acc.uid}\n\nDeletes from Firestore saves, Leaderboards, Usernames, Friendships & Invites.\nType DELETE to confirm:`);
+                if (typed !== 'DELETE') return;
+                try {
+                    btn.disabled = true;
+                    btn.textContent = 'DELETING...';
+                    const res = await window.DevAccountManager.deleteAccountEverywhere(acc);
+                    const c = res.counts || {};
+                    this.showToast(`Deleted ${acc.name} everywhere (players:${c.players || 0}, usernames:${c.usernames || 0}, friends:${c.friendships || 0}, invites:${c.invites || 0}).`);
+                    if (!res.selfDeleted) document.getElementById('admin-btn-lookup-account')?.click();
+                } catch (err) {
+                    btn.disabled = false;
+                    btn.textContent = 'DELETE EVERYWHERE';
+                    const msg = String(err && err.code === 'permission-denied'
+                        ? 'Firestore permission denied — publish updated firestore.rules in Firebase Console!'
+                        : (err.message || 'Delete failed'));
+                    this.showToast(msg, 'error');
+                }
+            });
         });
     }
 

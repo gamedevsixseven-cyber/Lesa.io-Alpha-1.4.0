@@ -575,6 +575,16 @@ class AdminCheatsService {
         return true;
     }
 
+    spawnLilXasEasterEgg(game) {
+        if (!game || typeof LilXasEvent === 'undefined') return false;
+        this._ensureRunActive(game, game.state === 'PLAYING' && game.gameMode === 'endless' ? null : 'endless');
+        if (!game.player || !game.waveManager) return false;
+        game.bullets.length = 0;
+        if (Array.isArray(game.hazards)) game.hazards.length = 0;
+        if (game.cutsceneOverlay && game.cutsceneOverlay.active) game.cutsceneOverlay.endCutscene();
+        return !!LilXasEvent.forceTrigger(game);
+    }
+
     triggerCredits() {
         if (window.creditsScreen) {
             window.creditsScreen.start(() => {

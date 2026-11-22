@@ -96,11 +96,20 @@ class ProfileManager {
         }
 
         const firstTimeInput = document.getElementById('initial-name-input');
+        const firstErr = document.getElementById('initial-name-error-text');
         if (firstTimeInput) {
+            firstTimeInput.addEventListener('input', () => firstErr && firstErr.classList.add('hidden'));
             firstTimeInput.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter') {
-                    this.handleFirstTimeNameSubmit();
-                }
+                if (e.key === 'Enter') this.handleFirstTimeNameSubmit();
+            });
+        }
+
+        const renameInput = document.getElementById('rename-input');
+        const renameErr = document.getElementById('rename-error-text');
+        if (renameInput) {
+            renameInput.addEventListener('input', () => renameErr && renameErr.classList.add('hidden'));
+            renameInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') this.handleRenameSubmit();
             });
         }
 
@@ -185,20 +194,44 @@ class ProfileManager {
         return { valid: val.length >= 2 && val.length <= 14, error: 'Name must be 2-14 characters!' };
     }
 
-    handleFirstTimeNameSubmit() {
+    _showNameError(errEl, msg) {
+        if (errEl) {
+            if (typeof UiIcons !== 'undefined') UiIcons.setRichText(errEl, msg, 'ui-icon-sm');
+            else errEl.textContent = msg;
+            errEl.classList.remove('hidden');
+        }
+        if (window.soundEngine && typeof window.soundEngine.playGoBack === 'function') window.soundEngine.playGoBack();
+    }
+
+    async handleFirstTimeNameSubmit() {
+        if (this._submittingName) return;
         const input = document.getElementById('initial-name-input');
+        const btn = document.getElementById('submit-initial-name-btn');
         const errorEl = document.getElementById('initial-name-error-text');
         if (!input) return;
 
         const val = input.value.trim();
         const check = this.validatePlayerName(val);
-
         if (!check.valid) {
-            if (errorEl) {
-                errorEl.textContent = check.error || 'Name must be 2-14 characters!';
-                errorEl.classList.remove('hidden');
-            }
+            this._showNameError(errorEl, check.error || 'Name must be 2-14 characters!');
             return;
+        }
+
+        this._submittingName = true;
+        const origHtml = btn ? btn.innerHTML : '';
+        if (btn) { btn.disabled = true; btn.textContent = 'CHECKING...'; }
+        try {
+            if (typeof window !== 'undefined' && window.nameValidator && typeof window.nameValidator.checkUniqueName === 'function') {
+                const uniqueRes = await window.nameValidator.checkUniqueName(val);
+                if (!uniqueRes.isValid) {
+                    this._showNameError(errorEl, uniqueRes.reason || 'Name taken!');
+                    return;
+                }
+                await window.nameValidator.claimName(val);
+            }
+        } finally {
+            this._submittingName = false;
+            if (btn) { btn.disabled = false; btn.innerHTML = origHtml; }
         }
 
         if (this.gameState) {
@@ -210,36 +243,56 @@ class ProfileManager {
         if (window.soundEngine) window.soundEngine.playLevelUp();
         this.hideFirstTimeNameModal();
         this.updateProfileUI();
-        if (window.friendService) window.friendService.syncMyProfile(true);
-        if (typeof TributeManager !== 'undefined') {
-            TributeManager.checkAndShow();
+        if (window.cloudSave && typeof window.cloudSave.saveToCloud === 'function') {
+            window.cloudSave.saveToCloud({ name: val, playerName: val, playerNameLower: val.toLowerCase() });
         }
+        if (window.friendService) window.friendService.syncMyProfile(true);
+        if (typeof TributeManager !== 'undefined') TributeManager.checkAndShow();
     }
 
-    handleRenameSubmit() {
+    async handleRenameSubmit() {
+        if (this._submittingName) return;
         const input = document.getElementById('rename-input');
+        const btn = document.getElementById('confirm-rename-btn');
         const err = document.getElementById('rename-error-text');
         if (!input || !this.gameState) return;
 
         const val = input.value.trim();
-        const check = this.validatePlayerName(val);
-
-        if (!check.valid) {
-            if (err) {
-                err.textContent = check.error || 'Invalid name!';
-                err.classList.remove('hidden');
-            }
+        const prevName = String(this.gameState.player.name || '').trim();
+        if (val === prevName) {
+            this._showNameError(err, 'You already have this name!');
             return;
         }
 
-        if (this.gameState.player.gems < 100) {
-            if (err) {
-                const errText = 'Not enough Gems! (Requires 100 💎)';
-                if (typeof UiIcons !== 'undefined') UiIcons.setRichText(err, errText, 'ui-icon-sm');
-                else err.textContent = errText;
-                err.classList.remove('hidden');
-            }
+        const check = this.validatePlayerName(val);
+        if (!check.valid) {
+            this._showNameError(err, check.error || 'Invalid name!');
             return;
+        }
+
+        this._submittingName = true;
+        const origHtml = btn ? btn.innerHTML : '';
+        if (btn) { btn.disabled = true; btn.textContent = 'CHECKING...'; }
+        try {
+            if (val.toLowerCase() !== prevName.toLowerCase() && typeof window !== 'undefined' && window.nameValidator && typeof window.nameValidator.checkUniqueName === 'function') {
+                const uniqueRes = await window.nameValidator.checkUniqueName(val);
+                if (!uniqueRes.isValid) {
+                    this._showNameError(err, uniqueRes.reason || 'Name taken!');
+                    return;
+                }
+            }
+
+            if (this.gameState.player.gems < 100) {
+                this._showNameError(err, 'Not enough Gems! (Requires 100 💎)');
+                return;
+            }
+
+            if (typeof window !== 'undefined' && window.nameValidator && typeof window.nameValidator.claimName === 'function') {
+                await window.nameValidator.claimName(val, prevName);
+            }
+        } finally {
+            this._submittingName = false;
+            if (btn) { btn.disabled = false; btn.innerHTML = origHtml; }
         }
 
         this.gameState.spendGems(100);
@@ -249,6 +302,9 @@ class ProfileManager {
         if (window.soundEngine) window.soundEngine.playLevelUp();
         this.hideRenameModal();
         this.updateProfileUI();
+        if (window.cloudSave && typeof window.cloudSave.saveToCloud === 'function') {
+            window.cloudSave.saveToCloud({ name: val, playerName: val, playerNameLower: val.toLowerCase() });
+        }
         if (window.friendService) window.friendService.syncMyProfile(true);
     }
 

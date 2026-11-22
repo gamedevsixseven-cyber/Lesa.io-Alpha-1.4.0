@@ -8,6 +8,8 @@
 class AdminAuthService {
     // Strict Firestore-only Dev access: set to true only for temporary local/public playtesting.
     static TESTING_OPEN_ACCESS = false;
+    static PRIMARY_DEV_UID = 'RLqBTfjZATZzePCPDyNCrUGCYrs2';
+    static PRIMARY_DEV_EMAIL = 'gamedevsixseven@gmail.com';
 
     constructor() {
         this.cachedAdminStatus = null;
@@ -38,6 +40,41 @@ class AdminAuthService {
         return AdminAuthService.TESTING_OPEN_ACCESS === true;
     }
 
+    /**
+     * Strictly verifies whether `user` is the authenticated Primary Developer account.
+     * Never grants access under TESTING_OPEN_ACCESS or delegated admin entries.
+     */
+    isPrimaryDevUser(user = this.getCurrentUser()) {
+        if (!user || this.isTestingOverrideEnabled()) return false;
+        const uid = String(user.uid || '');
+        const email = String(user.email || '').toLowerCase().trim();
+        if (uid === AdminAuthService.PRIMARY_DEV_UID) return true;
+        return email === AdminAuthService.PRIMARY_DEV_EMAIL && user.emailVerified !== false;
+    }
+
+    async verifyPrimaryDevAccess() {
+        const user = this.getCurrentUser();
+        if (!user) {
+            return {
+                authorized: false,
+                reason: 'NOT_LOGGED_IN',
+                message: 'Sign in with your Developer Google account in Settings to use Dev Wipe / Delete.'
+            };
+        }
+        if (!this.isPrimaryDevUser(user)) {
+            return {
+                authorized: false,
+                reason: 'NOT_PRIMARY_DEV',
+                message: 'Restricted: ONLY the Primary Developer account can wipe or delete accounts.'
+            };
+        }
+        return {
+            authorized: true,
+            isPrimaryDev: true,
+            user: { uid: user.uid, email: user.email, name: user.displayName || user.email }
+        };
+    }
+
     async verifyAdminAccess(forceRefresh = false) {
         const user = this.getCurrentUser();
 
@@ -59,6 +96,10 @@ class AdminAuthService {
                 reason: 'NOT_LOGGED_IN',
                 message: 'You must sign in with your Google account in Settings to verify Admin privileges.'
             };
+        }
+
+        if (this.isPrimaryDevUser(user)) {
+            return this._setAuthorized(user, true);
         }
 
         // Use cache if checked recently for snappy responsiveness

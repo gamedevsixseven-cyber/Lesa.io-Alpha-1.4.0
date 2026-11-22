@@ -10,19 +10,24 @@ class KolossosTrooper extends EnemyBase {
         this.name = 'Helios Trooper';
         this.radius = 23;
         this.ownedByBoss = owner;
-        this.slotIndex = slotIndex;
+        this.slotIndex = owner ? slotIndex : Math.floor(Math.random() * 12);
         this.color = '#cd6133';
 
-        const ownerMax = owner && owner.maxHp ? owner.maxHp : Math.round(32000 * Math.max(1.0, waveMultiplier));
-        this.maxHp = Math.max(700, Math.round(ownerMax * 0.048));
+        const hasOwner = !!(owner && owner.maxHp);
+        const softDmgScale = 1.0 + Math.max(0, waveMultiplier - 1.0) * 0.35;
+        this.maxHp = hasOwner
+            ? Math.max(700, Math.round(owner.maxHp * 0.048))
+            : Math.round(390 * Math.max(1.0, waveMultiplier));
         this.hp = this.maxHp;
         this.baseSpeed = 3.15;
         this.speed = this.baseSpeed;
-        this.damage = owner && owner.damage ? Math.round(owner.damage * 0.46) : Math.round(58 * Math.max(1.0, waveMultiplier * 0.35));
-        this.xpDrop = 260;
+        this.damage = (owner && owner.damage)
+            ? Math.round(owner.damage * 0.46)
+            : Math.round(32 * softDmgScale);
+        this.xpDrop = hasOwner ? 260 : 95;
         this.scoreValue = 420;
-        this.fireCooldown = 44 + (slotIndex % 3) * 18;
-        this.strafeDir = slotIndex % 2 === 0 ? 1 : -1;
+        this.fireCooldown = owner ? (44 + (this.slotIndex % 3) * 18) : (48 + Math.random() * 55);
+        this.strafeDir = this.slotIndex % 2 === 0 ? 1 : -1;
     }
 
     update(dt = 1, player = null, enemies = [], bullets = [], effects = null, arena = null) {
@@ -59,7 +64,7 @@ class KolossosTrooper extends EnemyBase {
             this.x += this.vx * dt;
             this.y += this.vy * dt;
             this.walkCycle = (this.walkCycle || 0) + 0.16 * dt;
-            if (typeof this.resolveEnemyCollisions === 'function') this.resolveEnemyCollisions(enemies);
+            if (typeof this.applySeparation === 'function') this.applySeparation(enemies);
         } else {
             this.vx = 0;
             this.vy = 0;

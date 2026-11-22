@@ -26,7 +26,7 @@
     <link rel="stylesheet" href="styles/variables.css">
     <link rel="stylesheet" href="styles/animations.css">
     <link rel="stylesheet" href="styles/menu.css">
-    <link rel="stylesheet" href="styles/cards.css">
+    <link rel="stylesheet" href="styles/cards.css?v=1.6.9">
     <link rel="stylesheet" href="styles/hud.css">
     <link rel="stylesheet" href="styles/ultimates.css?v=1.5.74">
     <link rel="stylesheet" href="styles/modals.css?v=1.5.8">
@@ -44,19 +44,19 @@
     <link rel="stylesheet" href="styles/mobile.css?v=1.5.79">
     <link rel="stylesheet" href="styles/mobile-modals.css?v=1.5.79">
     <link rel="stylesheet" href="styles/mobile-settings.css?v=1.5.65">
-    <link rel="stylesheet" href="src/admin/admin.css?v=1.5.40">
+    <link rel="stylesheet" href="src/admin/admin.css?v=1.6.15">
     <link rel="stylesheet" href="styles/credits.css?v=1.4.0">
     <link rel="stylesheet" href="styles/gamemode.css?v=1.5.0">
     <link rel="stylesheet" href="styles/coop.css?v=1.4.4">
     <link rel="stylesheet" href="styles/tribute.css?v=1.4.0">
-    <link rel="stylesheet" href="styles/friends.css?v=1.5.5">
+    <link rel="stylesheet" href="styles/friends.css?v=1.6.10">
     <link rel="stylesheet" href="styles/olympus-altar.css?v=1.5.13">
     <link rel="stylesheet" href="styles/olympus-victory.css?v=1.5.41">
     <link rel="stylesheet" href="styles/boss-rewards.css?v=1.5.73">
     <link rel="stylesheet" href="styles/cosmetics.css?v=1.5.49">
     <link rel="stylesheet" href="styles/cosmetics-fx.css?v=1.5.49">
     <link rel="stylesheet" href="styles/cosmetics-advanced.css?v=1.5.75">
-    <link rel="stylesheet" href="styles/battlepass.css?v=1.5.82">
+    <link rel="stylesheet" href="styles/battlepass.css?v=1.6.9">
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -2632,6 +2632,7 @@
                                 data-count="1">Frappe Baron</button>
                             <button class="admin-control-btn admin-spawn-btn btn-danger" data-type="mecha_kolossos"
                                 data-count="1">Mecha Kolossos</button>
+                            <button id="admin-btn-spawn-lilxas" type="button" class="admin-control-btn btn-warning">🎤 Lil Xas (Easter Egg)</button>
                         </div>
                     </div>
 
@@ -2795,6 +2796,23 @@
                                 ACCESS
                                 <img src="assets/GearUIIcons/DEF.png" class="ui-icon ui-icon-sm" alt=""></button>
                         </div>
+                    </div>
+
+                    <div id="admin-dev-account-section" class="admin-section admin-dev-danger-section hidden">
+                        <div class="admin-section-title">
+                            <img src="assets/ui-icons/warn.svg" class="ui-icon ui-icon-sm" alt="">
+                            <span>Primary Dev Account Wipe &amp; Delete</span>
+                            <span class="admin-dev-only-pill">DEV ONLY</span>
+                        </div>
+                        <p style="font-size: 0.85rem; color: #f5b7b1; line-height: 1.45; margin-bottom: 12px;">
+                            Permanently wipe progression to Lv.1 or erase an account from Cloud Saves, Global Leaderboards, Usernames, Friend Lists, and Co-op Invites. Restricted exclusively to the signed-in Primary Developer account.
+                        </p>
+                        <div class="admin-input-group">
+                            <input type="text" id="admin-dev-account-query"
+                                placeholder="Search by Player Name, #Tag, Email, or UID..." class="admin-text-input">
+                            <button id="admin-btn-lookup-account" class="admin-control-btn btn-warning">FIND ACCOUNT</button>
+                        </div>
+                        <div id="admin-dev-account-results" class="admin-dev-results-list"></div>
                     </div>
                 </div>
 
@@ -2993,8 +3011,6 @@
         <!-- ================= THEATRICAL STORY ENDING CREDITS ================= -->
         <div id="credits-screen" class="hidden">
             <div class="credits-top-bar">
-                <button id="credits-speed-btn" class="credits-btn"><img src="assets/ui-icons/play.svg"
-                        class="ui-icon ui-icon-sm" alt=""> 1x SPEED</button>
                 <button id="credits-skip-btn" class="credits-btn">SKIP [ESC] <img src="assets/ui-icons/play.svg"
                         class="ui-icon ui-icon-sm" alt=""><img src="assets/ui-icons/play.svg" class="ui-icon ui-icon-sm"
                         alt=""></button>
@@ -3004,7 +3020,7 @@
             <div id="credits-intro-card" class="credits-intro-card">
                 <div class="credits-intro-sub">A PSANAS ORIGINAL PRODUCTION</div>
                 <h1 class="credits-intro-title">GAME MADE BY PSANAS</h1>
-                <div class="credits-intro-badge">LESA.IO • CHAPTER 2 FINALE</div>
+                <div class="credits-intro-badge">LESA.IO</div>
             </div>
 
             <!-- Phase 2: Rolling Credits Crawl -->
@@ -3023,37 +3039,90 @@
         <div id="battle-pass-modal" class="modal-overlay hidden">
             <div class="modal-panel bp-modal-panel">
                 <button id="close-bp-btn" class="modal-close-x-btn" aria-label="Close">✕</button>
+
                 <div class="bp-header-banner">
-                    <div class="bp-banner-left">
-                        <span class="bp-season-pill">SEASON 1 • VILLAGE RISING</span>
-                        <h2 class="modal-title" style="margin:0; text-align:left; font-size:1.55rem;">👑 BATTLE PASS</h2>
-                        <div class="bp-tier-progress-row">
-                            <span id="bp-modal-tier" class="bp-level-shield">TIER 1 / 30</span>
-                            <div class="bp-xp-track-wrap">
-                                <div class="bp-xp-label-row">
-                                    <span id="bp-modal-xp-label">0 / 150 XP to Tier 2</span>
-                                    <span id="bp-pass-status-pill" class="bp-status-pill free">FREE VERSION</span>
-                                </div>
-                                <div class="bp-xp-bar-track">
-                                    <div id="bp-modal-xp-fill" class="bp-xp-bar-fill" style="width:0%;"></div>
-                                </div>
-                            </div>
+                    <div class="bp-header-top-row">
+                        <div class="bp-brand-cluster">
+                            <span class="bp-season-pill">★ SEASON 1 • VILLAGE RISING</span>
+                            <h2 class="bp-hero-title">👑 BATTLE PASS</h2>
+                        </div>
+                        <div id="bp-wallet-bar" class="bp-wallet-bar">
+                            <span class="bp-stat-chip bp-chip-coins"><img src="assets/ui-icons/coin.svg" class="bp-chip-ico" alt=""> <span id="bp-coins-val">0</span></span>
+                            <span class="bp-stat-chip bp-chip-gems"><img src="assets/ui-icons/gem.svg" class="bp-chip-ico" alt=""> <span id="bp-gems-val">0</span></span>
+                            <span class="bp-stat-chip bp-chip-collected"><span id="bp-collected-val">0 / 60</span> CLAIMED</span>
+                            <span id="bp-pass-status-pill" class="bp-status-pill free">FREE PASS</span>
+                            <button type="button" id="bp-xp-help-btn" class="bp-help-pill-btn" title="How to earn Battle Pass XP">? XP GUIDE</button>
                         </div>
                     </div>
-                    <div class="bp-banner-actions">
-                        <button id="bp-buy-pass-btn" class="comic-btn bp-buy-pass-btn comic-btn-sm">👑 BUY PASS (💎 250)</button>
-                        <button id="bp-skip-tier-btn" class="comic-btn comic-btn-sm">+1 TIER (💎 40)</button>
-                        <button id="bp-claim-all-btn" class="comic-btn comic-btn-primary comic-btn-sm">CLAIM ALL</button>
+
+                    <div id="bp-xp-sources-bar" class="bp-xp-sources-bar hidden">
+                        <span class="bp-xp-src-chip">👾 Enemy Kill <strong>+2 XP</strong></span>
+                        <span class="bp-xp-src-chip">💀 Mini-Boss <strong>+25 XP</strong></span>
+                        <span class="bp-xp-src-chip">👑 Boss Kill <strong>+45 XP</strong></span>
+                        <span class="bp-xp-src-chip">🌊 Wave Clear <strong>+35 XP</strong></span>
+                        <span class="bp-xp-src-chip">📜 Daily Quest <strong>+120 XP</strong></span>
+                    </div>
+
+                    <div class="bp-progress-command-row">
+                        <div class="bp-level-shield">
+                            <span class="bp-shield-kicker">TIER</span>
+                            <span id="bp-modal-tier" class="bp-shield-val">1 / 30</span>
+                        </div>
+                        <div class="bp-xp-track-wrap">
+                            <div class="bp-xp-label-row">
+                                <span id="bp-modal-xp-label">0 / 150 XP to Tier 2</span>
+                                <span id="bp-next-milestone-pill" class="bp-next-milestone-pill">NEXT: T5 SKIN</span>
+                            </div>
+                            <div class="bp-xp-bar-track">
+                                <div id="bp-modal-xp-fill" class="bp-xp-bar-fill" style="width:0%;"></div>
+                            </div>
+                        </div>
+                        <div class="bp-banner-actions">
+                            <button id="bp-buy-pass-btn" class="comic-btn bp-buy-pass-btn comic-btn-sm">👑 BUY VIP (💎 250)</button>
+                            <button id="bp-skip-tier-btn" class="comic-btn bp-skip-btn comic-btn-sm">+1 TIER (💎 40)</button>
+                            <button id="bp-claim-all-btn" class="comic-btn comic-btn-primary bp-claim-all-btn comic-btn-sm">CLAIM ALL</button>
+                        </div>
                     </div>
                 </div>
-                <div class="bp-xp-hint">Free Version unlocks the top track for everyone • Buy the Full Pass with 💎 250 Gems to unlock all Paid Skins, Guns &amp; Vaults!</div>
-                <div id="bp-filter-bar" class="tab-filter-bar">
-                    <button type="button" class="tab-filter-chip active" data-bp-filter="ALL">ALL 30 TIERS</button>
-                    <button type="button" class="tab-filter-chip" data-bp-filter="READY">CLAIMABLE</button>
-                    <button type="button" class="tab-filter-chip" data-bp-filter="FREE">FREE TRACK ONLY</button>
-                    <button type="button" class="tab-filter-chip" data-bp-filter="LOOT">SKINS &amp; WEAPONS</button>
+
+                <div class="bp-controls-bar">
+                    <div id="bp-filter-bar" class="tab-filter-bar bp-filter-bar">
+                        <button type="button" class="tab-filter-chip active" data-bp-filter="ALL">ALL 30</button>
+                        <button type="button" class="tab-filter-chip" data-bp-filter="READY">CLAIMABLE <span id="bp-ready-count" class="tab-filter-chip-count"></span></button>
+                        <button type="button" class="tab-filter-chip" data-bp-filter="FREE">FREE ONLY</button>
+                        <button type="button" class="tab-filter-chip" data-bp-filter="LOOT">SKINS &amp; GUNS</button>
+                    </div>
+                    <div id="bp-jump-bar" class="bp-jump-bar">
+                        <button type="button" class="bp-jump-btn bp-jump-current" data-bp-jump="current" title="Jump to current tier">📍 MY TIER</button>
+                        <button type="button" class="bp-jump-btn" data-bp-jump="5">T5</button>
+                        <button type="button" class="bp-jump-btn" data-bp-jump="10">T10</button>
+                        <button type="button" class="bp-jump-btn" data-bp-jump="15">T15</button>
+                        <button type="button" class="bp-jump-btn" data-bp-jump="20">T20</button>
+                        <button type="button" class="bp-jump-btn" data-bp-jump="25">T25</button>
+                        <button type="button" class="bp-jump-btn bp-jump-finale" data-bp-jump="30">👑 T30</button>
+                    </div>
                 </div>
-                <div id="bp-track-list" class="bp-track-scroll"></div>
+
+                <div class="bp-workspace">
+                    <div class="bp-rail-shell">
+                        <div class="bp-track-legend" aria-hidden="true">
+                            <div class="bp-legend-node">TIER</div>
+                            <div class="bp-legend-lane bp-legend-free">
+                                <span class="bp-legend-badge free">FREE</span>
+                                <span class="bp-legend-sub">OPEN</span>
+                            </div>
+                            <div class="bp-legend-lane bp-legend-paid">
+                                <span class="bp-legend-badge paid">👑 VIP</span>
+                                <span class="bp-legend-sub">PAID</span>
+                            </div>
+                        </div>
+                        <button type="button" id="bp-scroll-left" class="bp-rail-arrow left" aria-label="Scroll left">‹</button>
+                        <div id="bp-track-list" class="bp-track-scroll"></div>
+                        <button type="button" id="bp-scroll-right" class="bp-rail-arrow right" aria-label="Scroll right">›</button>
+                    </div>
+
+                    <aside id="bp-spotlight-panel" class="bp-spotlight-panel"></aside>
+                </div>
             </div>
         </div>
     </div>
@@ -3063,7 +3132,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
     <script src="src/save/PlayerIdentity.js?v=1.5.5"></script>
-    <script src="src/firebase.js?v=1.5.54"></script>
+    <script src="src/firebase.js?v=1.6.14"></script>
 
     <!-- GAME SCRIPTS IN CLEAN DEPENDENCY ORDER -->
     <!-- 1. DATA DEFINITIONS -->
@@ -3108,16 +3177,17 @@
     <!-- 2. CORE MESSAGING & CANONICAL STATE -->
     <script src="src/core/EventBus.js?v=1.2.2"></script>
     <script src="src/core/MobilePerf.js?v=1.6.5"></script>
-    <script src="src/core/GameState.js?v=1.5.55"></script>
+    <script src="src/save/SaveMigration.js?v=1.6.14"></script>
+    <script src="src/core/GameState.js?v=1.6.14"></script>
     <script src="src/progression/PerkProgression.js?v=1.5.36"></script>
     <script src="src/progression/CosmeticManager.js?v=1.5.49"></script>
     <script src="src/dungeons/AscentCrestManager.js?v=1.5.14"></script>
     <script src="src/core/CharacterSprites.js?v=1.5.26"></script>
     <script src="src/engine/SpriteAtlasCache.js?v=1.5.66"></script>
-    <script src="src/save/SaveSerializer.js?v=1.6.0"></script>
-    <script src="src/save/SaveManager.js?v=1.5.55"></script>
-    <script src="src/save/AccountSyncManager.js?v=1.6.0"></script>
-    <script src="src/gear/GearManager.js?v=1.5.41"></script>
+    <script src="src/save/SaveSerializer.js?v=1.6.14"></script>
+    <script src="src/save/SaveManager.js?v=1.6.15"></script>
+    <script src="src/save/AccountSyncManager.js?v=1.6.14"></script>
+    <script src="src/gear/GearManager.js?v=1.6.14"></script>
     <script src="src/gear/GearUpgradeManager.js?v=1.6.0"></script>
     <script src="src/weapons/WeaponEvolutionManager.js?v=1.5.72"></script>
     <script src="src/gear/GearPassives.js?v=1.6.8"></script>
@@ -3136,7 +3206,7 @@
     <script src="src/engine/OutsidePerimeterRoads.js?v=1.6.3"></script>
     <script src="src/engine/Arena.js?v=1.5.51"></script>
     <script src="src/engine/WaveManager.js?v=1.6.6"></script>
-    <script src="src/engine/EndlessWaveDirector.js?v=1.6.6"></script>
+    <script src="src/engine/EndlessWaveDirector.js?v=1.6.20"></script>
     <script src="src/dungeons/OlympusAssets.js?v=1.5.51"></script>
     <script src="src/dungeons/OlympusLayouts.js?v=1.5.4"></script>
     <script src="src/dungeons/OlympusAltarUI.js?v=1.5.13"></script>
@@ -3146,7 +3216,7 @@
     <script src="src/dungeons/DungeonManager.js?v=1.6.6"></script>
     <script src="src/progression/BossRewardManager.js?v=1.5.69"></script>
     <script src="src/engine/CollisionSystem.js?v=1.6.8"></script>
-    <script src="src/engine/NameValidator.js?v=1.2.2"></script>
+    <script src="src/engine/NameValidator.js?v=1.6.11"></script>
     <script src="src/engine/EpicPerkEffects.js?v=1.6.6"></script>
     <script src="src/engine/LegendaryPerkEffects.js?v=1.5.45"></script>
     <script src="src/engine/MythicPerkEffects.js?v=1.6.8"></script>
@@ -3191,7 +3261,7 @@
     <script src="src/skills/VF185Model.js?v=1.5.74"></script>
     <script src="src/skills/HeroUltimates.js?v=1.5.74"></script>
     <script src="src/entities/PlayerSkills.js?v=1.6.2"></script>
-    <script src="src/entities/Player.js?v=1.6.7"></script>
+    <script src="src/entities/Player.js?v=1.6.16"></script>
     <script src="src/entities/RemotePlayer.js?v=1.6.7"></script>
 
     <!-- 6. ENEMIES -->
@@ -3205,13 +3275,15 @@
     <script src="src/enemies/KafeneioTankRenderer.js?v=1.5.26"></script>
     <script src="src/enemies/OuzoBomberRenderer.js?v=1.5.26"></script>
     <script src="src/enemies/DimotikiEnforcerRenderer.js?v=1.5.26"></script>
-    <script src="src/enemies/EndlessEnemyRenderer.js?v=1.5.26"></script>
+    <script src="src/enemies/BioAlchemistRenderer.js?v=1.6.13"></script>
+    <script src="src/enemies/EndlessEnemyRenderer.js?v=1.6.13"></script>
     <script src="src/enemies/EndlessEnemies.js?v=1.5.16"></script>
+    <script src="src/enemies/BioAlchemist.js?v=1.6.13"></script>
     <script src="src/dungeons/OlympusIceRenderer.js?v=1.5.51"></script>
     <script src="src/dungeons/IceEnemies.js?v=1.5.12"></script>
 
     <!-- 6.5. BOSSES -->
-    <script src="src/Bosses/BossProjectileFX.js?v=1.5.43"></script>
+    <script src="src/Bosses/BossProjectileFX.js?v=1.6.17"></script>
     <script src="src/Bosses/BossTelegraphFX.js?v=1.5.19"></script>
     <script src="src/Bosses/KleanthisRenderer.js?v=1.5.26"></script>
     <script src="src/Bosses/Kleanthis.js?v=1.5.12"></script>
@@ -3227,8 +3299,8 @@
     <script src="src/Bosses/DimarchosBossRenderer.js?v=1.5.18"></script>
     <script src="src/Bosses/SyndicateCapoRenderer.js?v=1.5.20"></script>
     <script src="src/Bosses/KolossosArenaAtmosphere.js?v=1.5.51"></script>
-    <script src="src/Bosses/KolossosDrone.js?v=1.5.43"></script>
-    <script src="src/Bosses/KolossosTrooper.js?v=1.5.71"></script>
+    <script src="src/Bosses/KolossosDrone.js?v=1.6.12"></script>
+    <script src="src/Bosses/KolossosTrooper.js?v=1.6.12"></script>
     <script src="src/Bosses/KolossosJumpAttack.js?v=1.5.70"></script>
     <script src="src/Bosses/KolossosHazardVFX.js?v=1.5.70"></script>
     <script src="src/Bosses/KolossosAttackSystem.js?v=1.5.70"></script>
@@ -3236,6 +3308,12 @@
     <script src="src/Bosses/EndlessBossRenderer.js?v=1.5.20"></script>
     <script src="src/Bosses/EndlessMiniBosses.js?v=1.5.16"></script>
     <script src="src/Bosses/EndlessMainBosses.js?v=1.5.70"></script>
+    <script src="src/Bosses/LilXasRenderer.js?v=1.6.20"></script>
+    <script src="src/Bosses/LilXasCutsceneFX.js?v=1.6.18"></script>
+    <script src="src/Bosses/LilXasAttacksFX.js?v=1.6.17"></script>
+    <script src="src/Bosses/LilXasSpeaker.js?v=1.6.17"></script>
+    <script src="src/Bosses/LilXasBoss.js?v=1.6.17"></script>
+    <script src="src/Bosses/LilXasEvent.js?v=1.6.18"></script>
     <script src="src/dungeons/OlympusBossRenderer.js?v=1.5.51"></script>
     <script src="src/dungeons/OlympusEarlyBosses.js?v=1.5.14"></script>
     <script src="src/dungeons/DungeonBosses.js?v=1.5.14"></script>
@@ -3248,7 +3326,7 @@
     <script src="src/progression/CurrencyManager.js?v=1.2.2"></script>
     <script src="src/progression/QuestManager.js?v=1.5.80"></script>
     <script src="src/progression/BattlePassManager.js?v=1.5.83"></script>
-    <script src="src/ui/BattlePassModalUI.js?v=1.5.82"></script>
+    <script src="src/ui/BattlePassModalUI.js?v=1.6.9"></script>
     <script src="src/profile/StatsManager.js?v=1.5.55"></script>
 
     <!-- 8. UI SUBSYSTEMS -->
@@ -3258,11 +3336,11 @@
     <script src="src/ui/OlympusVictoryModal.js?v=1.6.0"></script>
     <script src="src/ui/GearModalUI.js?v=1.6.0"></script>
     <script src="src/ui/ProfileCosmeticsUI.js?v=1.5.55"></script>
-    <script src="src/ui/PublicProfileModal.js?v=1.5.55"></script>
-    <script src="src/ui/LeaderboardModal.js?v=1.5.48"></script>
+    <script src="src/ui/PublicProfileModal.js?v=1.6.18"></script>
+    <script src="src/ui/LeaderboardModal.js?v=1.6.18"></script>
     <script src="src/ui/ModalManager.js?v=1.5.80"></script>
     <script src="src/ui/HUDController.js?v=1.6.2"></script>
-    <script src="src/ui/ProfileManager.js?v=1.5.55"></script>
+    <script src="src/ui/ProfileManager.js?v=1.6.11"></script>
     <script src="src/ui/HeroRoster.js?v=1.6.0"></script>
     <script src="src/ui/SkillManager.js?v=1.6.2"></script>
     <script src="src/ui/UpgradeManager.js?v=1.5.10"></script>
@@ -3272,8 +3350,8 @@
     <script src="src/ui/SettingsManager.js?v=1.5.65"></script>
     <script src="src/ui/MenuController.js?v=1.5.80"></script>
     <script src="src/ui/BossWarningOverlay.js?v=1.5.16"></script>
-    <script src="src/ui/CinematicCutsceneOverlay.js?v=1.5.2"></script>
-    <script src="src/ui/CreditsScreen.js?v=1.5.10"></script>
+    <script src="src/ui/CinematicCutsceneOverlay.js?v=1.6.16"></script>
+    <script src="src/ui/CreditsScreen.js?v=1.6.18"></script>
     <script src="src/chests/ChestManager.js?v=1.5.72"></script>
     <script src="src/ui/ChestModalUI.js?v=1.5.61"></script>
     <script src="src/progression/InventoryManager.js?v=1.5.36"></script>
@@ -3281,9 +3359,10 @@
     <script src="src/ui/TributeManager.js?v=1.5.31"></script>
 
     <!-- 8.5. ADMIN & PLAYTESTING SUBSYSTEM -->
-    <script src="src/admin/AdminAuth.js?v=1.5.50"></script>
-    <script src="src/admin/AdminCheats.js?v=1.6.4"></script>
-    <script src="src/admin/AdminPanel.js?v=1.5.46"></script>
+    <script src="src/admin/AdminAuth.js?v=1.6.15"></script>
+    <script src="src/admin/AdminCheats.js?v=1.6.19"></script>
+    <script src="src/admin/DevAccountManager.js?v=1.6.15"></script>
+    <script src="src/admin/AdminPanel.js?v=1.6.19"></script>
 
     <!-- 8.7. MOBILE TOUCH SUBSYSTEM -->
     <script src="src/engine/MobileAimAssist.js?v=1.6.2"></script>
@@ -3300,13 +3379,14 @@
     <script src="src/network/CoopLobbyModal.js?v=1.6.7"></script>
 
     <!-- 8.9. FRIENDS & ONLINE PLAYER ID SUBSYSTEM -->
-    <script src="src/social/FriendService.js?v=1.5.48"></script>
-    <script src="src/ui/FriendsModal.js?v=1.5.55"></script>
+    <script src="src/social/FriendService.js?v=1.6.18"></script>
+    <script src="src/ui/FriendsCardRenderer.js?v=1.6.18"></script>
+    <script src="src/ui/FriendsModal.js?v=1.6.10"></script>
 
     <!-- 9. GAME COORDINATOR & BOOTSTRAP -->
     <script src="src/engine/WaveSkipperMachine.js?v=1.5.23"></script>
-    <script src="src/engine/Game.js?v=1.6.8"></script>
-    <script src="src/main.js?v=1.5.80"></script>
+    <script src="src/engine/Game.js?v=1.6.18"></script>
+    <script src="src/main.js?v=1.6.16"></script>
 </body>
 
 </html>

@@ -12,16 +12,23 @@ class KolossosDrone extends EnemyBase {
         this.orbitIndex = orbitIndex;
         this.orbitAngle = orbitIndex * Math.PI;
         this.orbitDist = 152;
+        this.strafeDir = Math.random() < 0.5 ? 1 : -1;
         this.color = '#ff4757';
 
-        const ownerMax = owner && owner.maxHp ? owner.maxHp : Math.round(24000 * Math.max(1.0, waveMultiplier));
-        this.maxHp = Math.max(450, Math.round(ownerMax * 0.055));
+        const hasOwner = !!(owner && owner.maxHp);
+        const softDmgScale = 1.0 + Math.max(0, waveMultiplier - 1.0) * 0.35;
+        this.maxHp = hasOwner
+            ? Math.max(450, Math.round(owner.maxHp * 0.055))
+            : Math.round(240 * Math.max(1.0, waveMultiplier));
         this.hp = this.maxHp;
         this.speed = 3.2;
-        this.damage = owner && owner.damage ? Math.round(owner.damage * 0.52) : Math.round(26 * waveMultiplier * 0.35);
-        this.xpDrop = 220;
+        this.baseSpeed = this.speed;
+        this.damage = (owner && owner.damage)
+            ? Math.round(owner.damage * 0.52)
+            : Math.round(25 * softDmgScale);
+        this.xpDrop = hasOwner ? 220 : 80;
         this.scoreValue = 350;
-        this.fireCooldown = 55 + orbitIndex * 30;
+        this.fireCooldown = owner ? (55 + orbitIndex * 30) : (45 + Math.random() * 55);
     }
 
     update(dt = 1, player = null, enemies = [], bullets = [], effects = null, arena = null) {
@@ -44,6 +51,24 @@ class KolossosDrone extends EnemyBase {
             const ty = this.ownedByBoss.y + Math.sin(this.orbitAngle) * this.orbitDist;
             this.x += (tx - this.x) * Math.min(1, 0.14 * dt);
             this.y += (ty - this.y) * Math.min(1, 0.14 * dt);
+        } else if (!this.ownedByBoss && player && player.hp > 0 && !(this.stunTimer > 0) && !(this.bubbleTrappedTimer > 0) && !(this._chronoStasisTimer > 0)) {
+            const dx = player.x - this.x;
+            const dy = player.y - this.y;
+            const dist = Math.hypot(dx, dy) || 1;
+            const effSpeed = typeof this.getEffectiveSpeed === 'function' ? this.getEffectiveSpeed() : this.speed;
+            if (dist > 285) {
+                this.vx = (dx / dist) * effSpeed;
+                this.vy = (dy / dist) * effSpeed;
+            } else if (dist < 150) {
+                this.vx = -(dx / dist) * effSpeed * 0.8;
+                this.vy = -(dy / dist) * effSpeed * 0.8;
+            } else {
+                this.vx = (-dy / dist) * this.strafeDir * effSpeed * 0.85;
+                this.vy = (dx / dist) * this.strafeDir * effSpeed * 0.85;
+            }
+            this.x += this.vx * dt;
+            this.y += this.vy * dt;
+            if (typeof this.applySeparation === 'function') this.applySeparation(enemies);
         }
         this.applyArenaBounds(arena);
 

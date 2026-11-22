@@ -4,7 +4,7 @@
  * - Fades in "Game made by Psanas" spotlight title card
  * - Plays ending soundtrack ("Audio/Lesa.io (Credits).mp3")
  * - Smooth vertical crawl highlighting Psanas (Director/Lead Dev) & Antigravity (AI Partner)
- * - Interactive controls: Skip button [ESC], fast-forward toggle [SPACE / ⏩]
+ * - Interactive control: Skip button [ESC]
  */
 
 class CreditsScreen {
@@ -13,9 +13,8 @@ class CreditsScreen {
         this.onComplete = null;
         this.scrollAnimId = null;
         this.scrollY = 0;
-        this.speed = 0.36; // Stately theatrical crawl speed (~21.6px/s for relaxed reading)
-        this.speedMultiplier = 1.0;
-        this.isFastForward = false;
+        this.baseSpeed = 0.36;
+        this.speed = this.baseSpeed * 1.25; // 1.25x base crawl speed (0.45 px/frame)
         this.introTimeout = null;
         this.fadeToBlackTimeout = null;
         this.showIntroTimeout = null;
@@ -28,67 +27,35 @@ class CreditsScreen {
         this.introEl = document.getElementById('credits-intro-card');
         this.outroEl = document.getElementById('credits-outro-card');
         this.skipBtn = document.getElementById('credits-skip-btn');
-        this.fastBtn = document.getElementById('credits-speed-btn');
 
         this.bindEvents();
     }
 
     bindEvents() {
-        if (this.skipBtn) {
+        if (this.skipBtn && !this.skipBtn._creditsBound) {
+            this.skipBtn._creditsBound = true;
             this.skipBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 this.close();
             });
         }
 
-        if (this.fastBtn) {
-            this.fastBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                this.toggleFastForward();
+        if (!this._escBound) {
+            this._escBound = true;
+            window.addEventListener('keydown', (e) => {
+                if (!this.active) return;
+                if (e.code === 'Escape') {
+                    e.preventDefault();
+                    this.close();
+                }
             });
         }
-
-        window.addEventListener('keydown', (e) => {
-            if (!this.active) return;
-            if (e.code === 'Escape') {
-                e.preventDefault();
-                this.close();
-            } else if (e.code === 'Space') {
-                e.preventDefault();
-                this.speedMultiplier = 3.5;
-                this.updateSpeedUI(true);
-            }
-        });
-
-        window.addEventListener('keyup', (e) => {
-            if (!this.active) return;
-            if (e.code === 'Space' && !this.isFastForward) {
-                this.speedMultiplier = 1.0;
-                this.updateSpeedUI(false);
-            }
-        });
-    }
-
-    toggleFastForward() {
-        this.isFastForward = !this.isFastForward;
-        this.speedMultiplier = this.isFastForward ? 3.5 : 1.0;
-        this.updateSpeedUI(this.isFastForward);
-    }
-
-    updateSpeedUI(isFast) {
-        if (!this.fastBtn) return;
-        const playIc = typeof UiIcons !== 'undefined' ? UiIcons.i('play', 'ui-icon-sm') : '▶';
-        this.fastBtn.innerHTML = isFast ? `${playIc}${playIc} 3x FAST` : `${playIc} 1x SPEED`;
-        this.fastBtn.classList.toggle('active', isFast);
     }
 
     start(onComplete = null) {
         if (this.active) return;
         this.active = true;
         this.onComplete = onComplete;
-        this.speedMultiplier = 1.0;
-        this.isFastForward = false;
-        this.updateSpeedUI(false);
 
         if (!this.screenEl) {
             this.screenEl = document.getElementById('credits-screen');
@@ -97,7 +64,6 @@ class CreditsScreen {
             this.introEl = document.getElementById('credits-intro-card');
             this.outroEl = document.getElementById('credits-outro-card');
             this.skipBtn = document.getElementById('credits-skip-btn');
-            this.fastBtn = document.getElementById('credits-speed-btn');
             this.bindEvents();
         } else {
             if (!this.outroEl) this.outroEl = document.getElementById('credits-outro-card');
@@ -189,7 +155,7 @@ class CreditsScreen {
             const dt = Math.min((now - lastTime) / 16.666, 2.5);
             lastTime = now;
 
-            this.scrollY -= this.speed * this.speedMultiplier * dt;
+            this.scrollY -= this.speed * dt;
             this.crawlEl.style.transform = `translateY(${Math.round(this.scrollY)}px)`;
 
             const contentH = this.crawlEl.offsetHeight || 3000;

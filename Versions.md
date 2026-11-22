@@ -8,12 +8,12 @@ This file tracks the total lines of code and game architecture state across ever
 
 | Metric | Current Value |
 |---|---|
-| **Active Version** | **Alpha 1.6.0 (In Progress 🚀 — Alpha 1.5 Officially Completed ✅)** |
-| **Milestone Banner** | 🔥 **OVER 53,800 LINES OF EXECUTABLE & WEB CODE (`55,300+` WITH DOCS)!** |
-| **Total Code Lines (`JS+CSS+HTML+PS1+CS`)** | **53,880 lines** across **164 files** (`53,172 lines` core web app `JS+CSS+HTML`) |
-| **Total Project Lines (incl. `.md`)** | **55,344 lines** across **171 files** *(plus `75` `.svg` icons / `451` lines & `manifest.json` / `19` lines)* |
-| **Max Lines Per Source File** | Strictly `< 600 lines` across all `.js` and `.css` modules (`0` files at `600+`) |
-| **Last Calculated** | November 15, 2026 *(excluding `_backups/`, `scratch/`, `.git/`, `node_modules/`)* |
+| **Active Version** | **Alpha 1.6.13 (In Progress 🚀 — Latest GitHub Push: `Alpha 1.6.8`)** |
+| **Milestone Banner** | 🔥 **OVER 95,400 LINES OF EXECUTABLE & WEB CODE (`96,900+` WITH DOCS)!** |
+| **Total Code Lines (`JS+CSS+HTML+PS1+CS`)** | **95,469 lines** across **263 files** (`94,761 lines` core web app `JS+CSS+HTML`) |
+| **Total Project Lines (incl. `.md`)** | **96,952 lines** across **270 files** *(plus `81` `.svg` icons / `567` lines & `manifest.json` / `19` lines)* |
+| **Max Lines Per Source File** | **`219 / 220` `.js` & `36 / 36` `.css` files `< 600 lines`** *(exception: `src/heroes/FiftyBalosHero.js` at `1,119` lines)* |
+| **Last Calculated** | November 22, 2026 *(excluding `_backups/`, `scratch/`, `.git/`, `node_modules/`)* |
 
 ---
 
@@ -21,43 +21,65 @@ This file tracks the total lines of code and game architecture state across ever
 
 | File Type | Description | File Count | Total Lines | Share (of Primary 6) |
 |---|---|---|---|---|
-| **`.js`** | JavaScript Game Logic & Subsystems | 131 | 41,591 | 75.1% |
-| **`.css`** | UI, HUD, Armory, Friends, Olympus & Modal Styles | 26 | 9,490 | 17.1% |
-| **`.html`** | Main Application & Canvas Shell (`index.html`) | 1 | 2,091 | 3.8% |
-| **`.md`** | Design, Gear, Roadmap, Bugfix & Version Specs | 7 | 1,464 | 2.6% |
-| **`.ps1`** | Local Web Server & Automation Scripts | 5 | 438 | 0.8% |
-| **`.cs`** | Desktop C# Game Launcher (`Launcher.cs`) | 1 | 270 | 0.5% |
-| **Total (Primary 6)** | **All Code, Markup, Scripts & Documentation** | **171** | **55,344** | **100.0%** |
+| **`.js`** | JavaScript Game Logic & Subsystems | 220 | 78,724 | 81.2% |
+| **`.css`** | UI, HUD, Armory, Friends, Olympus & Modal Styles | 36 | 12,669 | 13.1% |
+| **`.html`** | Main Application & Canvas Shell (`index.html`) | 1 | 3,368 | 3.5% |
+| **`.md`** | Design, Gear, Roadmap, Bugfix & Version Specs | 7 | 1,483 | 1.5% |
+| **`.ps1`** | Local Web Server & Automation Scripts | 5 | 438 | 0.5% |
+| **`.cs`** | Desktop C# Game Launcher (`Launcher.cs`) | 1 | 270 | 0.3% |
+| **Total (Primary 6)** | **All Code, Markup, Scripts & Documentation** | **270** | **96,952** | **100.0%** |
 
-> Also tracked in live project assets: **75 `.svg` UI icons** (`451` lines in `assets/ui-icons/`) and **1 `.json` manifest** (`19` lines in `manifest.json`), bringing all tracked text assets to **247 files** and **55,814 lines**.
+> Also tracked in live project assets: **81 `.svg` UI icons** (`567` lines in `assets/ui-icons/`) and **1 `.json` manifest** (`19` lines in `manifest.json`), bringing all tracked text assets to **352 files** and **97,538 lines**.
 
 ---
 
-## 🧩 JavaScript Architecture Breakdown (`src/` — 131 files, 41,591 lines)
+## 🧩 JavaScript Architecture Breakdown (`src/` — 220 files, 78,724 lines)
 
 | Module Directory | Role | Files | Lines |
 |---|---|---|---|
-| `src/ui/` | Modals, HUD, Friends, Inventory, Chests, Roster & SVG Icons | 22 | 7,571 |
-| `src/dungeons/` | Mount Olympus Ascent, Altar, Climb Transitions, Crests & Bosses | 14 | 5,306 |
-| `src/entities/` | Player, Weapons, Bullets, Foliage, Obstacles & Combat VFX | 15 | 4,942 |
-| `src/engine/` | Game Loop, Arena, Camera, Collision & Touch Input | 10 | 3,857 |
-| `src/Bosses/` | Story Chapter Bosses (`Kleanthis`, `Kiloumpas`, `Rouf`) | 6 | 2,848 |
-| `src/data/` | Heroes, Gear, Endgame Gear, Chests, Quests, Upgrades & Perks | 13 | 2,789 |
-| `src/heroes/` | Playable Hero Renderers & `Psanas` 2.5D Model Architecture | 7 | 2,449 |
-| `src/enemies/` | Wave Enemy Archetypes & Renderers | 6 | 2,324 |
-| `src/network/` | Co-op Networking, Host/Guest Sync & Lobby | 5 | 1,919 |
-| `src/` (root) | `main.js`, `firebase.js`, `audio.js` | 3 | 1,628 |
-| `src/weapons/` | Modular Weapon Implementations & Boss Weapons | 8 | 846 |
-| `src/admin/` | Admin Panel & Auth | 3 | 845 |
-| `src/progression/` | Quests, Achievements & Progression Managers | 3 | 810 |
-| `src/save/` | Cloud Account Sync & Player Identity (`#ABCDEF` Tags) | 4 | 729 |
-| `src/gear/` | Equipment Manager & Passive Bonus Engine | 2 | 645 |
-| `src/social/` | Friends List & Live Co-op Invites (`FriendService.js`) | 1 | 586 |
-| `src/core/`, `src/chests/`, `src/skills/`, `src/profile/`, `src/libs/` | Core Helpers, 4-Slot Chest System, Skills, Stats & Vendor Libs | 9 | 1,497 |
+| `src/ui/` | Modals, HUD, Battle Pass, Friends, Roster, Inventory, Chests & Icons | 30 | 11,033 |
+| `src/Bosses/` | Story, Endless Main/Mini-Bosses, Kolossos Troops, Telegraphs & FX | 25 | 9,873 |
+| `src/engine/` | Game Loop, Arena, Endless Director, Perks, Collisions & Touch Input | 22 | 9,623 |
+| `src/dungeons/` | Mount Olympus Ascent, Zeus Sky Phase, Ice Enemies & Shrine UI | 16 | 6,241 |
+| `src/entities/` | Player, Weapons, Bullets, Drops, Obstacles & Combat Juice FX | 15 | 6,109 |
+| `src/data/` | Heroes, Weapons, Rarities, Gear, Endgame Gear, Materials & Cosmetics | 19 | 5,587 |
+| `src/heroes/` | Playable Hero Renderers, Skins & Visible Common/Endgame Armor | 13 | 5,221 |
+| `src/enemies/` | Wave & Endless Enemy Archetypes (`BioAlchemist`, `Psaltis`, etc.) | 14 | 4,926 |
+| `src/weapons/` | Modular Weapons, Boss Weapons, Battle Pass & Apex Arsenals | 18 | 4,200 |
+| `src/skills/` | 12 Active Hero Skills, Ultimates & Combat Modifiers | 12 | 2,860 |
+| `src/progression/` | Battle Pass, Quests, Materials, Boss Rewards & Cosmetics Managers | 7 | 2,711 |
+| `src/network/` | P2P WebRTC Co-op Networking, Host/Guest Sync, Drops & FX | 7 | 2,439 |
+| `src/` (root) | `main.js`, `firebase.js`, `audio.js` | 3 | 1,723 |
+| `src/core/` | Canonical `GameState`, `MobilePerf`, `EventBus` & Settings Helpers | 5 | 1,387 |
+| `src/gear/` | Equipment Manager, Set Synergies & Passive Bonus Engine | 3 | 1,286 |
+| `src/admin/` | Admin Panel, Auth & Debug Cheats | 3 | 1,223 |
+| `src/save/` | Cloud Account Sync, `SaveSerializer` & Player Identity (`#TAG`) | 4 | 1,073 |
+| `src/social/`, `src/chests/`, `src/profile/`, `src/libs/` | Friends Service, 4-Slot Chests, Stats & Vendor PeerJS Lib | 4 | 1,209 |
 
 ---
 
 ## 📈 Version Progression Log
+
+### **Alpha 1.6.9 - 1.6.13 - Battle Pass & Friends Overhaul, Unique Names & Endless Swarm Scaling (Dev Build)**
+- **Date:** November 22, 2026 *(Current Working Tree)*
+- **Total Lines / Files:** **96,952 lines** (`95,469` code lines across `263` files; `78,724` `.js` lines across `220` files)
+- **Key Additions & Changes:**
+  - **Season 1 Battle Pass UI Redesign (`BattlePassModalUI.js`, `battlepass.css`):** Horizontal 30-tier dual-track rail (`Free` + `VIP`), live Reward Spotlight Inspector with weapon stats & skin swatches, quick-jumps, XP guide drawer, and 1-click skin/weapon equipping.
+  - **Friends & Squad UI Overhaul (`FriendsModal.js`, `FriendsCardRenderer.js`, `friends.css`):** Equipped My Player Card banner/coins showcase, online/room filters, instant roster filter, expandable 4-stat career drawer, sectioned Requests (`ACCEPT ALL`), and avatar-equipped Co-op invite toast.
+  - **Online Name Uniqueness (`NameValidator.js`, `ProfileManager.js`):** Enforced case-insensitive `"Name taken"` verification across Firestore `usernames` and `players` collections during initial name setup and paid renames.
+  - **Endless 120 Enemy Cap, W35+ Troops & Endgame Healer (`EndlessWaveDirector.js`, `BioAlchemist.js`, `BioAlchemistRenderer.js`, `KolossosTrooper.js`, `KolossosDrone.js`):** Raised Endless cap from `72` to `120` enemies, added `KolossosTrooper` & `KolossosDrone` to Wave `35+` pools with standalone hover/separation AI, and introduced Wave `32+` endgame healer `Bio-Alchemist` (Vital Healing Tether, Cleanse Pulse, `bio_acid` 3-vial volley, Smoke-Dash escape).
+
+### **Alpha 1.6.4 - 1.6.8 - Visible Armor, 30-Tier Battle Pass & Co-op Wave 18 Stability**
+- **Release Date:** November 2026
+- **Key Additions & Changes:**
+  - **Visible Armor & Ascension (`HeroArmorCommon.js`, `HeroArmorEndgame.js`):** Rendered equipped gear/armor directly on heroes, added Olympian Star-Stone Mythic Ascension (`1.80x` gear stats), expanded Season 1 Battle Pass to 30 tiers, and added 6 new active hero skills.
+  - **Co-op Multiplayer Hardening (`NetworkManager.js`, `CoopHostSession.js`, `CoopGuestSession.js`, `CoopDropSync.js`, `CoopCombatFx.js`, `Game.js`):** Synced partner armor, weapon evolutions, muzzle flashes, beams, shared drops, and fixed the Wave 18 Guest freeze via PeerJS binary chunking, DataChannel backpressure, drop prioritization, and isolated `update`/`render` loop error handling.
+
+### **Alpha 1.6.0 - 1.6.3 - Endless Mode Expansion, Psgiannhs Hero, Chest Weapons & Mobile Optimization**
+- **Release Date:** November 15 – November 21, 2026
+- **Key Additions & Changes:**
+  - **Endless Mode Evolution & Bosses (`EndlessMapEvolution.js`, `EndlessWaveDirector.js`, `EndlessMainBosses.js`, `EndlessMiniBosses.js`):** Added 4 escalating map atmosphere stages, 8 Endless Mini-Bosses & Main Bosses up to `MechaKolossos` (W40) + infinite Apex cycles, `BouzoukiSniper`, `KafeneioTank`, `OuzoBomber`, and `DimotikiEnforcer`.
+  - **Playable Hero `Psgiannhs`, Ultimates & Weapons:** Added `PsgiannhsHero`, Hero Ultimates (`VF185`), `SymbioteLauncher`, `HeliosOmegaCannon`, chest-drop weapons (`M4Carbine`, `Spas12`, `BoomerangSawblade`, `ChronoRifle`), Battle Pass weapons (`BattlePassWeapons.js`), Holo Profile Cosmetics, and `MobilePerf` graphics presets.
 
 ### **Alpha 1.5.15 - Boss Arsenal Weapons & Hero Psanas Model Rework**
 - **Release Date:** November 15, 2026

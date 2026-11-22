@@ -55,8 +55,8 @@ class CinematicCutsceneOverlay {
         }
     }
 
-    startCutscene(subText = 'WAVE 15 • MINI-BOSS ENCOUNTER') {
-        if (typeof window !== 'undefined' && window.gameInstance && window.gameInstance.gameMode === 'endless') {
+    startCutscene(subText = 'WAVE 15 • MINI-BOSS ENCOUNTER', opts = {}) {
+        if (!opts.allowEndless && typeof window !== 'undefined' && window.gameInstance && window.gameInstance.gameMode === 'endless') {
             return;
         }
         this.active = true;

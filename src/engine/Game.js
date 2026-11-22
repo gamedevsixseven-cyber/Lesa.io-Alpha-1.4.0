@@ -41,25 +41,13 @@ class Game {
 
         // Bind Input Hooks
         this.input.onShootCallback = () => {
-            if (this.state === 'PLAYING') {
-                if (this.isCutsceneActive()) return;
+            if (this.state === 'PLAYING' && !this.isCutsceneActive()) {
                 const newBullets = this.player.shoot(this.effects);
                 if (newBullets) this.bullets.push(...newBullets);
             }
         };
-
-        this.input.onDashCallback = () => {
-            if (this.state === 'PLAYING') {
-                if (this.isCutsceneActive()) return;
-                this.player.dash(this.effects);
-            }
-        };
-
-        this.input.onSkillCallback = () => {
-            if (this.state === 'PLAYING' && !this.isCutsceneActive()) {
-                this.player.useSkill(this.enemies, this.effects, this.camera, this);
-            }
-        };
+        this.input.onDashCallback = () => (this.state === 'PLAYING' && !this.isCutsceneActive()) && this.player.dash(this.effects);
+        this.input.onSkillCallback = () => (this.state === 'PLAYING' && !this.isCutsceneActive()) && this.player.useSkill(this.enemies, this.effects, this.camera, this);
         this.input.onUltCallback = () => (this.state === 'PLAYING' && !this.isCutsceneActive()) && this.player.useUlt(this.enemies, this.effects, this.camera, this);
         this.input.onInteractCallback = () => (this.state === 'PLAYING' && !this.isCutsceneActive() && this.waveSkipper) && this.waveSkipper.tryActivate(this);
 
@@ -89,16 +77,8 @@ class Game {
         return this.waveManager ? this.waveManager.waveState : 'IN_PROGRESS';
     }
 
-    isCutsceneActive() {
-        return !!(this.cutsceneOverlay && this.cutsceneOverlay.active);
-    }
-
-    advanceCutscene() {
-        if (this.cutsceneOverlay) {
-            return this.cutsceneOverlay.advance();
-        }
-        return false;
-    }
+    isCutsceneActive() { return !!(this.cutsceneOverlay && this.cutsceneOverlay.active); }
+    advanceCutscene() { return this.cutsceneOverlay ? this.cutsceneOverlay.advance() : false; }
 
     initLeaderboard() {
         const heroName = this.player ? this.player.name : 'Hero';
@@ -155,10 +135,9 @@ class Game {
         }
 
         this.gameTime = 0;
-        if (typeof EndlessMapEvolution !== 'undefined') {
-            EndlessMapEvolution.reset();
-        }
+        if (typeof EndlessMapEvolution !== 'undefined') EndlessMapEvolution.reset();
         if (typeof OutsidePerimeterRoads !== 'undefined') OutsidePerimeterRoads.reset();
+        if (typeof LilXasEvent !== 'undefined') LilXasEvent.reset();
         if (this.arena && typeof this.arena.setGameMode === 'function') {
             this.arena.setGameMode(gameMode);
         } else if (gameMode !== 'dungeons' && this.arena && this.arena.dungeonFloor) {
@@ -187,6 +166,7 @@ class Game {
             const name = pausedByName || (this.player ? this.player.name : 'Hero');
             this.ui.showPauseModal(name);
             if (this.touchInput) this.touchInput.hide();
+            if (typeof LilXasEvent !== 'undefined') LilXasEvent.setPaused(true);
             if (this.coopSession && !isRemote && typeof this.coopSession.sendPause === 'function') {
                 this.coopSession.sendPause(name);
             }
@@ -199,6 +179,7 @@ class Game {
             this.ui.hideModals();
             this.lastTime = performance.now();
             if (this.touchInput) this.touchInput.show();
+            if (typeof LilXasEvent !== 'undefined') LilXasEvent.setPaused(false);
             if (this.coopSession && !isRemote && typeof this.coopSession.sendResume === 'function') {
                 this.coopSession.sendResume();
             }
@@ -207,6 +188,7 @@ class Game {
 
     gameOver() {
         this.state = 'GAME_OVER';
+        if (typeof LilXasEvent !== 'undefined') LilXasEvent.reset();
         if (typeof document !== 'undefined') document.getElementById('olympus-blessing-modal')?.remove();
         if (this.touchInput) this.touchInput.hide();
         const timeElapsedSec = this.gameTime / 60;
@@ -342,13 +324,11 @@ class Game {
 
         // Entities & Camera
         this.player.update(dt, this.input, this.camera, this.effects, this.arena);
-        if (typeof PlayerSkills !== 'undefined') {
-            PlayerSkills.update(this.player, dt, this.effects, this.enemies);
-        }
-        if (typeof HeroUltimates !== 'undefined') {
-            HeroUltimates.update(this.player, dt, this.enemies, this.bullets, this.effects, this);
-        }
-        this.camera.follow(this.player.x, this.player.y);
+        if (typeof PlayerSkills !== 'undefined') PlayerSkills.update(this.player, dt, this.effects, this.enemies);
+        if (typeof HeroUltimates !== 'undefined') HeroUltimates.update(this.player, dt, this.enemies, this.bullets, this.effects, this);
+        if (typeof LilXasEvent !== 'undefined') LilXasEvent.update(dt, this);
+        const camTgt = (typeof LilXasEvent !== 'undefined' && LilXasEvent.getCameraTarget()) || this.player;
+        this.camera.follow(camTgt.x, camTgt.y);
         this.camera.update(dt);
         this.arena.update(dt);
         if (typeof OutsidePerimeterRoads !== 'undefined') OutsidePerimeterRoads.update(dt, this);
@@ -416,6 +396,10 @@ class Game {
                         this.enemies[eWrite++] = enemy;
                     }
                     continue;
+                }
+                if (typeof LilXasEvent !== 'undefined' && (LilXasEvent.shouldFreezeEnemy(enemy) || enemy._lilXasFleeing)) {
+                    if (enemy.hitFlash > 0) enemy.hitFlash -= dt;
+                    this.enemies[eWrite++] = enemy; continue;
                 }
                 enemy.update(dt, targetEntity, this.enemies, this.bullets, this.effects, this.arena);
                 if (enemy.dead) {
@@ -521,7 +505,8 @@ class Game {
             if (this.camera.isVisible(obs.x, obs.y, (obs.cullRadius || obs.radius) + 120)) obs.draw(ctx);
         }
 
-        // 3.5. Endless Wave Skipper & 4. Enemies (Viewport Culled + Hit Squash-and-Stretch)
+        // 3.5. Endless Wave Skipper, Lil Xas Stage/Limo & 4. Enemies (Viewport Culled)
+        if (typeof LilXasEvent !== 'undefined') LilXasEvent.drawWorld(ctx, this.camera, this.arena);
         if (this.waveSkipper) this.waveSkipper.draw(ctx, this.camera);
         for (let i = 0; i < this.enemies.length; i++) {
             const enemy = this.enemies[i];
@@ -530,6 +515,9 @@ class Game {
                 const hitSquashed = (typeof CombatRenderFX !== 'undefined') && CombatRenderFX.beginEnemyTransform(ctx, enemy);
                 enemy.draw(ctx);
                 if (hitSquashed) CombatRenderFX.endEnemyTransform(ctx, hitSquashed);
+                if (enemy._lilXasFleeing && typeof LilXasCutsceneFX !== 'undefined') {
+                    LilXasCutsceneFX.drawFleeingEnemyOverlay(ctx, enemy);
+                }
                 if (enemy.drawBubbleTrap) enemy.drawBubbleTrap(ctx);
             }
         }
@@ -575,6 +563,7 @@ class Game {
             if (this.waveSkipper) this.waveSkipper.renderScreenOverlay(ctx, this.canvas.width, this.canvas.height, this);
             if (this.bossWarningOverlay) this.bossWarningOverlay.draw(ctx, this.canvas.width, this.canvas.height);
             if (this.cutsceneOverlay) this.cutsceneOverlay.draw(ctx, this.canvas.width, this.canvas.height);
+            if (typeof LilXasEvent !== 'undefined') LilXasEvent.drawScreenOverlay(ctx, this.canvas.width, this.canvas.height);
         }
     }
 

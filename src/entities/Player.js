@@ -55,7 +55,7 @@ class Player {
 
         // Upgrades & Physics Buffs
         this.shieldActive = false; this.frenzyTimer = 0;
-        this.speedDebuffTimer = 0; this.secondWindSpeedTimer = 0; this.stunTimer = 0;
+        this.speedDebuffTimer = 0; this.secondWindSpeedTimer = 0; this.stunTimer = 0; this.earBleedSlowMult = 1.0;
         this.knockbackVx = 0; this.knockbackVy = 0; this.knockbackTimer = 0;
         this.isGrabbed = false; this.isAirborne = false; this.airZ = 0; this.airVz = 0;
         this.airRotation = 0; this.landingDamage = 0; this.landingSquashTimer = 0;
@@ -272,6 +272,7 @@ class Player {
             const slowImmune = typeof GearPassives !== 'undefined' && GearPassives.isSlowImmune();
             if (this.secondWindSpeedTimer > 0) currentSpeed *= (this.secondWindSpeedMult || 1.25);
             if (this.speedDebuffTimer > 0 && !slowImmune) currentSpeed *= 0.68;
+            if ((this.earBleedSlowMult || 1.0) < 1.0) currentSpeed *= this.earBleedSlowMult;
             if (this.olympusZoneMult !== undefined) currentSpeed *= (slowImmune && this.olympusZoneMult < 1 ? 1.0 : this.olympusZoneMult);
             if (typeof GearPassives !== 'undefined') currentSpeed *= GearPassives.getSpeedMultiplier(this);
             

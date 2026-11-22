@@ -58,6 +58,15 @@ class FriendService {
         return '#GUEST0';
     }
 
+    static _maxNum(...vals) {
+        let best = 0;
+        for (let i = 0; i < vals.length; i++) {
+            const n = Number(vals[i]);
+            if (Number.isFinite(n) && n > best) best = n;
+        }
+        return best;
+    }
+
     getMySummary() {
         const gs = (typeof window !== 'undefined' && window.GameState) ? window.GameState : null;
         const p = (gs && gs.player) ? gs.player : {};
@@ -66,22 +75,21 @@ class FriendService {
         const uid = this.getMyUid();
         const tag = this.getMyTag();
         const tagClean = (typeof PlayerIdentity !== 'undefined' && PlayerIdentity.normalizeTag)
-            ? PlayerIdentity.normalizeTag(tag)
-            : tag.replace(/[^A-Z0-9]/g, '').toUpperCase();
+            ? PlayerIdentity.normalizeTag(tag) : tag.replace(/[^A-Z0-9]/g, '').toUpperCase();
+        const rawMaxWave = FriendService._maxNum(1, stats.maxWave, parseInt(localStorage.getItem('lesaio_max_wave') || '1', 10));
+        const featSnap = (typeof PerkProgression !== 'undefined' && typeof PerkProgression.getFeatSnapshot === 'function')
+            ? PerkProgression.getFeatSnapshot(gs) : null;
+        const endlessMaxWave = FriendService._maxNum(p.combatFeats && p.combatFeats.endlessMaxWave, featSnap && featSnap.endlessMaxWave, rawMaxWave > 20 ? rawMaxWave : 0);
 
         return {
-            uid,
-            tag,
-            tagClean,
-            name,
-            nameLower: name.trim().toLowerCase(),
+            uid, tag, tagClean, name, nameLower: name.trim().toLowerCase(),
             level: p.accountLevel || parseInt(localStorage.getItem('lesaio_account_level') || '1', 10) || 1,
             selectedHero: p.selectedHero || localStorage.getItem('lesaio_selected_hero') || 'psanas',
-            highScore: stats.highScore || parseInt(localStorage.getItem('lesaio_highscore') || '0', 10) || 0,
-            maxWave: stats.maxWave || parseInt(localStorage.getItem('lesaio_max_wave') || '1', 10) || 1,
-            totalKills: stats.totalKills || parseInt(localStorage.getItem('lesaio_total_kills') || '0', 10) || 0,
-            endlessMaxWave: (p.combatFeats && p.combatFeats.endlessMaxWave) || 0,
-            olympusMaxFloor: (p.combatFeats && p.combatFeats.olympusMaxFloor) || 0,
+            highScore: FriendService._maxNum(stats.highScore, parseInt(localStorage.getItem('lesaio_highscore') || '0', 10)),
+            maxWave: rawMaxWave,
+            totalKills: FriendService._maxNum(stats.totalKills, parseInt(localStorage.getItem('lesaio_total_kills') || '0', 10)),
+            endlessMaxWave,
+            olympusMaxFloor: FriendService._maxNum(p.combatFeats && p.combatFeats.olympusMaxFloor, featSnap && featSnap.olympusMaxFloor),
             cosmetics: typeof CosmeticManager !== 'undefined' ? CosmeticManager.getPublicSummary() : {}
         };
     }
@@ -155,6 +163,7 @@ class FriendService {
     }
 
     markOfflineBeacon() {
+        if (typeof window !== 'undefined' && window._lesaioSuppressUnloadSave) return;
         const db = this.getDb();
         const uid = this.getMyUid();
         if (!db || !uid) return;
@@ -192,18 +201,12 @@ class FriendService {
                         const otherUid = d.users.find(u => u !== myUid) || myUid;
                         const cachedProfile = (d.profiles && d.profiles[otherUid]) ? d.profiles[otherUid] : {};
                         const entry = {
-                            id: doc.id,
-                            otherUid,
-                            status: d.status,
-                            requestedBy: d.requestedBy,
-                            createdAt: d.createdAt || 0,
-                            updatedAt: d.updatedAt || 0,
+                            id: doc.id, otherUid, status: d.status, requestedBy: d.requestedBy,
+                            createdAt: d.createdAt || 0, updatedAt: d.updatedAt || 0,
                             profile: {
-                                uid: otherUid,
-                                name: cachedProfile.name || 'Hero',
+                                uid: otherUid, name: cachedProfile.name || 'Hero',
                                 tag: cachedProfile.tag || (typeof PlayerIdentity !== 'undefined' ? PlayerIdentity.getOnlineTag(otherUid) : '#HERO00'),
-                                hero: cachedProfile.hero || 'psanas',
-                                level: cachedProfile.level || 1
+                                hero: cachedProfile.hero || 'psanas', level: cachedProfile.level || 1
                             }
                         };
 
@@ -284,30 +287,30 @@ class FriendService {
 
     _formatPlayerDoc(uid, data) {
         const p = data.player || {};
-        const s = data.socialStats || p.stats || {};
+        const social = data.socialStats || {};
+        const pStats = p.stats || {};
+        const rStats = data.stats || {};
+        const pFeats = p.combatFeats || {};
+        const cosRaw = data.cosmetics || {};
         const name = data.playerName || p.name || 'Hero';
         const tag = data.friendTag || (typeof PlayerIdentity !== 'undefined' ? PlayerIdentity.getOnlineTag(uid) : '#HERO00');
         const level = parseInt(data.level || data.accountLevel || p.accountLevel || 1, 10) || 1;
         const hero = data.selectedHero || p.selectedHero || 'psanas';
         const lastSeenAt = data.lastSeenAt || 0;
         const isOnline = Boolean(data.online && lastSeenAt && (Date.now() - lastSeenAt < 120000));
+        const maxWave = FriendService._maxNum(1, social.maxWave, pStats.maxWave, rStats.maxWave, data.maxWave);
+        const endlessMaxWave = FriendService._maxNum(1, social.endlessMaxWave, pFeats.endlessMaxWave, cosRaw.endlessMaxWave, data.lbEndlessWave, maxWave);
 
         return {
-            uid,
-            name,
-            tag,
-            tagClean: (data.friendTagClean || tag.replace(/[^A-Z0-9]/g, '')).toUpperCase(),
-            level,
-            hero,
-            isOnline,
-            lastSeenAt,
+            uid, name, tag, tagClean: (data.friendTagClean || tag.replace(/[^A-Z0-9]/g, '')).toUpperCase(),
+            level, hero, isOnline, lastSeenAt,
             currentStatus: isOnline ? (data.currentStatus || 'In Lobby') : 'Offline',
             coopRoomCode: isOnline ? (data.coopRoomCode || null) : null,
-            highScore: s.highScore || 0,
-            maxWave: s.maxWave || 1,
-            totalKills: s.totalKills || 0,
-            endlessMaxWave: s.endlessMaxWave || (data.cosmetics && data.cosmetics.endlessMaxWave) || s.maxWave || 1,
-            olympusMaxFloor: s.olympusMaxFloor || (data.cosmetics && data.cosmetics.olympusMaxFloor) || 0,
+            highScore: FriendService._maxNum(social.highScore, pStats.highScore, rStats.highScore, data.highScore, data.lbHighScore),
+            maxWave,
+            totalKills: FriendService._maxNum(social.totalKills, pStats.totalKills, rStats.totalKills, data.totalKills, data.lbTotalKills),
+            endlessMaxWave,
+            olympusMaxFloor: FriendService._maxNum(social.olympusMaxFloor, pFeats.olympusMaxFloor, cosRaw.olympusMaxFloor),
             cosmetics: typeof CosmeticManager !== 'undefined' ? CosmeticManager.extractPublicCosmetics(data) : {}
         };
     }

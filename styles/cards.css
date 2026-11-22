@@ -121,7 +121,7 @@
 
 /* Battle Pass Card */
 .battle-pass-card {
-    background: #70a1ff;
+    background: linear-gradient(135deg, #2563eb 0%, #6d28d9 60%, #9d174d 100%);
 }
 
 .battle-pass-body {
@@ -152,6 +152,7 @@
     bottom: -1px;
     right: -1px;
     background: var(--comic-yellow);
+    color: var(--dark-outline);
     border: 1.5px solid var(--dark-outline);
     border-radius: 6px;
     font-family: 'Luckiest Guy', cursive;

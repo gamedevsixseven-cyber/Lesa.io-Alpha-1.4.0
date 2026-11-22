@@ -1,23 +1,15 @@
 /**
  * Lesa.io - Friends, Player Tag & Squad Invite Modal UI
- * Displays the player's Online ID (#XXXXXX), search by Name or Online ID,
- * live Friends list, incoming Requests, and 1-click Co-op Invites / Join.
+ * Displays your equipped Player Card & Online ID (#XXXXXX), live Friends filtering,
+ * grouped Online / In-Room / Offline cards, Requests & Co-op Invites, and Player Search.
  */
-
-const HERO_AVATAR_MAP = {
-    psanas: 'assets/HeroesIcons/PsanasAvatar.png',
-    psogas: 'assets/HeroesIcons/PsogasAvatar.png',
-    petros: 'assets/HeroesIcons/PetrosAvatar.png',
-    '50balos': 'assets/HeroesIcons/50balosCrop.png',
-    billias: 'assets/HeroesIcons/BilliasAvatar.png',
-    kitsos: 'assets/HeroesIcons/KitsosAvatar.png',
-    psgiannhs: 'assets/HeroesIcons/PsgiannhsAvatar.png'
-};
 
 class FriendsModal {
     constructor(friendService) {
         this.service = friendService;
         this.activeTab = 'friends'; // 'friends' | 'requests' | 'add'
+        this.friendFilter = 'ALL'; // 'ALL' | 'ONLINE' | 'ROOM'
+        this.friendSearchQuery = '';
         this.searchResults = [];
         this.hasSearched = false;
         this.lastQuery = '';
@@ -34,13 +26,11 @@ class FriendsModal {
     }
 
     esc(str) {
-        return String(str || '').replace(/[&<>"']/g, (ch) => ({
-            '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
-        }[ch]));
+        return typeof FriendsCardRenderer !== 'undefined' ? FriendsCardRenderer.esc(str) : String(str || '');
     }
 
     getHeroAvatar(heroId) {
-        return HERO_AVATAR_MAP[heroId] || HERO_AVATAR_MAP.psanas;
+        return typeof FriendsCardRenderer !== 'undefined' ? FriendsCardRenderer.getHeroAvatar(heroId) : 'assets/HeroesIcons/PsanasAvatar.png';
     }
 
     ensureMarkup() {
@@ -48,37 +38,7 @@ class FriendsModal {
             const overlay = document.createElement('div');
             overlay.id = 'friends-modal';
             overlay.className = 'modal-overlay hidden';
-            overlay.innerHTML = `
-                <div class="friends-panel">
-                    <div class="friends-header">
-                        <h2 class="friends-title">${typeof UiIcons !== 'undefined' ? UiIcons.i('people', 'ui-icon-title') : '👥'} FRIENDS & SQUAD</h2>
-                        <button id="friends-close-btn" class="coop-close-btn" title="Close (Esc)">✕</button>
-                    </div>
-
-                    <div class="friends-id-banner">
-                        <div class="friends-id-meta">
-                            <img id="friends-my-avatar" class="friends-id-avatar" src="assets/HeroesIcons/PsanasAvatar.png" alt="My Hero">
-                            <div>
-                                <div id="friends-my-name" class="friends-id-name">Hero</div>
-                                <div style="font-size:11px;color:#94a3b8;">Share your Name or Online ID to add friends</div>
-                            </div>
-                        </div>
-                        <div class="friends-id-tag-row">
-                            <span id="friends-my-tag" class="friends-id-code">#------</span>
-                            <button id="friends-copy-tag-btn" class="friends-copy-btn">${typeof UiIcons !== 'undefined' ? UiIcons.i('copy', 'ui-icon-sm') : '📋'} COPY ID</button>
-                        </div>
-                    </div>
-
-                    <div class="friends-tabs">
-                        <button id="ftab-friends" class="friends-tab-btn active">${typeof UiIcons !== 'undefined' ? UiIcons.i('people', 'ui-icon-sm') : '👥'} FRIENDS (0)</button>
-                        <button id="ftab-requests" class="friends-tab-btn">${typeof UiIcons !== 'undefined' ? UiIcons.i('bell', 'ui-icon-sm') : '🔔'} REQUESTS (0)</button>
-                        <button id="ftab-add" class="friends-tab-btn">${typeof UiIcons !== 'undefined' ? UiIcons.i('plus', 'ui-icon-sm') : '➕'} ADD FRIEND</button>
-                    </div>
-
-                    <div id="friends-feedback-bar" class="friends-feedback hidden"></div>
-                    <div id="friends-modal-body" class="friends-body"></div>
-                </div>
-            `;
+            overlay.innerHTML = typeof FriendsCardRenderer !== 'undefined' ? FriendsCardRenderer.buildModalMarkup() : '';
             document.body.appendChild(overlay);
         }
         this.modal = document.getElementById('friends-modal');
@@ -94,7 +54,10 @@ class FriendsModal {
 
     bindEvents() {
         const closeBtn = document.getElementById('friends-close-btn');
-        if (closeBtn) closeBtn.addEventListener('click', () => this.hide());
+        if (closeBtn) closeBtn.addEventListener('click', () => {
+            if (window.soundEngine) window.soundEngine.playGoBack();
+            this.hide();
+        });
 
         if (this.modal) {
             this.modal.addEventListener('click', (e) => {
@@ -107,35 +70,46 @@ class FriendsModal {
             copyBtn.addEventListener('click', () => {
                 const tag = this.service ? this.service.getMyTag() : '';
                 if (!tag) return;
-                if (navigator.clipboard && navigator.clipboard.writeText) {
-                    navigator.clipboard.writeText(tag).catch(() => {});
-                }
+                if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(tag).catch(() => {});
+                if (window.soundEngine) window.soundEngine.playSelect();
                 if (typeof UiIcons !== 'undefined') UiIcons.setRichText(copyBtn, '✅ COPIED!', 'ui-icon-sm'); else copyBtn.textContent = '✅ COPIED!';
                 setTimeout(() => { if (typeof UiIcons !== 'undefined') UiIcons.setRichText(copyBtn, '📋 COPY ID', 'ui-icon-sm'); else copyBtn.textContent = '📋 COPY ID'; }, 1800);
             });
         }
 
-        const tabMap = [
-            ['ftab-friends', 'friends'],
-            ['ftab-requests', 'requests'],
-            ['ftab-add', 'add']
-        ];
-        tabMap.forEach(([id, tabName]) => {
+        const refreshBtn = document.getElementById('friends-refresh-btn');
+        if (refreshBtn && this.service) {
+            refreshBtn.addEventListener('click', async () => {
+                if (window.soundEngine) window.soundEngine.playSelect();
+                refreshBtn.classList.add('is-spinning');
+                await Promise.all([this.service.syncMyProfile(true), this.service.refreshFriendStatuses()]);
+                setTimeout(() => refreshBtn.classList.remove('is-spinning'), 450);
+                this.render();
+            });
+        }
+
+        const myProfileBtn = document.getElementById('friends-my-profile-btn');
+        if (myProfileBtn) {
+            myProfileBtn.addEventListener('click', () => {
+                if (!this.service || typeof PublicProfileModal === 'undefined') return;
+                if (window.soundEngine) window.soundEngine.playSelect();
+                PublicProfileModal.open(this.service.getMySummary());
+            });
+        }
+
+        [['ftab-friends', 'friends'], ['ftab-requests', 'requests'], ['ftab-add', 'add']].forEach(([id, tabName]) => {
             const el = document.getElementById(id);
-            if (el) {
-                el.addEventListener('click', () => {
-                    if (window.soundEngine) window.soundEngine.playSelect();
-                    this.activeTab = tabName;
-                    this.feedbackText = '';
-                    this.render();
-                });
-            }
+            if (!el) return;
+            el.addEventListener('click', () => {
+                if (window.soundEngine) window.soundEngine.playSelect();
+                this.activeTab = tabName;
+                this.feedbackText = '';
+                this.render();
+            });
         });
 
         window.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && this.modal && !this.modal.classList.contains('hidden')) {
-                this.hide();
-            }
+            if (e.key === 'Escape' && this.modal && !this.modal.classList.contains('hidden')) this.hide();
         });
 
         if (typeof window !== 'undefined' && window.EventBus) {
@@ -143,17 +117,15 @@ class FriendsModal {
                 this.updateBadge();
                 if (this.modal && !this.modal.classList.contains('hidden')) {
                     if (this.activeTab === 'add') {
-                        const rBtn = document.getElementById('ftab-requests');
-                        const fBtn = document.getElementById('ftab-friends');
-                        if (fBtn) { if (typeof UiIcons !== 'undefined') UiIcons.setRichText(fBtn, `👥 FRIENDS (${this.service.friends.length})`, 'ui-icon-sm'); else fBtn.textContent = `👥 FRIENDS (${this.service.friends.length})`; }
-                        if (rBtn) { if (typeof UiIcons !== 'undefined') UiIcons.setRichText(rBtn, `🔔 REQUESTS (${this.service.incomingRequests.length + this.service.incomingInvites.length})`, 'ui-icon-sm'); else rBtn.textContent = `🔔 REQUESTS (${this.service.incomingRequests.length + this.service.incomingInvites.length})`; }
+                        this._syncTabLabels();
                         const rc = document.getElementById('friends-search-results');
                         if (rc) this._paintSearchResults(rc);
                     } else this.render();
                 }
             });
-            window.EventBus.on('coopInviteReceived', (invite) => {
-                this.showInviteToast(invite);
+            window.EventBus.on('coopInviteReceived', (invite) => this.showInviteToast(invite));
+            window.EventBus.on('cosmeticsUpdated', () => {
+                if (this.modal && !this.modal.classList.contains('hidden')) this.render();
             });
         }
     }
@@ -171,166 +143,214 @@ class FriendsModal {
 
         if (this._refreshInterval) clearInterval(this._refreshInterval);
         this._refreshInterval = setInterval(() => {
-            if (this.service && this.modal && !this.modal.classList.contains('hidden')) {
-                this.service.refreshFriendStatuses();
-            }
+            if (this.service && this.modal && !this.modal.classList.contains('hidden')) this.service.refreshFriendStatuses();
         }, 20000);
     }
 
     hide() {
         if (this.modal) this.modal.classList.add('hidden');
-        if (this._refreshInterval) {
-            clearInterval(this._refreshInterval);
-            this._refreshInterval = null;
-        }
+        if (this._refreshInterval) { clearInterval(this._refreshInterval); this._refreshInterval = null; }
     }
 
     setFeedback(msg) {
         this.feedbackText = msg || '';
         const bar = document.getElementById('friends-feedback-bar');
         if (!bar) return;
-        if (!this.feedbackText) {
-            bar.classList.add('hidden');
-            bar.textContent = '';
-        } else {
-            bar.textContent = this.feedbackText;
-            bar.classList.remove('hidden');
-        }
+        bar.textContent = this.feedbackText;
+        bar.classList.toggle('hidden', !this.feedbackText);
     }
 
     updateBadge() {
         const badge = document.getElementById('friends-badge');
         if (!badge || !this.service) return;
         const count = this.service.getTotalNotificationCount();
-        if (count > 0) {
-            badge.textContent = count > 9 ? '9+' : String(count);
-            badge.classList.remove('hidden');
-        } else {
-            badge.classList.add('hidden');
-        }
+        badge.textContent = count > 9 ? '9+' : String(count);
+        badge.classList.toggle('hidden', count <= 0);
     }
 
-    render() {
+    _syncTabLabels() {
         if (!this.service) return;
-        const me = this.service.getMySummary();
-
-        const avatarEl = document.getElementById('friends-my-avatar');
-        const nameEl = document.getElementById('friends-my-name');
-        const tagEl = document.getElementById('friends-my-tag');
-        if (avatarEl) avatarEl.src = this.getHeroAvatar(me.selectedHero);
-        if (nameEl) nameEl.textContent = `${me.name} · LVL ${me.level}`;
-        if (tagEl) tagEl.textContent = me.tag;
-
         const reqTotal = this.service.incomingRequests.length + this.service.incomingInvites.length;
         const fBtn = document.getElementById('ftab-friends');
         const rBtn = document.getElementById('ftab-requests');
         const aBtn = document.getElementById('ftab-add');
+
         if (fBtn) {
-            if (typeof UiIcons !== 'undefined') UiIcons.setRichText(fBtn, `👥 FRIENDS (${this.service.friends.length})`, 'ui-icon-sm'); else fBtn.textContent = `👥 FRIENDS (${this.service.friends.length})`;
+            if (typeof UiIcons !== 'undefined') UiIcons.setRichText(fBtn, `👥 FRIENDS (${this.service.friends.length})`, 'ui-icon-sm');
+            else fBtn.textContent = `👥 FRIENDS (${this.service.friends.length})`;
             fBtn.classList.toggle('active', this.activeTab === 'friends');
         }
         if (rBtn) {
-            if (typeof UiIcons !== 'undefined') UiIcons.setRichText(rBtn, `🔔 REQUESTS (${reqTotal})`, 'ui-icon-sm'); else rBtn.textContent = `🔔 REQUESTS (${reqTotal})`;
+            if (typeof UiIcons !== 'undefined') UiIcons.setRichText(rBtn, `🔔 REQUESTS (${reqTotal})`, 'ui-icon-sm');
+            else rBtn.textContent = `🔔 REQUESTS (${reqTotal})`;
             rBtn.classList.toggle('active', this.activeTab === 'requests');
+            rBtn.classList.toggle('has-pending', reqTotal > 0);
         }
-        if (aBtn) {
-            aBtn.classList.toggle('active', this.activeTab === 'add');
-        }
-
-        this.setFeedback(this.feedbackText || this.service.lastError || '');
-
-        const body = document.getElementById('friends-modal-body');
-        if (!body) return;
-
-        if (this.activeTab === 'friends') this._renderFriendsTab(body);
-        else if (this.activeTab === 'requests') this._renderRequestsTab(body);
-        else this._renderAddTab(body);
+        if (aBtn) aBtn.classList.toggle('active', this.activeTab === 'add');
     }
 
-    _renderFriendsTab(body) {
-        const rawFriends = this.service.friends.slice();
-        if (!rawFriends.length) {
-            body.innerHTML = `<div class="friends-empty">No friends added yet!<br>Switch to <b>${typeof UiIcons !== 'undefined' ? UiIcons.i('plus', 'ui-icon-sm') : '➕'} ADD FRIEND</b> and search by player <b>Name</b> or <b>#OnlineID</b>.</div>`;
-            return;
-        }
-
-        const enriched = rawFriends.map((f) => {
+    _getEnrichedFriends() {
+        return this.service.friends.map((f) => {
             const live = this.service.friendProfiles[f.otherUid] || {};
             return {
-                relId: f.id,
-                uid: f.otherUid,
-                name: live.name || f.profile.name,
-                tag: live.tag || f.profile.tag,
-                hero: live.hero || f.profile.hero,
-                level: live.level || f.profile.level,
-                isOnline: Boolean(live.isOnline),
-                status: live.currentStatus || (live.isOnline ? 'In Lobby' : 'Offline'),
+                relId: f.id, uid: f.otherUid,
+                name: live.name || f.profile.name, tag: live.tag || f.profile.tag,
+                hero: live.hero || f.profile.hero, level: live.level || f.profile.level,
+                isOnline: Boolean(live.isOnline), status: live.currentStatus || (live.isOnline ? 'In Lobby' : 'Offline'),
                 coopRoomCode: live.coopRoomCode || null,
                 highScore: live.highScore || 0, maxWave: live.maxWave || 1, totalKills: live.totalKills || 0,
                 endlessMaxWave: live.endlessMaxWave || 0, olympusMaxFloor: live.olympusMaxFloor || 0,
                 cosmetics: live.cosmetics || f.profile.cosmetics || {}
             };
-        }).sort((a, b) => (b.isOnline ? 1 : 0) - (a.isOnline ? 1 : 0));
-
-        const listEl = document.createElement('div');
-        listEl.className = 'friends-list';
-
-        enriched.forEach((f) => {
-            const card = document.createElement('div');
-            card.className = 'friend-card';
-
-            const statsHtml = (this.expandedStatsUid === f.uid)
-                ? `<div class="friend-sub" style="color:#fde68a;">${typeof UiIcons !== 'undefined' ? UiIcons.i('trophy', 'ui-icon-sm') : '🏆'} High Score: ${f.highScore.toLocaleString()} · ${typeof UiIcons !== 'undefined' ? UiIcons.i('wave', 'ui-icon-sm') : '🌊'} Max Wave: ${f.maxWave} · ${typeof UiIcons !== 'undefined' ? UiIcons.i('swords', 'ui-icon-sm') : '⚔️'} Kills: ${f.totalKills.toLocaleString()}</div>`
-                : '';
-
-            const joinOrInviteBtn = f.coopRoomCode
-                ? `<button class="friend-btn friend-btn-join" data-action="join-room" data-code="${this.esc(f.coopRoomCode)}">${typeof UiIcons !== 'undefined' ? UiIcons.i('rocket', 'ui-icon-sm') : '🚀'} JOIN</button>`
-                : `<button class="friend-btn friend-btn-primary" data-action="invite" data-uid="${this.esc(f.uid)}" data-name="${this.esc(f.name)}" ${f.isOnline ? '' : 'disabled title="Friend is offline"'}>${typeof UiIcons !== 'undefined' ? UiIcons.i('swords', 'ui-icon-sm') : '⚔️'} INVITE</button>`;
-
-            const removeLabel = (this.confirmRemoveUid === f.uid) ? 'CONFIRM ✕' : '✕';
-
-            card.innerHTML = `
-                <div class="friend-left">
-                    <div class="friend-avatar-wrap">
-                        <img class="friend-avatar" src="${this.getHeroAvatar(f.hero)}" alt="Hero">
-                        <span class="friend-presence-dot ${f.isOnline ? 'online' : ''}"></span>
-                    </div>
-                    <div class="friend-info">
-                        <div class="friend-name-line"><span class="friend-name">${this.esc(f.name)}</span><span class="friend-tag-chip">${this.esc(f.tag)}</span><span class="friend-lvl-chip">LVL ${f.level}</span></div>
-                        <div class="friend-sub">${typeof UiIcons !== 'undefined' ? UiIcons.i(f.isOnline ? 'orb_green' : 'orb_dark', 'ui-icon-sm') : (f.isOnline ? '🟢' : '⚫')} ${this.esc(f.status)}</div>
-                        ${statsHtml}
-                    </div>
-                </div>
-                <div class="friend-actions">
-                    ${joinOrInviteBtn}
-                    <button class="friend-btn friend-btn-muted" data-action="stats" data-uid="${this.esc(f.uid)}" title="Stats">${typeof UiIcons !== 'undefined' ? UiIcons.i('chart', 'ui-icon-sm') : '📊'}</button>
-                    <button class="friend-btn friend-btn-danger" data-action="remove" data-rel="${this.esc(f.relId)}" data-uid="${this.esc(f.uid)}" title="Remove Friend">${removeLabel}</button>
-                </div>
-            `;
-            if (typeof ProfileCosmeticsUI !== 'undefined') ProfileCosmeticsUI.decorateSocialCard(card, f);
-            listEl.appendChild(card);
-        });
-
-        body.innerHTML = '';
-        body.appendChild(listEl);
-
-        listEl.querySelectorAll('button[data-action]').forEach((btn) => {
-            btn.addEventListener('click', () => this._handleFriendCardAction(btn));
+        }).sort((a, b) => {
+            const aScore = (a.coopRoomCode ? 2 : (a.isOnline ? 1 : 0));
+            const bScore = (b.coopRoomCode ? 2 : (b.isOnline ? 1 : 0));
+            if (aScore !== bScore) return bScore - aScore;
+            return (a.name || '').localeCompare(b.name || '');
         });
     }
 
-    async _handleFriendCardAction(btn) {
+    render() {
+        if (!this.service) return;
+        const me = this.service.getMySummary();
+        const enriched = this._getEnrichedFriends();
+        const onlineCount = enriched.filter(f => f.isOnline || f.coopRoomCode).length;
+
+        const avatarEl = document.getElementById('friends-my-avatar');
+        const nameEl = document.getElementById('friends-my-name');
+        const tagEl = document.getElementById('friends-my-tag');
+        const onlinePill = document.getElementById('friends-online-pill');
+        if (avatarEl) avatarEl.src = this.getHeroAvatar(me.selectedHero);
+        if (nameEl) nameEl.textContent = `${me.name} · LVL ${me.level}`;
+        if (tagEl) tagEl.textContent = me.tag;
+        if (onlinePill) {
+            onlinePill.textContent = `● ${onlineCount} ONLINE`;
+            onlinePill.classList.toggle('is-active', onlineCount > 0);
+        }
+
+        if (typeof FriendsCardRenderer !== 'undefined') {
+            FriendsCardRenderer.decorateMyBanner(
+                me,
+                document.getElementById('friends-id-banner'),
+                document.getElementById('friends-my-avatar-wrap'),
+                document.getElementById('friends-my-coins')
+            );
+        }
+
+        this._syncTabLabels();
+        this.setFeedback(this.feedbackText || this.service.lastError || '');
+
+        const body = document.getElementById('friends-modal-body');
+        if (!body) return;
+        if (this.activeTab === 'friends') this._renderFriendsTab(body, enriched);
+        else if (this.activeTab === 'requests') this._renderRequestsTab(body);
+        else this._renderAddTab(body);
+    }
+
+    _renderFriendsTab(body, enriched) {
+        if (!enriched.length) {
+            body.innerHTML = `
+                <div class="friends-empty">
+                    <div class="friends-empty-title">Your Squad Roster is Empty!</div>
+                    <p>Search by Hero Name or <b>#OnlineID</b> to add friends and launch Co-op together.</p>
+                    <button type="button" id="friends-empty-add-btn" class="friends-search-btn friends-empty-cta">+ FIND FRIENDS</button>
+                </div>`;
+            const goAdd = document.getElementById('friends-empty-add-btn');
+            if (goAdd) goAdd.addEventListener('click', () => { this.activeTab = 'add'; this.render(); });
+            return;
+        }
+
+        const onlineTotal = enriched.filter(f => f.isOnline).length;
+        const roomTotal = enriched.filter(f => f.coopRoomCode).length;
+        const q = (this.friendSearchQuery || '').trim().toLowerCase();
+
+        const visible = enriched.filter((f) => {
+            if (this.friendFilter === 'ONLINE' && !f.isOnline && !f.coopRoomCode) return false;
+            if (this.friendFilter === 'ROOM' && !f.coopRoomCode) return false;
+            if (q && !(f.name || '').toLowerCase().includes(q) && !(f.tag || '').toLowerCase().includes(q)) return false;
+            return true;
+        });
+
+        body.innerHTML = `
+            <div class="friends-toolbar">
+                <div class="friends-filter-chips">
+                    <button type="button" class="tab-filter-chip ${this.friendFilter === 'ALL' ? 'active' : ''}" data-ffilter="ALL">ALL (${enriched.length})</button>
+                    <button type="button" class="tab-filter-chip ${this.friendFilter === 'ONLINE' ? 'active' : ''}" data-ffilter="ONLINE">🟢 ONLINE (${onlineTotal})</button>
+                    <button type="button" class="tab-filter-chip ${this.friendFilter === 'ROOM' ? 'active' : ''}" data-ffilter="ROOM">🎮 IN ROOM (${roomTotal})</button>
+                </div>
+                <input id="friends-roster-filter" class="friends-quick-input" type="text" maxlength="20" value="${this.esc(this.friendSearchQuery)}" placeholder="Filter roster..." autocomplete="off">
+            </div>
+            <div id="friends-roster-list" class="friends-list"></div>
+        `;
+
+        const listEl = document.getElementById('friends-roster-list');
+        if (!visible.length) {
+            listEl.innerHTML = `<div class="friends-empty">No friends match your filter right now.</div>`;
+        } else {
+            const joinable = visible.filter(f => f.coopRoomCode);
+            const onlineOnly = visible.filter(f => f.isOnline && !f.coopRoomCode);
+            const offlineOnly = visible.filter(f => !f.isOnline && !f.coopRoomCode);
+            const appendSection = (label, items) => {
+                if (!items.length) return;
+                if (visible.length > 1) {
+                    const hdr = document.createElement('div');
+                    hdr.className = 'friends-section-label';
+                    hdr.textContent = `${label} (${items.length})`;
+                    listEl.appendChild(hdr);
+                }
+                items.forEach((f) => {
+                    const card = FriendsCardRenderer.buildFriendCard(f, {
+                        isExpanded: this.expandedStatsUid === f.uid,
+                        confirmRemove: this.confirmRemoveUid === f.uid
+                    });
+                    listEl.appendChild(card);
+                });
+            };
+            appendSection('🎮 ACTIVE CO-OP ROOMS', joinable);
+            appendSection('🟢 ONLINE', onlineOnly);
+            appendSection('⚫ OFFLINE', offlineOnly);
+            FriendsCardRenderer.applySocialCosmetics(listEl);
+        }
+
+        body.querySelectorAll('[data-ffilter]').forEach((chip) => {
+            chip.addEventListener('click', () => {
+                this.friendFilter = chip.getAttribute('data-ffilter') || 'ALL';
+                if (window.soundEngine) window.soundEngine.playSelect();
+                this._renderFriendsTab(body, enriched);
+            });
+        });
+
+        const quickInput = document.getElementById('friends-roster-filter');
+        if (quickInput) {
+            quickInput.addEventListener('input', () => {
+                this.friendSearchQuery = quickInput.value || '';
+                const pos = quickInput.selectionStart;
+                this._renderFriendsTab(body, enriched);
+                const nextInput = document.getElementById('friends-roster-filter');
+                if (nextInput) { nextInput.focus(); nextInput.setSelectionRange(pos, pos); }
+            });
+        }
+
+        listEl.querySelectorAll('button[data-action]').forEach((btn) => {
+            btn.addEventListener('click', (e) => { e.stopPropagation(); this._handleFriendCardAction(btn, enriched); });
+        });
+    }
+
+    async _handleFriendCardAction(btn, enriched = []) {
         const action = btn.dataset.action;
         const uid = btn.dataset.uid;
         if (action === 'stats') {
             this.expandedStatsUid = (this.expandedStatsUid === uid) ? null : uid;
+            if (window.soundEngine) window.soundEngine.playSelect();
             this.render();
-        } else if (action === 'remove') {
-            if (this.confirmRemoveUid !== uid) {
-                this.confirmRemoveUid = uid;
-                this.render();
-                return;
+        } else if (action === 'profile') {
+            const target = enriched.find(f => f.uid === uid);
+            if (target && typeof PublicProfileModal !== 'undefined') {
+                if (window.soundEngine) window.soundEngine.playSelect();
+                PublicProfileModal.open(target);
             }
+        } else if (action === 'remove') {
+            if (this.confirmRemoveUid !== uid) { this.confirmRemoveUid = uid; this.render(); return; }
             this.confirmRemoveUid = null;
             await this.service.removeOrDeclineFriendship(btn.dataset.rel);
             this.setFeedback('Friend removed.');
@@ -354,75 +374,41 @@ class FriendsModal {
         const wrap = document.createElement('div');
         wrap.className = 'friends-list';
 
-        invites.forEach((inv) => {
-            const card = document.createElement('div');
-            card.className = 'friend-card invite-card';
-            card.innerHTML = `
-                <div class="friend-left">
-                    <div class="friend-avatar-wrap"><img class="friend-avatar" src="${this.getHeroAvatar(inv.fromHero)}"></div>
-                    <div class="friend-info">
-                        <div class="friend-name-line">
-                            <span class="friend-name">${typeof UiIcons !== 'undefined' ? UiIcons.i('handshake', 'ui-icon-sm') : '🤝'} ${this.esc(inv.fromName)}</span>
-                            <span class="friend-tag-chip">${this.esc(inv.fromTag || '')}</span>
-                        </div>
-                        <div class="friend-sub" style="color:#fde047;">Co-op Invite · Mode: ${this.esc((inv.gameMode || 'story').toUpperCase())} · Room ${this.esc(inv.roomCode)}</div>
-                    </div>
-                </div>
-                <div class="friend-actions">
-                    <button class="friend-btn friend-btn-join" data-join="${this.esc(inv.roomCode)}" data-inv="${this.esc(inv.id)}">${typeof UiIcons !== 'undefined' ? UiIcons.i('rocket', 'ui-icon-sm') : '🚀'} JOIN</button>
-                    <button class="friend-btn friend-btn-muted" data-dismiss="${this.esc(inv.id)}">✕</button>
-                </div>
-            `;
-            wrap.appendChild(card);
-        });
+        if (invites.length) {
+            const h = document.createElement('div');
+            h.className = 'friends-section-label is-gold';
+            h.textContent = `🎮 LIVE CO-OP INVITES (${invites.length})`;
+            wrap.appendChild(h);
+            invites.forEach(inv => wrap.appendChild(FriendsCardRenderer.buildInviteCard(inv)));
+        }
 
-        inc.forEach((req) => {
-            const card = document.createElement('div');
-            card.className = 'friend-card';
-            card.innerHTML = `
-                <div class="friend-left">
-                    <div class="friend-avatar-wrap"><img class="friend-avatar" src="${this.getHeroAvatar(req.profile.hero)}"></div>
-                    <div class="friend-info">
-                        <div class="friend-name-line">
-                            <span class="friend-name">${this.esc(req.profile.name)}</span>
-                            <span class="friend-tag-chip">${this.esc(req.profile.tag)}</span>
-                            <span class="friend-lvl-chip">LVL ${req.profile.level}</span>
-                        </div>
-                        <div class="friend-sub">Wants to add you as a friend</div>
-                    </div>
-                </div>
-                <div class="friend-actions">
-                    <button class="friend-btn friend-btn-accept" data-accept="${this.esc(req.id)}">✓ ACCEPT</button>
-                    <button class="friend-btn friend-btn-danger" data-decline="${this.esc(req.id)}">✕</button>
-                </div>
-            `;
-            wrap.appendChild(card);
-        });
+        if (inc.length) {
+            const row = document.createElement('div');
+            row.className = 'friends-section-row';
+            row.innerHTML = `<span class="friends-section-label">📩 INCOMING FRIEND REQUESTS (${inc.length})</span>${inc.length > 1 ? '<button type="button" id="friends-accept-all-btn" class="friend-btn friend-btn-accept">✓ ACCEPT ALL</button>' : ''}`;
+            wrap.appendChild(row);
+            inc.forEach(req => wrap.appendChild(FriendsCardRenderer.buildIncomingReqCard(req)));
+        }
 
-        out.forEach((req) => {
-            const card = document.createElement('div');
-            card.className = 'friend-card';
-            card.innerHTML = `
-                <div class="friend-left">
-                    <div class="friend-avatar-wrap"><img class="friend-avatar" src="${this.getHeroAvatar(req.profile.hero)}"></div>
-                    <div class="friend-info">
-                        <div class="friend-name-line">
-                            <span class="friend-name">${this.esc(req.profile.name)}</span>
-                            <span class="friend-tag-chip">${this.esc(req.profile.tag)}</span>
-                        </div>
-                        <div class="friend-sub">${typeof UiIcons !== 'undefined' ? UiIcons.i('hourglass', 'ui-icon-sm') : '⏳'} Request sent · waiting reply</div>
-                    </div>
-                </div>
-                <div class="friend-actions">
-                    <button class="friend-btn friend-btn-muted" data-decline="${this.esc(req.id)}">CANCEL</button>
-                </div>
-            `;
-            wrap.appendChild(card);
-        });
+        if (out.length) {
+            const h = document.createElement('div');
+            h.className = 'friends-section-label';
+            h.textContent = `📤 SENT REQUESTS (${out.length})`;
+            wrap.appendChild(h);
+            out.forEach(req => wrap.appendChild(FriendsCardRenderer.buildOutgoingReqCard(req)));
+        }
 
         body.innerHTML = '';
         body.appendChild(wrap);
 
+        const acceptAll = document.getElementById('friends-accept-all-btn');
+        if (acceptAll) {
+            acceptAll.addEventListener('click', async () => {
+                acceptAll.disabled = true;
+                for (const req of inc) await this.service.acceptFriendRequest(req.id);
+                this.setFeedback(`Accepted ${inc.length} friend requests!`);
+            });
+        }
         wrap.querySelectorAll('[data-accept]').forEach(b => b.addEventListener('click', () => this.service.acceptFriendRequest(b.dataset.accept)));
         wrap.querySelectorAll('[data-decline]').forEach(b => b.addEventListener('click', () => this.service.removeOrDeclineFriendship(b.dataset.decline)));
         wrap.querySelectorAll('[data-dismiss]').forEach(b => b.addEventListener('click', () => this.service.dismissInvite(b.dataset.dismiss)));
@@ -433,7 +419,15 @@ class FriendsModal {
     }
 
     _renderAddTab(body) {
-        body.innerHTML = `<div class="friends-search-bar"><input id="friends-search-input" class="friends-search-input" type="text" maxlength="24" value="${this.esc(this.lastQuery)}" placeholder="Enter Player Name or #OnlineID (e.g. #K8M4P2)..." autocomplete="off"><button id="friends-search-btn" class="friends-search-btn">${typeof UiIcons !== 'undefined' ? UiIcons.i('search', 'ui-icon-sm') : '🔍'} FIND</button></div><div id="friends-search-results" class="friends-list"></div>`;
+        const searchIco = typeof UiIcons !== 'undefined' ? UiIcons.i('search', 'ui-icon-sm') : '🔍';
+        body.innerHTML = `
+            <div class="friends-search-bar">
+                <input id="friends-search-input" class="friends-search-input" type="text" maxlength="24" value="${this.esc(this.lastQuery)}" placeholder="Search Hero Name or #OnlineID (e.g. #K8M4P2)..." autocomplete="off">
+                <button id="friends-search-btn" class="friends-search-btn">${searchIco} FIND</button>
+            </div>
+            <div class="friends-discover-hint">💡 Tip: Tap any player card to inspect their Showcase Coins, Career Stats &amp; Banner!</div>
+            <div id="friends-search-results" class="friends-list"></div>
+        `;
 
         const input = document.getElementById('friends-search-input');
         const btn = document.getElementById('friends-search-btn');
@@ -445,10 +439,7 @@ class FriendsModal {
             this.hasSearched = Boolean(q);
             resultsEl.innerHTML = `<div class="friends-empty">Searching players...</div>`;
             const res = q ? await this.service.searchPlayers(q) : await this.service.fetchDiscoverablePlayers();
-            if (!res.ok) {
-                resultsEl.innerHTML = `<div class="friends-empty" style="color:#fca5a5;">${this.esc(res.error)}</div>`;
-                return;
-            }
+            if (!res.ok) { resultsEl.innerHTML = `<div class="friends-empty" style="color:#fca5a5;">${this.esc(res.error)}</div>`; return; }
             this.searchResults = res.results;
             this._paintSearchResults(resultsEl);
         };
@@ -471,37 +462,15 @@ class FriendsModal {
     _paintSearchResults(container) {
         if (!this.searchResults.length) {
             container.innerHTML = this.hasSearched
-                ? `<div class="friends-empty">No players found matching "<b>${this.esc(this.lastQuery)}</b>".<br>Make sure they logged in online and check their exact Name or <b>#OnlineID</b>!</div>`
-                : `<div class="friends-empty">No other active players found yet.<br>Search by your friend's exact <b>#OnlineID</b> or <b>Hero Name</b>!</div>`;
+                ? `<div class="friends-empty">No players found matching "<b>${this.esc(this.lastQuery)}</b>".<br>Check their exact Name or <b>#OnlineID</b>!</div>`
+                : `<div class="friends-empty">No recent active players right now.<br>Search by your friend's exact <b>#OnlineID</b> or <b>Hero Name</b>!</div>`;
             return;
         }
-        container.innerHTML = '';
+        container.innerHTML = `<div class="friends-section-label">${this.hasSearched ? '🔎 SEARCH RESULTS' : '🌐 RECENT ACTIVE PLAYERS'} (${this.searchResults.length})</div>`;
         this.searchResults.forEach((u) => {
-            const rel = this.service.getRelationState(u.uid);
-            const card = document.createElement('div');
-            card.className = 'friend-card';
-
-            let actionHtml = `<button class="friend-btn friend-btn-accept" data-add-uid="${this.esc(u.uid)}">+ ADD FRIEND</button>`;
-            if (rel.state === 'accepted') actionHtml = `<button class="friend-btn friend-btn-muted" disabled>✓ FRIENDS</button>`;
-            else if (rel.state === 'pending_outgoing') actionHtml = `<button class="friend-btn friend-btn-muted" disabled>${typeof UiIcons !== 'undefined' ? UiIcons.i('hourglass', 'ui-icon-sm') : '⏳'} SENT</button>`;
-            else if (rel.state === 'pending_incoming') actionHtml = `<button class="friend-btn friend-btn-accept" data-accept-id="${this.esc(rel.id)}">✓ ACCEPT</button>`;
-
-            card.innerHTML = `
-                <div class="friend-left">
-                    <div class="friend-avatar-wrap">
-                        <img class="friend-avatar" src="${this.getHeroAvatar(u.hero)}" alt="Hero">
-                        <span class="friend-presence-dot ${u.isOnline ? 'online' : ''}"></span>
-                    </div>
-                    <div class="friend-info">
-                        <div class="friend-name-line"><span class="friend-name">${this.esc(u.name)}</span><span class="friend-tag-chip">${this.esc(u.tag)}</span><span class="friend-lvl-chip">LVL ${u.level}</span></div>
-                        <div class="friend-sub">${typeof UiIcons !== 'undefined' ? UiIcons.i(u.isOnline ? 'orb_green' : 'orb_dark', 'ui-icon-sm') + (u.isOnline ? ' Online' : ' Offline') : (u.isOnline ? '🟢 Online' : '⚫ Offline')} · High Score ${u.highScore.toLocaleString()}</div>
-                    </div>
-                </div>
-                <div class="friend-actions">${actionHtml}</div>
-            `;
-            if (typeof ProfileCosmeticsUI !== 'undefined') ProfileCosmeticsUI.decorateSocialCard(card, u);
-            container.appendChild(card);
+            container.appendChild(FriendsCardRenderer.buildSearchResultCard(u, this.service.getRelationState(u.uid)));
         });
+        FriendsCardRenderer.applySocialCosmetics(container);
 
         container.querySelectorAll('[data-add-uid]').forEach((btn) => {
             btn.addEventListener('click', async () => {
@@ -512,7 +481,6 @@ class FriendsModal {
                 this._paintSearchResults(container);
             });
         });
-
         container.querySelectorAll('[data-accept-id]').forEach((btn) => {
             btn.addEventListener('click', async () => {
                 btn.disabled = true;
@@ -526,9 +494,7 @@ class FriendsModal {
     async inviteFriendToCoop(friendUid, friendName) {
         if (!window.networkManager) return;
         this.hide();
-        if (!window.coopLobbyModal && typeof CoopLobbyModal !== 'undefined') {
-            window.coopLobbyModal = new CoopLobbyModal();
-        }
+        if (!window.coopLobbyModal && typeof CoopLobbyModal !== 'undefined') window.coopLobbyModal = new CoopLobbyModal();
         if (window.coopLobbyModal) {
             window.coopLobbyModal.activeTab = 'host';
             window.coopLobbyModal.show();
@@ -537,7 +503,10 @@ class FriendsModal {
             if (code) {
                 await this.service.sendCoopInvite(friendUid, code, mode);
                 const statusEl = document.getElementById('coop-host-status');
-                if (statusEl) { if (typeof UiIcons !== 'undefined') UiIcons.setRichText(statusEl, `📨 Invite sent to ${friendName}! Waiting to connect...`, 'ui-icon-sm'); else statusEl.textContent = `📨 Invite sent to ${friendName}! Waiting to connect...`; }
+                if (statusEl) {
+                    if (typeof UiIcons !== 'undefined') UiIcons.setRichText(statusEl, `📨 Invite sent to ${friendName}! Waiting to connect...`, 'ui-icon-sm');
+                    else statusEl.textContent = `📨 Invite sent to ${friendName}! Waiting to connect...`;
+                }
             }
         }
     }
@@ -546,9 +515,7 @@ class FriendsModal {
         if (!roomCode) return;
         this.hide();
         if (this.toastEl) this.toastEl.classList.add('hidden');
-        if (!window.coopLobbyModal && typeof CoopLobbyModal !== 'undefined') {
-            window.coopLobbyModal = new CoopLobbyModal();
-        }
+        if (!window.coopLobbyModal && typeof CoopLobbyModal !== 'undefined') window.coopLobbyModal = new CoopLobbyModal();
         if (window.coopLobbyModal) {
             window.coopLobbyModal.activeTab = 'join';
             window.coopLobbyModal.show();
@@ -563,12 +530,8 @@ class FriendsModal {
 
     showInviteToast(invite) {
         if (!this.toastEl || !invite) return;
-        if (window.gameInstance && window.gameInstance.state === 'PLAYING') return; // Wait quietly until back at menu/requests badge
-        this.toastEl.innerHTML = `
-            <span style="font-size:14px;font-weight:700;">${typeof UiIcons !== 'undefined' ? UiIcons.i('handshake', 'ui-icon-sm') : '🤝'} <b>${this.esc(invite.fromName)}</b> invited you to <b>${this.esc((invite.gameMode || 'story').toUpperCase())}</b> Co-op!</span>
-            <button id="toast-join-coop-btn" class="friend-btn friend-btn-join">${typeof UiIcons !== 'undefined' ? UiIcons.i('rocket', 'ui-icon-sm') : '🚀'} JOIN</button>
-            <button id="toast-dismiss-coop-btn" class="friend-btn friend-btn-muted">✕</button>
-        `;
+        if (window.gameInstance && window.gameInstance.state === 'PLAYING') return;
+        this.toastEl.innerHTML = typeof FriendsCardRenderer !== 'undefined' ? FriendsCardRenderer.buildInviteToastHtml(invite) : '';
         this.toastEl.classList.remove('hidden');
 
         document.getElementById('toast-join-coop-btn').onclick = () => {
@@ -582,10 +545,5 @@ class FriendsModal {
     }
 }
 
-if (typeof window !== 'undefined') {
-    window.FriendsModal = FriendsModal;
-}
-if (typeof module !== 'undefined' && module.exports) {
-    module.exports = { FriendsModal };
-}
-
+if (typeof window !== 'undefined') window.FriendsModal = FriendsModal;
+if (typeof module !== 'undefined' && module.exports) module.exports = { FriendsModal };

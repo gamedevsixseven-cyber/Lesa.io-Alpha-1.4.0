@@ -9,7 +9,9 @@ const ENDLESS_DEBUT_BANNERS = {
     6: { label: '🎯 NEW ENEMY: BOUZOUKI SNIPER!', color: '#6c5ce7' },
     12: { label: '🛡️ NEW ENEMY: KAFENEIO TANK!', color: '#e67e22' },
     18: { label: '🔥 NEW ENEMY: OUZO BOMBER!', color: '#00d2d3' },
-    26: { label: '⚡ NEW ENEMY: DIMOTIKI ENFORCER!', color: '#fed330' }
+    26: { label: '⚡ NEW ENEMY: DIMOTIKI ENFORCER!', color: '#fed330' },
+    32: { label: '💚 ENDGAME THREAT: BIO-ALCHEMIST!', color: '#10ac84' },
+    36: { label: '🤖 HELIOS LEGION: DRONES & TROOPERS!', color: '#cd6133' }
 };
 
 const ENDLESS_SPAWN_POOL = [
@@ -26,7 +28,16 @@ const ENDLESS_SPAWN_POOL = [
     },
     { type: 'kafeneio_tank', minWave: 12, weight: 0.80, getCtor: () => (typeof KafeneioTank !== 'undefined' ? KafeneioTank : null) },
     { type: 'ouzo_bomber', minWave: 18, weight: 0.85, getCtor: () => (typeof OuzoBomber !== 'undefined' ? OuzoBomber : null) },
-    { type: 'dimotiki_enforcer', minWave: 26, weight: 0.85, getCtor: () => (typeof DimotikiEnforcer !== 'undefined' ? DimotikiEnforcer : null) }
+    { type: 'dimotiki_enforcer', minWave: 26, weight: 0.85, getCtor: () => (typeof DimotikiEnforcer !== 'undefined' ? DimotikiEnforcer : null) },
+    {
+        type: 'bio_alchemist',
+        minWave: 32,
+        weight: 0.42,
+        maxCount: (total) => Math.min(3, Math.max(1, Math.round(total * 0.045))),
+        getCtor: () => (typeof BioAlchemist !== 'undefined' ? BioAlchemist : null)
+    },
+    { type: 'kolossos_trooper', minWave: 35, weight: 0.72, getCtor: () => (typeof KolossosTrooper !== 'undefined' ? KolossosTrooper : null) },
+    { type: 'kolossos_drone', minWave: 35, weight: 0.65, getCtor: () => (typeof KolossosDrone !== 'undefined' ? KolossosDrone : null) }
 ];
 
 class EndlessWaveDirector {
@@ -187,17 +198,20 @@ class EndlessWaveDirector {
             byRem[i % byRem.length].count += 1;
         }
 
-        // Guarantee minimum representation on debut waves (6, 12, 18, 26)
+        // Guarantee minimum representation on debut waves (6, 12, 18, 26, and W36 Helios Legion)
         if (ENDLESS_DEBUT_BANNERS[waveNum]) {
-            const debutSlot = slots.find((s) => s.minWave === waveNum);
+            const debutSlots = slots.filter((s) => (waveNum === 36 ? s.minWave === 35 : s.minWave === waveNum));
             const minDebut = Math.min(3, enemyCount);
-            while (debutSlot && debutSlot.count < minDebut) {
-                const donors = slots
-                    .filter((s) => s !== debutSlot && s.count > 1)
-                    .sort((a, b) => b.count - a.count);
-                if (donors.length === 0) break;
-                donors[0].count -= 1;
-                debutSlot.count += 1;
+            for (const debutSlot of debutSlots) {
+                const capTarget = Math.min(minDebut, debutSlot.cap);
+                while (debutSlot.count < capTarget) {
+                    const donors = slots
+                        .filter((s) => s !== debutSlot && s.count > 1)
+                        .sort((a, b) => b.count - a.count);
+                    if (donors.length === 0) break;
+                    donors[0].count -= 1;
+                    debutSlot.count += 1;
+                }
             }
         }
 
@@ -224,6 +238,10 @@ class EndlessWaveDirector {
 
         const waveMult = 1.0 + (waveNum - 1) * 0.18;
         const encounter = EndlessWaveDirector.getBossConfig(waveNum) || EndlessWaveDirector.getMiniBossConfig(waveNum);
+
+        if (!encounter && typeof LilXasEvent !== 'undefined' && LilXasEvent.tryStartOnEndlessWave(waveManager, waveNum, player, enemies, effects)) {
+            return;
+        }
 
         if (encounter) {
             waveManager.waveTotalEnemies = 1;
@@ -256,8 +274,8 @@ class EndlessWaveDirector {
             return;
         }
 
-        // Progressive enemy count capped safely for 60fps late Endless runs
-        const enemyCount = Math.min(72, 4 + Math.floor(waveNum * 2.2));
+        // Progressive enemy count scaled up to 120 max enemies in late Endless waves
+        const enemyCount = Math.min(120, 4 + Math.floor(waveNum * 2.2));
         waveManager.waveTotalEnemies = enemyCount;
 
         const roster = EndlessWaveDirector.buildEndlessRoster(waveNum, enemyCount);
@@ -270,16 +288,8 @@ class EndlessWaveDirector {
             if (typeof Ctor === 'function') enemies.push(new Ctor(x, y, waveMult));
         }
 
-        const debut = ENDLESS_DEBUT_BANNERS[waveNum];
-        if (debut) {
-            waveManager.showWaveAnnouncement(`ENDLESS ${waveNum} • ${debut.label}`, debut.color, 220);
-            if (effects) effects.addComicSplash(player.x, player.y - 60, debut.label, debut.color);
-            const ui = (typeof window !== 'undefined' && window.gameInstance) ? window.gameInstance.ui : null;
-            if (ui && typeof ui.addKillfeed === 'function') ui.addKillfeed(debut.label);
-        } else {
-            waveManager.showWaveAnnouncement(`ENDLESS ${waveNum}`, '#fed330', 160);
-            if (effects) effects.addComicSplash(player.x, player.y - 50, `ENDLESS ${waveNum}!`);
-        }
+        waveManager.showWaveAnnouncement(`ENDLESS ${waveNum}`, '#fed330', 160);
+        if (effects) effects.addComicSplash(player.x, player.y - 50, `ENDLESS ${waveNum}!`);
     }
 
     static onEndlessWaveCleared(waveManager, game) {
@@ -323,6 +333,7 @@ class EndlessWaveDirector {
             kafeneio_tank: typeof KafeneioTank !== 'undefined' ? KafeneioTank : null,
             ouzo_bomber: typeof OuzoBomber !== 'undefined' ? OuzoBomber : null,
             dimotiki_enforcer: typeof DimotikiEnforcer !== 'undefined' ? DimotikiEnforcer : null,
+            bio_alchemist: typeof BioAlchemist !== 'undefined' ? BioAlchemist : null,
             souvlaki_brawler: typeof SouvlakiBrawler !== 'undefined' ? SouvlakiBrawler : null,
             traffic_warden: typeof TrafficWarden !== 'undefined' ? TrafficWarden : null,
             butcher_goliath: typeof ButcherGoliath !== 'undefined' ? ButcherGoliath : null,
@@ -332,7 +343,9 @@ class EndlessWaveDirector {
             dimarchos_boss: typeof DimarchosBoss !== 'undefined' ? DimarchosBoss : null,
             mecha_kolossos: typeof MechaKolossos !== 'undefined' ? MechaKolossos : null,
             kolossos_drone: typeof KolossosDrone !== 'undefined' ? KolossosDrone : null,
-            kolossos_trooper: typeof KolossosTrooper !== 'undefined' ? KolossosTrooper : null
+            kolossos_trooper: typeof KolossosTrooper !== 'undefined' ? KolossosTrooper : null,
+            lil_xas: typeof LilXasBoss !== 'undefined' ? LilXasBoss : null,
+            lil_xas_speaker: typeof LilXasSpeaker !== 'undefined' ? LilXasSpeaker : null
         };
         const Ctor = map[type];
         return Ctor ? new Ctor(x, y, waveMult) : null;
@@ -404,8 +417,10 @@ class EndlessWaveDirector {
             kafeneio_tank: { score: 360, msg: `${heroName} cracked Kafeneio Tank! 🛡️`, starChance: 0.35 },
             ouzo_bomber: { score: 320, msg: `${heroName} extinguished Ouzo Bomber! 🔥`, starChance: 0.35 },
             dimotiki_enforcer: { score: 440, msg: `${heroName} outgunned Dimotiki Enforcer! ⚡`, starChance: 0.45 },
+            bio_alchemist: { score: 520, msg: `${heroName} neutralized Bio-Alchemist! ☣️`, starChance: 0.50 },
             kolossos_drone: { score: 220, msg: `${heroName} shot down Kolossos Drone! 🤖`, starChance: 0.15 },
-            kolossos_trooper: { score: 420, msg: `${heroName} dismantled Helios Trooper! 🤖`, starChance: 0.25 }
+            kolossos_trooper: { score: 420, msg: `${heroName} dismantled Helios Trooper! 🤖`, starChance: 0.25 },
+            lil_xas_speaker: { score: 300, msg: `${heroName} smashed Lil Xas Concert Speaker! 🔇`, starChance: 0.25 }
         };
         const info = regularInfo[enemy.type];
         if (!info) return false;
@@ -441,7 +456,7 @@ class EndlessWaveDirector {
 
         const totalEnemies = Math.max(8, (wm && wm.waveTotalEnemies) ? wm.waveTotalEnemies : 12);
         const baseChance = Math.min(0.032, 0.36 / totalEnemies);
-        const eliteTypes = new Set(['kafeneio_tank', 'dimotiki_enforcer', 'psaltis']);
+        const eliteTypes = new Set(['kafeneio_tank', 'dimotiki_enforcer', 'psaltis', 'bio_alchemist']);
         const chance = eliteTypes.has(enemy.type) ? Math.min(0.055, baseChance * 1.6) : baseChance;
         if (Math.random() < chance) {
             if (wm) wm.waveChronoDrops = (wm.waveChronoDrops || 0) + 1;

@@ -91,6 +91,12 @@ class EndlessEnemyRenderer {
             DimotikiEnforcerRenderer.draw(ctx, e);
         }
     }
+
+    static drawBioAlchemist(ctx, e) {
+        if (typeof BioAlchemistRenderer !== 'undefined') {
+            BioAlchemistRenderer.draw(ctx, e);
+        }
+    }
 }
 
 if (typeof window !== 'undefined') {

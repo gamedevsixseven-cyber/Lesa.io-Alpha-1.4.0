@@ -11,6 +11,7 @@ class LeaderboardModal {
         this._rows = [];
         this._loading = false;
         this._error = '';
+        this._fetchSeq = 0;
     }
 
     _esc(str) {
@@ -129,21 +130,27 @@ class LeaderboardModal {
     }
 
     async refresh() {
+        const seq = ++this._fetchSeq;
         this._loading = true;
         this._error = '';
         this.render();
 
         const fs = window.friendService;
         const db = (fs && typeof fs.getDb === 'function') ? fs.getDb() : null;
+        if (db && fs && typeof fs.syncMyProfile === 'function') {
+            await Promise.race([
+                fs.syncMyProfile(true).catch(() => false),
+                new Promise((resolve) => setTimeout(resolve, 900))
+            ]);
+            if (seq !== this._fetchSeq) return;
+        }
+
         const byUid = new Map();
         const selfEntry = this._buildLocalEntry();
         byUid.set(selfEntry.uid, selfEntry);
 
         if (db) {
             try {
-                if (typeof fs.syncMyProfile === 'function') {
-                    fs.syncMyProfile(true).catch(() => {});
-                }
                 const queries = [
                     db.collection('players').orderBy('lbHighScore', 'desc').limit(30).get().catch(() => null),
                     db.collection('players').orderBy('lbEndlessWave', 'desc').limit(30).get().catch(() => null),
@@ -151,12 +158,23 @@ class LeaderboardModal {
                     db.collection('players').orderBy('lastSeenAt', 'desc').limit(35).get().catch(() => null)
                 ];
                 const snaps = await Promise.all(queries);
+                if (seq !== this._fetchSeq) return;
                 snaps.forEach((snap) => {
                     if (!snap || typeof snap.forEach !== 'function') return;
                     snap.forEach((doc) => {
                         const formatted = fs._formatPlayerDoc(doc.id, doc.data() || {});
                         if (formatted.uid === selfEntry.uid) {
-                            byUid.set(formatted.uid, { ...formatted, ...selfEntry, isLocalStub: false });
+                            byUid.set(formatted.uid, {
+                                ...formatted,
+                                ...selfEntry,
+                                level: Math.max(Number(formatted.level) || 1, Number(selfEntry.level) || 1),
+                                highScore: Math.max(Number(formatted.highScore) || 0, Number(selfEntry.highScore) || 0),
+                                maxWave: Math.max(Number(formatted.maxWave) || 1, Number(selfEntry.maxWave) || 1),
+                                endlessMaxWave: Math.max(Number(formatted.endlessMaxWave) || 0, Number(selfEntry.endlessMaxWave) || 0, Number(formatted.maxWave) || 1, Number(selfEntry.maxWave) || 1),
+                                olympusMaxFloor: Math.max(Number(formatted.olympusMaxFloor) || 0, Number(selfEntry.olympusMaxFloor) || 0),
+                                totalKills: Math.max(Number(formatted.totalKills) || 0, Number(selfEntry.totalKills) || 0),
+                                isLocalStub: false
+                            });
                         } else {
                             byUid.set(formatted.uid, formatted);
                         }
@@ -167,19 +185,21 @@ class LeaderboardModal {
             }
         }
 
+        if (seq !== this._fetchSeq) return;
         this._rows = Array.from(byUid.values());
         this._loading = false;
         this.render();
     }
 
     _getMetricValue(entry) {
+        if (!entry) return 0;
         if (this._activeTab === 'endless') {
-            return Math.max(Number(entry.endlessMaxWave || 0), Number(entry.maxWave || 0));
+            return Math.max(Number(entry.endlessMaxWave) || 0, Number(entry.maxWave) || 0, 1);
         }
         if (this._activeTab === 'kills') {
-            return Number(entry.totalKills || 0);
+            return Number(entry.totalKills) || 0;
         }
-        return Number(entry.highScore || 0);
+        return Number(entry.highScore) || 0;
     }
 
     _formatMetricLabel(entry) {
@@ -192,6 +212,11 @@ class LeaderboardModal {
     render() {
         const el = this._ensureMarkup();
         const box = el.querySelector('#lb-list-box');
+        const refreshBtn = el.querySelector('#lb-refresh-btn');
+        if (refreshBtn) {
+            refreshBtn.disabled = !!this._loading;
+            refreshBtn.textContent = this._loading ? '↻ SYNCING...' : '↻ REFRESH';
+        }
         if (!box) return;
 
         if (this._loading && this._rows.length === 0) {
@@ -200,7 +225,11 @@ class LeaderboardModal {
         }
 
         const sorted = [...this._rows]
-            .sort((a, b) => this._getMetricValue(b) - this._getMetricValue(a))
+            .sort((a, b) => (
+                (this._getMetricValue(b) - this._getMetricValue(a))
+                || ((Number(b.highScore) || 0) - (Number(a.highScore) || 0))
+                || ((Number(b.totalKills) || 0) - (Number(a.totalKills) || 0))
+            ))
             .slice(0, 25);
 
         if (sorted.length === 0) {

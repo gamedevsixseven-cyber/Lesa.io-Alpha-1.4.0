@@ -231,47 +231,55 @@ class CloudSaveService {
         }
     }
 
+    _animatePill(selector) {
+        const pill = document.querySelector(selector);
+        if (!pill) return;
+        pill.style.animation = 'none';
+        void pill.offsetWidth;
+        pill.style.animation = 'pillDonePop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+    }
+
+    _emitCloudCurrency(coins, gems, coinsDelta, gemsDelta) {
+        if (window.EventBus) {
+            window.EventBus.emit('currencyChanged', {
+                coins, gems, coinsDelta, gemsDelta,
+                oldCoins: coins - coinsDelta, oldGems: gems - gemsDelta
+            });
+        }
+    }
+
     applyCloudData(data) {
         if (!data) return;
-        if ((this._pendingCloudSaves || 0) > 0 && Date.now() - (this.lastLocalSaveTimestamp || 0) < 4000) {
-            return;
-        }
+        if ((this._pendingCloudSaves || 0) > 0 && Date.now() - (this.lastLocalSaveTimestamp || 0) < 4000) return;
         this.lastCloudData = data;
         const isInitialSync = !this.hasCompletedInitialSync;
         this.hasCompletedInitialSync = true;
         this.isSyncingFromCloud = true;
         let changed = false;
+        let _preferLocal = false;
         try {
+        if (isInitialSync && typeof SaveMigration !== 'undefined') {
+            _preferLocal = !!SaveMigration.reconcileCloudSnapshot(data, window.GameState, true).preferLocalCurrencies;
+        }
 
         // 1. Live Gems / Diamonds Sync
         const curGems = (window.GameState && typeof window.GameState.player.gems === 'number')
             ? window.GameState.player.gems
             : parseInt(localStorage.getItem('lesaio_gems') || '0', 10);
-
         const rawDiamonds = data.diamonds !== undefined ? data.diamonds : (data.player && data.player.diamonds !== undefined ? data.player.diamonds : undefined);
         const rawGems = data.gems !== undefined ? data.gems : (data.player && data.player.gems !== undefined ? data.player.gems : undefined);
-
         const numDiamonds = rawDiamonds !== undefined ? parseInt(rawDiamonds, 10) : undefined;
         const numGems = rawGems !== undefined ? parseInt(rawGems, 10) : undefined;
 
         let incomingGems = undefined;
-        if (this.lastSeenDiamonds === undefined && this.lastSeenGems === undefined) {
-            // First time loading from Firestore
-            if (numDiamonds !== undefined && !isNaN(numDiamonds)) {
-                incomingGems = numDiamonds;
-            } else if (numGems !== undefined && !isNaN(numGems)) {
-                incomingGems = numGems;
-            }
+        if (_preferLocal) {
+            if (!isNaN(curGems)) { this.lastSeenDiamonds = curGems; this.lastSeenGems = curGems; }
+        } else if (this.lastSeenDiamonds === undefined && this.lastSeenGems === undefined) {
+            if (numDiamonds !== undefined && !isNaN(numDiamonds)) incomingGems = numDiamonds;
+            else if (numGems !== undefined && !isNaN(numGems)) incomingGems = numGems;
         } else {
-            // Subsequent live snapshots: ONLY update gems if diamonds or gems specifically changed in the cloud!
-            const diamondsChanged = (numDiamonds !== undefined && !isNaN(numDiamonds) && numDiamonds !== this.lastSeenDiamonds);
-            const gemsChanged = (numGems !== undefined && !isNaN(numGems) && numGems !== this.lastSeenGems);
-
-            if (diamondsChanged) {
-                incomingGems = numDiamonds;
-            } else if (gemsChanged) {
-                incomingGems = numGems;
-            }
+            if (numDiamonds !== undefined && !isNaN(numDiamonds) && numDiamonds !== this.lastSeenDiamonds) incomingGems = numDiamonds;
+            else if (numGems !== undefined && !isNaN(numGems) && numGems !== this.lastSeenGems) incomingGems = numGems;
         }
 
         if (numDiamonds !== undefined && !isNaN(numDiamonds)) this.lastSeenDiamonds = numDiamonds;
@@ -279,46 +287,17 @@ class CloudSaveService {
 
         if (incomingGems !== undefined && !isNaN(incomingGems) && incomingGems !== curGems) {
             localStorage.setItem('lesaio_gems', incomingGems.toString());
-
-            if (window.GameState) {
-                window.GameState.player.gems = incomingGems;
-            }
-
-            // Immediately set text on screen so background tabs or suspended animations never stall it
+            if (window.GameState) window.GameState.player.gems = incomingGems;
             const gemEl = document.getElementById('menu-gem-text');
-            if (gemEl) {
-                gemEl.textContent = incomingGems.toLocaleString();
-            }
-
+            if (gemEl) gemEl.textContent = incomingGems.toLocaleString();
             const renameGemsEl = document.getElementById('rename-current-gems');
-            if (renameGemsEl) {
-                renameGemsEl.textContent = `Your Gems: 💎 ${incomingGems.toLocaleString()}`;
-            }
-
-            const gemPill = document.querySelector('.gem-pill');
-            if (gemPill) {
-                gemPill.style.animation = 'none';
-                void gemPill.offsetWidth;
-                gemPill.style.animation = 'pillDonePop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
-            }
-
-            if (window.EventBus) {
-                window.EventBus.emit('currencyChanged', {
-                    coins: (window.GameState && window.GameState.player.coins) || 0,
-                    gems: incomingGems,
-                    coinsDelta: 0,
-                    gemsDelta: incomingGems - curGems,
-                    oldCoins: (window.GameState && window.GameState.player.coins) || 0,
-                    oldGems: curGems
-                });
-            }
-
+            if (renameGemsEl) renameGemsEl.textContent = `Your Gems: 💎 ${incomingGems.toLocaleString()}`;
+            this._animatePill('.gem-pill');
+            this._emitCloudCurrency((window.GameState && window.GameState.player.coins) || 0, incomingGems, 0, incomingGems - curGems);
             this.lastSeenDiamonds = incomingGems;
             this.lastSeenGems = incomingGems;
             this.lastSavedGems = incomingGems;
             changed = true;
-
-            // Reconcile diamonds & gems in Firestore
             this._reconcileDoc({ diamonds: incomingGems, gems: incomingGems, 'player.gems': incomingGems, 'player.diamonds': incomingGems });
         }
 
@@ -326,22 +305,20 @@ class CloudSaveService {
         const curCoins = (window.GameState && typeof window.GameState.player.coins === 'number')
             ? window.GameState.player.coins
             : parseInt(localStorage.getItem('lesaio_coins') || '0', 10);
-
         const rawGold = data.gold !== undefined ? data.gold : (data.player && data.player.gold !== undefined ? data.player.gold : undefined);
         const rawCoins = data.coins !== undefined ? data.coins : (data.player && data.player.coins !== undefined ? data.player.coins : undefined);
-
         const numGold = rawGold !== undefined ? parseInt(rawGold, 10) : undefined;
         const numCoins = rawCoins !== undefined ? parseInt(rawCoins, 10) : undefined;
 
         let incomingCoins = undefined;
-        if (this.lastSeenCoins === undefined && this.lastSeenGold === undefined) {
+        if (_preferLocal) {
+            if (!isNaN(curCoins)) { this.lastSeenCoins = curCoins; this.lastSeenGold = curCoins; }
+        } else if (this.lastSeenCoins === undefined && this.lastSeenGold === undefined) {
             if (numCoins !== undefined && !isNaN(numCoins)) incomingCoins = numCoins;
             else if (numGold !== undefined && !isNaN(numGold)) incomingCoins = numGold;
         } else {
-            const coinsChanged = (numCoins !== undefined && !isNaN(numCoins) && numCoins !== this.lastSeenCoins);
-            const goldChanged = (numGold !== undefined && !isNaN(numGold) && numGold !== this.lastSeenGold);
-            if (coinsChanged) incomingCoins = numCoins;
-            else if (goldChanged) incomingCoins = numGold;
+            if (numCoins !== undefined && !isNaN(numCoins) && numCoins !== this.lastSeenCoins) incomingCoins = numCoins;
+            else if (numGold !== undefined && !isNaN(numGold) && numGold !== this.lastSeenGold) incomingCoins = numGold;
         }
 
         if (numCoins !== undefined && !isNaN(numCoins)) this.lastSeenCoins = numCoins;
@@ -349,36 +326,15 @@ class CloudSaveService {
 
         if (incomingCoins !== undefined && !isNaN(incomingCoins) && incomingCoins !== curCoins) {
             localStorage.setItem('lesaio_coins', incomingCoins.toString());
-
             if (window.GameState) window.GameState.player.coins = incomingCoins;
-
             const coinEl = document.getElementById('menu-coin-text');
             if (coinEl) coinEl.textContent = incomingCoins.toLocaleString();
-
-            const coinPill = document.querySelector('.coin-pill');
-            if (coinPill) {
-                coinPill.style.animation = 'none';
-                void coinPill.offsetWidth;
-                coinPill.style.animation = 'pillDonePop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
-            }
-
-            if (window.EventBus) {
-                window.EventBus.emit('currencyChanged', {
-                    coins: incomingCoins,
-                    gems: (window.GameState && window.GameState.player.gems) || 0,
-                    coinsDelta: incomingCoins - curCoins,
-                    gemsDelta: 0,
-                    oldCoins: curCoins,
-                    oldGems: (window.GameState && window.GameState.player.gems) || 0
-                });
-            }
-
+            this._animatePill('.coin-pill');
+            this._emitCloudCurrency(incomingCoins, (window.GameState && window.GameState.player.gems) || 0, incomingCoins - curCoins, 0);
             this.lastSeenCoins = incomingCoins;
             this.lastSeenGold = incomingCoins;
             this.lastSavedCoins = incomingCoins;
             changed = true;
-
-            // Reconcile coins & gold in Firestore
             this._reconcileDoc({ coins: incomingCoins, gold: incomingCoins, 'player.coins': incomingCoins, 'player.gold': incomingCoins });
         }
 
@@ -391,8 +347,12 @@ class CloudSaveService {
         const numLevel = rawLevel !== undefined ? parseInt(rawLevel, 10) : undefined;
 
         let incomingLevel = undefined;
-        if (this.lastSeenLevel === undefined) {
-            if (numLevel !== undefined && !isNaN(numLevel)) incomingLevel = numLevel;
+        if (_preferLocal) {
+            if (!isNaN(curLevel)) this.lastSeenLevel = curLevel;
+        } else if (this.lastSeenLevel === undefined) {
+            if (numLevel !== undefined && !isNaN(numLevel)) {
+                incomingLevel = (isInitialSync && typeof SaveMigration !== 'undefined' && SaveMigration.hasEstablishedProgress()) ? Math.max(curLevel, numLevel) : numLevel;
+            }
         } else {
             const levelChanged = (numLevel !== undefined && !isNaN(numLevel) && numLevel !== this.lastSeenLevel);
             if (levelChanged) incomingLevel = numLevel;
@@ -433,8 +393,10 @@ class CloudSaveService {
         const numXp = rawXp !== undefined ? parseInt(rawXp, 10) : undefined;
 
         let incomingXp = undefined;
-        if (this.lastSeenXp === undefined) {
-            if (numXp !== undefined && !isNaN(numXp)) incomingXp = numXp;
+        if (_preferLocal) {
+            if (!isNaN(curXp)) this.lastSeenXp = curXp;
+        } else if (this.lastSeenXp === undefined) {
+            if (numXp !== undefined && !isNaN(numXp) && (!incomingLevel || incomingLevel >= curLevel)) incomingXp = numXp;
         } else {
             const xpChanged = (numXp !== undefined && !isNaN(numXp) && numXp !== this.lastSeenXp);
             if (xpChanged) incomingXp = numXp;
@@ -462,9 +424,14 @@ class CloudSaveService {
         // 5. Live Skill Levels Sync
         const rawSkills = (data.player && data.player.skillLevels) ? data.player.skillLevels : data.skillLevels;
         if (rawSkills && typeof rawSkills === 'object') {
+            const curSkills = (window.GameState && window.GameState.player && window.GameState.player.skillLevels) || {};
             const parsedSkills = {};
             for (const [k, v] of Object.entries(rawSkills)) {
-                parsedSkills[k] = parseInt(v, 10) || 1;
+                const n = parseInt(v, 10) || 1;
+                parsedSkills[k] = _preferLocal ? Math.max(curSkills[k] || 1, n) : n;
+            }
+            if (_preferLocal) {
+                for (const [k, v] of Object.entries(curSkills)) parsedSkills[k] = Math.max(parsedSkills[k] || 1, parseInt(v, 10) || 1);
             }
 
             const strSkills = JSON.stringify(parsedSkills);
@@ -495,6 +462,10 @@ class CloudSaveService {
         }
         } finally {
             this.isSyncingFromCloud = false;
+        }
+        if (_preferLocal && window.SaveSerializer && window.GameState) {
+            const p = window.SaveSerializer.serialize(window.GameState);
+            if (p) setTimeout(() => this.saveToCloud(p), 400);
         }
 
         // Real-time Developer Mail Inbox Delivery (Explicit mail objects only)
@@ -536,7 +507,7 @@ class CloudSaveService {
                 const unsubUid = docRef.onSnapshot((doc) => {
                     if (doc.exists) {
                         this.applyCloudData(doc.data());
-                    } else {
+                    } else if (!(doc.metadata && doc.metadata.fromCache)) {
                         this.seedNewPlayerDoc(user.uid);
                     }
                 }, (err) => console.warn('UID listener warning:', err));

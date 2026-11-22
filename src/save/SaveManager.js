@@ -14,23 +14,29 @@ class SaveManager {
 
     initEventListeners() {
         if (typeof window !== 'undefined' && window.EventBus) {
-            window.EventBus.on('currencyChanged', () => this.requestSave());
-            window.EventBus.on('heroSelected', () => this.requestSave());
-            window.EventBus.on('heroStyleChanged', () => this.requestSave());
-            window.EventBus.on('heroUnlocked', () => this.requestSave());
-            window.EventBus.on('accountXpChanged', () => this.requestSave());
-            window.EventBus.on('statsUpdated', () => this.requestSave());
-            window.EventBus.on('materialsUpdated', () => this.requestSave());
-            window.EventBus.on('gearUpgraded', () => this.requestSave());
-            window.EventBus.on('gearEvolved', () => this.requestSave());
-            window.EventBus.on('evolutionStoneCrafted', () => this.requestSave());
-            window.EventBus.on('weaponEvolved', () => this.requestSave());
-            window.EventBus.on('upgradesUpdated', () => this.requestSave());
-            window.EventBus.on('skillLevelsChanged', () => this.requestSave());
-            window.EventBus.on('cosmeticsUpdated', () => this.requestSave());
-            window.EventBus.on('battlePassUpdated', () => this.requestSave());
-            window.EventBus.on('heroSkinChanged', () => this.requestSave());
+            const events = [
+                'currencyChanged', 'heroSelected', 'heroStyleChanged', 'heroUnlocked',
+                'accountXpChanged', 'statsUpdated', 'materialsUpdated', 'gearUpgraded',
+                'gearEvolved', 'evolutionStoneCrafted', 'weaponEvolved', 'weaponUnlocked',
+                'skillUnlocked', 'upgradesUpdated', 'skillLevelsChanged', 'perkUnlocked',
+                'perkEquipped', 'perkUnequipped', 'cosmeticsUpdated', 'battlePassUpdated',
+                'heroSkinChanged', 'starBlessingUpdated', 'crestsUpdated', 'chestSlotsChanged'
+            ];
+            for (const ev of events) {
+                window.EventBus.on(ev, () => this.requestSave());
+            }
             window.EventBus.on('saveRequested', () => this.saveNow());
+        }
+
+        if (typeof window !== 'undefined') {
+            const flushHandler = () => this.flushLocal();
+            window.addEventListener('beforeunload', flushHandler);
+            window.addEventListener('pagehide', flushHandler);
+            if (typeof document !== 'undefined') {
+                document.addEventListener('visibilitychange', () => {
+                    if (document.visibilityState === 'hidden') this.flushLocal();
+                });
+            }
         }
     }
 
@@ -42,16 +48,52 @@ class SaveManager {
     }
 
     /**
+     * Write local master save + rolling backup synchronously without triggering cloud I/O.
+     */
+    saveLocalOnly() {
+        if (!this.gameState || typeof SaveSerializer === 'undefined') return null;
+        const serialized = SaveSerializer.serialize(this.gameState);
+        if (!serialized) return null;
+        try {
+            localStorage.setItem('lesaio_save_v2', JSON.stringify(serialized));
+            if (typeof SaveMigration !== 'undefined') {
+                SaveMigration.writeBackup(serialized);
+                SaveMigration.recordLocalMutation(serialized.timestamp || Date.now());
+            } else {
+                localStorage.setItem('lesaio_save_v2_backup', JSON.stringify(serialized));
+            }
+            this.lastSavedTimestamp = Date.now();
+            return serialized;
+        } catch (err) {
+            console.error('[SaveManager] Failed to persist local backup data:', err);
+            return null;
+        }
+    }
+
+    /**
+     * Flush any pending debounced save locally before tab close/reload/backgrounding.
+     */
+    flushLocal() {
+        if (typeof window !== 'undefined' && window._lesaioSuppressUnloadSave) return false;
+        if (this.saveDebounceTimer) {
+            clearTimeout(this.saveDebounceTimer);
+            this.saveDebounceTimer = null;
+        }
+        return !!this.saveLocalOnly();
+    }
+
+    /**
      * Request a debounced save operation
      * @param {number} delayMs 
      */
     requestSave(delayMs = 600) {
         if (typeof window !== 'undefined' && window.cloudSave && window.cloudSave.isSyncingFromCloud) {
-            if (this.gameState) {
-                const serialized = SaveSerializer.serialize(this.gameState);
-                if (serialized) localStorage.setItem('lesaio_save_v2', JSON.stringify(serialized));
-            }
+            this.saveLocalOnly();
             return;
+        }
+
+        if (typeof SaveMigration !== 'undefined') {
+            SaveMigration.recordLocalMutation();
         }
 
         if (this.saveDebounceTimer) {
@@ -74,14 +116,10 @@ class SaveManager {
 
         if (!this.gameState) return false;
 
-        const serialized = SaveSerializer.serialize(this.gameState);
+        const serialized = this.saveLocalOnly();
         if (!serialized) return false;
 
         try {
-            // Save master payload
-            localStorage.setItem('lesaio_save_v2', JSON.stringify(serialized));
-            this.lastSavedTimestamp = Date.now();
-
             // Notify cloud sync if available (skip if we are currently applying cloud data)
             if (typeof window !== 'undefined' && window.cloudSave && window.cloudSave.currentUser) {
                 if (window.cloudSave.isSyncingFromCloud) {
@@ -102,21 +140,49 @@ class SaveManager {
     }
 
     /**
-     * Load persisted data into GameState on startup
+     * Load persisted data into GameState on startup (falls back to rolling/pre-update backups)
      */
     load() {
-        if (!this.gameState) return false;
+        if (!this.gameState || typeof SaveSerializer === 'undefined') return false;
 
-        const raw = localStorage.getItem('lesaio_save_v2');
-        if (raw) {
-            try {
-                const parsed = JSON.parse(raw);
-                return SaveSerializer.deserialize(parsed, this.gameState);
-            } catch (e) {
-                console.warn('[SaveManager] Corrupt save payload found, falling back to legacy keys');
+        const candidates = [];
+        try {
+            const mainRaw = localStorage.getItem('lesaio_save_v2');
+            if (mainRaw) candidates.push(JSON.parse(mainRaw));
+        } catch (e) {
+            console.warn('[SaveManager] Corrupt primary save payload found, checking backups');
+        }
+        if (typeof SaveMigration !== 'undefined') {
+            const fallback = SaveMigration.getBestRecoveryPayload();
+            if (fallback) candidates.push(fallback);
+        }
+        for (const parsed of candidates) {
+            if (parsed && parsed.player && SaveSerializer.deserialize(parsed, this.gameState)) {
+                return true;
             }
         }
         return false;
+    }
+
+    /**
+     * Called right after UI subsystems initialize so established players always have
+     * an up-to-date master save + rolling backup capturing all subsystems cleanly.
+     */
+    initStartupSync() {
+        if (!this.gameState || typeof SaveSerializer === 'undefined') return false;
+        const serialized = SaveSerializer.serialize(this.gameState);
+        if (!serialized) return false;
+        try {
+            const hasSaved = !!localStorage.getItem('lesaio_save_v2');
+            const hasProg = (typeof SaveMigration !== 'undefined') && SaveMigration.hasEstablishedProgress();
+            if (hasSaved || hasProg) {
+                localStorage.setItem('lesaio_save_v2', JSON.stringify(serialized));
+                if (typeof SaveMigration !== 'undefined') SaveMigration.writeBackup(serialized);
+            }
+            return true;
+        } catch (_) {
+            return false;
+        }
     }
 }
 

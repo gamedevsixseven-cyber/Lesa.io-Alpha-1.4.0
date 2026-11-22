@@ -4,39 +4,60 @@
  */
 
 class GameState {
+    static _safeJson(key, fallback) {
+        try {
+            const raw = localStorage.getItem(key);
+            if (!raw || raw === 'undefined' || raw === 'null') return fallback;
+            const parsed = JSON.parse(raw);
+            return parsed !== null && parsed !== undefined ? parsed : fallback;
+        } catch (_) {
+            return fallback;
+        }
+    }
+
+    static _safeInt(key, fallback, min = null) {
+        try {
+            const raw = localStorage.getItem(key);
+            if (raw === null || raw === '') return fallback;
+            const n = parseInt(raw, 10);
+            if (!Number.isFinite(n)) return fallback;
+            return min !== null ? Math.max(min, n) : n;
+        } catch (_) {
+            return fallback;
+        }
+    }
+
     constructor() {
+        const sj = GameState._safeJson;
+        const si = GameState._safeInt;
         // Player Profile & Identity
         this.player = {
             name: localStorage.getItem('lesaio_player_name') || 'Psanas',
-            accountLevel: parseInt(localStorage.getItem('lesaio_account_level') || '1', 10),
-            accountXp: parseInt(localStorage.getItem('lesaio_account_xp') || '0', 10),
-            coins: parseInt(localStorage.getItem('lesaio_coins') || '1500', 10),
-            gems: parseInt(localStorage.getItem('lesaio_gems') || '50', 10),
+            accountLevel: si('lesaio_account_level', 1, 1),
+            accountXp: si('lesaio_account_xp', 0, 0),
+            coins: si('lesaio_coins', 1500, 0),
+            gems: si('lesaio_gems', 50, 0),
             selectedHero: localStorage.getItem('lesaio_selected_hero') || 'psanas',
             heroStyles: { psgiannhs: localStorage.getItem('lesaio_hero_style_psgiannhs') || 'jacket' },
-            unlockedHeroes: JSON.parse(localStorage.getItem('lesaio_unlocked_heroes') || '["psanas"]'),
+            unlockedHeroes: sj('lesaio_unlocked_heroes', ['psanas']),
             selectedSkill: localStorage.getItem('lesaio_selected_skill') || 'blade_rush',
-            unlockedSkills: JSON.parse(localStorage.getItem('lesaio_unlocked_skills') || '["blade_rush", "nerobalonaki"]'),
-            skillLevels: JSON.parse(localStorage.getItem('lesaio_skill_levels') || '{"blade_rush": 1, "nerobalonaki": 1}'),
+            unlockedSkills: sj('lesaio_unlocked_skills', ['blade_rush', 'nerobalonaki']),
+            skillLevels: sj('lesaio_skill_levels', { blade_rush: 1, nerobalonaki: 1 }),
             selectedWeapon: localStorage.getItem('lesaio_selected_weapon') || 'pea',
-            unlockedWeapons: JSON.parse(localStorage.getItem('lesaio_unlocked_weapons') || '["pea"]'),
-            upgrades: JSON.parse(localStorage.getItem('lesaio_upgrades') || '{"critChance": 0, "critDamage": 0, "maxHealth": 0, "goldBonus": 0}'),
-            unlockedPerks: JSON.parse(localStorage.getItem('lesaio_unlocked_perks') || '[]'),
-            equippedPerks: JSON.parse(localStorage.getItem('lesaio_equipped_perks') || '[null, null, null]'),
-            gearLevels: JSON.parse(localStorage.getItem('lesaio_gear_levels') || '{}'),
-            evolvedGear: JSON.parse(localStorage.getItem('lesaio_evolved_gear') || '[]'),
-            evolvedWeapons: JSON.parse(localStorage.getItem('lesaio_evolved_weapons') || '[]'),
-            evolutionStones: parseInt(localStorage.getItem('lesaio_evolution_stones') || '0', 10) || 0,
+            unlockedWeapons: sj('lesaio_unlocked_weapons', ['pea']),
+            upgrades: sj('lesaio_upgrades', { critChance: 0, critDamage: 0, maxHealth: 0, goldBonus: 0 }),
+            unlockedPerks: sj('lesaio_unlocked_perks', []),
+            equippedPerks: sj('lesaio_equipped_perks', [null, null, null]),
+            gearLevels: sj('lesaio_gear_levels', {}),
+            evolvedGear: sj('lesaio_evolved_gear', []),
+            evolvedWeapons: sj('lesaio_evolved_weapons', []),
+            evolutionStones: si('lesaio_evolution_stones', 0, 0),
             perkRanks: (() => {
-                try {
-                    const unlocked = JSON.parse(localStorage.getItem('lesaio_unlocked_perks') || '[]');
-                    const raw = JSON.parse(localStorage.getItem('lesaio_perk_ranks') || '{}');
-                    return (typeof PerkProgression !== 'undefined')
-                        ? PerkProgression.normalizePerkRanks(raw, unlocked)
-                        : raw;
-                } catch (e) {
-                    return {};
-                }
+                const unlocked = sj('lesaio_unlocked_perks', []);
+                const raw = sj('lesaio_perk_ranks', {});
+                return (typeof PerkProgression !== 'undefined')
+                    ? PerkProgression.normalizePerkRanks(raw, unlocked)
+                    : raw;
             })(),
             combatFeats: (typeof PerkProgression !== 'undefined')
                 ? PerkProgression.loadFeats()
@@ -46,29 +67,25 @@ class GameState {
                 : {
                     equippedBanner: localStorage.getItem('lesaio_equipped_banner') || 'banner_recruit',
                     equippedFrame: localStorage.getItem('lesaio_equipped_frame') || 'frame_rookie',
-                    displayedCoins: JSON.parse(localStorage.getItem('lesaio_displayed_coins') || '[]'),
-                    unlockedBanners: JSON.parse(localStorage.getItem('lesaio_unlocked_banners') || '["banner_recruit"]'),
-                    unlockedFrames: JSON.parse(localStorage.getItem('lesaio_unlocked_frames') || '["frame_rookie"]'),
-                    unlockedCoins: JSON.parse(localStorage.getItem('lesaio_unlocked_coins') || '[]')
+                    displayedCoins: sj('lesaio_displayed_coins', []),
+                    unlockedBanners: sj('lesaio_unlocked_banners', ['banner_recruit']),
+                    unlockedFrames: sj('lesaio_unlocked_frames', ['frame_rookie']),
+                    unlockedCoins: sj('lesaio_unlocked_coins', [])
                 },
             materials: (() => {
-                try {
-                    const invRaw = JSON.parse(localStorage.getItem('lesaio_inventory') || '{}');
-                    return (typeof MaterialRegistry !== 'undefined') ? MaterialRegistry.normalizeMap(invRaw.materials) : (invRaw.materials || {});
-                } catch (e) {
-                    return (typeof MaterialRegistry !== 'undefined') ? MaterialRegistry.createEmptyMap() : {};
-                }
+                const invRaw = sj('lesaio_inventory', {});
+                return (typeof MaterialRegistry !== 'undefined') ? MaterialRegistry.normalizeMap(invRaw.materials) : (invRaw.materials || {});
             })(),
             stats: {
-                totalKills: parseInt(localStorage.getItem('lesaio_total_kills') || '0', 10),
-                maxWave: parseInt(localStorage.getItem('lesaio_max_wave') || '1', 10),
-                highScore: parseInt(localStorage.getItem('lesaio_highscore') || '0', 10),
-                totalFatmirs: parseInt(localStorage.getItem('lesaio_total_fatmirs') || '0', 10),
-                totalCasillas: parseInt(localStorage.getItem('lesaio_total_casillas') || '0', 10),
-                totalSkarmogyftos: parseInt(localStorage.getItem('lesaio_total_skarmogyftos') || '0', 10),
-                matchesPlayed: parseInt(localStorage.getItem('lesaio_matches_played') || '0', 10),
-                totalTimeSeconds: parseInt(localStorage.getItem('lesaio_total_time_seconds') || '0', 10),
-                heroPlays: JSON.parse(localStorage.getItem('lesaio_hero_plays') || '{"psanas": 0, "psogas": 0, "petros": 0}')
+                totalKills: si('lesaio_total_kills', 0, 0),
+                maxWave: si('lesaio_max_wave', 1, 1),
+                highScore: si('lesaio_highscore', 0, 0),
+                totalFatmirs: si('lesaio_total_fatmirs', 0, 0),
+                totalCasillas: si('lesaio_total_casillas', 0, 0),
+                totalSkarmogyftos: si('lesaio_total_skarmogyftos', 0, 0),
+                matchesPlayed: si('lesaio_matches_played', 0, 0),
+                totalTimeSeconds: si('lesaio_total_time_seconds', 0, 0),
+                heroPlays: sj('lesaio_hero_plays', { psanas: 0, psogas: 0, petros: 0 })
             }
         };
 
@@ -126,6 +143,10 @@ class GameState {
         };
     }
 
+    _touchMutation() {
+        if (typeof SaveMigration !== 'undefined') SaveMigration.recordLocalMutation();
+    }
+
     /**
      * Update player currency with validation and emit event
      */
@@ -138,6 +159,7 @@ class GameState {
 
         localStorage.setItem('lesaio_coins', this.player.coins.toString());
         localStorage.setItem('lesaio_gems', this.player.gems.toString());
+        this._touchMutation();
 
         if (window.EventBus) {
             window.EventBus.emit('currencyChanged', {
@@ -163,6 +185,7 @@ class GameState {
 
         localStorage.setItem('lesaio_coins', this.player.coins.toString());
         localStorage.setItem('lesaio_gems', this.player.gems.toString());
+        this._touchMutation();
 
         if (window.EventBus) {
             window.EventBus.emit('currencyChanged', {
@@ -217,6 +240,7 @@ class GameState {
 
         this.player.unlockedHeroes.push(heroId);
         localStorage.setItem('lesaio_unlocked_heroes', JSON.stringify(this.player.unlockedHeroes));
+        this._touchMutation();
 
         if (window.EventBus) {
             window.EventBus.emit('heroUnlocked', { heroId });
@@ -383,6 +407,7 @@ class GameState {
 
         localStorage.setItem('lesaio_account_level', this.player.accountLevel.toString());
         localStorage.setItem('lesaio_account_xp', this.player.accountXp.toString());
+        this._touchMutation();
 
         // Check if player just reached Level 5 to unlock Hot Foot for free!
         if (leveledUp && this.player.accountLevel >= 5 && !this.player.unlockedPerks.includes('hot_foot')) {
@@ -486,6 +511,7 @@ class GameState {
         localStorage.setItem('lesaio_total_skarmogyftos', stats.totalSkarmogyftos.toString());
         localStorage.setItem('lesaio_matches_played', stats.matchesPlayed.toString());
         localStorage.setItem('lesaio_total_time_seconds', stats.totalTimeSeconds.toString());
+        this._touchMutation();
 
         if (window.EventBus) {
             window.EventBus.emit('statsUpdated', { stats });

@@ -22,14 +22,22 @@ class GearManager {
 
         if (typeof window !== 'undefined' && window.GameState && window.GameState.player) {
             if (!window.GameState.player.equippedGear) {
-                const saved = localStorage.getItem('lesaio_equipped_gear');
-                window.GameState.player.equippedGear = saved ? JSON.parse(saved) : defaultEquipment;
+                try {
+                    const saved = localStorage.getItem('lesaio_equipped_gear');
+                    window.GameState.player.equippedGear = saved ? JSON.parse(saved) : defaultEquipment;
+                } catch (_) {
+                    window.GameState.player.equippedGear = defaultEquipment;
+                }
             }
             return window.GameState.player.equippedGear;
         }
 
-        const raw = (typeof localStorage !== 'undefined') ? localStorage.getItem('lesaio_equipped_gear') : null;
-        return raw ? JSON.parse(raw) : defaultEquipment;
+        try {
+            const raw = (typeof localStorage !== 'undefined') ? localStorage.getItem('lesaio_equipped_gear') : null;
+            return raw ? JSON.parse(raw) : defaultEquipment;
+        } catch (_) {
+            return defaultEquipment;
+        }
     }
 
     static getEquipped(slot) {
@@ -41,14 +49,24 @@ class GearManager {
     static getUnlockedList() {
         if (typeof window !== 'undefined' && window.GameState && window.GameState.player) {
             if (!Array.isArray(window.GameState.player.unlockedGear)) {
-                const saved = localStorage.getItem('lesaio_unlocked_gear');
-                window.GameState.player.unlockedGear = saved ? JSON.parse(saved) : [];
+                try {
+                    const saved = localStorage.getItem('lesaio_unlocked_gear');
+                    const parsed = saved ? JSON.parse(saved) : [];
+                    window.GameState.player.unlockedGear = Array.isArray(parsed) ? parsed : [];
+                } catch (_) {
+                    window.GameState.player.unlockedGear = [];
+                }
             }
             return window.GameState.player.unlockedGear;
         }
 
-        const raw = (typeof localStorage !== 'undefined') ? localStorage.getItem('lesaio_unlocked_gear') : null;
-        return raw ? JSON.parse(raw) : [];
+        try {
+            const raw = (typeof localStorage !== 'undefined') ? localStorage.getItem('lesaio_unlocked_gear') : null;
+            const parsed = raw ? JSON.parse(raw) : [];
+            return Array.isArray(parsed) ? parsed : [];
+        } catch (_) {
+            return [];
+        }
     }
 
     static isUnlocked(itemId) {

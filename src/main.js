@@ -469,6 +469,7 @@ class UIController {
             window.soundEngine.stopBGM();
             window.soundEngine.startMenuBGM();
         }
+        if (typeof LilXasEvent !== 'undefined') LilXasEvent.reset();
 
         if (this.menuScreen) {
             this.menuScreen.classList.remove('hidden');
@@ -516,6 +517,10 @@ window.addEventListener('DOMContentLoaded', () => {
     window.gameInstance = game;
     window.uiController = ui;
 
+    if (window.SaveManager && typeof window.SaveManager.initStartupSync === 'function') {
+        window.SaveManager.initStartupSync();
+    }
+
     if (typeof CoopLobbyModal !== 'undefined') {
         window.coopLobbyModal = new CoopLobbyModal();
     }
@@ -555,8 +560,11 @@ window.addEventListener('DOMContentLoaded', () => {
         startLoading();
     }
 
-    // Ensure immediate disconnect message is transmitted if player closes or reloads the tab
+    // Ensure immediate disconnect message & pending local progress save on close/reload
     const handleTabUnload = () => {
+        if (window.SaveManager && typeof window.SaveManager.flushLocal === 'function') {
+            try { window.SaveManager.flushLocal(); } catch (e) {}
+        }
         if (window.gameInstance && window.gameInstance.coopSession) {
             try {
                 if (window.gameInstance.coopSession.isHost && typeof window.gameInstance.coopSession.abortMatch === 'function') {
