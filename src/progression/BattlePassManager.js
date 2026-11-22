@@ -10,7 +10,7 @@ class BattlePassManager {
     static XP_PER_TIER = 150;
     static MAX_TIER = 30;
     static SKIP_TIER_GEM_COST = 40;
-    static PASS_GEM_COST = 250;
+    static PASS_GEM_COST = 500;
 
     static TIERS = [
         {
