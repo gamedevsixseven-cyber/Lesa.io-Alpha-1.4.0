@@ -14,14 +14,6 @@ class AutoUpdater {
     static init() {
         if (typeof window === 'undefined' || !window.location || !window.location.protocol.startsWith('http')) return;
         this._registerSW();
-        this._captureBaseline();
-
-        document.addEventListener('visibilitychange', () => {
-            if (!document.hidden && document.visibilityState === 'visible') this.checkForUpdate();
-        });
-        window.addEventListener('pageshow', () => {
-            if (!document.hidden) this.checkForUpdate();
-        });
     }
 
     static _registerSW() {
@@ -36,19 +28,6 @@ class AutoUpdater {
         });
     }
 
-    static _readHeadSig(res) {
-        if (!res || !res.ok) return null;
-        return res.headers.get('etag') || res.headers.get('last-modified') || null;
-    }
-
-    static _captureBaseline() {
-        setTimeout(() => {
-            fetch('./index.html', { method: 'HEAD', cache: 'no-store' })
-                .then((res) => { this._baselineTag = this._readHeadSig(res); })
-                .catch(() => {});
-        }, 1800);
-    }
-
     static _canSafelyReload() {
         const g = window.gameInstance;
         if (g && (g.state === 'PLAYING' || g.state === 'PAUSED')) return false;
@@ -59,41 +38,11 @@ class AutoUpdater {
     }
 
     static checkForUpdate(force = false) {
-        if (this._reloading) return;
-        if (this._pendingReload && this._canSafelyReload()) {
-            this._applyUpdateReload();
-            return;
-        }
+        // Update SW in background for next launch; never auto-reload active tabs or menu returns.
         const now = Date.now();
         if (!force && now - this._lastCheckMs < 45000) return;
         this._lastCheckMs = now;
-
         if (this._swReg) { try { this._swReg.update(); } catch (_) {} }
-
-        fetch('./index.html', { method: 'HEAD', cache: 'no-store' })
-            .then((res) => {
-                const sig = this._readHeadSig(res);
-                if (!sig) return;
-                if (!this._baselineTag) { this._baselineTag = sig; return; }
-                if (sig !== this._baselineTag) {
-                    if (this._canSafelyReload()) this._applyUpdateReload();
-                    else this._pendingReload = true;
-                }
-            })
-            .catch(() => {});
-    }
-
-    static _applyUpdateReload() {
-        if (this._reloading) return;
-        this._reloading = true;
-        const apply = () => fetch('./index.html', { cache: 'reload' })
-            .catch(() => {})
-            .finally(() => window.location.reload());
-        if (typeof caches !== 'undefined' && typeof caches.keys === 'function') {
-            caches.keys().then((keys) => Promise.all(keys.map((k) => caches.delete(k)))).then(apply).catch(apply);
-        } else {
-            apply();
-        }
     }
 }
 
