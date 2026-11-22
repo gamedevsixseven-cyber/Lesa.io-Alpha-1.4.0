@@ -95,6 +95,11 @@ class ProfileManager {
             });
         }
 
+        const welcomeLoginBtn = document.getElementById('welcome-login-btn');
+        if (welcomeLoginBtn) {
+            welcomeLoginBtn.addEventListener('click', () => this.handleWelcomeLoginClick());
+        }
+
         const firstTimeInput = document.getElementById('initial-name-input');
         const firstErr = document.getElementById('initial-name-error-text');
         if (firstTimeInput) {
@@ -165,11 +170,39 @@ class ProfileManager {
 
     showFirstTimeNameModal() {
         if (this.firstTimeNameModal) {
+            const loginWrap = document.getElementById('welcome-login-wrap');
+            const sub = document.getElementById('welcome-name-subtitle');
+            const isLinked = localStorage.getItem('lesaio_google_linked') === 'true';
+            if (loginWrap) loginWrap.classList.toggle('hidden', isLinked);
+            if (sub && isLinked) {
+                const email = localStorage.getItem('lesaio_google_email') || 'your account';
+                sub.textContent = `Signed in (${email}). Choose your champion name to begin:`;
+            }
             this.firstTimeNameModal.classList.remove('hidden');
             const input = document.getElementById('initial-name-input');
             if (input) {
                 setTimeout(() => input.focus(), 50);
             }
+        }
+    }
+
+    async handleWelcomeLoginClick() {
+        if (this._submittingName) return;
+        const btn = document.getElementById('welcome-login-btn');
+        const label = btn ? btn.querySelector('span') : null;
+        const origText = label ? label.textContent : '';
+        this._submittingName = true;
+        if (btn) btn.disabled = true;
+        if (label) label.textContent = 'SIGNING IN...';
+        try {
+            if (window.soundEngine) window.soundEngine.playSelect();
+            if (this.ui && this.ui.settingsManager && typeof this.ui.settingsManager.handleGoogleSignIn === 'function') {
+                await this.ui.settingsManager.handleGoogleSignIn();
+            }
+        } finally {
+            this._submittingName = false;
+            if (btn) btn.disabled = false;
+            if (label) label.textContent = origText;
         }
     }
 

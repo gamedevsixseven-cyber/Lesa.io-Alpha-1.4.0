@@ -252,6 +252,7 @@ class SettingsManager {
                 const userDisplayName = res.user.displayName || res.user.email?.split('@')[0] || 'Player';
 
                 if (res.syncResult && res.syncResult.hasCloudData) {
+                    localStorage.setItem('lesaio_player_name_chosen', 'true');
                     const d = res.syncResult.details;
                     alert(`🎉 Cloud Account Connected!\n\nWelcome back, ${d.name || userDisplayName}!\n• Level: ${d.accountLevel}\n• Coins: 🪙 ${d.coins.toLocaleString()}\n• Gems: 💎 ${d.gems.toLocaleString()}\n• Heroes: ${d.heroesCount} unlocked\n• Gear: ${d.gearCount} items\n\nReloading game with your cloud save...`);
                 } else {
