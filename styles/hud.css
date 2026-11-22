@@ -318,3 +318,65 @@
     color: #1e272e;
     transform: translateY(-2px) scale(1.03);
 }
+
+/* Mobile Endless Wave Skipper Action Button */
+#mobile-controls-container #mobile-actions-zone {
+    width: 268px;
+}
+
+#mobile-warp-btn {
+    bottom: 24px;
+    right: 198px;
+    width: 56px;
+    height: 56px;
+    background: linear-gradient(135deg, #0f172a 0%, #0984e3 100%);
+    border-color: #00f5ff;
+}
+
+#mobile-controls-container.autofire-active #mobile-warp-btn {
+    bottom: 26px;
+    right: 200px;
+}
+
+#mobile-warp-btn .btn-warp-img-icon {
+    width: 25px;
+    height: 25px;
+    object-fit: contain;
+    pointer-events: none;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5));
+}
+
+#mobile-warp-btn .btn-label {
+    font-size: 7.5px;
+    letter-spacing: 0.3px;
+    margin-top: 1px;
+    white-space: nowrap;
+}
+
+.btn-cooldown-ring .warp-ring {
+    stroke: #00f5ff;
+    filter: drop-shadow(0 0 4px #00f5ff);
+}
+
+#mobile-warp-btn.is-ready {
+    background: linear-gradient(135deg, #0c2461 0%, #00a8ff 65%, #00f5ff 100%);
+    box-shadow: 0 4px 0 #1e272e, 0 0 14px rgba(0, 245, 255, 0.65);
+}
+
+#mobile-warp-btn.is-near-ready {
+    background: linear-gradient(135deg, #f59e0b 0%, #fed330 100%);
+    border-color: #111827;
+    color: #111827;
+    box-shadow: 0 4px 0 #111827, 0 0 18px rgba(254, 211, 48, 0.9);
+    animation: mobileWarpPulse 0.9s ease infinite;
+}
+
+#mobile-warp-btn.is-near-ready .warp-ring {
+    stroke: #fed330;
+    filter: drop-shadow(0 0 8px #fed330);
+}
+
+@keyframes mobileWarpPulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.07); }
+}

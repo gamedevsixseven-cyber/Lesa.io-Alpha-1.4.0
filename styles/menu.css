@@ -327,6 +327,7 @@
 }
 
 .bottom-square-btn {
+    position: relative;
     background: var(--comic-yellow);
     border: 3.5px solid var(--dark-outline);
     border-radius: 18px;
@@ -339,6 +340,27 @@
     box-shadow: var(--shadow-solid);
     cursor: pointer;
     transition: transform 0.1s ease;
+}
+
+.bottom-square-btn .badge-notify {
+    position: absolute;
+    top: -7px;
+    right: -7px;
+    z-index: 6;
+    font-family: 'Luckiest Guy', cursive;
+    font-weight: 900;
+    box-shadow: 0 2px 0 var(--dark-outline);
+    pointer-events: none;
+}
+
+#btn-friends.has-notif {
+    box-shadow: 0 0 0 2px #ff4757, var(--shadow-solid);
+    animation: friendBtnNotifyPulse 1.5s infinite;
+}
+
+@keyframes friendBtnNotifyPulse {
+    0%, 100% { filter: drop-shadow(0 0 0 rgba(255, 71, 87, 0)); }
+    50% { filter: drop-shadow(0 0 8px rgba(255, 71, 87, 0.85)); }
 }
 
 .bottom-square-btn:hover {

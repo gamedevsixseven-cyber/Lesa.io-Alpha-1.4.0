@@ -364,6 +364,32 @@ class LilXasAttacksFX {
             ctx.restore();
         }
     }
+
+    static serializeBossNet(b) {
+        if (!b) return null;
+        return {
+            sh: b.hasSpeakerShield ? 1 : 0,
+            en: b.enraged ? 1 : 0,
+            ly: Math.round(b.liftY || 0),
+            z: Array.isArray(b.zones) && b.zones.length ? b.zones.map(z => ({ x: Math.round(z.x), y: Math.round(z.y), r: Math.round(z.radius || 100), t: Math.round(z.timer), mt: Math.round(z.maxTimer), ic: z.icon || '🔊' })) : null,
+            lb: b.laserBeam ? { st: b.laserBeam.state, a: Number((b.laserBeam.angle || 0).toFixed(3)), w: Math.round(b.laserBeam.width || 34), l: Math.round(b.laserBeam.length || 980), t: Math.round(b.laserBeam.timer), mt: Math.round(b.laserBeam.maxTimer) } : null,
+            vw: Array.isArray(b.vortexWells) && b.vortexWells.length ? b.vortexWells.map(w => ({ x: Math.round(w.x), y: Math.round(w.y), r: Math.round(w.radius || 130), t: Math.round(w.timer), mt: Math.round(w.maxTimer) })) : null,
+            nr: Array.isArray(b.novaRings) && b.novaRings.length ? b.novaRings.map(n => ({ x: Math.round(n.x), y: Math.round(n.y), r: Math.round(n.radius || 260), t: Math.round(n.timer), mt: Math.round(n.maxTimer) })) : null,
+            ls: b.leapSlam ? { tx: Math.round(b.leapSlam.targetX), ty: Math.round(b.leapSlam.targetY) } : null
+        };
+    }
+
+    static applyBossNet(b, net) {
+        if (!b || !net) return;
+        b.hasSpeakerShield = !!net.sh;
+        b.enraged = !!net.en;
+        b.liftY = net.ly || 0;
+        b.zones = Array.isArray(net.z) ? net.z.map(z => ({ x: z.x, y: z.y, radius: z.r, timer: z.t, maxTimer: z.mt, icon: z.ic, color: '#e056fd', fillColor: 'rgba(224, 86, 253, 0.25)' })) : [];
+        b.laserBeam = net.lb ? { state: net.lb.st, angle: net.lb.a, width: net.lb.w, length: net.lb.l, timer: net.lb.t, maxTimer: net.lb.mt } : null;
+        b.vortexWells = Array.isArray(net.vw) ? net.vw.map(w => ({ x: w.x, y: w.y, radius: w.r, timer: w.t, maxTimer: w.mt })) : [];
+        b.novaRings = Array.isArray(net.nr) ? net.nr.map(n => ({ x: n.x, y: n.y, radius: n.r, timer: n.t, maxTimer: n.mt })) : [];
+        b.leapSlam = net.ls ? { targetX: net.ls.tx, targetY: net.ls.ty } : null;
+    }
 }
 
 if (typeof window !== 'undefined') {

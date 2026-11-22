@@ -89,8 +89,25 @@
     background: linear-gradient(135deg, #38bdf8 0%, #0284c7 100%); color: #ffffff;
     border-color: #000; box-shadow: 0 3px 0 #075985; text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.45);
 }
-.friends-tab-btn.has-pending { border-color: #facc15; color: #fde047; }
+.friends-tab-btn.has-pending {
+    border-color: #ef4444;
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.24), rgba(250, 204, 21, 0.2));
+    color: #fde047;
+    box-shadow: 0 0 12px rgba(239, 68, 68, 0.45);
+    animation: friendTabPulse 1.5s infinite;
+}
 .friends-tab-btn.active.has-pending { color: #ffffff; }
+@keyframes friendTabPulse {
+    0%, 100% { box-shadow: 0 0 6px rgba(239, 68, 68, 0.35); }
+    50% { box-shadow: 0 0 14px rgba(250, 204, 21, 0.75); }
+}
+
+.friends-pending-banner {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.22), rgba(250, 204, 21, 0.18));
+    border: 2px solid #facc15; border-radius: 11px; padding: 9px 12px;
+    color: #fef08a; font-family: 'Fredoka', 'Outfit', sans-serif; font-size: 0.88rem; font-weight: 800;
+}
 
 .friends-body { flex: 1 1 auto; min-height: 180px; overflow-y: auto; padding-right: 4px; touch-action: pan-y; -webkit-overflow-scrolling: touch; }
 .friends-body::-webkit-scrollbar { width: 7px; }
@@ -199,13 +216,21 @@
 }
 .friends-feedback.hidden { display: none; }
 
-/* --- FLOATING LIVE CO-OP INVITE TOAST --- */
-#coop-invite-toast {
+/* --- FLOATING LIVE CO-OP INVITE & FRIEND REQUEST TOASTS --- */
+#coop-invite-toast,
+#friend-req-toast {
     position: fixed; top: 14px; left: 50%; transform: translateX(-50%); z-index: 10050;
     display: flex; align-items: center; gap: 10px;
     background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); border: 3px solid #facc15;
     border-radius: 15px; padding: 9px 13px; color: #fff; font-family: 'Fredoka', 'Outfit', sans-serif;
     box-shadow: 0 12px 32px rgba(0, 0, 0, 0.68), 0 0 16px rgba(250, 204, 21, 0.3); max-width: 94vw;
+}
+#friend-req-toast {
+    border-color: #38bdf8;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.68), 0 0 16px rgba(56, 189, 248, 0.38);
+}
+#coop-invite-toast:not(.hidden) ~ #friend-req-toast {
+    top: 84px;
 }
 #coop-invite-toast.hidden { display: none !important; }
 .toast-inv-avatar { width: 38px; height: 38px; border-radius: 10px; border: 2px solid #facc15; object-fit: cover; flex-shrink: 0; }
@@ -231,4 +256,12 @@
     .friend-actions { justify-content: flex-end; }
     .friend-stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .friends-quick-input { width: 100%; }
+    .bottom-square-btn .badge-notify {
+        top: -6px;
+        right: -6px;
+        min-width: 18px;
+        height: 18px;
+        padding: 0 4px;
+        font-size: 0.68rem;
+    }
 }

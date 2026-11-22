@@ -205,7 +205,7 @@ class MenuController {
             friendsBtn.addEventListener('click', () => {
                 if (window.soundEngine) window.soundEngine.playSelect();
                 if (window.friendsModal) {
-                    window.friendsModal.show('friends');
+                    window.friendsModal.show();
                 } else {
                     this.ui.modalManager.showFeatureModal(
                         '👥 FRIENDS',

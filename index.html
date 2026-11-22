@@ -25,9 +25,9 @@
     </script>
     <link rel="stylesheet" href="styles/variables.css">
     <link rel="stylesheet" href="styles/animations.css">
-    <link rel="stylesheet" href="styles/menu.css">
+    <link rel="stylesheet" href="styles/menu.css?v=1.6.22">
     <link rel="stylesheet" href="styles/cards.css?v=1.6.9">
-    <link rel="stylesheet" href="styles/hud.css">
+    <link rel="stylesheet" href="styles/hud.css?v=1.6.22">
     <link rel="stylesheet" href="styles/ultimates.css?v=1.5.74">
     <link rel="stylesheet" href="styles/modals.css?v=1.5.8">
     <link rel="stylesheet" href="styles/roster.css?v=1.6.0">
@@ -49,14 +49,14 @@
     <link rel="stylesheet" href="styles/gamemode.css?v=1.5.0">
     <link rel="stylesheet" href="styles/coop.css?v=1.4.4">
     <link rel="stylesheet" href="styles/tribute.css?v=1.4.0">
-    <link rel="stylesheet" href="styles/friends.css?v=1.6.10">
+    <link rel="stylesheet" href="styles/friends.css?v=1.6.22">
     <link rel="stylesheet" href="styles/olympus-altar.css?v=1.5.13">
     <link rel="stylesheet" href="styles/olympus-victory.css?v=1.5.41">
     <link rel="stylesheet" href="styles/boss-rewards.css?v=1.5.73">
     <link rel="stylesheet" href="styles/cosmetics.css?v=1.5.49">
     <link rel="stylesheet" href="styles/cosmetics-fx.css?v=1.5.49">
     <link rel="stylesheet" href="styles/cosmetics-advanced.css?v=1.5.75">
-    <link rel="stylesheet" href="styles/battlepass.css?v=1.6.9">
+    <link rel="stylesheet" href="styles/battlepass.css?v=1.6.22">
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -453,6 +453,17 @@
                     <img id="mobile-ult-img" class="btn-ult-img-icon" src="assets/SkillsIcons/UltRageSkill.svg"
                         alt="Ultimate">
                     <span class="btn-label">ULT</span>
+                    <div class="mobile-btn-cooldown"></div>
+                </button>
+
+                <!-- Endless Wave Skipper Button -->
+                <button id="mobile-warp-btn" class="mobile-action-btn mobile-warp-btn hidden" aria-label="Skip Wave">
+                    <svg class="btn-cooldown-ring" viewBox="0 0 80 80">
+                        <circle class="ring-bg" cx="40" cy="40" r="36" fill="none" />
+                        <circle class="ring-progress warp-ring" cx="40" cy="40" r="36" fill="none" />
+                    </svg>
+                    <img class="btn-warp-img-icon" src="assets/SkillsIcons/ChronoHourglassSkill.svg" alt="Skip Wave">
+                    <span class="btn-label">0/3</span>
                     <div class="mobile-btn-cooldown"></div>
                 </button>
             </div>
@@ -3247,7 +3258,7 @@
     <script src="src/heroes/HeroArmorRenderer.js?v=1.6.7"></script>
     <script src="src/heroes/HeroStarBlessing.js?v=1.6.0"></script>
     <script src="src/heroes/HeroSkinRenderer.js?v=1.6.0"></script>
-    <script src="src/entities/HeroRenderer.js?v=1.6.8"></script>
+    <script src="src/entities/HeroRenderer.js?v=1.6.22"></script>
     <script src="src/skills/SeismicQuake.js?v=1.5.28"></script>
     <script src="src/skills/YayaScream.js?v=1.5.28"></script>
     <script src="src/skills/Frappes.js?v=1.5.28"></script>
@@ -3310,10 +3321,10 @@
     <script src="src/Bosses/EndlessMainBosses.js?v=1.5.70"></script>
     <script src="src/Bosses/LilXasRenderer.js?v=1.6.20"></script>
     <script src="src/Bosses/LilXasCutsceneFX.js?v=1.6.18"></script>
-    <script src="src/Bosses/LilXasAttacksFX.js?v=1.6.17"></script>
+    <script src="src/Bosses/LilXasAttacksFX.js?v=1.6.21"></script>
     <script src="src/Bosses/LilXasSpeaker.js?v=1.6.17"></script>
     <script src="src/Bosses/LilXasBoss.js?v=1.6.17"></script>
-    <script src="src/Bosses/LilXasEvent.js?v=1.6.18"></script>
+    <script src="src/Bosses/LilXasEvent.js?v=1.6.21"></script>
     <script src="src/dungeons/OlympusBossRenderer.js?v=1.5.51"></script>
     <script src="src/dungeons/OlympusEarlyBosses.js?v=1.5.14"></script>
     <script src="src/dungeons/DungeonBosses.js?v=1.5.14"></script>
@@ -3326,7 +3337,7 @@
     <script src="src/progression/CurrencyManager.js?v=1.2.2"></script>
     <script src="src/progression/QuestManager.js?v=1.5.80"></script>
     <script src="src/progression/BattlePassManager.js?v=1.5.83"></script>
-    <script src="src/ui/BattlePassModalUI.js?v=1.6.9"></script>
+    <script src="src/ui/BattlePassModalUI.js?v=1.6.22"></script>
     <script src="src/profile/StatsManager.js?v=1.5.55"></script>
 
     <!-- 8. UI SUBSYSTEMS -->
@@ -3348,9 +3359,9 @@
     <script src="src/ui/MailManager.js?v=1.5.10"></script>
     <script src="src/ui/StarterPackModal.js?v=1.5.10"></script>
     <script src="src/ui/SettingsManager.js?v=1.5.65"></script>
-    <script src="src/ui/MenuController.js?v=1.5.80"></script>
+    <script src="src/ui/MenuController.js?v=1.6.22"></script>
     <script src="src/ui/BossWarningOverlay.js?v=1.5.16"></script>
-    <script src="src/ui/CinematicCutsceneOverlay.js?v=1.6.16"></script>
+    <script src="src/ui/CinematicCutsceneOverlay.js?v=1.6.21"></script>
     <script src="src/ui/CreditsScreen.js?v=1.6.18"></script>
     <script src="src/chests/ChestManager.js?v=1.5.72"></script>
     <script src="src/ui/ChestModalUI.js?v=1.5.61"></script>
@@ -3365,8 +3376,8 @@
     <script src="src/admin/AdminPanel.js?v=1.6.19"></script>
 
     <!-- 8.7. MOBILE TOUCH SUBSYSTEM -->
-    <script src="src/engine/MobileAimAssist.js?v=1.6.2"></script>
-    <script src="src/engine/TouchInput.js?v=1.6.5"></script>
+    <script src="src/engine/MobileAimAssist.js?v=1.6.22"></script>
+    <script src="src/engine/TouchInput.js?v=1.6.22"></script>
 
     <!-- 8.8. MULTIPLAYER CO-OP SUBSYSTEM (PLAYTEST) -->
     <script src="src/libs/peerjs.min.js"></script>
@@ -3374,19 +3385,19 @@
     <script src="src/network/CoopSkillFx.js?v=1.6.4"></script>
     <script src="src/network/CoopDropSync.js?v=1.6.8"></script>
     <script src="src/network/CoopCombatFx.js?v=1.6.8"></script>
-    <script src="src/network/CoopHostSession.js?v=1.6.8"></script>
-    <script src="src/network/CoopGuestSession.js?v=1.6.8"></script>
+    <script src="src/network/CoopHostSession.js?v=1.6.21"></script>
+    <script src="src/network/CoopGuestSession.js?v=1.6.21"></script>
     <script src="src/network/CoopLobbyModal.js?v=1.6.7"></script>
 
     <!-- 8.9. FRIENDS & ONLINE PLAYER ID SUBSYSTEM -->
-    <script src="src/social/FriendService.js?v=1.6.18"></script>
-    <script src="src/ui/FriendsCardRenderer.js?v=1.6.18"></script>
-    <script src="src/ui/FriendsModal.js?v=1.6.10"></script>
+    <script src="src/social/FriendService.js?v=1.6.22"></script>
+    <script src="src/ui/FriendsCardRenderer.js?v=1.6.22"></script>
+    <script src="src/ui/FriendsModal.js?v=1.6.22"></script>
 
     <!-- 9. GAME COORDINATOR & BOOTSTRAP -->
-    <script src="src/engine/WaveSkipperMachine.js?v=1.5.23"></script>
-    <script src="src/engine/Game.js?v=1.6.18"></script>
-    <script src="src/main.js?v=1.6.16"></script>
+    <script src="src/engine/WaveSkipperMachine.js?v=1.6.22"></script>
+    <script src="src/engine/Game.js?v=1.6.21"></script>
+    <script src="src/main.js?v=1.6.22"></script>
 </body>
 
 </html>

@@ -76,15 +76,18 @@ class TouchInput {
         this.dashBtn = document.getElementById('mobile-dash-btn');
         this.skillBtn = document.getElementById('mobile-skill-btn');
         this.ultBtn = document.getElementById('mobile-ult-btn');
+        this.warpBtn = document.getElementById('mobile-warp-btn');
         this.bubbleBtn = document.getElementById('mobile-bubble-charge-btn');
         this.dashRing = this.dashBtn ? this.dashBtn.querySelector('.dash-ring') : null;
         this.skillRing = this.skillBtn ? this.skillBtn.querySelector('.skill-ring') : null;
         this.ultRing = this.ultBtn ? this.ultBtn.querySelector('.ult-ring') : null;
+        this.warpRing = this.warpBtn ? this.warpBtn.querySelector('.warp-ring') : null;
         this.bubbleRing = this.bubbleBtn ? this.bubbleBtn.querySelector('.bubble-charge-ring') : null;
         this._skillImgEl = this.skillBtn ? (this.skillBtn.querySelector('.btn-skill-img-icon') || this.skillBtn.querySelector('#mobile-skill-img')) : null;
         this._skillLabelEl = this.skillBtn ? this.skillBtn.querySelector('.btn-label') : null;
         this._ultImgEl = this.ultBtn ? (this.ultBtn.querySelector('.btn-ult-img-icon') || this.ultBtn.querySelector('#mobile-ult-img')) : null;
         this._ultLabelEl = this.ultBtn ? this.ultBtn.querySelector('.btn-label') : null;
+        this._warpLabelEl = this.warpBtn ? this.warpBtn.querySelector('.btn-label') : null;
         this._uiCache = Object.create(null);
 
         this.updateAutoFireState();
@@ -324,6 +327,22 @@ class TouchInput {
             this.ultBtn.addEventListener('pointercancel', releaseUlt);
         }
 
+        // 4.6. Endless Wave Skipper Button (Mobile)
+        if (this.warpBtn) {
+            this.warpBtn.addEventListener('pointerdown', (e) => {
+                if (e.pointerType === 'mouse' && !this.isTouchDevice) return;
+                e.stopPropagation();
+                this.vibrate(25);
+                this.warpBtn.classList.add('pressed');
+                if (this.game && this.game.input && this.game.input.onInteractCallback) {
+                    this.game.input.onInteractCallback();
+                }
+            });
+            const releaseWarp = () => this.warpBtn.classList.remove('pressed');
+            this.warpBtn.addEventListener('pointerup', releaseWarp);
+            this.warpBtn.addEventListener('pointercancel', releaseWarp);
+        }
+
         // 5. Big Bubble Charge Button (Mobile)
         if (this.bubbleBtn) {
             this.bubbleBtn.addEventListener('pointerdown', (e) => {
@@ -536,6 +555,7 @@ class TouchInput {
         if (this.dashBtn) this.dashBtn.classList.remove('pressed');
         if (this.skillBtn) this.skillBtn.classList.remove('pressed');
         if (this.ultBtn) this.ultBtn.classList.remove('pressed');
+        if (this.warpBtn) this.warpBtn.classList.remove('pressed');
         this.joystickPointerId = null;
         this.aimPointerId = null;
         this.isBubbleChargeHeld = false;

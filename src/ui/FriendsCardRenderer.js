@@ -91,6 +91,21 @@ class FriendsCardRenderer {
         `;
     }
 
+    static buildFriendReqToastHtml(req) {
+        const p = (req && req.profile) || {};
+        const bell = this._ico('bell', '🔔');
+        return `
+            <img class="toast-inv-avatar" src="${this.getHeroAvatar(p.hero)}" alt="Hero">
+            <div class="toast-inv-copy">
+                <div class="toast-inv-title">${bell} <b>${this.esc(p.name || 'Hero')}</b> sent you a friend request!</div>
+                <div class="toast-inv-sub">${this.esc(p.tag || '')} · LVL ${Number(p.level || 1)}</div>
+            </div>
+            <button id="toast-accept-req-btn" class="friend-btn friend-btn-accept">✓ ACCEPT</button>
+            <button id="toast-view-req-btn" class="friend-btn friend-btn-primary">VIEW</button>
+            <button id="toast-dismiss-req-btn" class="friend-btn friend-btn-muted">✕</button>
+        `;
+    }
+
     static decorateMyBanner(me, bannerEl, avatarWrapEl, coinsEl) {
         if (!me || !bannerEl || typeof CosmeticManager === 'undefined') return;
         const cos = CosmeticManager.extractPublicCosmetics({ cosmetics: me.cosmetics || {} });

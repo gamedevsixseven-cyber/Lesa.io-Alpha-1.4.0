@@ -222,24 +222,154 @@ class HeroRenderer {
         }
     }
 
+    static _traceHex(ctx, cx, cy, r) {
+        ctx.moveTo(cx + r, cy);
+        for (let i = 1; i < 6; i++) {
+            const a = (i * Math.PI) / 3;
+            ctx.lineTo(cx + Math.cos(a) * r, cy + Math.sin(a) * r);
+        }
+        ctx.closePath();
+    }
+
     static drawShieldBubble(player, ctx) {
-        const shieldR = player.radius * 1.55;
-        const pulse = Math.sin(Date.now() / 200) * 2.5;
+        const t = Date.now() * 0.001;
+        const baseR = (player.radius || 25) * 1.62;
+        const pulse = Math.sin(t * 4.2) * 1.6;
+        const R = baseR + pulse;
+        const glowPulse = 0.5 + 0.5 * Math.sin(t * 5.6);
 
         ctx.save();
-        ctx.strokeStyle = 'rgba(116, 185, 255, 0.9)';
-        ctx.fillStyle = 'rgba(116, 185, 255, 0.22)';
-        ctx.lineWidth = 3.5;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+
+        // 1. Hollow-core Fresnel energy dome gradient (keeps hero crisp, charges up the rim)
+        const domeGrad = ctx.createRadialGradient(0, 0, R * 0.34, 0, 0, R);
+        domeGrad.addColorStop(0.00, 'rgba(56, 189, 248, 0.02)');
+        domeGrad.addColorStop(0.58, 'rgba(37, 99, 235, 0.09)');
+        domeGrad.addColorStop(0.84, 'rgba(14, 165, 233, 0.28)');
+        domeGrad.addColorStop(0.95, `rgba(125, 211, 252, ${(0.52 + glowPulse * 0.14).toFixed(2)})`);
+        domeGrad.addColorStop(1.00, 'rgba(224, 242, 254, 0.72)');
+        ctx.fillStyle = domeGrad;
         ctx.beginPath();
-        ctx.arc(0, 0, shieldR + pulse, 0, Math.PI * 2);
+        ctx.arc(0, 0, R, 0, Math.PI * 2);
         ctx.fill();
+
+        // 2. Clipped internal hexagonal energy lattice + sweeping plasma scan band
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(0, 0, R * 0.96, 0, Math.PI * 2);
+        ctx.clip();
+
+        ctx.save();
+        ctx.rotate(t * 0.24);
+        const cellR = R * 0.33;
+        const ringD = cellR * 1.732;
+        ctx.strokeStyle = `rgba(186, 230, 253, ${(0.20 + glowPulse * 0.10).toFixed(2)})`;
+        ctx.lineWidth = 1.25;
+        ctx.beginPath();
+        for (let i = 0; i < 6; i++) {
+            const a = (i * Math.PI) / 3 + Math.PI / 6;
+            HeroRenderer._traceHex(ctx, Math.cos(a) * ringD * 1.15, Math.sin(a) * ringD * 1.15, cellR);
+        }
         ctx.stroke();
 
-        // Shimmer highlight
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+        // Inner faceted barrier hex + radial energy struts linking rim nodes
+        ctx.strokeStyle = 'rgba(56, 189, 248, 0.38)';
+        ctx.lineWidth = 1.6;
         ctx.beginPath();
-        ctx.ellipse(-shieldR * 0.45, -shieldR * 0.45, 6, 3, Math.PI / 4, 0, Math.PI * 2);
-        ctx.fill();
+        HeroRenderer._traceHex(ctx, 0, 0, R * 0.86);
+        for (let i = 0; i < 6; i++) {
+            const a = (i * Math.PI) / 3;
+            ctx.moveTo(Math.cos(a) * (R * 0.86), Math.sin(a) * (R * 0.86));
+            ctx.lineTo(Math.cos(a) * R, Math.sin(a) * R);
+        }
+        ctx.stroke();
+        ctx.restore();
+
+        // Subtle diagonal energy sweep wave across the dome
+        const sweep = ((t * 0.65) % 1) * (R * 2.6) - R * 1.3;
+        ctx.save();
+        ctx.rotate(-0.55);
+        const bandGrad = ctx.createLinearGradient(sweep - 14, 0, sweep + 14, 0);
+        bandGrad.addColorStop(0.0, 'rgba(186, 230, 253, 0)');
+        bandGrad.addColorStop(0.5, 'rgba(224, 242, 254, 0.24)');
+        bandGrad.addColorStop(1.0, 'rgba(186, 230, 253, 0)');
+        ctx.fillStyle = bandGrad;
+        ctx.fillRect(sweep - 14, -R, 28, R * 2);
+        ctx.restore();
+
+        ctx.restore(); // end dome clip
+
+        // 3. Comic-inked outer energy barrier rim + crisp Fresnel specular arc
+        ctx.strokeStyle = '#0c2461';
+        ctx.lineWidth = 4.2;
+        ctx.beginPath();
+        ctx.arc(0, 0, R, 0, Math.PI * 2);
+        ctx.stroke();
+
+        ctx.strokeStyle = '#38bdf8';
+        ctx.lineWidth = 2.3;
+        ctx.beginPath();
+        ctx.arc(0, 0, R - 0.5, 0, Math.PI * 2);
+        ctx.stroke();
+
+        ctx.strokeStyle = 'rgba(240, 249, 255, 0.88)';
+        ctx.lineWidth = 2.0;
+        ctx.beginPath();
+        ctx.arc(0, 0, R - 2.6, -2.55, -1.25);
+        ctx.stroke();
+
+        ctx.strokeStyle = 'rgba(186, 230, 253, 0.65)';
+        ctx.lineWidth = 1.6;
+        ctx.beginPath();
+        ctx.arc(0, 0, R - 2.6, 0.55, 1.15);
+        ctx.stroke();
+
+        // 4. Orbiting kinetic shield bracket arcs & 4 diamond emitter nodes
+        const guardR = R + 4.8;
+        ctx.save();
+        ctx.rotate(t * 1.05);
+        for (let i = 0; i < 2; i++) {
+            const a0 = i * Math.PI - 0.52;
+            const a1 = i * Math.PI + 0.52;
+            ctx.strokeStyle = '#0c2461';
+            ctx.lineWidth = 4.6;
+            ctx.beginPath();
+            ctx.arc(0, 0, guardR, a0, a1);
+            ctx.stroke();
+
+            ctx.strokeStyle = '#7dd3fc';
+            ctx.lineWidth = 2.2;
+            ctx.beginPath();
+            ctx.arc(0, 0, guardR, a0, a1);
+            ctx.stroke();
+        }
+        ctx.restore();
+
+        ctx.save();
+        ctx.rotate(-t * 0.72);
+        for (let i = 0; i < 4; i++) {
+            const na = (i * Math.PI) / 2;
+            const nx = Math.cos(na) * (R + 1.2);
+            const ny = Math.sin(na) * (R + 1.2);
+            ctx.save();
+            ctx.translate(nx, ny);
+            ctx.rotate(na);
+            ctx.fillStyle = '#e0f2fe';
+            ctx.strokeStyle = '#0c2461';
+            ctx.lineWidth = 1.7;
+            ctx.beginPath();
+            ctx.moveTo(4.2, 0);
+            ctx.lineTo(0, 2.8);
+            ctx.lineTo(-4.2, 0);
+            ctx.lineTo(0, -2.8);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+            ctx.restore();
+        }
+        ctx.restore();
+
         ctx.restore();
     }
 

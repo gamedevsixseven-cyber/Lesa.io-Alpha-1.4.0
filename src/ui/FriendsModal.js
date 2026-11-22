@@ -19,51 +19,34 @@ class FriendsModal {
         this._refreshInterval = null;
         this.modal = null;
         this.toastEl = null;
+        this.reqToastEl = null;
+        this._deferredFriendReq = null;
 
         this.ensureMarkup();
         this.bindEvents();
         this.updateBadge();
     }
 
-    esc(str) {
-        return typeof FriendsCardRenderer !== 'undefined' ? FriendsCardRenderer.esc(str) : String(str || '');
-    }
+    esc(str) { return typeof FriendsCardRenderer !== 'undefined' ? FriendsCardRenderer.esc(str) : String(str || ''); }
+    getHeroAvatar(heroId) { return typeof FriendsCardRenderer !== 'undefined' ? FriendsCardRenderer.getHeroAvatar(heroId) : 'assets/HeroesIcons/PsanasAvatar.png'; }
 
-    getHeroAvatar(heroId) {
-        return typeof FriendsCardRenderer !== 'undefined' ? FriendsCardRenderer.getHeroAvatar(heroId) : 'assets/HeroesIcons/PsanasAvatar.png';
+    _ensureEl(id, cls, html = '') {
+        let el = document.getElementById(id);
+        if (!el) { el = document.createElement('div'); el.id = id; el.className = cls; if (html) el.innerHTML = html; document.body.appendChild(el); }
+        return el;
     }
 
     ensureMarkup() {
-        if (!document.getElementById('friends-modal')) {
-            const overlay = document.createElement('div');
-            overlay.id = 'friends-modal';
-            overlay.className = 'modal-overlay hidden';
-            overlay.innerHTML = typeof FriendsCardRenderer !== 'undefined' ? FriendsCardRenderer.buildModalMarkup() : '';
-            document.body.appendChild(overlay);
-        }
-        this.modal = document.getElementById('friends-modal');
-
-        if (!document.getElementById('coop-invite-toast')) {
-            const toast = document.createElement('div');
-            toast.id = 'coop-invite-toast';
-            toast.className = 'hidden';
-            document.body.appendChild(toast);
-        }
-        this.toastEl = document.getElementById('coop-invite-toast');
+        const html = typeof FriendsCardRenderer !== 'undefined' ? FriendsCardRenderer.buildModalMarkup() : '';
+        this.modal = this._ensureEl('friends-modal', 'modal-overlay hidden', html);
+        this.toastEl = this._ensureEl('coop-invite-toast', 'hidden');
+        this.reqToastEl = this._ensureEl('friend-req-toast', 'hidden');
     }
 
     bindEvents() {
         const closeBtn = document.getElementById('friends-close-btn');
-        if (closeBtn) closeBtn.addEventListener('click', () => {
-            if (window.soundEngine) window.soundEngine.playGoBack();
-            this.hide();
-        });
-
-        if (this.modal) {
-            this.modal.addEventListener('click', (e) => {
-                if (e.target === this.modal) this.hide();
-            });
-        }
+        if (closeBtn) closeBtn.addEventListener('click', () => { if (window.soundEngine) window.soundEngine.playGoBack(); this.hide(); });
+        if (this.modal) this.modal.addEventListener('click', (e) => { if (e.target === this.modal) this.hide(); });
 
         const copyBtn = document.getElementById('friends-copy-tag-btn');
         if (copyBtn) {
@@ -82,7 +65,7 @@ class FriendsModal {
             refreshBtn.addEventListener('click', async () => {
                 if (window.soundEngine) window.soundEngine.playSelect();
                 refreshBtn.classList.add('is-spinning');
-                await Promise.all([this.service.syncMyProfile(true), this.service.refreshFriendStatuses()]);
+                await Promise.all([this.service.syncMyProfile(true), this.service.pollFriendships(), this.service.refreshFriendStatuses()]);
                 setTimeout(() => refreshBtn.classList.remove('is-spinning'), 450);
                 this.render();
             });
@@ -124,6 +107,7 @@ class FriendsModal {
                 }
             });
             window.EventBus.on('coopInviteReceived', (invite) => this.showInviteToast(invite));
+            window.EventBus.on('friendRequestReceived', (req) => this.showFriendRequestToast(req));
             window.EventBus.on('cosmeticsUpdated', () => {
                 if (this.modal && !this.modal.classList.contains('hidden')) this.render();
             });
@@ -131,11 +115,14 @@ class FriendsModal {
     }
 
     show(initialTab = null) {
-        if (initialTab) this.activeTab = initialTab;
+        const pendingTotal = this.service ? this.service.getTotalNotificationCount() : 0;
+        this.activeTab = initialTab || (pendingTotal > 0 ? 'requests' : 'friends');
         this.feedbackText = '';
         this.confirmRemoveUid = null;
+        if (this.activeTab === 'requests' && this.reqToastEl) this.reqToastEl.classList.add('hidden');
         if (this.service) {
             this.service.syncMyProfile(true);
+            this.service.pollFriendships();
             this.service.refreshFriendStatuses();
         }
         this.render();
@@ -143,7 +130,10 @@ class FriendsModal {
 
         if (this._refreshInterval) clearInterval(this._refreshInterval);
         this._refreshInterval = setInterval(() => {
-            if (this.service && this.modal && !this.modal.classList.contains('hidden')) this.service.refreshFriendStatuses();
+            if (this.service && this.modal && !this.modal.classList.contains('hidden')) {
+                this.service.pollFriendships();
+                this.service.refreshFriendStatuses();
+            }
         }, 20000);
     }
 
@@ -162,30 +152,30 @@ class FriendsModal {
 
     updateBadge() {
         const badge = document.getElementById('friends-badge');
+        const btn = document.getElementById('btn-friends');
         if (!badge || !this.service) return;
         const count = this.service.getTotalNotificationCount();
         badge.textContent = count > 9 ? '9+' : String(count);
         badge.classList.toggle('hidden', count <= 0);
+        if (btn) btn.classList.toggle('has-notif', count > 0);
+    }
+
+    syncPendingNotification() {
+        this.updateBadge();
+        if (this._deferredFriendReq) {
+            const req = this._deferredFriendReq;
+            this._deferredFriendReq = null;
+            this.showFriendRequestToast(req);
+        }
     }
 
     _syncTabLabels() {
         if (!this.service) return;
         const reqTotal = this.service.incomingRequests.length + this.service.incomingInvites.length;
-        const fBtn = document.getElementById('ftab-friends');
-        const rBtn = document.getElementById('ftab-requests');
-        const aBtn = document.getElementById('ftab-add');
-
-        if (fBtn) {
-            if (typeof UiIcons !== 'undefined') UiIcons.setRichText(fBtn, `👥 FRIENDS (${this.service.friends.length})`, 'ui-icon-sm');
-            else fBtn.textContent = `👥 FRIENDS (${this.service.friends.length})`;
-            fBtn.classList.toggle('active', this.activeTab === 'friends');
-        }
-        if (rBtn) {
-            if (typeof UiIcons !== 'undefined') UiIcons.setRichText(rBtn, `🔔 REQUESTS (${reqTotal})`, 'ui-icon-sm');
-            else rBtn.textContent = `🔔 REQUESTS (${reqTotal})`;
-            rBtn.classList.toggle('active', this.activeTab === 'requests');
-            rBtn.classList.toggle('has-pending', reqTotal > 0);
-        }
+        const fBtn = document.getElementById('ftab-friends'), rBtn = document.getElementById('ftab-requests'), aBtn = document.getElementById('ftab-add');
+        const setTxt = (el, txt) => { if (typeof UiIcons !== 'undefined') UiIcons.setRichText(el, txt, 'ui-icon-sm'); else el.textContent = txt; };
+        if (fBtn) { setTxt(fBtn, `👥 FRIENDS (${this.service.friends.length})`); fBtn.classList.toggle('active', this.activeTab === 'friends'); }
+        if (rBtn) { setTxt(rBtn, `🔔 REQUESTS (${reqTotal})`); rBtn.classList.toggle('active', this.activeTab === 'requests'); rBtn.classList.toggle('has-pending', reqTotal > 0); }
         if (aBtn) aBtn.classList.toggle('active', this.activeTab === 'add');
     }
 
@@ -247,14 +237,27 @@ class FriendsModal {
         else this._renderAddTab(body);
     }
 
+    _buildPendingBannerHtml() {
+        const n = this.service ? this.service.incomingRequests.length : 0;
+        if (n <= 0) return '';
+        return `<div class="friends-pending-banner"><span>🔔 You have <b>${n}</b> pending friend request${n > 1 ? 's' : ''}!</span><button type="button" id="friends-banner-view-req" class="friend-btn friend-btn-accept">VIEW REQUESTS</button></div>`;
+    }
+
+    _wirePendingBanner() {
+        const btn = document.getElementById('friends-banner-view-req');
+        if (btn) btn.addEventListener('click', () => { if (window.soundEngine) window.soundEngine.playSelect(); this.activeTab = 'requests'; this.render(); });
+    }
+
     _renderFriendsTab(body, enriched) {
+        const bannerHtml = this._buildPendingBannerHtml();
         if (!enriched.length) {
-            body.innerHTML = `
+            body.innerHTML = `${bannerHtml}
                 <div class="friends-empty">
                     <div class="friends-empty-title">Your Squad Roster is Empty!</div>
                     <p>Search by Hero Name or <b>#OnlineID</b> to add friends and launch Co-op together.</p>
                     <button type="button" id="friends-empty-add-btn" class="friends-search-btn friends-empty-cta">+ FIND FRIENDS</button>
                 </div>`;
+            this._wirePendingBanner();
             const goAdd = document.getElementById('friends-empty-add-btn');
             if (goAdd) goAdd.addEventListener('click', () => { this.activeTab = 'add'; this.render(); });
             return;
@@ -271,7 +274,7 @@ class FriendsModal {
             return true;
         });
 
-        body.innerHTML = `
+        body.innerHTML = `${bannerHtml}
             <div class="friends-toolbar">
                 <div class="friends-filter-chips">
                     <button type="button" class="tab-filter-chip ${this.friendFilter === 'ALL' ? 'active' : ''}" data-ffilter="ALL">ALL (${enriched.length})</button>
@@ -282,6 +285,7 @@ class FriendsModal {
             </div>
             <div id="friends-roster-list" class="friends-list"></div>
         `;
+        this._wirePendingBanner();
 
         const listEl = document.getElementById('friends-roster-list');
         if (!visible.length) {
@@ -516,16 +520,13 @@ class FriendsModal {
         this.hide();
         if (this.toastEl) this.toastEl.classList.add('hidden');
         if (!window.coopLobbyModal && typeof CoopLobbyModal !== 'undefined') window.coopLobbyModal = new CoopLobbyModal();
-        if (window.coopLobbyModal) {
-            window.coopLobbyModal.activeTab = 'join';
-            window.coopLobbyModal.show();
-            const tabJoin = document.getElementById('coop-tab-join');
-            if (tabJoin) tabJoin.click();
-            const input = document.getElementById('coop-join-code-input');
-            const btn = document.getElementById('coop-connect-btn');
-            if (input) input.value = roomCode;
-            if (btn) btn.click();
-        }
+        if (!window.coopLobbyModal) return;
+        window.coopLobbyModal.activeTab = 'join';
+        window.coopLobbyModal.show();
+        const tabJoin = document.getElementById('coop-tab-join'), input = document.getElementById('coop-join-code-input'), btn = document.getElementById('coop-connect-btn');
+        if (tabJoin) tabJoin.click();
+        if (input) input.value = roomCode;
+        if (btn) btn.click();
     }
 
     showInviteToast(invite) {
@@ -533,15 +534,30 @@ class FriendsModal {
         if (window.gameInstance && window.gameInstance.state === 'PLAYING') return;
         this.toastEl.innerHTML = typeof FriendsCardRenderer !== 'undefined' ? FriendsCardRenderer.buildInviteToastHtml(invite) : '';
         this.toastEl.classList.remove('hidden');
+        document.getElementById('toast-join-coop-btn').onclick = () => { this.service.dismissInvite(invite.id); this.joinRoomCode(invite.roomCode); };
+        document.getElementById('toast-dismiss-coop-btn').onclick = () => { this.service.dismissInvite(invite.id); this.toastEl.classList.add('hidden'); };
+    }
 
-        document.getElementById('toast-join-coop-btn').onclick = () => {
-            this.service.dismissInvite(invite.id);
-            this.joinRoomCode(invite.roomCode);
+    showFriendRequestToast(req) {
+        if (!this.reqToastEl || !req) return;
+        if (window.gameInstance && window.gameInstance.state === 'PLAYING') { this._deferredFriendReq = req; return; }
+        if (this.modal && !this.modal.classList.contains('hidden') && this.activeTab === 'requests') return;
+        this.reqToastEl.innerHTML = typeof FriendsCardRenderer !== 'undefined' ? FriendsCardRenderer.buildFriendReqToastHtml(req) : '';
+        this.reqToastEl.classList.remove('hidden');
+        if (window.soundEngine) window.soundEngine.playSelect();
+
+        document.getElementById('toast-accept-req-btn').onclick = async () => {
+            if (window.soundEngine) window.soundEngine.playSelect();
+            this.reqToastEl.classList.add('hidden');
+            await this.service.acceptFriendRequest(req.id);
+            if (this.modal && !this.modal.classList.contains('hidden')) this.render();
         };
-        document.getElementById('toast-dismiss-coop-btn').onclick = () => {
-            this.service.dismissInvite(invite.id);
-            this.toastEl.classList.add('hidden');
+        document.getElementById('toast-view-req-btn').onclick = () => {
+            if (window.soundEngine) window.soundEngine.playSelect();
+            this.reqToastEl.classList.add('hidden');
+            this.show('requests');
         };
+        document.getElementById('toast-dismiss-req-btn').onclick = () => this.reqToastEl.classList.add('hidden');
     }
 }
 

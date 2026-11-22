@@ -19,6 +19,8 @@ class FriendService {
         this._currentStatus = 'In Lobby';
         this._activeRoomCode = null;
         this._seenInviteIds = new Set();
+        this._seenRequestIds = new Set();
+        this._friendshipsErrored = false;
         this._initialized = false;
         this.lastError = null;
     }
@@ -101,9 +103,10 @@ class FriendService {
         this.attachListeners();
         this.syncMyProfile(true);
 
-        // Heartbeat presence every 45 seconds so friends see accurate Online/Away status
+        // Heartbeat presence & fallback request poll every 45 seconds
         this._presenceTimer = setInterval(() => {
             this.syncMyProfile(false);
+            this.pollFriendships();
         }, 45000);
 
         if (typeof window !== 'undefined') {
@@ -114,6 +117,9 @@ class FriendService {
     }
 
     onAuthChanged() {
+        this._seenInviteIds.clear();
+        this._seenRequestIds.clear();
+        this._friendshipsErrored = false;
         this.attachListeners();
         this.syncMyProfile(true);
         this.emitUpdate();
@@ -136,23 +142,13 @@ class FriendService {
 
         try {
             await db.collection('players').doc(me.uid).set({
-                uid: me.uid,
-                friendTag: me.tag,
-                friendTagClean: me.tagClean,
-                playerName: me.name,
-                playerNameLower: me.nameLower,
-                accountLevel: me.level,
-                level: me.level,
-                selectedHero: me.selectedHero,
-                online: true,
-                currentStatus: this._currentStatus || 'In Lobby',
-                coopRoomCode: this._activeRoomCode || null,
+                uid: me.uid, friendTag: me.tag, friendTagClean: me.tagClean,
+                playerName: me.name, playerNameLower: me.nameLower,
+                accountLevel: me.level, level: me.level, selectedHero: me.selectedHero,
+                online: true, currentStatus: this._currentStatus || 'In Lobby', coopRoomCode: this._activeRoomCode || null,
                 socialStats: { highScore: me.highScore, maxWave: me.maxWave, totalKills: me.totalKills, endlessMaxWave: me.endlessMaxWave, olympusMaxFloor: me.olympusMaxFloor },
-                cosmetics: me.cosmetics,
-                lbHighScore: me.highScore,
-                lbEndlessWave: Math.max(me.endlessMaxWave || 0, me.maxWave || 1),
-                lbTotalKills: me.totalKills,
-                lastSeenAt: now
+                cosmetics: me.cosmetics, lbHighScore: me.highScore,
+                lbEndlessWave: Math.max(me.endlessMaxWave || 0, me.maxWave || 1), lbTotalKills: me.totalKills, lastSeenAt: now
             }, { merge: true });
             this.lastError = null;
             return true;
@@ -190,81 +186,83 @@ class FriendService {
             this._unsubFriendships = db.collection('friendships')
                 .where('users', 'array-contains', myUid)
                 .onSnapshot((snap) => {
-                    const accepted = [];
-                    const incoming = [];
-                    const outgoing = [];
-                    const friendUidsToRefresh = [];
-
-                    snap.forEach((doc) => {
-                        const d = doc.data();
-                        if (!d || !Array.isArray(d.users)) return;
-                        const otherUid = d.users.find(u => u !== myUid) || myUid;
-                        const cachedProfile = (d.profiles && d.profiles[otherUid]) ? d.profiles[otherUid] : {};
-                        const entry = {
-                            id: doc.id, otherUid, status: d.status, requestedBy: d.requestedBy,
-                            createdAt: d.createdAt || 0, updatedAt: d.updatedAt || 0,
-                            profile: {
-                                uid: otherUid, name: cachedProfile.name || 'Hero',
-                                tag: cachedProfile.tag || (typeof PlayerIdentity !== 'undefined' ? PlayerIdentity.getOnlineTag(otherUid) : '#HERO00'),
-                                hero: cachedProfile.hero || 'psanas', level: cachedProfile.level || 1
-                            }
-                        };
-
-                        if (d.status === 'accepted') {
-                            accepted.push(entry);
-                            friendUidsToRefresh.push(otherUid);
-                        } else if (d.status === 'pending') {
-                            if (d.requestedBy === myUid) outgoing.push(entry);
-                            else incoming.push(entry);
-                        }
-                    });
-
-                    this.friends = accepted;
-                    this.incomingRequests = incoming;
-                    this.outgoingRequests = outgoing;
-                    this.emitUpdate();
-
-                    if (friendUidsToRefresh.length > 0) {
-                        this.refreshFriendStatuses(friendUidsToRefresh);
-                    }
+                    this._friendshipsErrored = false;
+                    this._applyFriendshipsSnap(snap, myUid);
                 }, (err) => {
+                    this._friendshipsErrored = true;
                     this.lastError = this._describeDbError(err);
                     console.warn('[FriendService] Friendship listener notice:', err && err.message ? err.message : err);
                 });
         } catch (err) {
+            this._friendshipsErrored = true;
             console.warn('[FriendService] Failed attaching friendship listener:', err);
         }
 
         // 2. Real-time Co-op match invites listener
         try {
-            this._unsubInvites = db.collection('friend_invites')
-                .where('toUid', '==', myUid)
-                .onSnapshot((snap) => {
-                    const now = Date.now();
-                    const invites = [];
-                    let newestUnseen = null;
-
-                    snap.forEach((doc) => {
-                        const d = doc.data();
-                        if (!d || !d.roomCode) return;
-                        if (d.expiresAt && d.expiresAt < now) return;
-                        const inv = { id: doc.id, ...d };
-                        invites.push(inv);
-                        if (!this._seenInviteIds.has(doc.id)) {
-                            this._seenInviteIds.add(doc.id);
-                            newestUnseen = inv;
-                        }
-                    });
-
-                    invites.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
-                    this.incomingInvites = invites;
-                    this.emitUpdate();
-
-                    if (newestUnseen && typeof window !== 'undefined' && window.EventBus) {
-                        window.EventBus.emit('coopInviteReceived', newestUnseen);
-                    }
-                }, () => {});
+            this._unsubInvites = db.collection('friend_invites').where('toUid', '==', myUid).onSnapshot((snap) => {
+                const now = Date.now(), invites = [];
+                let newestUnseen = null;
+                snap.forEach((doc) => {
+                    const d = doc.data();
+                    if (!d || !d.roomCode || (d.expiresAt && d.expiresAt < now)) return;
+                    const inv = { id: doc.id, ...d };
+                    invites.push(inv);
+                    if (!this._seenInviteIds.has(doc.id)) { this._seenInviteIds.add(doc.id); newestUnseen = inv; }
+                });
+                invites.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+                this.incomingInvites = invites;
+                this.emitUpdate();
+                if (newestUnseen && typeof window !== 'undefined' && window.EventBus) window.EventBus.emit('coopInviteReceived', newestUnseen);
+            }, () => {});
         } catch (_) {}
+    }
+
+    _applyFriendshipsSnap(snap, myUid) {
+        const accepted = [], incoming = [], outgoing = [], uidsToRefresh = [], activeReqKeys = new Set();
+        let newestUnseenReq = null;
+        snap.forEach((doc) => {
+            const d = doc.data();
+            if (!d || !Array.isArray(d.users)) return;
+            const otherUid = d.users.find(u => u !== myUid) || myUid;
+            const c = (d.profiles && d.profiles[otherUid]) || {};
+            const tag = c.tag || (typeof PlayerIdentity !== 'undefined' ? PlayerIdentity.getOnlineTag(otherUid) : '#HERO00');
+            const entry = { id: doc.id, otherUid, status: d.status, requestedBy: d.requestedBy, createdAt: d.createdAt || 0, updatedAt: d.updatedAt || 0,
+                profile: { uid: otherUid, name: c.name || 'Hero', tag, hero: c.hero || 'psanas', level: c.level || 1 } };
+            if (d.status === 'accepted') { accepted.push(entry); uidsToRefresh.push(otherUid); }
+            else if (d.status === 'pending') {
+                if (d.requestedBy === myUid) outgoing.push(entry);
+                else {
+                    incoming.push(entry);
+                    if (!this.friendProfiles[otherUid]) uidsToRefresh.push(otherUid);
+                    const reqKey = `${doc.id}:${entry.updatedAt || entry.createdAt}`;
+                    activeReqKeys.add(reqKey);
+                    if (!this._seenRequestIds.has(reqKey)) {
+                        this._seenRequestIds.add(reqKey);
+                        if (!newestUnseenReq || (entry.updatedAt || entry.createdAt) >= (newestUnseenReq.updatedAt || newestUnseenReq.createdAt)) newestUnseenReq = entry;
+                    }
+                }
+            }
+        });
+        for (const k of [...this._seenRequestIds]) if (!activeReqKeys.has(k)) this._seenRequestIds.delete(k);
+        this.friends = accepted; this.incomingRequests = incoming; this.outgoingRequests = outgoing;
+        this.emitUpdate();
+        if (uidsToRefresh.length > 0) this.refreshFriendStatuses(uidsToRefresh);
+        if (newestUnseenReq && typeof window !== 'undefined' && window.EventBus) window.EventBus.emit('friendRequestReceived', newestUnseenReq);
+    }
+
+    async pollFriendships() {
+        const db = this.getDb();
+        const myUid = this.getMyUid();
+        if (!db || !myUid) return;
+        if (this._friendshipsErrored || !this._unsubFriendships) this.attachListeners();
+        try {
+            const snap = await db.collection('friendships').where('users', 'array-contains', myUid).get();
+            this._friendshipsErrored = false;
+            this._applyFriendshipsSnap(snap, myUid);
+        } catch (err) {
+            this.lastError = this._describeDbError(err);
+        }
     }
 
     async refreshFriendStatuses(uids = null) {
@@ -447,14 +445,9 @@ class FriendService {
     }
 
     async sendFriendRequest(targetProfile) {
-        const db = this.getDb();
-        const me = this.getMySummary();
-        if (!db || !me.uid || !targetProfile || !targetProfile.uid) {
-            return { ok: false, message: 'Cloud unavailable.' };
-        }
-        if (targetProfile.uid === me.uid) {
-            return { ok: false, message: 'You cannot add yourself!' };
-        }
+        const db = this.getDb(), me = this.getMySummary();
+        if (!db || !me.uid || !targetProfile || !targetProfile.uid) return { ok: false, message: 'Cloud unavailable.' };
+        if (targetProfile.uid === me.uid) return { ok: false, message: 'You cannot add yourself!' };
 
         const relId = this.getRelationshipDocId(me.uid, targetProfile.uid);
         const docRef = db.collection('friendships').doc(relId);
@@ -463,10 +456,7 @@ class FriendService {
             const snap = await docRef.get();
             if (snap.exists) {
                 const existing = snap.data() || {};
-                if (existing.status === 'accepted') {
-                    return { ok: true, status: 'accepted', message: 'Already friends!' };
-                }
-                // Mutual request auto-accepts!
+                if (existing.status === 'accepted') return { ok: true, status: 'accepted', message: 'Already friends!' };
                 if (existing.status === 'pending' && existing.requestedBy !== me.uid) {
                     await this.acceptFriendRequest(relId);
                     return { ok: true, status: 'accepted', message: `Accepted ${targetProfile.name}!` };
@@ -475,22 +465,14 @@ class FriendService {
             }
 
             const now = Date.now();
+            const targetObj = { name: targetProfile.name, tag: targetProfile.tag, hero: targetProfile.hero, level: targetProfile.level };
             await docRef.set({
-                users: [me.uid, targetProfile.uid].sort(),
-                status: 'pending',
-                requestedBy: me.uid,
-                profiles: {
-                    [me.uid]: { name: me.name, tag: me.tag, hero: me.selectedHero, level: me.level },
-                    [targetProfile.uid]: { name: targetProfile.name, tag: targetProfile.tag, hero: targetProfile.hero, level: targetProfile.level }
-                },
-                createdAt: now,
-                updatedAt: now
+                users: [me.uid, targetProfile.uid].sort(), status: 'pending', requestedBy: me.uid,
+                profiles: { [me.uid]: { name: me.name, tag: me.tag, hero: me.selectedHero, level: me.level }, [targetProfile.uid]: targetObj },
+                createdAt: now, updatedAt: now
             });
             if (!this.outgoingRequests.some(r => r.id === relId)) {
-                this.outgoingRequests.push({
-                    id: relId, otherUid: targetProfile.uid, status: 'pending', requestedBy: me.uid, createdAt: now, updatedAt: now,
-                    profile: { uid: targetProfile.uid, name: targetProfile.name, tag: targetProfile.tag, hero: targetProfile.hero, level: targetProfile.level }
-                });
+                this.outgoingRequests.push({ id: relId, otherUid: targetProfile.uid, status: 'pending', requestedBy: me.uid, createdAt: now, updatedAt: now, profile: { uid: targetProfile.uid, ...targetObj } });
                 this.emitUpdate();
             }
             return { ok: true, status: 'pending_outgoing', message: `Friend request sent to ${targetProfile.name}!` };
@@ -500,15 +482,12 @@ class FriendService {
     }
 
     async acceptFriendRequest(relId) {
-        const db = this.getDb();
-        const me = this.getMySummary();
+        const db = this.getDb(), me = this.getMySummary();
         if (!db || !relId) return false;
         try {
             const now = Date.now();
             await db.collection('friendships').doc(relId).update({
-                status: 'accepted',
-                acceptedAt: now,
-                updatedAt: now,
+                status: 'accepted', acceptedAt: now, updatedAt: now,
                 [`profiles.${me.uid}`]: { name: me.name, tag: me.tag, hero: me.selectedHero, level: me.level }
             });
             const req = this.incomingRequests.find(r => r.id === relId);
@@ -547,18 +526,11 @@ class FriendService {
         const now = Date.now();
         try {
             await db.collection('friend_invites').doc(`${me.uid}__${targetUid}`).set({
-                fromUid: me.uid,
-                fromName: me.name,
-                fromTag: me.tag,
-                fromHero: me.selectedHero,
-                toUid: targetUid,
-                roomCode: String(roomCode).trim().toUpperCase(),
-                gameMode,
-                createdAt: now,
-                expiresAt: now + 10 * 60 * 1000
+                fromUid: me.uid, fromName: me.name, fromTag: me.tag, fromHero: me.selectedHero, toUid: targetUid,
+                roomCode: String(roomCode).trim().toUpperCase(), gameMode, createdAt: now, expiresAt: now + 600000
             });
             return true;
-        } catch (err) {
+        } catch (_) {
             return false;
         }
     }
@@ -566,9 +538,7 @@ class FriendService {
     async dismissInvite(inviteId) {
         const db = this.getDb();
         if (!db || !inviteId) return;
-        try {
-            await db.collection('friend_invites').doc(inviteId).delete();
-        } catch (_) {}
+        try { await db.collection('friend_invites').doc(inviteId).delete(); } catch (_) {}
     }
 
     getTotalNotificationCount() {
@@ -586,10 +556,6 @@ class FriendService {
     }
 }
 
-if (typeof window !== 'undefined') {
-    window.FriendService = FriendService;
-}
-if (typeof module !== 'undefined' && module.exports) {
-    module.exports = { FriendService };
-}
+if (typeof window !== 'undefined') window.FriendService = FriendService;
+if (typeof module !== 'undefined' && module.exports) module.exports = { FriendService };
 

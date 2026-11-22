@@ -27,8 +27,10 @@ class LilXasEvent {
     static earBleedTickTimer = 0;
     static cameraTarget = null;
     static _panToFleeShown = false;
+    static _eventSeq = 0;
+    static _defeatedSeq = 0;
 
-    static reset() {
+    static reset(clearSeq = true) {
         this.stopMusic();
         if (typeof LilXasCutsceneFX !== 'undefined') LilXasCutsceneFX.reset();
         this.active = false;
@@ -41,6 +43,7 @@ class LilXasEvent {
         this.earBleedTickTimer = 0;
         this.cameraTarget = null;
         this._panToFleeShown = false;
+        if (clearSeq) { this._eventSeq = 0; this._defeatedSeq = 0; }
         const g = (typeof window !== 'undefined') ? window.gameInstance : null;
         if (g && g.player) g.player.earBleedSlowMult = 1.0;
     }
@@ -76,7 +79,8 @@ class LilXasEvent {
         const arena = g ? g.arena : null;
         if (!player || !arena || !enemies) return false;
 
-        this.reset();
+        this.reset(false);
+        this._eventSeq = (this._eventSeq || 0) + 1;
         this.active = true;
         this.phase = 'ENEMIES_APPROACH';
         this.timer = 68;
@@ -143,6 +147,10 @@ class LilXasEvent {
 
         if (this.limo) this.limo.age += dt;
         if (this.stage) this.stage.age += dt;
+        if (g.isCoopGuest) {
+            if (typeof LilXasCutsceneFX !== 'undefined') LilXasCutsceneFX.update(dt);
+            return;
+        }
         const overlay = g.cutsceneOverlay;
 
         if (this.phase === 'ENEMIES_APPROACH') {
@@ -204,6 +212,7 @@ class LilXasEvent {
             if (!this._panToFleeShown && this.timer <= 215) {
                 this._panToFleeShown = true;
                 if (hasCutFX) LilXasCutsceneFX.releaseFleeingPanic(g, overlay);
+                this._emitCoop('flee_panic');
             }
             if (this._panToFleeShown && hasCutFX) {
                 LilXasCutsceneFX.updateFleeingEnemies(dt, g, this.stage, true);
@@ -239,7 +248,7 @@ class LilXasEvent {
         this.cameraTarget = { x: this.limo.x, y: this.limo.y };
 
         if (overlay) {
-            overlay.startCutscene('🎤 RARE EASTER EGG • WAIT... WHO IS PULLING UP?! 🚗', { allowEndless: true });
+            overlay.startCutscene('🎤 RARE EASTER EGG • WAIT... WHO IS PULLING UP?! 🚗', { allowEndless: true, skipSquadPosition: true });
             overlay.setDialogue('SKATMIR & SQUAD', 'Hold on... why do we hear cheap autotune in the street?! 🤨', '#fed330', '❓', false);
         }
         if (g.effects) {
@@ -292,6 +301,7 @@ class LilXasEvent {
             LilXasCutsceneFX.triggerStageBlast(this.stage, g.effects);
             LilXasCutsceneFX.tagFleeingEnemies(g.enemies, this.stage);
         }
+        this._emitCoop('stage_blast', { ti: this.activeTrackIdx });
         if (overlay) {
             overlay.setDialogue('LIL XAS', 'MAX VOLUME!! NOBODY CAN SURVIVE THIS BANGER!! 🔊🎤🔥', '#e056fd', '🎤', false);
         }
@@ -324,13 +334,12 @@ class LilXasEvent {
             const se = (typeof window !== 'undefined') ? window.soundEngine : null;
             if (se && (se.muted || se.bgmMuted)) this.stopMusic();
             else if (!this.audio) this.playRandomSong();
-            // Stronger ear-bleed slow (-8% per live speaker, up to -32%) & heavier ear-bleed damage ticks!
             p.earBleedSlowMult = Math.max(0.66, 1.0 - 0.08 * aliveSpeakers);
             this.earBleedTickTimer -= dt;
             if (this.earBleedTickTimer <= 0) {
                 this.earBleedTickTimer = 75;
+                const dmg = 6 + 3 * aliveSpeakers;
                 if (!(window.AdminCheats && window.AdminCheats.godMode) && p.hp > 0) {
-                    const dmg = 6 + 3 * aliveSpeakers; // 9..18 ear-bleed damage per tick!
                     p.hp = Math.max(0, p.hp - dmg);
                     if (g.effects) {
                         g.effects.addDamage(p.x, p.y - 12, dmg, false, true);
@@ -338,6 +347,12 @@ class LilXasEvent {
                     }
                     if (p.hp <= 0 && typeof HeroStarBlessing !== 'undefined') HeroStarBlessing.tryStarRevive(p, g.effects);
                     if (p.hp <= 0 && window.soundEngine) window.soundEngine.playGameOver();
+                }
+                const p2 = g.coopSession && g.coopSession.isHost ? g.coopSession.remotePlayer : null;
+                if (p2 && p2.hp > 0 && !p2.isDowned && !p2.isDownedDisconnected) {
+                    p2.hp = Math.max(0, p2.hp - dmg);
+                    if (p2.hp <= 0) p2.isDowned = true;
+                    if (g.effects) g.effects.addDamage(p2.x, p2.y - 12, dmg, false, true);
                 }
             }
         } else {
@@ -351,6 +366,7 @@ class LilXasEvent {
             if (this.stage) this.stage.musicPlaying = false;
             this.stopMusic();
             this._playRecordScratch();
+            this._emitCoop('speakers_stopped');
             const g = (typeof window !== 'undefined') ? window.gameInstance : null;
             if (g && g.player) g.player.earBleedSlowMult = 1.0;
             if (effects && this.boss) {
@@ -362,6 +378,7 @@ class LilXasEvent {
     static onBossDefeated(boss, game) {
         if (!this.active) return;
         this.stopMusic();
+        this._emitCoop('boss_defeated', { x: Math.round(boss.x), y: Math.round(boss.y) });
         for (const sp of this.speakers) {
             if (sp && !sp.dead) sp.onShatter(game ? game.effects : null);
         }
@@ -379,13 +396,14 @@ class LilXasEvent {
         this.phase = 'IDLE';
     }
 
-    static playRandomSong() {
+    static playRandomSong(forcedIdx = null) {
         this.stopMusic();
         const se = (typeof window !== 'undefined') ? window.soundEngine : null;
         if (se && (se.muted || se.bgmMuted)) return;
         if (typeof Audio === 'undefined') return;
         try {
-            const idx = Math.floor(Math.random() * this.TRACKS.length);
+            const idx = (typeof forcedIdx === 'number' && forcedIdx >= 0 && forcedIdx < this.TRACKS.length)
+                ? forcedIdx : Math.floor(Math.random() * this.TRACKS.length);
             this.activeTrackIdx = idx;
             const audio = new Audio(encodeURI(this.TRACKS[idx]));
             audio.loop = true;
@@ -395,6 +413,73 @@ class LilXasEvent {
             const p = audio.play();
             if (p && p.catch) p.catch(() => {});
         } catch (_) {}
+    }
+
+    static _emitCoop(kind, extra = {}) {
+        const g = (typeof window !== 'undefined') ? window.gameInstance : null;
+        const net = g && g.coopSession && g.coopSession.isHost ? g.coopSession.net : null;
+        if (net) net.send('LIL_XAS_EVENT', { kind, seq: this._eventSeq || 1, ...extra });
+    }
+
+    static getCoopSnapshot() {
+        if (!this.active) return null;
+        return {
+            seq: this._eventSeq || 1, ph: this.phase, ti: this.activeTrackIdx || 0,
+            l: this.limo ? { x: Math.round(this.limo.x), y: Math.round(this.limo.y), dir: this.limo.dir, ds: this.limo.doorSide, do: Number((this.limo.doorOpen || 0).toFixed(2)) } : null,
+            s: this.stage ? { x: Math.round(this.stage.x), y: Math.round(this.stage.y), ls: this.stage.limoSide, mp: this.stage.musicPlaying ? 1 : 0 } : null,
+            ct: this.cameraTarget ? { x: Math.round(this.cameraTarget.x), y: Math.round(this.cameraTarget.y) } : null,
+            eb: this.phase === 'COMBAT' ? this.speakers.filter(s => s && !s.dead && s.hp > 0).length : 0
+        };
+    }
+
+    static applyCoopSnapshot(lx, g) {
+        if (!lx) { if (this.active) this.reset(); return; }
+        if (this._defeatedSeq && (lx.seq || 1) <= this._defeatedSeq) return;
+        this._eventSeq = lx.seq || 1;
+        this.active = true;
+        this.phase = lx.ph || 'ENEMIES_APPROACH';
+        this.activeTrackIdx = lx.ti || 0;
+        if (lx.l) this.limo = { ...(this.limo || { angle: 0, age: 0 }), x: lx.l.x, y: lx.l.y, dir: lx.l.dir, doorSide: lx.l.ds, doorOpen: lx.l.do };
+        if (lx.s) this.stage = { ...(this.stage || { age: 0 }), x: lx.s.x, y: lx.s.y, limoSide: lx.s.ls, musicPlaying: !!lx.s.mp };
+        this.cameraTarget = lx.ct ? { x: lx.ct.x, y: lx.ct.y } : null;
+        if (g && Array.isArray(g.enemies)) {
+            this.boss = g.enemies.find(e => e && e.isLilXas && !e.dead) || null;
+            this.speakers = g.enemies.filter(e => e && e.isLilXasSpeaker && !e.dead);
+        }
+        const shouldPlay = (this.phase === 'BLAST_SONG' || (this.stage && this.stage.musicPlaying));
+        const se = (typeof window !== 'undefined') ? window.soundEngine : null;
+        if (!shouldPlay || (se && (se.muted || se.bgmMuted))) { if (this.audio) this.stopMusic(); }
+        else if (!this.audio) { this.playRandomSong(this.activeTrackIdx); }
+        if (g && g.player) {
+            g.player.earBleedSlowMult = (this.phase === 'COMBAT' && lx.eb > 0) ? Math.max(0.66, 1.0 - 0.08 * lx.eb) : 1.0;
+        }
+    }
+
+    static handleCoopEvent(kind, payload, g) {
+        if (!g) return;
+        if (kind === 'stage_blast') {
+            this.active = true; this.phase = 'BLAST_SONG';
+            if (typeof LilXasCutsceneFX !== 'undefined') LilXasCutsceneFX.triggerStageBlast(this.stage, g.effects);
+            this.playRandomSong(payload.ti);
+            if (g.camera) g.camera.addShake(12);
+        } else if (kind === 'flee_panic') {
+            if (typeof LilXasCutsceneFX !== 'undefined') LilXasCutsceneFX.releaseFleeingPanic(g, null);
+        } else if (kind === 'speakers_stopped') {
+            if (this.stage) this.stage.musicPlaying = false;
+            this.stopMusic(); this._playRecordScratch();
+            if (g.player) g.player.earBleedSlowMult = 1.0;
+            if (g.effects && this.boss) g.effects.addComicSplash(this.boss.x, this.boss.y - 68, '🔇 TRASH MUSIC STOPPED!!', '#00f5ff');
+        } else if (kind === 'boss_defeated') {
+            this._defeatedSeq = Math.max(this._defeatedSeq || 0, payload.seq || (this._eventSeq || 1));
+            this.stopMusic();
+            if (g.player) g.player.earBleedSlowMult = 1.0;
+            if (g.effects) {
+                g.effects.addConfetti(payload.x || 0, payload.y || 0, 70);
+                g.effects.addComicSplash(payload.x || 0, (payload.y || 0) - 60, '🔇 CONCERT CANCELED! 🏆');
+            }
+            if (g.ui && typeof g.ui.addKillfeed === 'function') g.ui.addKillfeed('🔇 Silenced LIL XAS & Smashed the Speakers! (+8,000 pts & Insane Boss Crate!)');
+            this.active = false; this.phase = 'IDLE'; this.cameraTarget = null;
+        }
     }
 
     static setPaused(paused) {

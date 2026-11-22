@@ -70,11 +70,11 @@ class UIController {
         if (typeof FriendService !== 'undefined') {
             this.friendService = new FriendService();
             window.friendService = this.friendService;
-            this.friendService.start();
             if (typeof FriendsModal !== 'undefined') {
                 this.friendsModal = new FriendsModal(this.friendService);
                 window.friendsModal = this.friendsModal;
             }
+            this.friendService.start();
         }
         if (typeof LeaderboardModal !== 'undefined') {
             this.leaderboardModal = new LeaderboardModal();
@@ -498,6 +498,10 @@ class UIController {
         }
         if (window.friendService) {
             window.friendService.setPresenceStatus('In Lobby', null);
+            window.friendService.pollFriendships();
+        }
+        if (window.friendsModal) {
+            window.friendsModal.syncPendingNotification();
         }
         if (typeof CosmeticManager !== 'undefined') {
             CosmeticManager.syncUnlocks({ silent: true, syncRemote: false });

@@ -360,6 +360,8 @@ class Game {
                     }
                     enemy.walkCycle = (Number.isFinite(enemy.walkCycle) ? enemy.walkCycle : 0) + 0.22 * dt;
                 }
+                enemy.age = (enemy.age || 0) + dt;
+                if (enemy._lilXasFleeing) enemy._earBleedAge = (enemy._earBleedAge || 0) + dt;
                 enemy.dead = false;
                 if (enemy.hitFlash > 0) enemy.hitFlash -= dt;
             }

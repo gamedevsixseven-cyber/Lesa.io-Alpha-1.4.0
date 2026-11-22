@@ -138,9 +138,11 @@
 .bp-rail-arrow.right { right: 6px; }
 
 .bp-track-scroll {
-    flex: 1 1 auto; min-width: 0; overflow-x: auto; overflow-y: hidden;
+    position: relative; flex: 1 1 auto; min-width: 0; overflow-x: auto; overflow-y: hidden;
     display: flex; flex-direction: row; gap: 8px; padding: 0 36px 8px 10px;
-    scroll-behavior: smooth; scroll-snap-type: x proximity; touch-action: pan-x pan-y; -webkit-overflow-scrolling: touch;
+    scroll-behavior: auto; scroll-snap-type: none;
+    touch-action: pan-x !important; overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch; scrollbar-width: thin;
 }
 .bp-track-scroll::-webkit-scrollbar { height: 8px; }
 .bp-track-scroll::-webkit-scrollbar-track { background: #0b1120; border-radius: 8px; }
@@ -258,23 +260,78 @@
 }
 
 /* --- RESPONSIVE: TABLET & MOBILE --- */
-@media (max-width: 900px) {
+@media (max-width: 900px) and (min-height: 541px), (max-width: 559px), (pointer: coarse) and (orientation: portrait) {
+    .bp-modal-panel { overflow-y: auto !important; }
     .bp-workspace { flex-direction: column; gap: 8px; }
+    .bp-rail-shell { min-height: 255px; flex: 0 0 auto; }
     .bp-spotlight-panel { flex: 0 0 auto; flex-direction: row; flex-wrap: wrap; align-items: center; padding: 8px 10px; gap: 8px; }
     .bp-spot-stage { flex-direction: row; text-align: left; padding: 6px 10px; flex: 1 1 200px; }
-    .bp-spot-icon { width: 44px; height: 44px; }
+    .bp-spot-icon { width: 46px; height: 46px; }
     .bp-spot-stats, .bp-spot-vip-pitch, .bp-spot-top { display: none; }
     .bp-spot-actions { margin-top: 0; flex: 0 0 auto; }
 }
 
 @media (max-height: 540px), (pointer: coarse) and (orientation: portrait) {
-    .bp-modal-panel { padding: 7px 10px !important; gap: 5px !important; max-width: 97vw !important; max-height: 94vh !important; overflow: hidden !important; }
-    .bp-header-banner { padding: 6px 10px !important; gap: 4px !important; }
-    .bp-hero-title { font-size: 1.1rem !important; }
-    .bp-chip-collected, .bp-next-milestone-pill, .bp-jump-bar, .bp-rail-arrow { display: none !important; }
-    .bp-track-legend { width: 46px; }
-    .bp-tier-column { flex: 0 0 124px; gap: 4px; }
-    .bp-slot { min-height: 102px; padding: 4px; gap: 2px; }
-    .bp-icon-box { width: 38px; height: 38px; }
-    .bp-spotlight-panel { padding: 6px 8px; }
+    .bp-modal-panel { padding: 6px 10px !important; gap: 4px !important; width: 98vw !important; max-width: 98vw !important; max-height: 95vh !important; max-height: 95dvh !important; }
+    .bp-header-banner { padding: 4px 8px !important; gap: 3px !important; border-radius: 12px !important; }
+    .bp-header-top-row { gap: 4px !important; padding-right: 34px !important; }
+    .bp-hero-title { font-size: 1rem !important; -webkit-text-stroke: 1.5px #0f172a !important; }
+    .bp-season-pill, .bp-chip-collected, .bp-next-milestone-pill { display: none !important; }
+    .bp-stat-chip { padding: 1px 7px !important; font-size: 0.64rem !important; }
+    .bp-status-pill, .bp-help-pill-btn { font-size: 0.58rem !important; padding: 1px 6px !important; }
+    .bp-progress-command-row { gap: 5px !important; flex-wrap: nowrap !important; }
+    .bp-level-shield { padding: 2px 6px !important; border-radius: 8px !important; flex-direction: row !important; gap: 4px !important; align-items: baseline !important; }
+    .bp-shield-kicker { font-size: 0.52rem !important; }
+    .bp-shield-val { font-size: 0.82rem !important; }
+    .bp-xp-track-wrap { min-width: 90px !important; gap: 2px !important; }
+    .bp-xp-label-row { font-size: 0.62rem !important; }
+    .bp-xp-bar-track { height: 9px !important; }
+    .bp-banner-actions { gap: 4px !important; flex-wrap: nowrap !important; }
+    .bp-banner-actions .comic-btn { padding: 2px 7px !important; font-size: 0.64rem !important; height: auto !important; white-space: nowrap !important; }
+    .bp-controls-bar { gap: 5px !important; flex-wrap: nowrap !important; overflow-x: auto !important; touch-action: pan-x !important; scrollbar-width: none !important; }
+    .bp-controls-bar::-webkit-scrollbar { display: none; }
+    .bp-filter-bar { flex-wrap: nowrap !important; flex-shrink: 0 !important; gap: 4px !important; }
+    .bp-filter-bar .tab-filter-chip { padding: 2px 7px !important; font-size: 0.64rem !important; white-space: nowrap !important; }
+    .bp-jump-bar { flex-wrap: nowrap !important; flex-shrink: 0 !important; gap: 3px !important; }
+    .bp-jump-btn { padding: 2px 6px !important; font-size: 0.6rem !important; white-space: nowrap !important; }
+    .bp-track-legend { width: 42px; }
+    .bp-legend-node { height: 22px; font-size: 0.6rem; }
+    .bp-legend-badge { font-size: 0.56rem; padding: 1px 4px; }
+    .bp-legend-sub { display: none; }
+    .bp-rail-arrow { width: 22px; height: 40px; font-size: 1.2rem; opacity: 0.9; }
+    .bp-rail-arrow.left { left: 44px; }
+    .bp-rail-arrow.right { right: 3px; }
+    .bp-track-scroll { gap: 6px; padding: 0 28px 6px 8px; }
+    .bp-tier-column { flex: 0 0 128px; gap: 4px; }
+    .bp-spine-cell { height: 22px; }
+    .bp-tier-node { padding: 1px 8px; font-size: 0.66rem; }
+    .bp-slot { min-height: 0; padding: 4px 5px; gap: 2px; border-radius: 10px; justify-content: space-between; }
+    .bp-track-tag, .bp-rarity-tag { font-size: 0.48rem; padding: 1px 4px; }
+    .bp-icon-box { width: 38px; height: 38px; padding: 3px; border-radius: 8px; }
+    .bp-reward-name { font-size: 0.68rem; line-height: 1.05; min-height: 0; }
+    .bp-reward-sub { display: none; }
+    .bp-claim-btn { padding: 2px 5px !important; font-size: 0.62rem !important; border-radius: 7px !important; }
+}
+
+@media (max-height: 540px) and (min-width: 560px) {
+    .bp-modal-panel { overflow-y: auto !important; touch-action: pan-y !important; }
+    .bp-workspace { flex-direction: row !important; gap: 8px !important; min-height: 0 !important; }
+    .bp-rail-shell { min-height: 205px; }
+    .bp-spotlight-panel {
+        flex: 0 0 176px !important; flex-direction: column !important; flex-wrap: nowrap !important;
+        padding: 7px 8px !important; gap: 5px !important; overflow-y: auto !important;
+    }
+    .bp-spot-top { display: flex !important; }
+    .bp-spot-kicker { font-size: 0.56rem !important; }
+    .bp-spot-stage { padding: 6px !important; gap: 4px !important; flex: 0 0 auto !important; flex-direction: column !important; text-align: center !important; }
+    .bp-spot-icon { width: 48px !important; height: 48px !important; }
+    .bp-spot-title { font-size: 0.84rem !important; }
+    .bp-spot-sub { font-size: 0.62rem !important; }
+    .bp-spot-stats { display: grid !important; gap: 4px !important; }
+    .bp-spot-stat-box { padding: 3px 5px !important; }
+    .bp-spot-stat-k { font-size: 0.5rem !important; }
+    .bp-spot-stat-v { font-size: 0.66rem !important; }
+    .bp-spot-vip-pitch, .bp-spot-palette { display: none !important; }
+    .bp-spot-actions { margin-top: auto !important; }
+    .bp-spot-action-btn { padding: 5px 6px !important; font-size: 0.7rem !important; }
 }

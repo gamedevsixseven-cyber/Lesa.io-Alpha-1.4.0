@@ -65,19 +65,21 @@ class CoopGuestSession {
                 this.game.resumeGame(true);
             } else if (type === 'CUTSCENE_TRIGGER') {
                 if (this.game.cutsceneOverlay && typeof this.game.cutsceneOverlay.startCutscene === 'function') {
-                    this.game.cutsceneOverlay.startCutscene(payload.cutsceneId);
-                    if (typeof CinematicCutsceneOverlay !== 'undefined' && typeof CinematicCutsceneOverlay.applyGuestSquadPositions === 'function') {
+                    this.game.cutsceneOverlay.startCutscene(payload.cutsceneId, payload.opts || {});
+                    if ((!payload.opts || !payload.opts.skipSquadPosition) && typeof CinematicCutsceneOverlay !== 'undefined' && typeof CinematicCutsceneOverlay.applyGuestSquadPositions === 'function') {
                         CinematicCutsceneOverlay.applyGuestSquadPositions(this.game, this, payload.positions);
                     }
                 }
             } else if (type === 'CUTSCENE_DIALOGUE') {
                 if (this.game.cutsceneOverlay && typeof this.game.cutsceneOverlay.setDialogue === 'function') {
                     if (!this.game.cutsceneOverlay.active && typeof this.game.cutsceneOverlay.startCutscene === 'function') {
-                        this.game.cutsceneOverlay.startCutscene();
+                        this.game.cutsceneOverlay.startCutscene('', { allowEndless: this.game.gameMode === 'endless' });
                     }
                     this.game.cutsceneOverlay.setDialogue(payload.speaker, payload.text, payload.speakerColor, payload.avatarIcon, payload.promptAdvance);
                     this.game.cutsceneOverlay.setReadyState(payload.readyCount || 0, payload.totalPlayers || 2, false);
                 }
+            } else if (type === 'LIL_XAS_EVENT' && typeof LilXasEvent !== 'undefined' && payload) {
+                LilXasEvent.handleCoopEvent(payload.kind, payload, this.game);
             } else if (type === 'CUTSCENE_READY_UPDATE') {
                 if (this.game.cutsceneOverlay && typeof this.game.cutsceneOverlay.setReadyState === 'function') {
                     this.game.cutsceneOverlay.setReadyState(payload.readyCount, payload.totalPlayers, this.game.cutsceneOverlay.isLocalReady);
@@ -154,6 +156,7 @@ class CoopGuestSession {
         this.game.state = 'MENU';
         this.game.isCoopGuest = false;
         this.game.coopSession = null;
+        if (typeof LilXasEvent !== 'undefined') LilXasEvent.reset();
 
         if (this.game.cutsceneOverlay) {
             this.game.cutsceneOverlay.totalPlayers = 1;
@@ -313,7 +316,7 @@ class CoopGuestSession {
         // 3.6. Sync Cutscene Overlay from Snapshot Authority
         if (data.cutscene && this.game.cutsceneOverlay) {
             if (!this.game.cutsceneOverlay.active) {
-                this.game.cutsceneOverlay.startCutscene(data.cutscene.sub);
+                this.game.cutsceneOverlay.startCutscene(data.cutscene.sub, { allowEndless: !!data.cutscene.ae, skipSquadPosition: true });
             }
             if (data.cutscene.tp) {
                 this.game.cutsceneOverlay.totalPlayers = data.cutscene.tp;
@@ -325,6 +328,11 @@ class CoopGuestSession {
         } else if (!data.cutscene && this.game.cutsceneOverlay && this.game.cutsceneOverlay.active) {
             this.game.cutsceneOverlay.endCutscene();
             this.game.cutsceneOverlay.setReadyState(0, 1, false);
+        }
+
+        // 3.7. Sync Lil Xas Concert Easter Egg State (Limo, Stage, Camera Target, Music, Combat Overlay)
+        if (typeof LilXasEvent !== 'undefined' && typeof LilXasEvent.applyCoopSnapshot === 'function') {
+            LilXasEvent.applyCoopSnapshot(data.lx || null, this.game);
         }
 
         // 4. Synchronize Enemies with per-frame target lerp coordinates
@@ -386,6 +394,19 @@ class CoopGuestSession {
                         enemy.flyHeight = eNet.fly ? 1 : 0;
                     }
                     if (eNet.hf) enemy.hitFlash = 8;
+                    enemy._lilXasFleeing = !!eNet.fl;
+                    enemy._earPainTimer = eNet.ep ? 10 : 0;
+                    if (enemy._lilXasFleeing && typeof LilXasCutsceneFX !== 'undefined' && (!enemy._guestBloodNext || performance.now() > enemy._guestBloodNext)) {
+                        enemy._guestBloodNext = performance.now() + 180;
+                        LilXasCutsceneFX.spawnGroundBlood(enemy.x, enemy.y, enemy.radius || 24);
+                    }
+                    if (enemy.isLilXasSpeaker) {
+                        enemy.speakerIndex = eNet.si || 0;
+                        enemy.musicPlaying = !!eNet.mp;
+                    }
+                    if (eNet.lx && enemy.isLilXas && typeof LilXasAttacksFX !== 'undefined') {
+                        LilXasAttacksFX.applyBossNet(enemy, eNet.lx);
+                    }
                 }
             }
 

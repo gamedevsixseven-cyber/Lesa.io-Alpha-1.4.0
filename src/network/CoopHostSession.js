@@ -84,13 +84,13 @@ class CoopHostSession {
             co.onRequestAdvance = () => this.handleCutsceneAdvance('host');
 
             const origCutscene = co.startCutscene.bind(co);
-            co.startCutscene = (cutsceneId) => {
+            co.startCutscene = (cutsceneId, opts = {}) => {
                 this.cutsceneReadyPlayers.clear();
-                origCutscene(cutsceneId);
-                const positions = (typeof CinematicCutsceneOverlay !== 'undefined' && typeof CinematicCutsceneOverlay.positionCoopSquad === 'function')
+                origCutscene(cutsceneId, opts);
+                const positions = (!opts || !opts.skipSquadPosition) && typeof CinematicCutsceneOverlay !== 'undefined' && typeof CinematicCutsceneOverlay.positionCoopSquad === 'function'
                     ? CinematicCutsceneOverlay.positionCoopSquad(this.game, this)
                     : [];
-                this.net.send('CUTSCENE_TRIGGER', { cutsceneId, positions });
+                this.net.send('CUTSCENE_TRIGGER', { cutsceneId, opts: opts || {}, positions });
             };
 
             const origDialogue = co.setDialogue.bind(co);
@@ -288,7 +288,7 @@ class CoopHostSession {
             const e = this.game.enemies[i];
             if (!e || e.dead) continue;
             if (!e._netId) e._netId = this.netIdCounter++;
-            enemiesPayload.push({
+            const eRow = {
                 id: safeInt(e._netId, 1, 2000000000, 1),
                 t: (typeof e.type === 'string' && e.type) ? e.type : 'fatmir',
                 st: e.subType || '',
@@ -304,7 +304,12 @@ class CoopHostSession {
                 b: e.isBoss ? 1 : (e.isMiniBoss ? 2 : 0),
                 fly: e.isFlying ? 1 : 0,
                 n: e.name || ''
-            });
+            };
+            if (e._lilXasFleeing) eRow.fl = 1;
+            if ((e._earPainTimer || 0) > 0) eRow.ep = 1;
+            if (e.isLilXasSpeaker) { eRow.si = e.speakerIndex || 0; eRow.mp = e.musicPlaying ? 1 : 0; }
+            if (e.isLilXas && typeof LilXasAttacksFX !== 'undefined') { eRow.lx = LilXasAttacksFX.serializeBossNet(e); }
+            enemiesPayload.push(eRow);
         }
 
         // Collect drops (prioritize special pickups/magnetized gems & cap to keep packets lightweight on late waves)
@@ -374,9 +379,11 @@ class CoopHostSession {
                 col: this.game.cutsceneOverlay.speakerColor || '#fed330',
                 ico: this.game.cutsceneOverlay.avatarIcon || '💬',
                 adv: !!this.game.cutsceneOverlay.promptAdvance,
+                ae: !!this.game.cutsceneOverlay.allowEndless,
                 rc: this.cutsceneReadyPlayers ? this.cutsceneReadyPlayers.size : 0,
                 tp: this.getTotalPlayers()
             } : null,
+            lx: (typeof LilXasEvent !== 'undefined' && typeof LilXasEvent.getCoopSnapshot === 'function') ? LilXasEvent.getCoopSnapshot() : null,
             wave: safeInt(wm ? wm.wave : 1, 1, 999, 1),
             wState: (wm && wm.waveState) ? wm.waveState : 'IN_PROGRESS',
             wTotal: safeInt(wm ? wm.waveTotalEnemies : 0, 0, 999, 0),

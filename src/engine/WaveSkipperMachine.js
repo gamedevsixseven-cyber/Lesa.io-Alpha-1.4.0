@@ -427,8 +427,10 @@ class WaveSkipperMachine {
         ctx.fillText(label, 0, pillY);
 
         if (this.playerInRange && info.canSkip) {
+            const g = (typeof window !== 'undefined') ? window.gameInstance : null;
+            const isTouch = !!(g && ((g.touchInput && g.touchInput.isTouchDevice) || (typeof MobilePerf !== 'undefined' && MobilePerf.isMobile)));
             const promptY = pillY - 26 + Math.sin(this.age * 0.2) * 3;
-            const promptText = `[F] WARP (-${cost} CORES)`;
+            const promptText = isTouch ? `TAP WARP (-${cost} CORES)` : `[F] WARP (-${cost} CORES)`;
             const pw = Math.max(136, ctx.measureText(promptText).width + 24);
             ctx.fillStyle = '#fed330';
             ctx.strokeStyle = '#141418';

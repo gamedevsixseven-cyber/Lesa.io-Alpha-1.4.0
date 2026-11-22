@@ -202,6 +202,41 @@ class MobileAimAssist {
                 }
             }
         }
+
+        if (ti.warpBtn) {
+            const game = ti.game;
+            const skipper = game ? game.waveSkipper : null;
+            const showWarp = !!(game && game.gameMode === 'endless' && !game.isCoopGuest && skipper && skipper.active && game.waveManager);
+            if (c.showWarp !== showWarp) {
+                c.showWarp = showWarp;
+                ti.warpBtn.classList.toggle('hidden', !showWarp);
+            }
+            if (showWarp) {
+                const cores = player.chronoCores || 0;
+                const info = (typeof WaveSkipperMachine !== 'undefined')
+                    ? WaveSkipperMachine.getSkipInfo(game.waveManager.wave, game.waveManager.waveState, game.gameMode, cores, skipper.skipsUsed)
+                    : { canSkip: false, targetWave: null, cost: 3 };
+                const cost = info.cost || 3;
+                const wOff = Math.round(226.2 * (1 - Math.max(0, Math.min(1, cores / Math.max(1, cost)))));
+                if (ti.warpRing && c.warpOff !== wOff) {
+                    c.warpOff = wOff;
+                    ti.warpRing.style.strokeDashoffset = String(wOff);
+                }
+                const nearReady = !!(info.canSkip && skipper.playerInRange);
+                const wMode = nearReady ? 2 : (info.canSkip ? 1 : 0);
+                if (c.warpMode !== wMode) {
+                    c.warpMode = wMode;
+                    ti.warpBtn.classList.toggle('is-near-ready', wMode === 2);
+                    ti.warpBtn.classList.toggle('is-ready', wMode >= 1);
+                    ti.warpBtn.classList.toggle('on-cooldown', wMode === 0);
+                }
+                const wLabel = nearReady ? `WARP W${info.targetWave}` : (info.canSkip ? `SKIP W${info.targetWave}` : `${cores}/${cost}`);
+                if (ti._warpLabelEl && c.warpLabel !== wLabel) {
+                    c.warpLabel = wLabel;
+                    ti._warpLabelEl.textContent = wLabel;
+                }
+            }
+        }
     }
 }
 

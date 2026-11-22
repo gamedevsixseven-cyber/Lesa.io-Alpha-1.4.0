@@ -103,8 +103,8 @@ class BattlePassModalUI {
 
         const leftArrow = document.getElementById('bp-scroll-left');
         const rightArrow = document.getElementById('bp-scroll-right');
-        if (leftArrow) leftArrow.addEventListener('click', () => this.trackEl && (this.trackEl.scrollLeft -= 340));
-        if (rightArrow) rightArrow.addEventListener('click', () => this.trackEl && (this.trackEl.scrollLeft += 340));
+        if (leftArrow) leftArrow.addEventListener('click', () => this.trackEl && this.trackEl.scrollBy({ left: -300, behavior: 'smooth' }));
+        if (rightArrow) rightArrow.addEventListener('click', () => this.trackEl && this.trackEl.scrollBy({ left: 300, behavior: 'smooth' }));
 
         if (this.trackEl) {
             this.trackEl.addEventListener('wheel', (e) => {
@@ -140,7 +140,7 @@ class BattlePassModalUI {
         if (!this.modal) return;
         const focusTier = this._pickDefaultFocus();
         this.modal.classList.remove('hidden');
-        this.render({ scrollToTier: focusTier });
+        this.render({ scrollToTier: focusTier, instantScroll: true });
     }
 
     hide() {
@@ -486,7 +486,9 @@ class BattlePassModalUI {
             const targetCol = this.trackEl.querySelector(`[data-bp-col-tier="${options.scrollToTier}"]`);
             if (targetCol) {
                 const offset = targetCol.offsetLeft - (this.trackEl.clientWidth / 2) + (targetCol.clientWidth / 2);
-                this.trackEl.scrollLeft = Math.max(0, offset);
+                const left = Math.max(0, offset);
+                if (options.instantScroll) this.trackEl.scrollLeft = left;
+                else this.trackEl.scrollTo({ left, behavior: 'smooth' });
             }
         } else if (options.preserveScroll) {
             this.trackEl.scrollLeft = prevScroll;

@@ -60,6 +60,7 @@ class CinematicCutsceneOverlay {
             return;
         }
         this.active = true;
+        this.allowEndless = !!(opts && opts.allowEndless);
         this.targetProgress = 1.0;
         this.subText = subText;
         this.speaker = '';
@@ -137,6 +138,7 @@ class CinematicCutsceneOverlay {
 
     endCutscene() {
         this.active = false;
+        this.allowEndless = false;
         this.targetProgress = 0.0;
         this.barProgress = 0.0;
         this.clearDialogue();
