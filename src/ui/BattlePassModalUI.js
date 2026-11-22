@@ -199,7 +199,7 @@ class BattlePassModalUI {
         if (this.xpLabelEl) {
             this.xpLabelEl.textContent = prog.tier >= BattlePassManager.MAX_TIER
                 ? `SEASON MAXED (${this.manager.xp.toLocaleString()} XP)`
-                : `${prog.intoTier} / ${prog.needed} XP to Tier ${prog.tier + 1}`;
+                : `${prog.intoTier.toLocaleString()} / ${prog.needed.toLocaleString()} XP to Tier ${prog.tier + 1}`;
         }
         if (this.statusPillEl) {
             this.statusPillEl.textContent = hasPremium ? '👑 VIP PASS ACTIVE' : 'FREE PASS';
@@ -257,8 +257,8 @@ class BattlePassModalUI {
         } else if (isPaid && !this.manager.hasPremium) {
             btnHtml = `<button class="comic-btn bp-claim-btn bp-need-pass-btn" data-bp-need-pass="1">🔒 VIP PASS</button>`;
         } else {
-            const xpNeeded = Math.max(0, (entry.tier - 1) * BattlePassManager.XP_PER_TIER - this.manager.xp);
-            btnHtml = `<button class="comic-btn bp-claim-btn" disabled>🔒 ${xpNeeded} XP</button>`;
+            const xpNeeded = Math.max(0, BattlePassManager.getXpToReachTier(entry.tier) - this.manager.xp);
+            btnHtml = `<button class="comic-btn bp-claim-btn" disabled>🔒 ${xpNeeded.toLocaleString()} XP</button>`;
         }
 
         return `
@@ -336,7 +336,7 @@ class BattlePassModalUI {
             extraHtml = `
                 <div class="bp-spot-stats">
                     <div class="bp-spot-stat-box"><span class="bp-spot-stat-k">REWARD VALUE</span><span class="bp-spot-stat-v">${this._esc(valText)}</span></div>
-                    <div class="bp-spot-stat-box"><span class="bp-spot-stat-k">UNLOCK TIER</span><span class="bp-spot-stat-v">TIER ${entry.tier} (${(entry.tier - 1) * BattlePassManager.XP_PER_TIER} XP)</span></div>
+                    <div class="bp-spot-stat-box"><span class="bp-spot-stat-k">UNLOCK TIER</span><span class="bp-spot-stat-v">TIER ${entry.tier} (${BattlePassManager.getXpToReachTier(entry.tier).toLocaleString()} XP)</span></div>
                 </div>
             `;
         }
@@ -358,8 +358,8 @@ class BattlePassModalUI {
         } else if (isPaid && !this.manager.hasPremium) {
             actionHtml = `<button type="button" class="comic-btn bp-buy-pass-btn bp-spot-action-btn" id="bp-spot-buy-btn">👑 UNLOCK VIP (💎 ${BattlePassManager.PASS_GEM_COST})</button>`;
         } else {
-            const need = Math.max(0, (entry.tier - 1) * BattlePassManager.XP_PER_TIER - this.manager.xp);
-            actionHtml = `<button type="button" class="comic-btn bp-spot-action-btn" disabled>🔒 NEED ${need} MORE XP</button>`;
+            const need = Math.max(0, BattlePassManager.getXpToReachTier(entry.tier) - this.manager.xp);
+            actionHtml = `<button type="button" class="comic-btn bp-spot-action-btn" disabled>🔒 NEED ${need.toLocaleString()} MORE XP</button>`;
         }
 
         const vipPitch = !this.manager.hasPremium

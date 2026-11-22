@@ -249,13 +249,96 @@
     padding: 3px 9px; font-size: 11px; font-weight: 800; cursor: pointer;
 }
 
-@media (max-width: 620px), (max-height: 540px) {
-    .friends-panel { padding: 12px; max-height: 94vh; }
-    .friends-title { font-size: 1.2rem; }
-    .friend-card-main { flex-direction: column; align-items: stretch; }
-    .friend-actions { justify-content: flex-end; }
-    .friend-stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    .friends-quick-input { width: 100%; }
+@media (pointer: coarse), (max-width: 620px), (max-height: 540px) {
+    #friends-modal.modal-overlay {
+        padding: 4px;
+        touch-action: pan-y;
+    }
+    .friends-panel {
+        width: min(96vw, 640px);
+        max-height: 94vh;
+        max-height: 94dvh;
+        padding: 9px 11px;
+        border-width: 2.5px;
+        border-radius: 15px;
+        touch-action: pan-y;
+        overscroll-behavior: contain;
+    }
+    html.vl-active .friends-panel {
+        width: min(calc(var(--vl-w, 844px) * 0.95), 640px);
+        max-height: calc(var(--vl-h, 390px) * 0.94);
+    }
+    .friends-header {
+        padding-bottom: 5px;
+        margin-bottom: 6px;
+        padding-right: 36px;
+        gap: 6px;
+    }
+    .friends-title { font-size: 1.05rem; -webkit-text-stroke: 1px #0f172a; }
+    .friends-online-pill, .friends-icon-btn { font-size: 10px; padding: 2px 7px; border-radius: 8px; }
+    #friends-close-btn.modal-close-x-btn { width: 28px; height: 28px; font-size: 0.95rem; }
+
+    .friends-id-banner {
+        flex-wrap: nowrap;
+        gap: 8px;
+        padding: 5px 8px;
+        margin-bottom: 6px;
+        border-width: 2px;
+        border-radius: 11px;
+    }
+    .friends-id-meta { flex: 1 1 auto; min-width: 0; gap: 7px; }
+    .friends-id-avatar { width: 34px; height: 34px; border-radius: 8px; }
+    .friends-id-name { font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .friends-id-code { font-size: 11px; padding: 1px 6px; border-radius: 6px; }
+    .friends-id-sub { display: none; }
+    .friends-id-tag-row { flex-shrink: 0; gap: 5px; flex-wrap: nowrap; }
+    .friends-card-btn, .friends-copy-btn { padding: 4px 8px; font-size: 10.5px; border-radius: 7px; white-space: nowrap; }
+
+    .friends-tabs { gap: 5px; margin-bottom: 6px; }
+    .friends-tab-btn { padding: 6px 6px; font-size: 11px; border-radius: 9px; white-space: nowrap; }
+    .friends-pending-banner { padding: 5px 8px; font-size: 11px; margin-bottom: 6px; gap: 6px; }
+    .friends-feedback { font-size: 11.5px; margin-bottom: 6px; padding: 5px 8px; }
+
+    .friends-body {
+        min-height: 0;
+        flex: 1 1 auto;
+        overflow-y: auto;
+        overflow-x: hidden;
+        touch-action: pan-y;
+        overscroll-behavior-y: contain;
+        -webkit-overflow-scrolling: touch;
+        padding: 0 3px 10px 0;
+    }
+    .friends-body * { touch-action: pan-y; }
+    #friends-modal button { touch-action: manipulation; }
+
+    .friends-toolbar { gap: 5px; margin-bottom: 6px; flex-wrap: nowrap; }
+    .friends-filter-chips { flex-wrap: nowrap; gap: 4px; }
+    .friends-filter-chips .tab-filter-chip { padding: 4px 7px; font-size: 10.5px; white-space: nowrap; }
+    .friends-quick-input { flex: 1 1 90px; min-width: 80px; width: auto; padding: 4px 8px; font-size: 11.5px; }
+
+    .friends-search-bar { gap: 6px; margin-bottom: 6px; }
+    .friends-search-input { padding: 6px 9px; font-size: 12.5px; border-radius: 9px; }
+    .friends-search-btn { padding: 0 11px; font-size: 11.5px; border-radius: 9px; }
+    .friends-discover-hint { font-size: 10.5px; padding: 4px 8px; margin-bottom: 6px; }
+
+    .friends-list { gap: 6px; }
+    .friend-card { padding: 7px 9px; border-radius: 11px; gap: 6px; }
+    .friend-card-main { flex-direction: row; align-items: center; gap: 8px; }
+    .friend-left { gap: 8px; }
+    .friend-avatar { width: 34px; height: 34px; border-radius: 8px; }
+    .friend-presence-dot { width: 10px; height: 10px; }
+    .friend-name { font-size: 13px; }
+    .friend-tag-chip, .friend-lvl-chip, .friend-mode-pill { font-size: 9.5px; padding: 1px 5px; }
+    .friend-sub { font-size: 10.5px; }
+    .friend-room-pill { font-size: 10px; padding: 1px 6px; }
+    .friend-actions { gap: 4px; flex-wrap: nowrap; justify-content: flex-end; }
+    .friend-btn { padding: 5px 8px; font-size: 11px; border-radius: 7px; white-space: nowrap; }
+    .friend-stats-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; padding: 5px 6px; }
+    .friend-stat-pill { font-size: 9.5px; }
+    .friend-stat-pill strong { font-size: 11px; }
+    .friends-empty { padding: 14px 10px; font-size: 12px; }
+
     .bottom-square-btn .badge-notify {
         top: -6px;
         right: -6px;
@@ -264,4 +347,11 @@
         padding: 0 4px;
         font-size: 0.68rem;
     }
+}
+
+@media (max-width: 460px) {
+    .friends-toolbar { flex-wrap: wrap; }
+    .friends-id-banner { flex-wrap: wrap; }
+    .friend-card-main { flex-direction: column; align-items: stretch; }
+    .friend-stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }

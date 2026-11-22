@@ -232,9 +232,12 @@ class FriendsModal {
 
         const body = document.getElementById('friends-modal-body');
         if (!body) return;
+        const keepScroll = (this._lastRenderedTab === this.activeTab) ? body.scrollTop : 0;
+        this._lastRenderedTab = this.activeTab;
         if (this.activeTab === 'friends') this._renderFriendsTab(body, enriched);
         else if (this.activeTab === 'requests') this._renderRequestsTab(body);
         else this._renderAddTab(body);
+        if (keepScroll > 0) body.scrollTop = keepScroll;
     }
 
     _buildPendingBannerHtml() {

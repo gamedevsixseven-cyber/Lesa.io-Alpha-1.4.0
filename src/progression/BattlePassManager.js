@@ -7,10 +7,29 @@
 class BattlePassManager {
     static STORAGE_KEY = 'lesaio_battle_pass_s1';
     static SEASON_ID = 'season_1';
-    static XP_PER_TIER = 150;
+    static BASE_XP_PER_TIER = 200;
+    static XP_STEP_PER_TIER = 50;
+    static XP_PER_TIER = 200;
     static MAX_TIER = 30;
     static SKIP_TIER_GEM_COST = 40;
     static PASS_GEM_COST = 500;
+
+    /** XP required to advance from `tier` to `tier + 1` (each tier costs +50 more XP). */
+    static getXpForNextTier(tier) {
+        const t = Math.max(1, Math.min(BattlePassManager.MAX_TIER - 1, Math.floor(Number(tier) || 1)));
+        return BattlePassManager.BASE_XP_PER_TIER + (t - 1) * BattlePassManager.XP_STEP_PER_TIER;
+    }
+
+    /** Cumulative XP required to unlock `targetTier` (Tier 1 = 0, Tier 2 = 200, Tier 3 = 450, ..., Tier 30 = 26,100). */
+    static getXpToReachTier(targetTier) {
+        const steps = Math.max(0, Math.min(BattlePassManager.MAX_TIER, Math.floor(Number(targetTier) || 1)) - 1);
+        return (steps * BattlePassManager.BASE_XP_PER_TIER)
+            + (BattlePassManager.XP_STEP_PER_TIER * steps * (steps - 1)) / 2;
+    }
+
+    static getMaxXp() {
+        return BattlePassManager.getXpToReachTier(BattlePassManager.MAX_TIER);
+    }
 
     static TIERS = [
         {
@@ -256,17 +275,25 @@ class BattlePassManager {
     }
 
     getCurrentTier() {
-        return Math.min(BattlePassManager.MAX_TIER, 1 + Math.floor(this.xp / BattlePassManager.XP_PER_TIER));
+        let tier = 1;
+        for (let t = 2; t <= BattlePassManager.MAX_TIER; t++) {
+            if (this.xp >= BattlePassManager.getXpToReachTier(t)) tier = t;
+            else break;
+        }
+        return tier;
     }
 
     getTierProgress() {
         const tier = this.getCurrentTier();
         if (tier >= BattlePassManager.MAX_TIER) {
-            return { tier, intoTier: BattlePassManager.XP_PER_TIER, needed: BattlePassManager.XP_PER_TIER, pct: 100 };
+            const finalStep = BattlePassManager.getXpForNextTier(BattlePassManager.MAX_TIER - 1);
+            return { tier, intoTier: finalStep, needed: finalStep, pct: 100 };
         }
-        const intoTier = this.xp % BattlePassManager.XP_PER_TIER;
-        const pct = Math.min(100, Math.round((intoTier / BattlePassManager.XP_PER_TIER) * 100));
-        return { tier, intoTier, needed: BattlePassManager.XP_PER_TIER, pct };
+        const tierStart = BattlePassManager.getXpToReachTier(tier);
+        const needed = BattlePassManager.getXpForNextTier(tier);
+        const intoTier = Math.max(0, this.xp - tierStart);
+        const pct = Math.min(100, Math.round((intoTier / needed) * 100));
+        return { tier, intoTier, needed, pct };
     }
 
     getClaimableRewards() {
@@ -285,9 +312,9 @@ class BattlePassManager {
     addXp(amount, source = 'gameplay') {
         const gain = Math.max(0, Math.floor(Number(amount) || 0));
         if (gain <= 0) return;
-        const maxXp = (BattlePassManager.MAX_TIER - 1) * BattlePassManager.XP_PER_TIER;
+        const maxXp = BattlePassManager.getMaxXp();
         const prevTier = this.getCurrentTier();
-        this.xp = Math.min(maxXp + BattlePassManager.XP_PER_TIER, this.xp + gain);
+        this.xp = Math.min(maxXp, this.xp + gain);
         this.save();
         const newTier = this.getCurrentTier();
         if (newTier > prevTier && typeof window !== 'undefined' && window.modalManager && typeof window.modalManager.showQuickToast === 'function') {
@@ -414,7 +441,7 @@ class BattlePassManager {
         if (!window.GameState || !window.GameState.spendGems(cost)) {
             return { success: false, reason: `Need 💎 ${cost} Gems to unlock Tier ${cur + 1}!` };
         }
-        const needXp = (cur * BattlePassManager.XP_PER_TIER) - this.xp;
+        const needXp = BattlePassManager.getXpToReachTier(cur + 1) - this.xp;
         this.addXp(Math.max(1, needXp), 'gem_skip');
         return { success: true, newTier: this.getCurrentTier() };
     }
