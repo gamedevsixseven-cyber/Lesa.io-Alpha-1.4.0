@@ -188,23 +188,28 @@ class Rouf extends EnemyBase {
         this.age += dt;
         if (this.hitFlash > 0) this.hitFlash -= dt;
 
-        if (!player || player.hp <= 0) return;
-
-        // Handle Cutscene State
+        // Handle Cutscene State (allow ending sequence even if target was knocked down mid-explosion)
         if (this.cutsceneState !== 'COMBAT') {
-            this.updateCutscene(dt, player, effects, arena);
+            const scenePlayer = player || (typeof window !== 'undefined' && window.gameInstance ? window.gameInstance.player : null);
+            if (!scenePlayer) return;
+            if (!this.isDefeated && scenePlayer.hp <= 0) return;
+            this.updateCutscene(dt, scenePlayer, effects, arena);
             return;
         }
+
+        if (!player || player.hp <= 0) return;
 
         // Active Combat
         this.updateCombat(dt, player, enemies, bullets, effects, arena);
     }
 
     updateCutscene(dt, player, effects, arena = null) {
-        if (!player || player.hp <= 0) return;
+        const scenePlayer = (typeof window !== 'undefined' && window.gameInstance && window.gameInstance.player && window.gameInstance.player.hp > 0)
+            ? window.gameInstance.player : player;
+        if (!scenePlayer) return;
 
-        const dx = player.x - this.x;
-        const dy = player.y - this.y;
+        const dx = scenePlayer.x - this.x;
+        const dy = scenePlayer.y - this.y;
         const dist = Math.hypot(dx, dy) || 1;
 
         const overlay = (typeof window !== 'undefined' && window.gameInstance && window.gameInstance.cutsceneOverlay)
@@ -212,7 +217,7 @@ class Rouf extends EnemyBase {
             : null;
 
         if (overlay && !overlay.active && this.cutsceneState !== 'COMBAT') {
-            overlay.startCutscene('WAVE 20 • BOSS ENCOUNTER');
+            overlay.startCutscene(this.isDefeated ? 'STORY FINALE • THE POLICE ARRIVE' : 'WAVE 20 • BOSS ENCOUNTER');
         }
 
         // Handle Ending Police Car Arrival
@@ -244,9 +249,10 @@ class Rouf extends EnemyBase {
                     }
 
                     if (overlay) {
-                        overlay.startCutscene('STORY FINALE • THE POLICE ARRIVE');
-                        this.showDialogue(ROUF_ENDING_DIALOGUES[0], player, overlay);
-                        overlay.onAdvance = () => this.advanceEndingDialogue(player, effects);
+                        if (!overlay.active) overlay.startCutscene('STORY FINALE • THE POLICE ARRIVE');
+                        else overlay.subText = 'STORY FINALE • THE POLICE ARRIVE';
+                        this.showDialogue(ROUF_ENDING_DIALOGUES[0], scenePlayer, overlay);
+                        overlay.onAdvance = () => this.advanceEndingDialogue(scenePlayer, effects);
                     }
                 }
             }
@@ -281,8 +287,8 @@ class Rouf extends EnemyBase {
                 this.introIndex = 0;
 
                 if (overlay) {
-                    this.showDialogue(ROUF_INTRO_DIALOGUES[0], player, overlay);
-                    overlay.onAdvance = () => this.advanceCutsceneDialogue(player);
+                    this.showDialogue(ROUF_INTRO_DIALOGUES[0], scenePlayer, overlay);
+                    overlay.onAdvance = () => this.advanceCutsceneDialogue(scenePlayer);
                 }
             }
         }

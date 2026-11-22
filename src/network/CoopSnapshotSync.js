@@ -75,6 +75,24 @@ class CoopSnapshotSync {
             if ((e._earPainTimer || 0) > 0) row.ep = 1;
             if (e.isLilXasSpeaker) { row.si = e.speakerIndex || 0; row.mp = e.musicPlaying ? 1 : 0; }
             if (e.isLilXas && typeof LilXasAttacksFX !== 'undefined') { row.lx = LilXasAttacksFX.serializeBossNet(e); }
+            if (e.type === 'kiloumpas') {
+                row.kl = {
+                    cs: e.cutsceneState || 'COMBAT', hc: e.hasCarbine ? 1 : 0, hd: e.hidden ? 1 : 0,
+                    gr: e.isGrabbing ? 1 : 0, ght: safeFloat(e.grabHoldTimer, 1, 0),
+                    ta: safeFloat(e.throwAnimTimer, 1, 0), im: e.isAiming ? 1 : 0
+                };
+            } else if (e.type === 'rouf') {
+                row.rf = {
+                    cs: e.cutsceneState || 'COMBAT', p2: e.isPhase2 ? 1 : 0, cl: e.isCalling ? 1 : 0,
+                    df: e.isDefeated ? 1 : 0, sp: safeFloat(e.sirenPhase, 2, 0), dc: e.defeatedDone ? 1 : 0,
+                    sa: safeFloat(e.smashAnimTimer, 1, 0),
+                    pc: e.policeCar ? {
+                        x: safeInt(e.policeCar.x), y: safeInt(e.policeCar.y),
+                        a: safeFloat(e.policeCar.angle, 2, 0), sp: safeFloat(e.policeCar.sirenPhase, 2, 0),
+                        ar: e.policeCar.arrived ? 1 : 0
+                    } : null
+                };
+            }
             out.push(row);
         }
 
@@ -177,6 +195,7 @@ class CoopSnapshotSync {
                 if (eNet.lx && enemy.isLilXas && typeof LilXasAttacksFX !== 'undefined') {
                     LilXasAttacksFX.applyBossNet(enemy, eNet.lx);
                 }
+                CoopSnapshotSync.applyBossNetState(enemy, eNet, game);
             }
         }
 
@@ -185,7 +204,8 @@ class CoopSnapshotSync {
             if (e && e._netId && !incomingIds.has(e._netId)) {
                 e.dead = true;
                 try {
-                    if (!e._deathPopped && game.effects && typeof game.effects.addDeathPop === 'function' && Number.isFinite(e.x) && Number.isFinite(e.y)) {
+                    const skipPop = (e.type === 'rouf' && (e.isDefeated || e.defeatedDone));
+                    if (!skipPop && !e._deathPopped && game.effects && typeof game.effects.addDeathPop === 'function' && Number.isFinite(e.x) && Number.isFinite(e.y)) {
                         e._deathPopped = true;
                         game.effects.addDeathPop(e.x, e.y, e.radius || 24, e.color, e.isBoss || e.isMiniBoss);
                     }
@@ -238,6 +258,103 @@ class CoopSnapshotSync {
             if (enemy._lilXasFleeing) enemy._earBleedAge = (enemy._earBleedAge || 0) + dt;
             enemy.dead = false;
             if (enemy.hitFlash > 0) enemy.hitFlash -= dt;
+            if (enemy.throwAnimTimer > 0) enemy.throwAnimTimer = Math.max(0, enemy.throwAnimTimer - dt);
+            if (enemy.grabHoldTimer > 0) enemy.grabHoldTimer = Math.max(0, enemy.grabHoldTimer - dt);
+            if (enemy.smashAnimTimer > 0) enemy.smashAnimTimer = Math.max(0, enemy.smashAnimTimer - dt);
+            if (enemy.type === 'rouf' && (enemy.isCalling || enemy.isDefeated || enemy.policeCar)) {
+                enemy.sirenPhase = (enemy.sirenPhase || 0) + 0.25 * dt;
+            }
+            if (enemy.policeCar) {
+                const c = enemy.policeCar;
+                c.sirenPhase = (c.sirenPhase || 0) + 0.4 * dt;
+                if (Number.isFinite(c._netX) && Number.isFinite(c._netY)) {
+                    const clerp = Math.min(1.0, 0.48 * dt);
+                    c.x += (c._netX - c.x) * clerp;
+                    c.y += (c._netY - c.y) * clerp;
+                }
+            }
+        }
+    }
+
+    static applyBossNetState(enemy, eNet, game) {
+        if (!enemy || !eNet) return;
+        const fx = game && game.effects;
+        if (eNet.kl && enemy.type === 'kiloumpas') {
+            const kl = eNet.kl;
+            enemy.cutsceneState = kl.cs || 'COMBAT';
+            enemy.hasCarbine = !!kl.hc;
+            enemy.hidden = !!kl.hd;
+            enemy.isGrabbing = !!kl.gr;
+            if (Number.isFinite(kl.ght)) enemy.grabHoldTimer = kl.ght;
+            if (Number.isFinite(kl.ta)) enemy.throwAnimTimer = Math.max(enemy.throwAnimTimer || 0, kl.ta);
+            enemy.isAiming = !!kl.im;
+        }
+        if (eNet.rf && enemy.type === 'rouf') {
+            const rf = eNet.rf;
+            const wasP2 = !!enemy.isPhase2, wasDef = !!enemy.isDefeated, wasDone = !!enemy.defeatedDone;
+            enemy.cutsceneState = rf.cs || 'COMBAT';
+            enemy.isPhase2 = !!rf.p2;
+            enemy.isCalling = !!rf.cl;
+            enemy.isDefeated = !!rf.df;
+            enemy.defeatedDone = !!rf.dc;
+            if (Number.isFinite(rf.sp)) enemy.sirenPhase = rf.sp;
+            if (Number.isFinite(rf.sa)) enemy.smashAnimTimer = Math.max(enemy.smashAnimTimer || 0, rf.sa);
+            if (!wasP2 && enemy.isPhase2) {
+                if (fx) {
+                    fx.addComicSplash(enemy.x, enemy.y - 50, 'STEILTE TA MAT! KINTOYNEVW! 🚨', '#ff4757', 26, true);
+                    fx.addShockwave(enemy.x, enemy.y, 160, 'rgba(235, 77, 75, 0.9)');
+                    fx.addDust(enemy.x, enemy.y, 16, 18);
+                }
+                if (window.soundEngine && typeof window.soundEngine.playBossWarning === 'function') window.soundEngine.playBossWarning();
+            }
+            if (!wasDef && enemy.isDefeated) {
+                if (fx) {
+                    fx.addComicSplash(enemy.x, enemy.y - 45, 'CRACK! 📱💥', '#ff4757', 24);
+                    fx.addDust(enemy.x, enemy.y, 14, 16);
+                    fx.addSparks(enemy.x + 20, enemy.y + 10, '#f1c40f', 6);
+                }
+                if (window.soundEngine && typeof window.soundEngine.playBossWarning === 'function') window.soundEngine.playBossWarning();
+            }
+            if (!wasDone && enemy.defeatedDone && fx) fx.addConfetti(enemy.x, enemy.y, 50);
+            if (rf.pc) {
+                const wasArrived = !!(enemy.policeCar && enemy.policeCar.arrived);
+                if (!enemy.policeCar) {
+                    enemy.policeCar = { x: rf.pc.x, y: rf.pc.y, _netX: rf.pc.x, _netY: rf.pc.y, angle: rf.pc.a || 0, sirenPhase: rf.pc.sp || 0, arrived: !!rf.pc.ar };
+                } else {
+                    enemy.policeCar._netX = rf.pc.x; enemy.policeCar._netY = rf.pc.y;
+                    enemy.policeCar.angle = rf.pc.a || 0;
+                    if (Number.isFinite(rf.pc.sp)) enemy.policeCar.sirenPhase = rf.pc.sp;
+                    enemy.policeCar.arrived = !!rf.pc.ar;
+                }
+                if (!wasArrived && enemy.policeCar.arrived && fx) fx.addComicSplash(enemy.policeCar.x, enemy.policeCar.y - 30, 'SKRRRT! 🚔💨', '#3498db', 22);
+            } else {
+                enemy.policeCar = null;
+            }
+        }
+    }
+
+    static applyGuestCutscene(session, csData) {
+        const game = session && session.game;
+        const co = game && game.cutsceneOverlay;
+        if (!co) return;
+        if (csData) {
+            if (!co.active) co.startCutscene(csData.sub, { allowEndless: !!csData.ae, skipSquadPosition: true });
+            else if (typeof csData.sub === 'string' && csData.sub && co.subText !== csData.sub) co.subText = csData.sub;
+            if (csData.tp) co.totalPlayers = csData.tp;
+            if (csData.txt) {
+                if (co.dialogueText !== csData.txt) {
+                    co.setDialogue(csData.spk, csData.txt, csData.col, csData.ico, csData.adv);
+                    co.setReadyState(csData.rc || 0, csData.tp || 2, false);
+                } else {
+                    co.promptAdvance = !!csData.adv;
+                    co.setReadyState(csData.rc || 0, csData.tp || 2, co.isLocalReady);
+                }
+            } else if (co.dialogueText) {
+                co.clearDialogue();
+            }
+        } else if (co.active) {
+            co.endCutscene();
+            co.setReadyState(0, 1, false);
         }
     }
 }

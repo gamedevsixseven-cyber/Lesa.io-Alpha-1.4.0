@@ -393,6 +393,10 @@ class UIController {
     }
 
     startCreditsSequence(player, wave = 20, gameTime = 0) {
+        if (window.gameInstance) window.gameInstance.state = 'CREDITS';
+        if (typeof CreditsScreen !== 'undefined' && typeof CreditsScreen.cleanupInputOverlays === 'function') {
+            CreditsScreen.cleanupInputOverlays();
+        }
         // Award Story Mode Completion Bonuses
         if (this.gameState && typeof this.gameState.addCurrency === 'function') {
             this.gameState.addCurrency(2500, 100);
@@ -465,6 +469,9 @@ class UIController {
                 window.gameInstance.coopSession = null;
             }
             window.gameInstance.isCoopGuest = false;
+        }
+        if (typeof CreditsScreen !== 'undefined' && typeof CreditsScreen.cleanupInputOverlays === 'function') {
+            CreditsScreen.cleanupInputOverlays();
         }
         if (window.soundEngine) {
             window.soundEngine.stopBGM();

@@ -178,7 +178,9 @@ class RemotePlayer {
         }
         this._lastNetRxMs = performance.now();
         const lockPosFromKiloumpas = !this.isHost && (this.isGrabbed || this.isAirborne);
-        if (!lockPosFromKiloumpas) {
+        if (lockPosFromKiloumpas) {
+            this.isDashing = false; this.isBladeRushing = false; this.stunTimer = 0; this.knockbackTimer = 0;
+        } else {
             if (typeof data.x === 'number') this.targetX = data.x;
             if (typeof data.y === 'number') this.targetY = data.y;
             if (typeof data.vx === 'number') this.vx = data.vx;
@@ -199,10 +201,22 @@ class RemotePlayer {
             this.isDowned = (this.hp <= 0);
         }
         if (this.isHost) {
+            const wasAirborne = !!this.isAirborne;
             if (typeof data.isGrabbed === 'boolean') this.isGrabbed = data.isGrabbed;
             if (typeof data.isAirborne === 'boolean') this.isAirborne = data.isAirborne;
             if (typeof data.airZ === 'number') this.airZ = data.airZ;
             if (typeof data.airRot === 'number') this.airRotation = data.airRot;
+            if (wasAirborne && typeof data.isAirborne === 'boolean' && !data.isAirborne && this.hp > 0) {
+                this.landingSquashTimer = 14;
+                const fx = (typeof window !== 'undefined' && window.gameInstance) ? window.gameInstance.effects : null;
+                if (fx) {
+                    fx.addComicSplash(this.x, this.y - 40, 'YEET! 💥');
+                    fx.addShockwave(this.x, this.y, 160, 'rgba(235, 77, 75, 0.95)');
+                    fx.addDust(this.x, this.y, 20, 20);
+                    fx.addSparks(this.x, this.y, '#fed330', 10);
+                }
+                if (window.soundEngine && typeof window.soundEngine.playHit === 'function') window.soundEngine.playHit(true, true);
+            }
         }
         if (typeof data.maxHp === 'number' && Number.isFinite(data.maxHp)) {
             this.maxHp = Math.max(25, Math.min(1200, Math.round(data.maxHp)));
@@ -211,7 +225,7 @@ class RemotePlayer {
         if (typeof data.shieldActive === 'boolean' && performance.now() >= (this._shieldBrokenUntil || 0)) {
             this.shieldActive = data.shieldActive;
         }
-        if (typeof data.isDashing === 'boolean') this.isDashing = data.isDashing;
+        if (!lockPosFromKiloumpas && typeof data.isDashing === 'boolean') this.isDashing = data.isDashing;
         if (typeof data.weaponType === 'string' && data.weaponType) this.weaponType = data.weaponType;
         if ('equippedArmorId' in data) this.equippedArmorId = data.equippedArmorId || null;
         if (typeof data.armorEvolved === 'boolean') this.armorEvolved = data.armorEvolved;
@@ -251,6 +265,14 @@ class RemotePlayer {
             this.airRotation += 0.24 * normDt;
             this.x += (this.knockbackVx || 0) * normDt;
             this.y += (this.knockbackVy || 0) * normDt;
+            const ar = (typeof window !== 'undefined' && window.gameInstance) ? window.gameInstance.arena : null;
+            if (ar) {
+                const b = ar.dungeonBounds;
+                const minX = (b ? b.minX : -ar.halfWidth) + this.radius, maxX = (b ? b.maxX : ar.halfWidth) - this.radius;
+                const minY = (b ? b.minY : -ar.halfHeight) + this.radius, maxY = (b ? b.maxY : ar.halfHeight) - this.radius;
+                if (this.x < minX) this.x = minX; else if (this.x > maxX) this.x = maxX;
+                if (this.y < minY) this.y = minY; else if (this.y > maxY) this.y = maxY;
+            }
             this.targetX = this.x;
             this.targetY = this.y;
             this.knockbackVx *= Math.pow(0.972, normDt);
@@ -261,7 +283,15 @@ class RemotePlayer {
             if (this.airZ <= 0 && this.airVz < 0) {
                 this.airZ = 0; this.airVz = 0; this.isAirborne = false; this.airRotation = 0;
                 this.knockbackVx = 0; this.knockbackVy = 0; this.landingSquashTimer = 14;
-                if (this.landingDamage > 0 && !this.isDowned) this.takeDamage(this.landingDamage);
+                const fx = (typeof window !== 'undefined' && window.gameInstance) ? window.gameInstance.effects : null;
+                if (fx) {
+                    fx.addComicSplash(this.x, this.y - 40, 'YEET! 💥');
+                    fx.addShockwave(this.x, this.y, 160, 'rgba(235, 77, 75, 0.95)');
+                    fx.addDust(this.x, this.y, 20, 20);
+                    fx.addSparks(this.x, this.y, '#fed330', 10);
+                }
+                if (window.soundEngine && typeof window.soundEngine.playHit === 'function') window.soundEngine.playHit(true, true);
+                if (this.landingDamage > 0 && !this.isDowned) this.takeDamage(this.landingDamage, fx);
                 this.landingDamage = 0;
             }
         } else if (!this.isGrabbed) {

@@ -97,6 +97,7 @@ class CreditsScreen {
         }
 
         // 2. Unhide container from display:none at opacity:0
+        this.screenEl.style.removeProperty('pointer-events');
         this.screenEl.classList.remove('hidden', 'fade-out', 'visible');
         // Force synchronous layout reflow so browser commits display:flex & opacity:0
         // BEFORE the visible class transition is triggered
@@ -289,10 +290,12 @@ class CreditsScreen {
 
         if (this.introEl) {
             this.introEl.classList.remove('fade-in', 'fade-out');
+            this.introEl.classList.add('hidden');
         }
 
         if (this.outroEl) {
             this.outroEl.classList.remove('fade-in', 'fade-out');
+            this.outroEl.classList.add('hidden');
         }
 
         if (this.scrollAnimId) {
@@ -306,10 +309,12 @@ class CreditsScreen {
         }
 
         if (this.screenEl) {
+            this.screenEl.style.pointerEvents = 'none';
             this.screenEl.classList.add('fade-out');
             setTimeout(() => {
                 this.screenEl.classList.remove('visible', 'fade-out');
                 this.screenEl.classList.add('hidden');
+                this.screenEl.style.removeProperty('pointer-events');
                 if (this.crawlViewportEl) {
                     this.crawlViewportEl.classList.remove('fade-out');
                 }
@@ -327,6 +332,22 @@ class CreditsScreen {
             const cb = this.onComplete;
             this.onComplete = null;
             cb();
+        }
+    }
+
+    static cleanupInputOverlays() {
+        const game = typeof window !== 'undefined' ? window.gameInstance : null;
+        if (game && game.touchInput && typeof game.touchInput.hide === 'function') {
+            game.touchInput.hide();
+        }
+        if (game && game.cutsceneOverlay && game.cutsceneOverlay.active) {
+            game.cutsceneOverlay.endCutscene();
+        }
+        if (typeof document !== 'undefined') {
+            const mobile = document.getElementById('mobile-controls-container');
+            if (mobile) { mobile.classList.remove('cutscene-hidden'); mobile.classList.add('hidden'); }
+            const hud = document.getElementById('game-hud');
+            if (hud) { hud.classList.remove('cutscene-hidden'); hud.classList.add('hidden'); }
         }
     }
 }

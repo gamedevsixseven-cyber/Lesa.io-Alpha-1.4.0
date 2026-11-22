@@ -158,7 +158,13 @@ class CoopHostSession {
     setupNetworkHandlers() {
         this.net.onMessageCallback = (type, payload) => {
             if (type === 'GUEST_STATE') {
-                this.remotePlayer.setTargetState(payload);
+                if (this.game.cutsceneOverlay && this.game.cutsceneOverlay.active && payload) {
+                    const locked = { ...payload, isMoving: false };
+                    delete locked.x; delete locked.y; delete locked.vx; delete locked.vy;
+                    this.remotePlayer.setTargetState(locked);
+                } else {
+                    this.remotePlayer.setTargetState(payload);
+                }
             } else if (type === 'NET_PAUSE') {
                 this.onNetworkPause(payload);
             } else if (type === 'NET_RESUME_READY' || type === 'NET_RESUME') {
@@ -471,17 +477,21 @@ class CoopHostSession {
 
     syncKiloumpasEvent(action, boss, targetPlayer, extra = {}) {
         if (!this.net || !this.net.connected) return;
-        if (targetPlayer === this.remotePlayer) {
-            this.net.send('KILOUMPAS_GRAB', {
-                action,
-                x: Number.isFinite(extra.x) ? extra.x : Math.round(this.remotePlayer.x),
-                y: Number.isFinite(extra.y) ? extra.y : Math.round(this.remotePlayer.y),
-                airZ: Number.isFinite(extra.airZ) ? extra.airZ : 0,
-                vx: extra.vx || 0,
-                vy: extra.vy || 0,
-                vz: extra.vz || 17.5
-            });
-        }
+        const isGuestTarget = (targetPlayer === this.remotePlayer);
+        const isHostTarget = (targetPlayer === this.game.player);
+        if (!isGuestTarget && !isHostTarget) return;
+        this.net.send('KILOUMPAS_GRAB', {
+            action,
+            target: isGuestTarget ? 'guest' : 'host',
+            x: Number.isFinite(extra.x) ? extra.x : Math.round(targetPlayer.x),
+            y: Number.isFinite(extra.y) ? extra.y : Math.round(targetPlayer.y),
+            airZ: Number.isFinite(extra.airZ) ? extra.airZ : 0,
+            vx: extra.vx || 0,
+            vy: extra.vy || 0,
+            vz: extra.vz || 17.5,
+            bx: Number.isFinite(extra.bx) ? extra.bx : undefined,
+            by: Number.isFinite(extra.by) ? extra.by : undefined
+        });
     }
 
     syncBossCrate(crateId, bossName) {

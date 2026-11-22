@@ -513,7 +513,8 @@ class Game {
         for (let i = 0; i < this.enemies.length; i++) {
             const enemy = this.enemies[i];
             if (enemy.dead) continue;
-            if (this.camera.isVisible(enemy.x, enemy.y, enemy.radius + 50)) {
+            const visPad = (enemy.isBoss || enemy.isMiniBoss || enemy.policeCar) ? 450 : 50;
+            if (this.camera.isVisible(enemy.x, enemy.y, enemy.radius + visPad)) {
                 const hitSquashed = (typeof CombatRenderFX !== 'undefined') && CombatRenderFX.beginEnemyTransform(ctx, enemy);
                 enemy.draw(ctx);
                 if (hitSquashed) CombatRenderFX.endEnemyTransform(ctx, hitSquashed);

@@ -342,12 +342,16 @@ class Kiloumpas extends EnemyBase {
 
         player.isGrabbed = true;
         player.isAirborne = false;
+        player.isDashing = false;
+        player.isBladeRushing = false;
+        player.stunTimer = 0;
+        player.knockbackTimer = 0;
         player.vx = 0;
         player.vy = 0;
         player.airZ = 16;
 
         if (typeof window !== 'undefined' && window.gameInstance && window.gameInstance.coopSession && window.gameInstance.coopSession.isHost && typeof window.gameInstance.coopSession.syncKiloumpasEvent === 'function') {
-            window.gameInstance.coopSession.syncKiloumpasEvent('grab', this, player, { x: Math.round(player.x), y: Math.round(player.y), airZ: 16 });
+            window.gameInstance.coopSession.syncKiloumpasEvent('grab', this, player, { x: Math.round(player.x), y: Math.round(player.y), airZ: 16, bx: Math.round(this.x), by: Math.round(this.y) });
         }
 
         if (effects) {
@@ -426,7 +430,8 @@ class Kiloumpas extends EnemyBase {
         if (typeof window !== 'undefined' && window.gameInstance && window.gameInstance.coopSession && window.gameInstance.coopSession.isHost && typeof window.gameInstance.coopSession.syncKiloumpasEvent === 'function') {
             window.gameInstance.coopSession.syncKiloumpasEvent('throw', this, player, {
                 x: Math.round(player.x), y: Math.round(player.y),
-                vx: Number(tvx.toFixed(2)), vy: Number(tvy.toFixed(2)), vz: verticalLift
+                vx: Number(tvx.toFixed(2)), vy: Number(tvy.toFixed(2)), vz: verticalLift,
+                bx: Math.round(this.x), by: Math.round(this.y)
             });
         }
 

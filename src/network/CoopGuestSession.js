@@ -83,8 +83,11 @@ class CoopGuestSession {
                     if (!this.game.cutsceneOverlay.active && typeof this.game.cutsceneOverlay.startCutscene === 'function') {
                         this.game.cutsceneOverlay.startCutscene('', { allowEndless: this.game.gameMode === 'endless' });
                     }
-                    this.game.cutsceneOverlay.setDialogue(payload.speaker, payload.text, payload.speakerColor, payload.avatarIcon, payload.promptAdvance);
-                    this.game.cutsceneOverlay.setReadyState(payload.readyCount || 0, payload.totalPlayers || 2, false);
+                    const sameTxt = (this.game.cutsceneOverlay.dialogueText === payload.text);
+                    if (!sameTxt) {
+                        this.game.cutsceneOverlay.setDialogue(payload.speaker, payload.text, payload.speakerColor, payload.avatarIcon, payload.promptAdvance);
+                    }
+                    this.game.cutsceneOverlay.setReadyState(payload.readyCount || 0, payload.totalPlayers || 2, sameTxt ? this.game.cutsceneOverlay.isLocalReady : false);
                 }
             } else if (type === 'LIL_XAS_EVENT' && typeof LilXasEvent !== 'undefined' && payload) {
                 LilXasEvent.handleCoopEvent(payload.kind, payload, this.game);
@@ -240,34 +243,39 @@ class CoopGuestSession {
     }
 
     _handleKiloumpasGrab(data) {
-        const p = this.game && this.game.player;
+        if (!data) return;
+        const isHostTarget = (data.target === 'host');
+        const tgt = isHostTarget ? this.remotePlayer : (this.game && this.game.player);
         const fx = this.game && this.game.effects;
-        if (!p || !data) return;
+        if (!tgt) return;
+        const bx = Number.isFinite(data.bx) ? data.bx : tgt.x, by = Number.isFinite(data.by) ? data.by : tgt.y;
         if (data.action === 'grab') {
-            const wasGrabbed = p.isGrabbed;
-            p.isGrabbed = true; p._grabFrames = 0; p.isAirborne = false;
-            p.vx = 0; p.vy = 0;
-            if (Number.isFinite(data.x)) p.x = data.x;
-            if (Number.isFinite(data.y)) p.y = data.y;
-            if (Number.isFinite(data.airZ)) p.airZ = data.airZ;
+            const wasGrabbed = tgt.isGrabbed;
+            tgt.isGrabbed = true; tgt.isAirborne = false; tgt.isDashing = false; tgt.isBladeRushing = false; tgt.stunTimer = 0; tgt.knockbackTimer = 0;
+            tgt.vx = 0; tgt.vy = 0;
+            if (!isHostTarget) { tgt._grabFrames = 0; if (Number.isFinite(data.x)) tgt.x = data.x; if (Number.isFinite(data.y)) tgt.y = data.y; if (Number.isFinite(data.airZ)) tgt.airZ = data.airZ; }
             if (!wasGrabbed) {
-                if (fx) { fx.addComicSplash(p.x, p.y - 48, 'SE EPIASA! 💢'); fx.addDust(p.x, p.y, 8, 10); }
+                if (fx) { fx.addComicSplash(bx, by - 52, 'SE EPIASA! 💢'); fx.addDust(tgt.x, tgt.y, 8, 10); }
                 if (window.soundEngine && typeof window.soundEngine.playHit === 'function') window.soundEngine.playHit(false, true);
             }
         } else if (data.action === 'throw') {
-            p.isGrabbed = false; p._grabFrames = 0;
-            if (Number.isFinite(data.x)) p.x = data.x;
-            if (Number.isFinite(data.y)) p.y = data.y;
-            p.launchAirborne(data.vx || 0, data.vy || 0, data.vz || 17.5, 0);
+            tgt.isGrabbed = false; tgt.isDashing = false; tgt.isBladeRushing = false; tgt.stunTimer = 0; tgt.knockbackTimer = 0;
+            if (!isHostTarget) {
+                tgt._grabFrames = 0;
+                if (Number.isFinite(data.x)) tgt.x = data.x; if (Number.isFinite(data.y)) tgt.y = data.y;
+                tgt.launchAirborne(data.vx || 0, data.vy || 0, data.vz || 17.5, 0);
+                if (this.game && this.game.camera && typeof this.game.camera.shake === 'function') this.game.camera.shake(12, 18);
+            }
             if (fx) {
-                fx.addShockwave(p.x, p.y, 130, 'rgba(255, 71, 87, 0.95)');
-                fx.addDust(p.x, p.y, 16, 18);
-                fx.addComicSplash(p.x, p.y - 46, 'FYGE RE! 💨');
+                fx.addShockwave(bx, by, 130, 'rgba(255, 71, 87, 0.95)');
+                fx.addDust(bx, by, 18, 20);
+                fx.addComicSplash(bx, by - 50, 'FYGE RE! 💨');
             }
             if (window.soundEngine && typeof window.soundEngine.playHit === 'function') window.soundEngine.playHit(true, true);
         } else if (data.action === 'release') {
-            p.isGrabbed = false; p._grabFrames = 0;
-            if (!p.isAirborne) p.airZ = 0;
+            tgt.isGrabbed = false;
+            if (!isHostTarget) tgt._grabFrames = 0;
+            if (!tgt.isAirborne) tgt.airZ = 0;
         }
     }
 
@@ -361,20 +369,8 @@ class CoopGuestSession {
         }
 
         // 3.6. Sync Cutscene Overlay from Snapshot Authority
-        if (data.cutscene && this.game.cutsceneOverlay) {
-            if (!this.game.cutsceneOverlay.active) {
-                this.game.cutsceneOverlay.startCutscene(data.cutscene.sub, { allowEndless: !!data.cutscene.ae, skipSquadPosition: true });
-            }
-            if (data.cutscene.tp) {
-                this.game.cutsceneOverlay.totalPlayers = data.cutscene.tp;
-            }
-            if (data.cutscene.txt && this.game.cutsceneOverlay.dialogueText !== data.cutscene.txt) {
-                this.game.cutsceneOverlay.setDialogue(data.cutscene.spk, data.cutscene.txt, data.cutscene.col, data.cutscene.ico, data.cutscene.adv);
-                this.game.cutsceneOverlay.setReadyState(data.cutscene.rc || 0, data.cutscene.tp || 2, false);
-            }
-        } else if (!data.cutscene && this.game.cutsceneOverlay && this.game.cutsceneOverlay.active) {
-            this.game.cutsceneOverlay.endCutscene();
-            this.game.cutsceneOverlay.setReadyState(0, 1, false);
+        if (typeof CoopSnapshotSync !== 'undefined' && typeof CoopSnapshotSync.applyGuestCutscene === 'function') {
+            CoopSnapshotSync.applyGuestCutscene(this, data.cutscene || null);
         }
 
         // 3.7. Sync Lil Xas Concert Easter Egg State (Limo, Stage, Camera Target, Music, Combat Overlay)

@@ -233,7 +233,7 @@ class CollisionSystem {
                                 window.soundEngine.playHit(true, true);
                             }
                         }
-                    } else if (e.damage > 0) {
+                    } else if (e.damage > 0 && !p.isGrabbed && !p.isAirborne) {
                         if (!game.isCoopGuest) {
                             p.takeDamage(e.damage * 0.4, effects, camera);
                         }
@@ -253,7 +253,7 @@ class CollisionSystem {
                     if (p2edx * p2edx + p2edy * p2edy < hitDist2 * hitDist2) {
                         if (p2.vf185Active && typeof HeroUltimates !== 'undefined') {
                             HeroUltimates.onVF185RamEnemy(p2, e, effects, game);
-                        } else if (e.damage > 0) {
+                        } else if (e.damage > 0 && !p2.isGrabbed && !p2.isAirborne) {
                             p2.takeDamage(e.damage * 0.4, effects, camera);
                             const angle2 = Math.atan2(p2.y - e.y, p2.x - e.x);
                             p2.x += Math.cos(angle2) * 4;

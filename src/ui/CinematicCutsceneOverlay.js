@@ -460,10 +460,12 @@ class CinematicCutsceneOverlay {
      */
     static positionCoopSquad(game, hostSession) {
         if (!game || !game.player) return [];
-        const arenaW = (game.arena && game.arena.width) || 2000;
-        const arenaH = (game.arena && game.arena.height) || 2000;
-        const anchorX = Math.max(140, Math.min(arenaW - 140, game.player.x));
-        const anchorY = Math.max(140, Math.min(arenaH - 140, game.player.y));
+        const halfW = (game.arena && game.arena.halfWidth) || ((game.arena && game.arena.width) ? game.arena.width / 2 : 1400);
+        const halfH = (game.arena && game.arena.halfHeight) || ((game.arena && game.arena.height) ? game.arena.height / 2 : 1400);
+        const minX = -halfW + 140, maxX = halfW - 140;
+        const minY = -halfH + 140, maxY = halfH - 140;
+        let anchorX = Math.max(minX, Math.min(maxX, game.player.x));
+        let anchorY = Math.max(minY, Math.min(maxY, game.player.y));
 
         const players = [game.player];
         if (hostSession) {
@@ -481,6 +483,10 @@ class CinematicCutsceneOverlay {
             if (boss) {
                 bossX = boss.x;
                 bossY = boss.y;
+                if (boss.isDefeated && boss.policeCar && Math.hypot(boss.x - anchorX, boss.y - anchorY) > 320) {
+                    anchorX = Math.max(minX, Math.min(maxX, boss.x + 150));
+                    anchorY = Math.max(minY, Math.min(maxY, boss.y + 45));
+                }
                 if (boss.policeCar && Number.isFinite(boss.policeCar.x)) {
                     bossX = boss.policeCar.x;
                     bossY = boss.policeCar.y;
