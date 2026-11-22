@@ -21,13 +21,14 @@ class CoopLobbyModal {
 
     getLocalUserData() {
         const gs = (typeof window !== 'undefined') ? window.GameState : null;
+        const cs = (typeof window !== 'undefined') ? window.cloudSave : null;
+        const fbUser = cs && (cs.currentUser || (cs.auth && cs.auth.currentUser));
+        const authName = (fbUser && (fbUser.displayName || (fbUser.email && fbUser.email.split('@')[0]))) || '';
         const heroType = (gs && gs.player && gs.player.selectedHero) || (typeof localStorage !== 'undefined' && localStorage.getItem('lesaio_selected_hero')) || 'psanas';
-        const heroData = (typeof HEROES !== 'undefined' && HEROES[heroType]) ? HEROES[heroType] : null;
-        const heroDisplayName = (heroData && heroData.name) ? heroData.name : (heroType.charAt(0).toUpperCase() + heroType.slice(1));
         const rawName = (gs && gs.player && gs.player.name) || (typeof localStorage !== 'undefined' && localStorage.getItem('lesaio_player_name')) || '';
         const cleanRaw = String(rawName || '').trim();
-        const isUnsetDefault = !cleanRaw || (cleanRaw.toLowerCase() === 'psanas' && heroType !== 'psanas');
-        const name = isUnsetDefault ? heroDisplayName : cleanRaw;
+        const nameChosen = typeof localStorage !== 'undefined' && localStorage.getItem('lesaio_player_name_chosen') === 'true';
+        const name = (cleanRaw && (cleanRaw !== 'Psanas' || nameChosen || !authName)) ? cleanRaw : (authName || cleanRaw || 'Hero');
         const weaponType = (typeof WeaponSystem !== 'undefined')
             ? WeaponSystem.resolveEquippedWeapon((typeof HEROES !== 'undefined' && HEROES[heroType]) ? HEROES[heroType].weaponType : 'pea')
             : ((gs && gs.player && (gs.player.selectedWeapon || gs.player.weaponType)) || localStorage.getItem('lesaio_selected_weapon') || 'pea');

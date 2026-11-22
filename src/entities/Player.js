@@ -77,7 +77,7 @@ class Player {
         this.heroType = type;
         const heroData = (typeof HEROES !== 'undefined' && HEROES[type]) ? HEROES[type] : null;
         if (heroData) {
-            this.name = heroData.name;
+            this.heroName = heroData.name;
             this.radius = heroData.radius || 25;
             this.archetypeSpeed = (heroData.speed || 5.0) * 1.05;
             this.archetypeMaxHp = heroData.hp || 100;
@@ -94,9 +94,11 @@ class Player {
                 psanas: { name: 'Psanas', radius: 24, speed: 5.2, hp: 100, weapon: 'pea', color: '#ff4757' }
             };
             const d = defaults[type] || defaults.psanas;
-            this.name = d.name; this.radius = d.radius; this.archetypeSpeed = d.speed;
+            this.heroName = d.name; this.radius = d.radius; this.archetypeSpeed = d.speed;
             this.archetypeMaxHp = d.hp; this.weaponType = d.weapon; this.heroColor = d.color;
         }
+        const onlineName = (typeof window !== 'undefined' && window.GameState && window.GameState.player && window.GameState.player.name) || (typeof localStorage !== 'undefined' && localStorage.getItem('lesaio_player_name')) || '';
+        this.name = (onlineName && String(onlineName).trim()) ? String(onlineName).trim() : this.heroName;
         this.heroStyle = (type === 'psgiannhs' && typeof PsgiannhsHero !== 'undefined') ? PsgiannhsHero.getActiveStyle() : null; this.heroSkin = (typeof HeroSkinSystem !== 'undefined') ? HeroSkinSystem.getActiveSkin(type) : 'default'; this.archetypeDamageReduction = (heroData && heroData.damageReduction) || (type === 'petros' ? 0.08 : 0);
         this.baseDamageReduction = this.archetypeDamageReduction; this.damageReduction = this.baseDamageReduction;
 

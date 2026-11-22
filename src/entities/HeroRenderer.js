@@ -381,13 +381,15 @@ class HeroRenderer {
 
         // Name Tag
         ctx.save();
-        ctx.font = '900 11px Fredoka, sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillStyle = '#ffffff';
-        ctx.strokeStyle = '#1e272e';
-        ctx.lineWidth = 2.5;
-        ctx.strokeText(player.name || 'Hero', player.x, barY - 4);
-        ctx.fillText(player.name || 'Hero', player.x, barY - 4);
+        if (!player._hideOverheadName) {
+            ctx.font = '900 11px Fredoka, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillStyle = '#ffffff';
+            ctx.strokeStyle = '#1e272e';
+            ctx.lineWidth = 2.5;
+            ctx.strokeText(player.name || 'Hero', player.x, barY - 4);
+            ctx.fillText(player.name || 'Hero', player.x, barY - 4);
+        }
 
         // Background
         ctx.fillStyle = '#1e272e';

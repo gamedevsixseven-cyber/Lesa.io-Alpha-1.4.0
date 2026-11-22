@@ -11,10 +11,8 @@ class CoopGuestSession {
         this.appliedMapSeed = mapSeed;
 
         const heroType = (hostInfo && hostInfo.heroType) || 'psanas';
-        const heroMeta = (typeof HEROES !== 'undefined' && HEROES[heroType]) ? HEROES[heroType] : null;
         const rawHostName = (hostInfo && hostInfo.name) ? String(hostInfo.name).trim() : '';
-        const name = (!rawHostName || (rawHostName.toLowerCase() === 'psanas' && heroType !== 'psanas'))
-            ? ((heroMeta && heroMeta.name) || heroType) : rawHostName;
+        const name = rawHostName || 'Host';
         this.remotePlayer = new RemotePlayer(game.player.x - 60, game.player.y, heroType, name);
         this.remotePlayer.applyHeroStats(heroType, { ...hostInfo, name });
         this.remotePlayer.isHost = true;

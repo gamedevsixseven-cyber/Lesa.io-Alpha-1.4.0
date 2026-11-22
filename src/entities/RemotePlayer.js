@@ -14,6 +14,7 @@ class RemotePlayer {
 
         this.heroType = heroType;
         this.name = name;
+        this._hideOverheadName = true;
         this.weaponType = 'pea';
 
         this.radius = 24;
@@ -73,21 +74,16 @@ class RemotePlayer {
         const heroData = (typeof HEROES !== 'undefined' && HEROES[heroType]) ? HEROES[heroType] : null;
         if (heroData) {
             this.radius = heroData.radius || (heroType === 'petros' ? 26 : 24);
-            this.heroName = heroData.name || heroType;
             this.maxHp = heroData.hp || 100;
             this.weaponType = heroData.weaponType || 'pea';
             this.heroColor = heroData.heroColor || '#1e70d6';
             this.damageReduction = heroData.damageReduction || 0;
         } else {
             this.radius = heroType === 'petros' ? 26 : 24;
-            this.heroName = heroType;
             this.maxHp = heroType === 'petros' ? 150 : 100;
             this.weaponType = 'pea';
             this.heroColor = '#1e70d6';
             this.damageReduction = heroType === 'petros' ? 0.08 : 0;
-        }
-        if (this.name === 'Psanas' && heroType && heroType !== 'psanas' && this.heroName) {
-            this.name = this.heroName;
         }
         if (opts) {
             if (typeof opts.weaponType === 'string' && opts.weaponType) this.weaponType = opts.weaponType;
@@ -360,9 +356,9 @@ class RemotePlayer {
     }
 
     drawCoopTag(ctx) {
-        if (this.isDowned) return;
+        if (this.isDowned || this.isAirborne) return;
         ctx.save();
-        ctx.translate(this.x, this.y - this.radius - 28);
+        ctx.translate(this.x, this.y - (this.airZ || 0) - this.radius - 18);
         const tagText = `🤝 ${this.name}`;
         ctx.font = '900 11px Fredoka, sans-serif';
         ctx.textAlign = 'center';

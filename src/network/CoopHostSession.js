@@ -12,10 +12,8 @@ class CoopHostSession {
 
         guestInfo = guestInfo || (networkManager && networkManager.peerUserData) || null;
         const heroType = (guestInfo && guestInfo.heroType) || 'petros';
-        const heroMeta = (typeof HEROES !== 'undefined' && HEROES[heroType]) ? HEROES[heroType] : null;
         const rawGuestName = (guestInfo && guestInfo.name) ? String(guestInfo.name).trim() : '';
-        const name = (!rawGuestName || (rawGuestName.toLowerCase() === 'psanas' && heroType !== 'psanas'))
-            ? ((heroMeta && heroMeta.name) || heroType) : rawGuestName;
+        const name = rawGuestName || 'Player 2';
         this.remotePlayer = new RemotePlayer(game.player.x + 60, game.player.y, heroType, name);
         this.remotePlayer.applyHeroStats(heroType, { ...guestInfo, name });
         this.remotePlayer.isHost = false;
