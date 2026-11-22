@@ -114,16 +114,28 @@ class DevAccountManager {
         return Array.from(foundByUid.values()).sort((a, b) => b.highScore - a.highScore);
     }
 
-    static _isCurrentLocalAccount(uid, email = '') {
-        if (typeof window === 'undefined') return false;
+    static _getCurrentAuthUid() {
+        if (typeof firebase !== 'undefined' && firebase.auth && firebase.auth().currentUser) {
+            return firebase.auth().currentUser.uid || '';
+        }
+        if (typeof window !== 'undefined' && window.cloudSave && window.cloudSave.currentUser) {
+            return window.cloudSave.currentUser.uid || '';
+        }
+        return '';
+    }
+
+    static _isCurrentLocalAccount(uid, email = '', docIds = []) {
+        if (typeof window === 'undefined' || !uid) return false;
+        const authUid = this._getCurrentAuthUid();
+        const ids = new Set([uid, ...(Array.isArray(docIds) ? docIds : [])].filter(Boolean));
+        if (authUid) {
+            return ids.has(authUid);
+        }
         const localUid = localStorage.getItem('lesaio_player_uid');
         const googleUid = localStorage.getItem('lesaio_google_uid');
-        const authUid = window.cloudSave && window.cloudSave.currentUser && window.cloudSave.currentUser.uid;
         const effUid = window.cloudSave && typeof window.cloudSave.getEffectivePlayerUid === 'function'
             ? window.cloudSave.getEffectivePlayerUid() : '';
-        if (uid && (uid === localUid || uid === googleUid || uid === authUid || uid === effUid)) return true;
-        const myEmail = (window.cloudSave && window.cloudSave.currentUser && window.cloudSave.currentUser.email) || localStorage.getItem('lesaio_google_email') || '';
-        return !!(email && myEmail && email.toLowerCase().trim() === myEmail.toLowerCase().trim());
+        return ids.has(localUid) || ids.has(googleUid) || ids.has(effUid);
     }
 
     static async _resetLocalClientAfterSelfAction(shouldSignOut = false) {
@@ -272,7 +284,8 @@ class DevAccountManager {
             }
         }
 
-        const isSelf = this._isCurrentLocalAccount(uid, targetInfo.email);
+        const authUid = this._getCurrentAuthUid();
+        const isSelf = this._isCurrentLocalAccount(uid, targetInfo.email, docIds) || (authUid && docIds.includes(authUid));
         if (isSelf) {
             await this._resetLocalClientAfterSelfAction(false);
             if (typeof window !== 'undefined' && window.location) window.location.reload();
@@ -293,21 +306,30 @@ class DevAccountManager {
         if (!db || !targetInfo || !targetInfo.uid) throw new Error('Invalid target account.');
 
         const uid = targetInfo.uid;
+        const authUid = this._getCurrentAuthUid();
         const nameLower = String(targetInfo.nameLower || '').trim().toLowerCase();
         const counts = { players: 0, usernames: 0, friendships: 0, invites: 0 };
 
-        // 1. Delete all player docs matching this UID / alt doc IDs (removes saves + leaderboard entries)
+        // 1. Delete ONLY player docs belonging to this UID (never delete shared email-keyed docs of another UID)
         const docIdsToDelete = new Set([uid, ...(targetInfo.altDocIds || [])]);
-        if (targetInfo.email) docIdsToDelete.add(targetInfo.email.toLowerCase());
+        if (targetInfo.email && targetInfo.email.toLowerCase() === String(uid).toLowerCase()) {
+            docIdsToDelete.add(targetInfo.email.toLowerCase());
+        }
         try {
             const extraSnap = await db.collection('players').where('uid', '==', uid).get();
             extraSnap.forEach(d => docIdsToDelete.add(d.id));
         } catch (_) {}
 
+        if (authUid && (uid === authUid || docIdsToDelete.has(authUid))) {
+            throw new Error('Cannot delete your currently signed-in Primary Developer account while using Admin Panel.');
+        }
+
         for (const docId of docIdsToDelete) {
             const ref = db.collection('players').doc(docId);
             const snap = await ref.get().catch(() => null);
             if (snap && snap.exists) {
+                const sData = snap.data() || {};
+                if (sData.uid && sData.uid !== uid && snap.id !== uid) continue;
                 await ref.delete();
                 counts.players++;
             }
@@ -354,12 +376,12 @@ class DevAccountManager {
         } catch (_) {}
 
         this._purgeFromLocalCaches(uid, nameLower);
-        const isSelf = this._isCurrentLocalAccount(uid, targetInfo.email);
-        if (isSelf) {
+        const isSelf = this._isCurrentLocalAccount(uid, targetInfo.email, Array.from(docIdsToDelete));
+        if (isSelf && !authUid) {
             await this._resetLocalClientAfterSelfAction(true);
             if (typeof window !== 'undefined' && window.location) window.location.reload();
         }
-        return { ok: true, uid, counts, selfDeleted: isSelf };
+        return { ok: true, uid, counts, selfDeleted: false };
     }
 }
 

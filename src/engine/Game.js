@@ -240,9 +240,12 @@ class Game {
         const bossXP = (kleanthisDefeated * 250) + (kiloumpasDefeated * 150) + (roufDefeated * 350) + ((this.player && this.player.endlessBossXpBonus) || 0);
         const earnedXP = Math.round((wavesXP + killsXP + bossXP) * ((typeof window !== 'undefined' && window.perkSystem && window.perkSystem.getXpMultiplier) ? window.perkSystem.getXpMultiplier() : 1.0));
 
-        // Credit earned XP to player's persistent Account Level
+        // Credit earned XP to player's persistent Account Level & persist immediately
         if (typeof window !== 'undefined' && window.GameState && earnedXP > 0) {
             window.GameState.addAccountXP(earnedXP);
+        }
+        if (typeof window !== 'undefined' && window.SaveManager && typeof window.SaveManager.saveNow === 'function') {
+            window.SaveManager.saveNow();
         }
 
         if (typeof window !== 'undefined' && window.EventBus) {

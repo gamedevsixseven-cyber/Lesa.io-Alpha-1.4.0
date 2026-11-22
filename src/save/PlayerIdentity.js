@@ -13,19 +13,19 @@ class PlayerIdentity {
         // 2. Verified linked Google account in persistent local storage
         const isLinked = localStorage.getItem('lesaio_google_linked') === 'true';
         const savedGoogleUid = localStorage.getItem('lesaio_google_uid');
-        if (isLinked && savedGoogleUid && savedGoogleUid !== 'RLqBTfjZATZzePCPDyNCrUGCYrs2') {
+        if (isLinked && savedGoogleUid) {
             return savedGoogleUid;
         }
 
-        // 3. Developer PC on localhost:8080 or 127.0.0.1:8080 (Dev workstation desktop)
+        // 3. Developer PC on localhost:8080 or 127.0.0.1:8080 (ONLY when linked to Google; never hijack guest sessions)
         const isMobile = (typeof navigator !== 'undefined') && /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
         const isLocalDevPC = (typeof window !== 'undefined' && 
             (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') &&
             window.location.port !== '8085' &&
             !isMobile);
 
-        if (isLocalDevPC && (isLinked || !localStorage.getItem('lesaio_player_uid'))) {
-            return 'RLqBTfjZATZzePCPDyNCrUGCYrs2';
+        if (isLocalDevPC && isLinked) {
+            return savedGoogleUid || 'RLqBTfjZATZzePCPDyNCrUGCYrs2';
         }
 
         // 4. Mobile phones, LAN connections (192.168.x.x), or external guests:
@@ -67,10 +67,7 @@ class PlayerIdentity {
         if (currentUser && currentUser.email) return currentUser.email;
         if (auth && auth.currentUser && auth.currentUser.email) return auth.currentUser.email;
         if (localStorage.getItem('lesaio_google_linked') === 'true') return localStorage.getItem('lesaio_google_email') || '';
-        const isLocalDevPC = (typeof window !== 'undefined' && 
-            (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') &&
-            window.location.port !== '8085');
-        return isLocalDevPC ? 'gamedevsixseven@gmail.com' : '';
+        return '';
     }
 
     static normalizeTag(raw) {

@@ -143,17 +143,23 @@ class SaveSerializer {
         if (opts.syncCurrencies) {
             if (p.name && (!state.player.name || state.player.name === 'Psanas' || opts.overwriteName)) {
                 state.player.name = p.name;
-                if (ls) ls.setItem('lesaio_player_name', p.name);
+                if (ls) {
+                    ls.setItem('lesaio_player_name', p.name);
+                    if (p.name.trim() && p.name.trim() !== 'Psanas') ls.setItem('lesaio_player_name_chosen', 'true');
+                }
             }
+            const prevLvl = state.player.accountLevel || 1;
             const lvl = parseInt(p.accountLevel ?? p.level, 10);
             if (Number.isFinite(lvl) && lvl >= 1) {
-                state.player.accountLevel = Math.max(state.player.accountLevel || 1, lvl);
+                state.player.accountLevel = Math.max(prevLvl, lvl);
                 if (ls) ls.setItem('lesaio_account_level', state.player.accountLevel.toString());
             }
             const xp = parseInt(p.accountXp ?? p.xp, 10);
             if (Number.isFinite(xp) && xp >= 0) {
-                state.player.accountXp = xp;
-                if (ls) ls.setItem('lesaio_account_xp', xp.toString());
+                const effLvl = Number.isFinite(lvl) ? lvl : prevLvl;
+                const nextXp = effLvl > prevLvl ? xp : (effLvl === prevLvl ? Math.max(state.player.accountXp || 0, xp) : (state.player.accountXp || 0));
+                state.player.accountXp = nextXp;
+                if (ls) ls.setItem('lesaio_account_xp', nextXp.toString());
             }
             const inCoins = Number.isFinite(Number(p.coins)) ? Number(p.coins) : (Number.isFinite(Number(p.gold)) ? Number(p.gold) : null);
             if (inCoins !== null && inCoins >= 0) {
@@ -381,12 +387,17 @@ class SaveSerializer {
             if (p.flags.alpha13MailClaimed) ls.setItem('lesaio_alpha13_mail_claimed', 'true');
             if (p.flags.alpha14MailClaimed) ls.setItem('lesaio_alpha14_mail_claimed', 'true');
         }
-        if (p.stats && typeof p.stats === 'object') {
-            const s = p.stats;
+        const statsSrc = (p.stats && typeof p.stats === 'object') ? p.stats : {};
+        const socialSrc = (p.socialStats && typeof p.socialStats === 'object') ? p.socialStats : {};
+        const fallbackHigh = Math.max(statsSrc.highScore || 0, p.highScore || 0, p.lbHighScore || 0, socialSrc.highScore || 0);
+        const fallbackKills = Math.max(statsSrc.totalKills || 0, p.totalKills || 0, p.lbTotalKills || 0, socialSrc.totalKills || 0);
+        const fallbackWave = Math.max(statsSrc.maxWave || 1, p.maxWave || 1, p.lbEndlessWave || 1, socialSrc.maxWave || 1);
+        if (p.stats && typeof p.stats === 'object' || fallbackHigh > 0 || fallbackKills > 0 || fallbackWave > 1) {
+            const s = statsSrc;
             const cur = state.player.stats;
-            cur.totalKills = Math.max(cur.totalKills, s.totalKills || 0);
-            cur.maxWave = Math.max(cur.maxWave, s.maxWave || 1);
-            cur.highScore = Math.max(cur.highScore, s.highScore || 0);
+            cur.totalKills = Math.max(cur.totalKills || 0, fallbackKills);
+            cur.maxWave = Math.max(cur.maxWave || 1, fallbackWave);
+            cur.highScore = Math.max(cur.highScore || 0, fallbackHigh);
             cur.totalFatmirs = Math.max(cur.totalFatmirs, s.totalFatmirs || 0);
             cur.totalCasillas = Math.max(cur.totalCasillas, s.totalCasillas || 0);
             cur.totalSkarmogyftos = Math.max(cur.totalSkarmogyftos || 0, s.totalSkarmogyftos || 0);
@@ -455,7 +466,7 @@ class SaveSerializer {
      * Build a complete, non-destructive Firestore cloud payload from full or partial input.
      * Ensures partial updates (e.g. gear upgrades, weapon unlocks) never reset coins, gems, or level to 0/1.
      */
-    static buildCloudPayload(saveData = {}, user = {}, identity = {}) {
+    static buildCloudPayload(saveData = {}, user = {}, identity = {}, cloudBaseline = null) {
         const input = (saveData && typeof saveData === 'object') ? saveData : {};
         const gs = (typeof window !== 'undefined' && window.GameState) ? window.GameState : null;
         const base = gs ? (this.serialize(gs) || {}) : {};
@@ -509,7 +520,12 @@ class SaveSerializer {
         const fTag = identity.friendTag || '#HERO00';
         const fTagClean = identity.friendTagClean || 'HERO00';
 
-        return {
+        const statsObj = inputPlayer.stats || basePlayer.stats || {};
+        const statsHigh = Math.max(0, Number(statsObj.highScore) || 0, Number(input.highScore) || 0);
+        const statsKills = Math.max(0, Number(statsObj.totalKills) || 0);
+        const statsWave = Math.max(1, Number(statsObj.maxWave) || 1, Number(input.maxWave) || 1);
+
+        let result = {
             ...cleanRoot,
             playerName: pName,
             playerNameLower: String(pName).toLowerCase(),
@@ -521,6 +537,11 @@ class SaveSerializer {
             diamonds: pGems,
             level: pLevel,
             xp: pXp,
+            highScore: statsHigh,
+            maxWave: statsWave,
+            lbHighScore: statsHigh,
+            lbEndlessWave: Math.max(statsWave, Number((basePlayer.combatFeats && basePlayer.combatFeats.endlessMaxWave) || 0)),
+            lbTotalKills: statsKills,
             skillLevels: pSkills,
             player: {
                 ...basePlayer,
@@ -535,8 +556,12 @@ class SaveSerializer {
                 accountXp: pXp,
                 skillLevels: pSkills
             },
-            email: (user && user.email) || 'gamedevsixseven@gmail.com'
+            ...(user && user.email ? { email: user.email } : {})
         };
+        if (cloudBaseline && typeof SaveMigration !== 'undefined' && typeof SaveMigration.mergeMonotonicCloudPayload === 'function') {
+            result = SaveMigration.mergeMonotonicCloudPayload(result, cloudBaseline);
+        }
+        return result;
     }
 }
 

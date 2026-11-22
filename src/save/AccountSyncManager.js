@@ -18,21 +18,57 @@ class AccountSyncManager {
         }
 
         try {
-            let docRef = db.collection('players').doc(user.uid);
-            let doc = await docRef.get();
+            const primaryRef = db.collection('players').doc(user.uid);
+            const candidates = [];
+            const seenIds = new Set();
+            const collect = (snap) => {
+                if (!snap || !snap.exists || seenIds.has(snap.id)) return;
+                seenIds.add(snap.id);
+                candidates.push(snap);
+            };
 
-            // Fallback: check query by email if document not keyed by UID
-            if ((!doc || !doc.exists) && user.email) {
-                const querySnap = await db.collection('players').where('email', '==', user.email).limit(1).get();
-                if (!querySnap.empty) {
-                    doc = querySnap.docs[0];
-                    docRef = doc.ref;
+            const primarySnap = await primaryRef.get().catch(() => null);
+            collect(primarySnap);
+
+            // Check sibling / email docs safely by progression score instead of .limit(1)
+            const extraLookups = [
+                db.collection('players').where('uid', '==', user.uid).limit(5).get().catch(() => null)
+            ];
+            if (user.email) {
+                extraLookups.push(db.collection('players').doc(user.email.toLowerCase()).get().catch(() => null));
+                extraLookups.push(db.collection('players').where('email', '==', user.email).limit(10).get().catch(() => null));
+            }
+            const extraRes = await Promise.all(extraLookups);
+            extraRes.forEach((res) => {
+                if (!res) return;
+                if (typeof res.forEach === 'function') res.forEach(collect);
+                else collect(res);
+            });
+
+            const scoreDoc = (d) => (typeof SaveMigration !== 'undefined' && typeof SaveMigration.scoreCloudDoc === 'function')
+                ? SaveMigration.scoreCloudDoc(d)
+                : ((Number(d && (d.level || (d.player && d.player.accountLevel))) || 1) * 1000);
+            const tsOf = (v) => (typeof SaveMigration !== 'undefined' && typeof SaveMigration._parseTsValue === 'function')
+                ? SaveMigration._parseTsValue(v) : 0;
+
+            let doc = primarySnap && primarySnap.exists ? primarySnap : null;
+            const docRef = primaryRef;
+            const primaryWipedAt = doc ? tsOf(doc.data() && doc.data().wipedByDevAt) : 0;
+            if (candidates.length > 0) {
+                const scored = candidates
+                    .map((s) => ({ snap: s, data: s.data() || {}, score: scoreDoc(s.data() || {}) }))
+                    .filter((item) => !primaryWipedAt || item.snap.id === user.uid || tsOf(item.data.lastUpdated) > primaryWipedAt)
+                    .sort((a, b) => (b.score - a.score) || ((a.snap.id === user.uid ? 1 : 0) - (b.snap.id === user.uid ? 1 : 0)) * -1);
+                if (scored.length > 0 && (!doc || scored[0].score > scoreDoc(doc.data() || {}))) {
+                    doc = scored[0].snap;
                 }
             }
 
             if (doc && doc.exists) {
                 const docData = doc.data() || {};
-                const p = docData.player || docData;
+                const p = (typeof SaveMigration !== 'undefined' && typeof SaveMigration.extractNormalizedPlayer === 'function')
+                    ? SaveMigration.extractNormalizedPlayer(docData)
+                    : (docData.player || docData);
 
                 const hasSavedProgress = (
                     p.coins !== undefined ||
@@ -49,7 +85,9 @@ class AccountSyncManager {
                     p.level !== undefined ||
                     docData.coins !== undefined ||
                     docData.gems !== undefined ||
-                    docData.diamonds !== undefined
+                    docData.diamonds !== undefined ||
+                    docData.lbHighScore !== undefined ||
+                    docData.lbTotalKills !== undefined
                 );
 
                 if (hasSavedProgress) {
@@ -134,8 +172,10 @@ class AccountSyncManager {
                         : { ...rawMats };
 
                     const stats = (p.stats && typeof p.stats === 'object') ? p.stats : (docData.stats || {});
-                    const highScore = Math.max(parseInt(stats.highScore || docData.highScore || 0, 10) || 0, localEstablished ? si('lesaio_highscore', 0, 0) : 0);
-                    const maxWave = Math.max(parseInt(stats.maxWave || docData.maxWave || 1, 10) || 1, localEstablished ? si('lesaio_max_wave', 1, 1) : 1);
+                    const social = (docData.socialStats && typeof docData.socialStats === 'object') ? docData.socialStats : {};
+                    const highScore = Math.max(parseInt(stats.highScore || docData.lbHighScore || social.highScore || docData.highScore || 0, 10) || 0, localEstablished ? si('lesaio_highscore', 0, 0) : 0);
+                    const totalKills = Math.max(parseInt(stats.totalKills || docData.lbTotalKills || social.totalKills || docData.totalKills || 0, 10) || 0, localEstablished ? si('lesaio_total_kills', 0, 0) : 0);
+                    const maxWave = Math.max(parseInt(stats.maxWave || docData.lbEndlessWave || social.maxWave || docData.maxWave || 1, 10) || 1, localEstablished ? si('lesaio_max_wave', 1, 1) : 1);
 
                     // Reconstruct Master Save (preserving full inventory, cosmetics, chests, battlePass, skins)
                     const masterSaveV2 = {
@@ -158,7 +198,7 @@ class AccountSyncManager {
                             pendingBossRewards: p.pendingBossRewards || null,
                             flags: p.flags || null,
                             stats: {
-                                totalKills: Math.max(stats.totalKills || 0, localEstablished ? si('lesaio_total_kills', 0, 0) : 0),
+                                totalKills,
                                 maxWave, highScore,
                                 totalFatmirs: Math.max(stats.totalFatmirs || docData.fatmirsKilled || 0, localEstablished ? si('lesaio_total_fatmirs', 0, 0) : 0),
                                 totalCasillas: Math.max(stats.totalCasillas || docData.casillasKilled || 0, localEstablished ? si('lesaio_total_casillas', 0, 0) : 0),
@@ -282,15 +322,28 @@ class AccountSyncManager {
                         localStorage.setItem('lesaio_hero_plays', JSON.stringify(stats.heroPlays));
                     }
 
-                    // Mark account linked & push merged progression back if device had guest progress
+                    // Mark account linked, hydrate live GameState in memory, and migrate/push only if needed
                     localStorage.setItem('lesaio_google_linked', 'true');
                     localStorage.setItem('lesaio_google_uid', user.uid);
                     localStorage.setItem('lesaio_google_email', user.email || '');
                     localStorage.setItem('lesaio_google_name', user.displayName || name);
                     localStorage.setItem('lesaio_last_cloud_sync', 'Just now');
-                    if (localEstablished) {
+                    if (typeof window !== 'undefined') {
+                        if (window.GameState && typeof SaveSerializer !== 'undefined') {
+                            SaveSerializer.deserialize(masterSaveV2, window.GameState);
+                        }
+                        if (window.cloudSave) {
+                            window.cloudSave.lastCloudData = masterSaveV2;
+                            window.cloudSave.hasCompletedInitialSync = true;
+                        }
+                    }
+                    if (localEstablished || doc.id !== user.uid) {
+                        const safeDoc = (typeof SaveMigration !== 'undefined' && typeof SaveMigration.mergeMonotonicCloudPayload === 'function')
+                            ? SaveMigration.mergeMonotonicCloudPayload(masterSaveV2, docData)
+                            : masterSaveV2;
                         await docRef.set({
-                            ...masterSaveV2,
+                            ...safeDoc,
+                            uid: user.uid,
                             email: user.email || '',
                             lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
                         }, { merge: true }).catch(() => {});
@@ -311,15 +364,25 @@ class AccountSyncManager {
                 }
             }
 
-            // Fresh account in Firestore: Upload current local state to cloud
+            // Fresh account in Firestore: Upload current local state cleanly (preserving any partial fields if doc exists)
             if (typeof window !== 'undefined' && window.SaveSerializer && window.GameState) {
-                const currentPayload = window.SaveSerializer.serialize(window.GameState);
+                const baseline = (doc && doc.exists) ? (doc.data() || {}) : null;
+                const fTag = (typeof PlayerIdentity !== 'undefined') ? PlayerIdentity.getOnlineTag(user.uid) : '#HERO00';
+                const fTagClean = (typeof PlayerIdentity !== 'undefined') ? PlayerIdentity.normalizeTag(fTag) : 'HERO00';
+                const currentPayload = (typeof window.SaveSerializer.buildCloudPayload === 'function')
+                    ? window.SaveSerializer.buildCloudPayload({}, user, { friendTag: fTag, friendTagClean: fTagClean }, baseline)
+                    : window.SaveSerializer.serialize(window.GameState);
                 if (currentPayload) {
                     await docRef.set({
                         ...currentPayload,
+                        uid: user.uid,
                         email: user.email || '',
                         lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
                     }, { merge: true });
+                    if (window.cloudSave) {
+                        window.cloudSave.lastCloudData = currentPayload;
+                        window.cloudSave.hasCompletedInitialSync = true;
+                    }
                 }
             }
 
@@ -345,6 +408,7 @@ class AccountSyncManager {
      * Does NOT modify or delete the player's remote cloud Firestore document.
      */
     static resetToGuestAccount() {
+        if (typeof window !== 'undefined') window._lesaioSuppressUnloadSave = true;
         const progressionKeys = [
             'lesaio_save_v2',
             'lesaio_save_v2_backup',

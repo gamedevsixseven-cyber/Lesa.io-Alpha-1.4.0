@@ -136,20 +136,43 @@ class FriendService {
         const me = this.getMySummary();
         if (!db || !me.uid) return false;
 
+        const cs = (typeof window !== 'undefined') ? window.cloudSave : null;
+        if (cs && (cs.isHydratingAuth || cs.isSyncingFromCloud)) return false;
+
         const now = Date.now();
         if (!force && now - this._lastPresenceSync < 15000) return true;
         this._lastPresenceSync = now;
 
-        try {
-            await db.collection('players').doc(me.uid).set({
-                uid: me.uid, friendTag: me.tag, friendTagClean: me.tagClean,
+        // Before initial cloud hydration completes, push ONLY presence fields so unhydrated Lv.1 defaults never clobber cloud progress
+        const statsReady = !cs || cs.hasCompletedInitialSync || (typeof SaveMigration !== 'undefined' && SaveMigration.hasEstablishedProgress());
+        const baseDoc = {
+            uid: me.uid, online: true,
+            currentStatus: this._currentStatus || 'In Lobby',
+            coopRoomCode: this._activeRoomCode || null, lastSeenAt: now
+        };
+        if (statsReady) {
+            const c = (cs && cs.lastCloudData && typeof cs.lastCloudData === 'object') ? cs.lastCloudData : null;
+            const wiped = c && typeof SaveMigration !== 'undefined' && SaveMigration.wasWipedByDev(c, now);
+            const cp = (!wiped && c && c.player) ? c.player : (!wiped ? c : null);
+            const csStats = (cp && cp.stats) ? cp.stats : {};
+            const cSocial = (!wiped && c && c.socialStats) ? c.socialStats : {};
+            const lvl = FriendService._maxNum(1, me.level, !wiped && cp && (cp.accountLevel || cp.level), !wiped && c && (c.accountLevel || c.level));
+            const hs = FriendService._maxNum(0, me.highScore, csStats.highScore, cSocial.highScore, !wiped && c && (c.lbHighScore || c.highScore));
+            const mw = FriendService._maxNum(1, me.maxWave, csStats.maxWave, cSocial.maxWave, !wiped && c && c.maxWave);
+            const ew = FriendService._maxNum(0, me.endlessMaxWave, cSocial.endlessMaxWave, !wiped && c && c.lbEndlessWave);
+            const tk = FriendService._maxNum(0, me.totalKills, csStats.totalKills, cSocial.totalKills, !wiped && c && c.lbTotalKills);
+            Object.assign(baseDoc, {
+                friendTag: me.tag, friendTagClean: me.tagClean,
                 playerName: me.name, playerNameLower: me.nameLower,
-                accountLevel: me.level, level: me.level, selectedHero: me.selectedHero,
-                online: true, currentStatus: this._currentStatus || 'In Lobby', coopRoomCode: this._activeRoomCode || null,
-                socialStats: { highScore: me.highScore, maxWave: me.maxWave, totalKills: me.totalKills, endlessMaxWave: me.endlessMaxWave, olympusMaxFloor: me.olympusMaxFloor },
-                cosmetics: me.cosmetics, lbHighScore: me.highScore,
-                lbEndlessWave: Math.max(me.endlessMaxWave || 0, me.maxWave || 1), lbTotalKills: me.totalKills, lastSeenAt: now
-            }, { merge: true });
+                accountLevel: lvl, level: lvl, selectedHero: me.selectedHero,
+                socialStats: { highScore: hs, maxWave: mw, totalKills: tk, endlessMaxWave: ew, olympusMaxFloor: me.olympusMaxFloor },
+                cosmetics: me.cosmetics, lbHighScore: hs,
+                lbEndlessWave: Math.max(ew || 0, mw || 1), lbTotalKills: tk
+            });
+        }
+
+        try {
+            await db.collection('players').doc(me.uid).set(baseDoc, { merge: true });
             this.lastError = null;
             return true;
         } catch (err) {

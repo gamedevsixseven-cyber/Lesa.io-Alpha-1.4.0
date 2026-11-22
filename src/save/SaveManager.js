@@ -47,6 +47,25 @@ class SaveManager {
         return this.saveNow();
     }
 
+    _wouldDowngradeStoredSave(serialized) {
+        if (typeof localStorage === 'undefined' || !serialized || !serialized.player) return false;
+        if (typeof window !== 'undefined' && window._lesaioAllowDowngradeSave) return false;
+        if (typeof SaveMigration === 'undefined') return false;
+        const existing = SaveMigration.safeGetJson(SaveMigration.KEYS.MAIN_SAVE, null);
+        if (!existing || !existing.player) return false;
+        const sp = serialized.player;
+        const ep = existing.player;
+        const ss = sp.stats || {};
+        const es = ep.stats || {};
+        const curLvl = Number(sp.accountLevel) || 1;
+        const prevLvl = Number(ep.accountLevel) || 1;
+        const curKills = Number(ss.totalKills) || 0;
+        const prevKills = Number(es.totalKills) || 0;
+        const curHigh = Number(ss.highScore) || 0;
+        const prevHigh = Number(es.highScore) || 0;
+        return curLvl < prevLvl || curKills < prevKills || curHigh < prevHigh;
+    }
+
     /**
      * Write local master save + rolling backup synchronously without triggering cloud I/O.
      */
@@ -54,6 +73,7 @@ class SaveManager {
         if (!this.gameState || typeof SaveSerializer === 'undefined') return null;
         const serialized = SaveSerializer.serialize(this.gameState);
         if (!serialized) return null;
+        if (this._wouldDowngradeStoredSave(serialized)) return null;
         try {
             localStorage.setItem('lesaio_save_v2', JSON.stringify(serialized));
             if (typeof SaveMigration !== 'undefined') {
@@ -74,7 +94,7 @@ class SaveManager {
      * Flush any pending debounced save locally before tab close/reload/backgrounding.
      */
     flushLocal() {
-        if (typeof window !== 'undefined' && window._lesaioSuppressUnloadSave) return false;
+        if (typeof window !== 'undefined' && (window._lesaioSuppressUnloadSave || (window.cloudSave && window.cloudSave.isHydratingAuth))) return false;
         if (this.saveDebounceTimer) {
             clearTimeout(this.saveDebounceTimer);
             this.saveDebounceTimer = null;
@@ -87,8 +107,8 @@ class SaveManager {
      * @param {number} delayMs 
      */
     requestSave(delayMs = 600) {
-        if (typeof window !== 'undefined' && window.cloudSave && window.cloudSave.isSyncingFromCloud) {
-            this.saveLocalOnly();
+        if (typeof window !== 'undefined' && window.cloudSave && (window.cloudSave.isSyncingFromCloud || window.cloudSave.isHydratingAuth)) {
+            if (!window.cloudSave.isHydratingAuth) this.saveLocalOnly();
             return;
         }
 
@@ -120,9 +140,9 @@ class SaveManager {
         if (!serialized) return false;
 
         try {
-            // Notify cloud sync if available (skip if we are currently applying cloud data)
+            // Notify cloud sync if available (skip if hydrating auth or applying cloud data)
             if (typeof window !== 'undefined' && window.cloudSave && window.cloudSave.currentUser) {
-                if (window.cloudSave.isSyncingFromCloud) {
+                if (window.cloudSave.isSyncingFromCloud || window.cloudSave.isHydratingAuth) {
                     return true;
                 }
                 if (typeof window.cloudSave.triggerCloudSync === 'function') {

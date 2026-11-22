@@ -553,6 +553,7 @@ class AdminCheatsService {
             );
             if (!confirmed) return false;
         }
+        if (typeof window !== 'undefined') window._lesaioSuppressUnloadSave = true;
         if (typeof window !== 'undefined' && window.SaveManager && window.SaveManager.saveDebounceTimer) {
             clearTimeout(window.SaveManager.saveDebounceTimer);
             window.SaveManager.saveDebounceTimer = null;

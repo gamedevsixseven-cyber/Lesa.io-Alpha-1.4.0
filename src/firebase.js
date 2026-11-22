@@ -21,6 +21,8 @@ class CloudSaveService {
         this.db = null;
         this.currentUser = null;
         this.hasCompletedInitialSync = false;
+        this.isHydratingAuth = false;
+        this._activeListenerUid = null;
 
         this.init();
     }
@@ -46,11 +48,18 @@ class CloudSaveService {
                     // Listen for real-time auth state changes
                     this.auth.onAuthStateChanged((user) => {
                         if (user) {
+                            const switchedUid = !this._activeListenerUid || this._activeListenerUid !== user.uid;
                             this.currentUser = user;
+                            if (switchedUid && !this.isHydratingAuth) {
+                                this.hasCompletedInitialSync = false;
+                                this.lastCloudData = null;
+                                this.lastSeenCoins = this.lastSeenGold = this.lastSeenDiamonds = this.lastSeenGems = undefined;
+                                this.lastSeenLevel = this.lastSeenXp = this.lastSeenSkillLevels = undefined;
+                            }
                             localStorage.setItem('lesaio_google_linked', 'true');
                             localStorage.setItem('lesaio_google_uid', user.uid);
                             localStorage.setItem('lesaio_google_email', user.email || '');
-                            localStorage.setItem('lesaio_google_name', user.displayName || user.email.split('@')[0]);
+                            localStorage.setItem('lesaio_google_name', user.displayName || (user.email ? user.email.split('@')[0] : 'Google User'));
                             this.startRealtimeListener(user);
                         }
                         if (window.uiController && window.uiController.settingsManager) {
@@ -94,6 +103,11 @@ class CloudSaveService {
             return { success: false, fallback: true };
         }
 
+        this.isHydratingAuth = true;
+        this.hasCompletedInitialSync = false;
+        this.lastCloudData = null;
+        this.lastSeenCoins = this.lastSeenGold = this.lastSeenDiamonds = this.lastSeenGems = undefined;
+        this.lastSeenLevel = this.lastSeenXp = this.lastSeenSkillLevels = undefined;
         try {
             const provider = new firebase.auth.GoogleAuthProvider();
             provider.addScope('profile');
@@ -104,16 +118,16 @@ class CloudSaveService {
 
             if (this.currentUser) {
                 localStorage.setItem('lesaio_google_linked', 'true');
-                localStorage.setItem('lesaio_google_email', this.currentUser.email);
-                localStorage.setItem('lesaio_google_name', this.currentUser.displayName || this.currentUser.email.split('@')[0]);
+                localStorage.setItem('lesaio_google_uid', this.currentUser.uid);
+                localStorage.setItem('lesaio_google_email', this.currentUser.email || '');
+                localStorage.setItem('lesaio_google_name', this.currentUser.displayName || (this.currentUser.email ? this.currentUser.email.split('@')[0] : 'Google User'));
                 
-                // Synchronize existing cloud save data if present
                 let syncResult = null;
                 if (typeof AccountSyncManager !== 'undefined') {
                     syncResult = await AccountSyncManager.syncDownCloudSave(this.currentUser, this.db);
                 }
 
-                // Attach real-time listener immediately
+                this.isHydratingAuth = false;
                 this.startRealtimeListener(this.currentUser);
                 return { success: true, user: this.currentUser, syncResult };
             }
@@ -121,6 +135,8 @@ class CloudSaveService {
             console.error('Google Sign-In Error:', error);
             alert(`Google Sign-In Error: ${error.message}`);
             return { success: false, error };
+        } finally {
+            this.isHydratingAuth = false;
         }
     }
 
@@ -130,7 +146,7 @@ class CloudSaveService {
 
     async saveToCloud(saveData = {}) {
         if (!this.isInitialized || !this.db) return false;
-        if (this.isSyncingFromCloud) {
+        if (this.isSyncingFromCloud || this.isHydratingAuth) {
             return false;
         }
         const uid = this.getEffectivePlayerUid();
@@ -141,13 +157,22 @@ class CloudSaveService {
         this._pendingCloudSaves = (this._pendingCloudSaves || 0) + 1;
         try {
             const userDocRef = this.db.collection('players').doc(user.uid);
+            // Never overwrite an un-downloaded cloud doc with local Lv.1 defaults before initial sync
+            if (!this.hasCompletedInitialSync) {
+                const preSnap = await userDocRef.get().catch(() => null);
+                if (preSnap && preSnap.exists) {
+                    this.applyCloudData(preSnap.data());
+                } else {
+                    this.hasCompletedInitialSync = true;
+                }
+            }
             this.lastLocalSaveTimestamp = Date.now();
 
             const fTag = (typeof PlayerIdentity !== 'undefined') ? PlayerIdentity.getOnlineTag(user.uid) : '#HERO00';
             const fTagClean = (typeof PlayerIdentity !== 'undefined') ? PlayerIdentity.normalizeTag(fTag) : 'HERO00';
             let payload;
             if (typeof SaveSerializer !== 'undefined' && typeof SaveSerializer.buildCloudPayload === 'function') {
-                payload = SaveSerializer.buildCloudPayload(saveData, user, { friendTag: fTag, friendTagClean: fTagClean });
+                payload = SaveSerializer.buildCloudPayload(saveData, user, { friendTag: fTag, friendTagClean: fTagClean }, this.lastCloudData);
             } else {
                 const rawInput = (saveData && typeof saveData === 'object') ? saveData : {};
                 const gsP = (typeof window !== 'undefined' && window.GameState && window.GameState.player) ? window.GameState.player : {};
@@ -162,7 +187,7 @@ class CloudSaveService {
                     ...rawInput, playerName: pName, playerNameLower: pName.toLowerCase(), friendTag: fTag, friendTagClean: fTagClean,
                     coins: pCoins, gold: pCoins, gems: pGems, diamonds: pGems, level: pLevel, xp: pXp, skillLevels: pSkills,
                     player: { ...gsP, ...(rawInput.player || {}), coins: pCoins, gold: pCoins, gems: pGems, diamonds: pGems, accountLevel: pLevel, accountXp: pXp, skillLevels: pSkills },
-                    email: user.email || 'gamedevsixseven@gmail.com'
+                    ...(user.email ? { email: user.email } : {})
                 };
             }
 
@@ -170,6 +195,7 @@ class CloudSaveService {
             this.lastSavedCoins = payload.coins;
             this.lastKnownRootGems = payload.gems;
             this.lastKnownRootCoins = payload.coins;
+            this.lastCloudData = payload;
 
             await userDocRef.set({
                 ...payload,
@@ -258,8 +284,8 @@ class CloudSaveService {
         let changed = false;
         let _preferLocal = false;
         try {
-        if (isInitialSync && typeof SaveMigration !== 'undefined') {
-            _preferLocal = !!SaveMigration.reconcileCloudSnapshot(data, window.GameState, true).preferLocalCurrencies;
+        if (typeof SaveMigration !== 'undefined') {
+            _preferLocal = !!SaveMigration.reconcileCloudSnapshot(data, window.GameState, isInitialSync).preferLocalCurrencies;
         }
 
         // 1. Live Gems / Diamonds Sync
@@ -343,19 +369,22 @@ class CloudSaveService {
             ? window.GameState.player.accountLevel
             : parseInt(localStorage.getItem('lesaio_account_level') || '1', 10);
 
-        const rawLevel = data.level !== undefined ? data.level : (data.accountLevel !== undefined ? data.accountLevel : (data.player && (data.player.accountLevel !== undefined ? data.player.accountLevel : data.player.level)));
-        const numLevel = rawLevel !== undefined ? parseInt(rawLevel, 10) : undefined;
+        const pObj = (data.player && typeof data.player === 'object') ? data.player : null;
+        const wiped = (typeof SaveMigration !== 'undefined') && SaveMigration.wasWipedByDev(data, 0);
+        const lvlNums = [data.level, data.accountLevel, pObj && pObj.accountLevel, pObj && pObj.level]
+            .map(v => parseInt(v, 10)).filter(n => Number.isFinite(n) && n >= 1);
+        const numLevel = lvlNums.length ? (wiped ? (parseInt(data.level ?? 1, 10) || 1) : Math.max(...lvlNums)) : undefined;
 
         let incomingLevel = undefined;
         if (_preferLocal) {
             if (!isNaN(curLevel)) this.lastSeenLevel = curLevel;
         } else if (this.lastSeenLevel === undefined) {
             if (numLevel !== undefined && !isNaN(numLevel)) {
-                incomingLevel = (isInitialSync && typeof SaveMigration !== 'undefined' && SaveMigration.hasEstablishedProgress()) ? Math.max(curLevel, numLevel) : numLevel;
+                incomingLevel = (!wiped && isInitialSync && typeof SaveMigration !== 'undefined' && SaveMigration.hasEstablishedProgress()) ? Math.max(curLevel, numLevel) : numLevel;
             }
         } else {
             const levelChanged = (numLevel !== undefined && !isNaN(numLevel) && numLevel !== this.lastSeenLevel);
-            if (levelChanged) incomingLevel = numLevel;
+            if (levelChanged && (wiped || numLevel >= curLevel)) incomingLevel = numLevel;
         }
 
         if (numLevel !== undefined && !isNaN(numLevel)) this.lastSeenLevel = numLevel;
@@ -389,8 +418,9 @@ class CloudSaveService {
             ? window.GameState.player.accountXp
             : parseInt(localStorage.getItem('lesaio_account_xp') || '0', 10);
 
-        const rawXp = data.xp !== undefined ? data.xp : (data.accountXp !== undefined ? data.accountXp : (data.player && (data.player.accountXp !== undefined ? data.player.accountXp : data.player.xp)));
-        const numXp = rawXp !== undefined ? parseInt(rawXp, 10) : undefined;
+        const xpNums = [data.xp, data.accountXp, pObj && pObj.accountXp, pObj && pObj.xp]
+            .map(v => parseInt(v, 10)).filter(n => Number.isFinite(n) && n >= 0);
+        const numXp = xpNums.length ? (wiped ? (parseInt(data.xp ?? 0, 10) || 0) : Math.max(...xpNums)) : undefined;
 
         let incomingXp = undefined;
         if (_preferLocal) {
@@ -399,7 +429,7 @@ class CloudSaveService {
             if (numXp !== undefined && !isNaN(numXp) && (!incomingLevel || incomingLevel >= curLevel)) incomingXp = numXp;
         } else {
             const xpChanged = (numXp !== undefined && !isNaN(numXp) && numXp !== this.lastSeenXp);
-            if (xpChanged) incomingXp = numXp;
+            if (xpChanged && (wiped || (numLevel && numLevel > curLevel) || numXp > curXp)) incomingXp = numXp;
         }
 
         if (numXp !== undefined && !isNaN(numXp)) this.lastSeenXp = numXp;
@@ -463,6 +493,9 @@ class CloudSaveService {
         } finally {
             this.isSyncingFromCloud = false;
         }
+        if (changed && window.SaveManager && typeof window.SaveManager.saveLocalOnly === 'function') {
+            window.SaveManager.saveLocalOnly();
+        }
         if (_preferLocal && window.SaveSerializer && window.GameState) {
             const p = window.SaveSerializer.serialize(window.GameState);
             if (p) setTimeout(() => this.saveToCloud(p), 400);
@@ -497,6 +530,7 @@ class CloudSaveService {
     startRealtimeListener(user) {
         if (!this.db || !user) return;
         this.stopRealtimeListener();
+        this._activeListenerUid = user.uid || user.email || null;
 
         this.unsubscribes = [];
 
@@ -507,8 +541,9 @@ class CloudSaveService {
                 const unsubUid = docRef.onSnapshot((doc) => {
                     if (doc.exists) {
                         this.applyCloudData(doc.data());
-                    } else if (!(doc.metadata && doc.metadata.fromCache)) {
-                        this.seedNewPlayerDoc(user.uid);
+                    } else if (!(doc.metadata && doc.metadata.fromCache) && !this.isHydratingAuth) {
+                        if (!user.email) this.seedNewPlayerDoc(user.uid);
+                        this.hasCompletedInitialSync = true;
                     }
                 }, (err) => console.warn('UID listener warning:', err));
                 this.unsubscribes.push(unsubUid);

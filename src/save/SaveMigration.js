@@ -8,7 +8,7 @@
  */
 
 class SaveMigration {
-    static CURRENT_APP_VERSION = '1.6.14';
+    static CURRENT_APP_VERSION = '1.7.2';
     static CURRENT_SCHEMA_VERSION = 3;
 
     static KEYS = {
@@ -79,36 +79,62 @@ class SaveMigration {
 
     static hasEstablishedProgress() {
         if (typeof localStorage === 'undefined') return false;
-        if (localStorage.getItem('lesaio_player_name_chosen') === 'true') return true;
-        if (localStorage.getItem('lesaio_google_linked') === 'true') return true;
         if (this.safeGetInt('lesaio_account_level', 1, 1) > 1) return true;
+        if (this.safeGetInt('lesaio_account_xp', 0, 0) > 0) return true;
         if (this.safeGetInt('lesaio_matches_played', 0, 0) > 0) return true;
         if (this.safeGetInt('lesaio_highscore', 0, 0) > 0) return true;
+        if (this.safeGetInt('lesaio_total_kills', 0, 0) > 0) return true;
+        if (this.safeGetInt('lesaio_max_wave', 1, 1) > 1) return true;
+        if (this.safeGetInt('lesaio_evolution_stones', 0, 0) > 0) return true;
+        if (this.safeGetInt('lesaio_olympian_star_stones', 0, 0) > 0) return true;
         const heroes = this.safeGetJson('lesaio_unlocked_heroes', null);
         if (Array.isArray(heroes) && heroes.length > 1) return true;
         const weapons = this.safeGetJson('lesaio_unlocked_weapons', null);
         if (Array.isArray(weapons) && weapons.length > 1) return true;
+        const skills = this.safeGetJson('lesaio_unlocked_skills', null);
+        if (Array.isArray(skills) && skills.length > 2) return true;
         const gear = this.safeGetJson('lesaio_unlocked_gear', null);
         if (Array.isArray(gear) && gear.length > 0) return true;
+        const perks = this.safeGetJson('lesaio_unlocked_perks', null);
+        if (Array.isArray(perks) && perks.length > 0) return true;
+        const upg = this.safeGetJson('lesaio_upgrades', null);
+        if (upg && typeof upg === 'object' && Object.values(upg).some(v => (parseInt(v, 10) || 0) > 0)) return true;
         const bp = this.safeGetJson('lesaio_battle_pass_s1', null);
-        if (bp && ((bp.xp || 0) > 0 || bp.hasPremium)) return true;
-        const name = localStorage.getItem('lesaio_player_name');
-        if (name && name.trim() && name.trim() !== 'Psanas') return true;
+        if (bp && ((bp.xp || 0) > 0 || bp.hasPremium || (Array.isArray(bp.claimedFree) && bp.claimedFree.length > 0))) return true;
         return false;
     }
 
-    static _scoreSavePayload(save) {
-        if (!save || typeof save !== 'object' || !save.player || typeof save.player !== 'object') return -1;
-        const p = save.player;
+    static scoreCloudDoc(data) {
+        if (!data || typeof data !== 'object') return -1;
+        const p = (data.player && typeof data.player === 'object') ? data.player : data;
+        const s = (p.stats && typeof p.stats === 'object') ? p.stats : (data.stats || {});
+        const social = (data.socialStats && typeof data.socialStats === 'object') ? data.socialStats : {};
+        const lvl = Math.max(1, parseInt(p.accountLevel ?? p.level ?? data.accountLevel ?? data.level ?? 1, 10) || 1);
+        const xp = Math.max(0, parseInt(p.accountXp ?? p.xp ?? data.accountXp ?? data.xp ?? 0, 10) || 0);
+        const highScore = Math.max(0, Number(s.highScore) || 0, Number(data.highScore) || 0, Number(data.lbHighScore) || 0, Number(social.highScore) || 0);
+        const totalKills = Math.max(0, Number(s.totalKills) || 0, Number(data.lbTotalKills) || 0, Number(social.totalKills) || 0, Number(data.totalKills) || 0);
+        const maxWave = Math.max(1, Number(s.maxWave) || 1, Number(data.maxWave) || 1, Number(data.lbEndlessWave) || 1, Number(social.maxWave) || 1);
+        const matches = Math.max(0, Number(s.matchesPlayed) || 0);
+        const heroes = Array.isArray(p.unlockedHeroes) ? p.unlockedHeroes.length : (Array.isArray(data.unlockedHeroes) ? data.unlockedHeroes.length : 1);
+        const weapons = Array.isArray(p.unlockedWeapons) ? p.unlockedWeapons.length : (Array.isArray(data.unlockedWeapons) ? data.unlockedWeapons.length : 1);
+        const gear = Array.isArray(p.unlockedGear) ? p.unlockedGear.length : 0;
+        const evoStones = Math.max(0, Number(p.evolutionStones) || 0, Number(p.olympianStarStones) || 0);
+        const bpXp = (p.battlePass && Number(p.battlePass.xp)) || 0;
+        const coins = Math.max(0, Number(p.coins ?? data.coins ?? data.gold ?? 0) || 0);
+        const gems = Math.max(0, Number(p.gems ?? data.diamonds ?? data.gems ?? 0) || 0);
+
         let score = 0;
-        score += (Number(p.accountLevel) || 1) * 10000;
-        score += (Array.isArray(p.unlockedHeroes) ? p.unlockedHeroes.length : 1) * 500;
-        score += (Array.isArray(p.unlockedWeapons) ? p.unlockedWeapons.length : 1) * 300;
-        score += (Array.isArray(p.unlockedGear) ? p.unlockedGear.length : 0) * 200;
-        score += (p.stats && Number(p.stats.matchesPlayed) || 0) * 100;
-        score += Math.min(50000, Number(p.coins) || 0) * 0.01;
-        if (Number(save.timestamp) > 0) score += 50;
+        score += (lvl - 1) * 100000 + Math.min(99999, xp);
+        score += totalKills * 25;
+        score += Math.min(50000000, highScore) * 0.02;
+        score += matches * 300 + (maxWave - 1) * 150;
+        score += Math.max(0, heroes - 1) * 2000 + Math.max(0, weapons - 1) * 1200 + gear * 500 + evoStones * 100 + bpXp * 0.5;
+        score += Math.min(100000, coins) * 0.01 + Math.min(10000, gems) * 0.1;
         return score;
+    }
+
+    static _scoreSavePayload(save) {
+        return this.scoreCloudDoc(save);
     }
 
     static getBestRecoveryPayload() {
@@ -359,14 +385,134 @@ class SaveMigration {
         return 0;
     }
 
+    static _parseTsValue(v) {
+        if (!v) return 0;
+        if (typeof v === 'number' && Number.isFinite(v)) return v;
+        if (typeof v === 'string') { const ms = Date.parse(v); return Number.isFinite(ms) ? ms : 0; }
+        if (typeof v.toMillis === 'function') return v.toMillis();
+        if (typeof v.seconds === 'number') return v.seconds * 1000;
+        return 0;
+    }
+
+    static wasWipedByDev(baseline, localTs = 0) {
+        if (!baseline || typeof baseline !== 'object' || !baseline.wipedByDevAt) return false;
+        const wipedMs = this._parseTsValue(baseline.wipedByDevAt);
+        return wipedMs > 0 && wipedMs >= (Number(localTs) || 0) - 2000;
+    }
+
+    static extractNormalizedPlayer(data) {
+        if (!data || typeof data !== 'object') return {};
+        const p = (data.player && typeof data.player === 'object') ? data.player : data;
+        const s = (p.stats && typeof p.stats === 'object') ? p.stats : (data.stats || {});
+        const social = (data.socialStats && typeof data.socialStats === 'object') ? data.socialStats : {};
+        const levelCandidates = [p.accountLevel, p.level, data.accountLevel, data.level]
+            .map(v => parseInt(v, 10)).filter(n => Number.isFinite(n) && n >= 1);
+        const lvl = levelCandidates.length ? Math.max(...levelCandidates) : undefined;
+        const xpCandidates = [p.accountXp, p.xp, data.accountXp, data.xp]
+            .map(v => parseInt(v, 10)).filter(n => Number.isFinite(n) && n >= 0);
+        const maxHigh = Math.max(0, Number(s.highScore) || 0, Number(data.highScore) || 0, Number(data.lbHighScore) || 0, Number(social.highScore) || 0);
+        const maxKills = Math.max(0, Number(s.totalKills) || 0, Number(data.lbTotalKills) || 0, Number(social.totalKills) || 0, Number(data.totalKills) || 0);
+        const maxWave = Math.max(1, Number(s.maxWave) || 1, Number(data.maxWave) || 1, Number(data.lbEndlessWave) || 1, Number(social.maxWave) || 1);
+        return {
+            ...p,
+            name: p.name || p.playerName || data.playerName || undefined,
+            accountLevel: lvl,
+            accountXp: xpCandidates.length ? Math.max(...xpCandidates) : undefined,
+            stats: {
+                ...s,
+                highScore: maxHigh,
+                totalKills: maxKills,
+                maxWave
+            }
+        };
+    }
+
+    static _maxObj(a = {}, b = {}, min = 0) {
+        const out = { ...(a || {}) };
+        for (const [k, v] of Object.entries(b || {})) {
+            const n = parseInt(v, 10);
+            if (Number.isFinite(n)) out[k] = Math.max(parseInt(out[k], 10) || min, n);
+        }
+        return out;
+    }
+
+    static _unionArr(a, b) {
+        return Array.from(new Set([...(Array.isArray(b) ? b : []), ...(Array.isArray(a) ? a : [])]));
+    }
+
+    static mergeMonotonicCloudPayload(payload, baseline) {
+        if (!payload || typeof payload !== 'object' || !baseline || typeof baseline !== 'object') return payload;
+        if (this.wasWipedByDev(baseline, payload.timestamp || Date.now())) return payload;
+
+        const bp = this.extractNormalizedPlayer(baseline);
+        const pp = (payload.player && typeof payload.player === 'object') ? payload.player : {};
+        const ps = (pp.stats && typeof pp.stats === 'object') ? pp.stats : {};
+        const bs = (bp.stats && typeof bp.stats === 'object') ? bp.stats : {};
+
+        const payLvl = Math.max(1, parseInt(pp.accountLevel ?? payload.level ?? 1, 10) || 1);
+        const baseLvl = Math.max(1, parseInt(bp.accountLevel ?? 1, 10) || 1);
+        const mergedLvl = Math.max(payLvl, baseLvl);
+        const payXp = Math.max(0, parseInt(pp.accountXp ?? payload.xp ?? 0, 10) || 0);
+        const baseXp = Math.max(0, parseInt(bp.accountXp ?? 0, 10) || 0);
+        const mergedXp = baseLvl > payLvl ? baseXp : (baseLvl === payLvl ? Math.max(payXp, baseXp) : payXp);
+
+        const mergedStats = {
+            ...ps,
+            totalKills: Math.max(Number(ps.totalKills) || 0, Number(bs.totalKills) || 0),
+            maxWave: Math.max(Number(ps.maxWave) || 1, Number(bs.maxWave) || 1),
+            highScore: Math.max(Number(ps.highScore) || 0, Number(bs.highScore) || 0),
+            totalFatmirs: Math.max(Number(ps.totalFatmirs) || 0, Number(bs.totalFatmirs) || 0),
+            totalCasillas: Math.max(Number(ps.totalCasillas) || 0, Number(bs.totalCasillas) || 0),
+            totalSkarmogyftos: Math.max(Number(ps.totalSkarmogyftos) || 0, Number(bs.totalSkarmogyftos) || 0),
+            matchesPlayed: Math.max(Number(ps.matchesPlayed) || 0, Number(bs.matchesPlayed) || 0),
+            totalTimeSeconds: Math.max(Number(ps.totalTimeSeconds) || 0, Number(bs.totalTimeSeconds) || 0),
+            heroPlays: this._maxObj(ps.heroPlays, bs.heroPlays, 0)
+        };
+
+        const mergedPlayer = {
+            ...pp,
+            accountLevel: mergedLvl,
+            accountXp: mergedXp,
+            unlockedHeroes: this._unionArr(pp.unlockedHeroes, bp.unlockedHeroes),
+            unlockedWeapons: this._unionArr(pp.unlockedWeapons, bp.unlockedWeapons),
+            unlockedSkills: this._unionArr(pp.unlockedSkills, bp.unlockedSkills),
+            unlockedPerks: this._unionArr(pp.unlockedPerks, bp.unlockedPerks),
+            unlockedGear: this._unionArr(pp.unlockedGear, bp.unlockedGear),
+            evolvedGear: this._unionArr(pp.evolvedGear, bp.evolvedGear),
+            ascendedGear: this._unionArr(pp.ascendedGear, bp.ascendedGear),
+            evolvedWeapons: this._unionArr(pp.evolvedWeapons, bp.evolvedWeapons),
+            starBlessedHeroes: this._unionArr(pp.starBlessedHeroes, bp.starBlessedHeroes),
+            skillLevels: this._maxObj(pp.skillLevels, bp.skillLevels, 1),
+            upgrades: this._maxObj(pp.upgrades, bp.upgrades, 0),
+            gearLevels: this._maxObj(pp.gearLevels, bp.gearLevels, 1),
+            perkRanks: this._maxObj(pp.perkRanks, bp.perkRanks, 1),
+            evolutionStones: Math.max(Number(pp.evolutionStones) || 0, Number(bp.evolutionStones) || 0),
+            olympianStarStones: Math.max(Number(pp.olympianStarStones) || 0, Number(bp.olympianStarStones) || 0),
+            stats: mergedStats
+        };
+
+        return {
+            ...payload,
+            level: mergedLvl,
+            xp: mergedXp,
+            skillLevels: mergedPlayer.skillLevels,
+            highScore: Math.max(Number(payload.highScore) || 0, mergedStats.highScore),
+            maxWave: Math.max(Number(payload.maxWave) || 1, mergedStats.maxWave),
+            lbHighScore: Math.max(Number(payload.lbHighScore) || 0, mergedStats.highScore),
+            lbEndlessWave: Math.max(Number(payload.lbEndlessWave) || 1, mergedStats.maxWave),
+            lbTotalKills: Math.max(Number(payload.lbTotalKills) || 0, mergedStats.totalKills),
+            player: mergedPlayer
+        };
+    }
+
     /**
      * Reconcile an initial Firestore snapshot with local state non-destructively.
-     * Prevents stale cloud docs from overwriting newer offline progress on rollout.
+     * Prevents stale cloud docs from overwriting newer offline progress AND prevents fresh Lv.1 clients from clobbering cloud saves.
      */
     static reconcileCloudSnapshot(data, gameState, isInitialSync) {
         if (!data || typeof data !== 'object') return { preferLocalCurrencies: false };
         const gs = gameState || (typeof window !== 'undefined' ? window.GameState : null);
-        const p = data.player && typeof data.player === 'object' ? data.player : data;
+        const p = this.extractNormalizedPlayer(data);
 
         const rawDiamonds = data.diamonds !== undefined ? data.diamonds : p.diamonds;
         const rawGems = data.gems !== undefined ? data.gems : p.gems;
@@ -386,20 +532,23 @@ class SaveMigration {
         const localMutationTs = this.safeGetInt(this.KEYS.LAST_LOCAL_SAVE_AT, 0, 0);
         const localSave = this.safeGetJson(this.KEYS.MAIN_SAVE, null);
         const localTs = Math.max(localMutationTs, Number(localSave && localSave.timestamp) || 0);
+        const cloudScore = this.scoreCloudDoc(data);
+        const localScore = Math.max(this.scoreCloudDoc(gs), this.scoreCloudDoc(localSave));
 
         const preferLocalCurrencies = Boolean(
             isInitialSync &&
             this.hasEstablishedProgress() &&
             !hasConsoleCurrencyDiff &&
             cloudTs > 0 &&
-            localTs > cloudTs + 2000
+            localTs > cloudTs + 2000 &&
+            localScore >= cloudScore
         );
 
-        if (isInitialSync && gs && typeof SaveSerializer !== 'undefined' && typeof SaveSerializer.mergeProgressOnly === 'function') {
+        if ((isInitialSync || cloudScore > localScore) && gs && typeof SaveSerializer !== 'undefined' && typeof SaveSerializer.mergeProgressOnly === 'function') {
             SaveSerializer.mergeProgressOnly({ player: p }, gs);
         }
 
-        return { preferLocalCurrencies, cloudTs, localTs };
+        return { preferLocalCurrencies, cloudTs, localTs, cloudScore, localScore };
     }
 }
 
