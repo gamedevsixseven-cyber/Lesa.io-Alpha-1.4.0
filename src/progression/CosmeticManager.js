@@ -241,6 +241,24 @@ class CosmeticManager {
         return { ok: true, displayedCoins: next };
     }
 
+    static hasLocalVipPass() {
+        if (typeof window !== 'undefined') {
+            if (window.battlePassManager && window.battlePassManager.hasPremium) return true;
+            const bpState = window.GameState && window.GameState.player && window.GameState.player.battlePass;
+            if (bpState && bpState.hasPremium) return true;
+        }
+        try {
+            if (typeof localStorage !== 'undefined') {
+                const raw = localStorage.getItem('lesaio_battle_pass_s1');
+                if (raw) {
+                    const parsed = JSON.parse(raw);
+                    if (parsed && parsed.hasPremium) return true;
+                }
+            }
+        } catch (_) {}
+        return false;
+    }
+
     static getPublicSummary() {
         const st = this.getState();
         const snap = this.getProgressSnapshot();
@@ -255,7 +273,8 @@ class CosmeticManager {
             endlessMaxWave: snap.endlessMaxWave,
             olympusMaxFloor: snap.olympusMaxFloor,
             zeusKills: (snap.defeatedBosses && snap.defeatedBosses.zeus) || 0,
-            olympianStarStones: snap.olympianStarStones || 0
+            olympianStarStones: snap.olympianStarStones || 0,
+            hasVipPass: this.hasLocalVipPass()
         };
     }
 
@@ -266,12 +285,19 @@ class CosmeticManager {
             ? raw.coins
             : (Array.isArray(raw.displayedCoins) ? raw.displayedCoins : []);
         const unlockedCoins = Array.isArray(raw.unlockedCoins) ? raw.unlockedCoins : coins;
+        const hasVipPass = Boolean(
+            raw.hasVipPass
+            || docData.hasVipPass
+            || (docData.battlePass && docData.battlePass.hasPremium)
+            || (p.battlePass && p.battlePass.hasPremium)
+        );
         return {
             banner: raw.banner || raw.equippedBanner || this.DEFAULT_BANNER,
             frame: raw.frame || raw.equippedFrame || this.DEFAULT_FRAME,
             coins: coins.slice(0, this.MAX_DISPLAY_COINS),
             unlockedCoins,
-            unlockedCoinsCount: typeof raw.unlockedCoinsCount === 'number' ? raw.unlockedCoinsCount : unlockedCoins.length
+            unlockedCoinsCount: typeof raw.unlockedCoinsCount === 'number' ? raw.unlockedCoinsCount : unlockedCoins.length,
+            hasVipPass
         };
     }
 

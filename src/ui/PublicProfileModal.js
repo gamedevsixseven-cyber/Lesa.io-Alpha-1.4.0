@@ -85,8 +85,8 @@ class PublicProfileModal {
     static _render(p) {
         const modal = this.ensureMarkup();
         const cos = (typeof CosmeticManager !== 'undefined')
-            ? CosmeticManager.extractPublicCosmetics({ cosmetics: p.cosmetics || p })
-            : { banner: 'banner_recruit', frame: 'frame_rookie', coins: [], unlockedCoins: [] };
+            ? CosmeticManager.extractPublicCosmetics({ cosmetics: p.cosmetics || p, battlePass: p.battlePass, player: p.player, hasVipPass: p.hasVipPass })
+            : { banner: 'banner_recruit', frame: 'frame_rookie', coins: [], unlockedCoins: [], hasVipPass: false };
 
         const bannerDef = (typeof CosmeticManager !== 'undefined') ? CosmeticManager.getBannerDef(cos.banner) : { name: 'Arena Rookie', cssClass: 'cos-banner-recruit', rarity: 'common' };
         const frameDef = (typeof CosmeticManager !== 'undefined') ? CosmeticManager.getFrameDef(cos.frame) : { name: 'Classic Ink', cssClass: 'cos-frame-rookie', rarity: 'common' };
@@ -111,6 +111,11 @@ class PublicProfileModal {
             : '<span class="pub-empty-note">No Milestone Coins showcased yet</span>';
 
         const fs = (typeof window !== 'undefined') ? window.friendService : null;
+        const isSelf = !fs || !p.uid || p.isLocalStub || p.uid === fs.getMyUid();
+        const hasVipPass = Boolean(cos.hasVipPass || (isSelf && typeof CosmeticManager !== 'undefined' && CosmeticManager.hasLocalVipPass()));
+        const vipTagHtml = hasVipPass
+            ? `<div class="pub-cosmetic-tags"><span class="pub-vip-pass-tag">👑 VIP PASS</span></div>`
+            : '';
         const rel = (fs && p.uid && !p.isLocalStub) ? fs.getRelationState(p.uid) : { state: 'self' };
         let socialBtnHtml = '';
         if (rel.state === 'none') {
@@ -141,10 +146,7 @@ class PublicProfileModal {
                             <span class="pub-tag-chip">${this._esc(p.tag || '#HERO00')}</span>
                             <span class="pub-status-chip ${p.isOnline ? 'online' : ''}">${p.isOnline ? '● ' + this._esc(p.currentStatus || 'Online') : '● Offline'}</span>
                         </div>
-                        <div class="pub-cosmetic-tags">
-                            <span>🏴 ${this._esc(bannerDef.name)}</span>
-                            <span>🖼️ ${this._esc(frameDef.name)}</span>
-                        </div>
+                        ${vipTagHtml}
                     </div>
                 </div>
 

@@ -36,6 +36,9 @@ class ProfileCosmeticsUI {
                     this.renderActiveTab();
                 }
             });
+            window.EventBus.on('battlePassUpdated', () => {
+                this.refreshHeaderPreview();
+            });
         }
     }
 
@@ -73,6 +76,11 @@ class ProfileCosmeticsUI {
         // Profile modal header card
         const profCard = document.querySelector('#player-profile-modal .profile-header-card');
         const profAvatarWrap = document.querySelector('#player-profile-modal .prof-avatar-wrap');
+        const profVipTag = document.getElementById('prof-modal-vip-tag');
+        if (profVipTag) {
+            const hasVip = typeof CosmeticManager.hasLocalVipPass === 'function' && CosmeticManager.hasLocalVipPass();
+            profVipTag.classList.toggle('hidden', !hasVip);
+        }
         CosmeticManager.applyBannerClass(profCard, st.equippedBanner);
         CosmeticManager.applyFrameClass(profAvatarWrap, st.equippedFrame);
         if (typeof CosmeticEffectsEngine !== 'undefined') {

@@ -429,6 +429,9 @@ class BattlePassManager {
         }
         this.hasPremium = true;
         this.save();
+        if (typeof window !== 'undefined' && window.friendService && typeof window.friendService.syncMyProfile === 'function') {
+            window.friendService.syncMyProfile(true);
+        }
         if (window.soundEngine && typeof window.soundEngine.playLevelUp === 'function') window.soundEngine.playLevelUp();
         const unlockedReady = this.getClaimableRewards().paid.length;
         if (window.modalManager && typeof window.modalManager.showQuickToast === 'function') {
