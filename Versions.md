@@ -8,12 +8,12 @@ This file tracks the total lines of code and game architecture state across ever
 
 | Metric | Current Value |
 |---|---|
-| **Active Version** | **Alpha 1.6.13 (In Progress 🚀 — Latest GitHub Push: `Alpha 1.6.8`)** |
-| **Milestone Banner** | 🔥 **OVER 95,400 LINES OF EXECUTABLE & WEB CODE (`96,900+` WITH DOCS)!** |
-| **Total Code Lines (`JS+CSS+HTML+PS1+CS`)** | **95,469 lines** across **263 files** (`94,761 lines` core web app `JS+CSS+HTML`) |
-| **Total Project Lines (incl. `.md`)** | **96,952 lines** across **270 files** *(plus `81` `.svg` icons / `567` lines & `manifest.json` / `19` lines)* |
-| **Max Lines Per Source File** | **`219 / 220` `.js` & `36 / 36` `.css` files `< 600 lines`** *(exception: `src/heroes/FiftyBalosHero.js` at `1,119` lines)* |
-| **Last Calculated** | November 22, 2026 *(excluding `_backups/`, `scratch/`, `.git/`, `node_modules/`)* |
+| **Active Version** | **Version 1.0.0 — Launch Release 🚀 (Latest GitHub Push: `d098e9b`)** |
+| **Milestone Banner** | 🔥 **OVER 102,900 LINES OF EXECUTABLE & WEB CODE (`104,400+` WITH DOCS)!** |
+| **Total Code Lines (`JS+CSS+HTML+PS1+CS`)** | **102,996 lines** across **280 files** (`102,288 lines` core web app `JS+CSS+HTML`) |
+| **Total Project Lines (incl. `.md`)** | **104,488 lines** across **287 files** *(plus `81` `.svg` icons / `587` lines & `manifest.json` / `21` lines)* |
+| **Max Lines Per Source File** | **`235 / 236` `.js` & `37 / 37` `.css` files `< 600 lines`** *(exception: `src/heroes/FiftyBalosHero.js` at `1,119` lines)* |
+| **Last Calculated** | November 23, 2026 *(excluding `_backups/`, `scratch/`, `.git/`, `node_modules/`, `android/`)* |
 
 ---
 
@@ -21,47 +21,56 @@ This file tracks the total lines of code and game architecture state across ever
 
 | File Type | Description | File Count | Total Lines | Share (of Primary 6) |
 |---|---|---|---|---|
-| **`.js`** | JavaScript Game Logic & Subsystems | 220 | 78,724 | 81.2% |
-| **`.css`** | UI, HUD, Armory, Friends, Olympus & Modal Styles | 36 | 12,669 | 13.1% |
-| **`.html`** | Main Application & Canvas Shell (`index.html`) | 1 | 3,368 | 3.5% |
-| **`.md`** | Design, Gear, Roadmap, Bugfix & Version Specs | 7 | 1,483 | 1.5% |
-| **`.ps1`** | Local Web Server & Automation Scripts | 5 | 438 | 0.5% |
+| **`.js`** | JavaScript Game Logic & Subsystems (`src/` + `sw.js`) | 236 | 85,461 | 81.8% |
+| **`.css`** | UI, HUD, Armory, Events, Friends, Olympus & Modal Styles | 37 | 13,376 | 12.8% |
+| **`.html`** | Main Application & Canvas Shell (`index.html`) | 1 | 3,451 | 3.3% |
+| **`.md`** | Design, Gear, Roadmap, Bugfix & Version Specs | 7 | 1,492 | 1.4% |
+| **`.ps1`** | Local Web Server & Automation Scripts | 5 | 438 | 0.4% |
 | **`.cs`** | Desktop C# Game Launcher (`Launcher.cs`) | 1 | 270 | 0.3% |
-| **Total (Primary 6)** | **All Code, Markup, Scripts & Documentation** | **270** | **96,952** | **100.0%** |
+| **Total (Primary 6)** | **All Code, Markup, Scripts & Documentation** | **287** | **104,488** | **100.0%** |
 
-> Also tracked in live project assets: **81 `.svg` UI icons** (`567` lines in `assets/ui-icons/`) and **1 `.json` manifest** (`19` lines in `manifest.json`), bringing all tracked text assets to **352 files** and **97,538 lines**.
+> Also tracked in live project assets: **81 `.svg` UI icons** (`587` lines in `assets/ui-icons/`) and **1 `.json` manifest** (`21` lines in `manifest.json`), bringing all tracked text assets to **369 files** and **105,096 lines**.
 
 ---
 
-## 🧩 JavaScript Architecture Breakdown (`src/` — 220 files, 78,724 lines)
+## 🧩 JavaScript Architecture Breakdown (`src/` — 235 files, 85,410 lines; + root `sw.js` 51 lines = 85,461 lines)
 
 | Module Directory | Role | Files | Lines |
 |---|---|---|---|
-| `src/ui/` | Modals, HUD, Battle Pass, Friends, Roster, Inventory, Chests & Icons | 30 | 11,033 |
-| `src/Bosses/` | Story, Endless Main/Mini-Bosses, Kolossos Troops, Telegraphs & FX | 25 | 9,873 |
-| `src/engine/` | Game Loop, Arena, Endless Director, Perks, Collisions & Touch Input | 22 | 9,623 |
+| `src/Bosses/` | Story, Endless Main/Mini-Bosses, Kolossos Troops, Lil Xas & FX | 31 | 12,243 |
+| `src/ui/` | Modals, HUD, Battle Pass, Friends, Roster, Inventory, Chests & Icons | 30 | 11,166 |
+| `src/engine/` | Game Loop, Arena, Endless Director, Perks, Collisions & Touch Input | 23 | 9,963 |
+| `src/entities/` | Player, Weapons, Bullets, Drops, Obstacles & Combat Juice FX | 15 | 6,354 |
 | `src/dungeons/` | Mount Olympus Ascent, Zeus Sky Phase, Ice Enemies & Shrine UI | 16 | 6,241 |
-| `src/entities/` | Player, Weapons, Bullets, Drops, Obstacles & Combat Juice FX | 15 | 6,109 |
-| `src/data/` | Heroes, Weapons, Rarities, Gear, Endgame Gear, Materials & Cosmetics | 19 | 5,587 |
+| `src/data/` | Heroes, Weapons, Rarities, Gear, Endgame Gear, Materials & Cosmetics | 19 | 5,610 |
 | `src/heroes/` | Playable Hero Renderers, Skins & Visible Common/Endgame Armor | 13 | 5,221 |
 | `src/enemies/` | Wave & Endless Enemy Archetypes (`BioAlchemist`, `Psaltis`, etc.) | 14 | 4,926 |
 | `src/weapons/` | Modular Weapons, Boss Weapons, Battle Pass & Apex Arsenals | 18 | 4,200 |
-| `src/skills/` | 12 Active Hero Skills, Ultimates & Combat Modifiers | 12 | 2,860 |
-| `src/progression/` | Battle Pass, Quests, Materials, Boss Rewards & Cosmetics Managers | 7 | 2,711 |
-| `src/network/` | P2P WebRTC Co-op Networking, Host/Guest Sync, Drops & FX | 7 | 2,439 |
-| `src/` (root) | `main.js`, `firebase.js`, `audio.js` | 3 | 1,723 |
-| `src/core/` | Canonical `GameState`, `MobilePerf`, `EventBus` & Settings Helpers | 5 | 1,387 |
-| `src/gear/` | Equipment Manager, Set Synergies & Passive Bonus Engine | 3 | 1,286 |
-| `src/admin/` | Admin Panel, Auth & Debug Cheats | 3 | 1,223 |
-| `src/save/` | Cloud Account Sync, `SaveSerializer` & Player Identity (`#TAG`) | 4 | 1,073 |
+| `src/network/` | P2P WebRTC Co-op Networking, Host/Guest Sync, Drops & FX | 10 | 3,684 |
+| `src/progression/` | Battle Pass, Live Events, Quests, Materials, Boss Rewards & Cosmetics | 8 | 3,239 |
+| `src/skills/` | 12 Active Hero Skills, Ultimates & Combat Modifiers | 12 | 2,865 |
+| `src/save/` | Cloud Account Sync, `SaveSerializer` & Player Identity (`#TAG`) | 5 | 2,023 |
+| `src/admin/` | Admin Panel, Auth & Debug Cheats | 4 | 1,784 |
+| `src/` (root) | `main.js`, `firebase.js`, `audio.js` | 3 | 1,729 |
+| `src/core/` | Canonical `GameState`, `MobilePerf`, `AutoUpdater`, `EventBus` & Touch Helpers | 7 | 1,638 |
+| `src/gear/` | Equipment Manager, Set Synergies & Passive Bonus Engine | 3 | 1,304 |
 | `src/social/`, `src/chests/`, `src/profile/`, `src/libs/` | Friends Service, 4-Slot Chests, Stats & Vendor PeerJS Lib | 4 | 1,209 |
 
 ---
 
 ## 📈 Version Progression Log
 
+### **Version 1.0.0 (Launch Release) - Live Events Hub, Co-op Rework, Lil Xas VIP Banner & Launch Polish**
+- **Release Date:** November 22 – November 23, 2026 *(GitHub: `d098e9b`)*
+- **Total Lines / Files:** **104,488 lines** (`102,996` code lines across `280` files; `85,461` `.js` lines across `236` files)
+- **Key Additions & Changes:**
+  - **Live Events Hub & Automatic Dec 1 Launch Week (`EventManager.js`, `events.css`, `materials.js`):** Replaced the placeholder Events button with a 3-tab comic Events Hub (`LAUNCH EVENT`, `BOOST BREAKDOWN`, `CALENDAR`) featuring a live 4-box countdown clock and `#events-badge` indicator. Scheduled **Launch Event** automatically for **Dec 1 – Dec 7, 2026** granting **`1.5x` Account & Battle Pass XP**, **`2.0x` Match & Pouch Gold**, and **`+35%` Material Drop Boost** across Story, Endless, Mt. Olympus, and Co-op.
+  - **Lil Xas VIP Banner & Stage Animations (`LilXasEvent.js`, `profile_cosmetics_ext.js`, `CosmeticEffectsEngine.js`, `cosmetics-advanced.css`):** Added boss defeat unlock (`banner_lil_xas`) with Lil Xas portrait art (`LilXasBannerFace.png`), spinning gold/obsidian vinyl record, neon 8-bar equalizer, crossing stage spotlights, sweeping laser, paparazzi camera flashes, and floating music notes.
+  - **Co-op Squad UI Rework & Mobile Stability (`coop.css`, `CoopLobbyModal.js`, `mobile-modals.css`, `AutoUpdater.js`):** Reworked the Game Mode Co-op button and Co-op Squad lobby modal to match Lesa.io's warm cream/gold palette, tightened Co-op mobile scaling & mutual pause flow, hardened cloud/local saves & Firestore rules, and stopped `AutoUpdater` from reloading unexpectedly when returning to menu.
+  - **Settings Icon & Clans Placeholder (`assets/ui-icons/gear_cog.svg`, `MenuController.js`):** Replaced `gear_cog.svg` with a symmetrical steel-and-gold comic gear icon and updated `#btn-clans` to `"Coming soon!"`.
+
 ### **Alpha 1.6.9 - 1.6.13 - Battle Pass & Friends Overhaul, Unique Names & Endless Swarm Scaling (Dev Build)**
-- **Date:** November 22, 2026 *(Current Working Tree)*
+- **Date:** November 22, 2026
 - **Total Lines / Files:** **96,952 lines** (`95,469` code lines across `263` files; `78,724` `.js` lines across `220` files)
 - **Key Additions & Changes:**
   - **Season 1 Battle Pass UI Redesign (`BattlePassModalUI.js`, `battlepass.css`):** Horizontal 30-tier dual-track rail (`Free` + `VIP`), live Reward Spotlight Inspector with weapon stats & skin swatches, quick-jumps, XP guide drawer, and 1-click skin/weapon equipping.
