@@ -265,8 +265,6 @@ class MenuController {
         };
         const bpBtn = document.getElementById('view-battle-pass-btn');
         if (bpBtn) bpBtn.addEventListener('click', openBattlePass);
-        const bpBotBtn = document.getElementById('btn-battle-pass');
-        if (bpBotBtn) bpBotBtn.addEventListener('click', openBattlePass);
 
         const spBtn = document.getElementById('starter-pack-card');
         if (spBtn) {

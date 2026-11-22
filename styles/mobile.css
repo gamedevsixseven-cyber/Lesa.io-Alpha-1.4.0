@@ -512,8 +512,8 @@ html, body {
     .daily-quests-card .side-card-header { font-size: 0.72rem !important; margin-bottom: 4px !important; }
     .quest-list { display: none !important; }
     .card-bottom-btn { padding: 4px 6px !important; font-size: 0.72rem !important; border-width: 2px !important; }
-    /* Hide bulky Battle Pass & Starter Pack banner in mobile lobby to save space */
-    .battle-pass-card, .starter-pack-banner-card { display: none !important; }
+    /* Hide Starter Pack banner in mobile lobby while keeping compact Battle Pass card */
+    .starter-pack-banner-card { display: none !important; }
 
     /* 5. Bottom Navigation Bar */
     .menu-bottom-row {

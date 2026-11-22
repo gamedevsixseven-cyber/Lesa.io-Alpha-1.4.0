@@ -427,7 +427,6 @@ class BattlePassManager {
         const fillEl = document.querySelector('.battle-pass-card .bp-fill');
         const titleEl = document.querySelector('.battle-pass-card .bp-title-text');
         const btnBadge = document.getElementById('bp-claim-badge');
-        const botBadge = document.getElementById('bp-bot-badge');
 
         if (tierEl) tierEl.textContent = prog.tier;
         if (fillEl) fillEl.style.width = `${prog.pct}%`;
@@ -436,13 +435,12 @@ class BattlePassManager {
             titleEl.textContent = prog.tier >= BattlePassManager.MAX_TIER ? `MAX TIER • ${modeTag}` : `TIER ${prog.tier}/${BattlePassManager.MAX_TIER} • ${modeTag}`;
         }
 
-        for (const b of [btnBadge, botBadge]) {
-            if (!b) continue;
+        if (btnBadge) {
             if (readyCount > 0) {
-                b.textContent = readyCount;
-                b.classList.remove('hidden');
+                btnBadge.textContent = readyCount;
+                btnBadge.classList.remove('hidden');
             } else {
-                b.classList.add('hidden');
+                btnBadge.classList.add('hidden');
             }
         }
     }
