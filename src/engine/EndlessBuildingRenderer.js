@@ -79,6 +79,7 @@ class EndlessBuildingRenderer {
         c.width = 128;
         c.height = 128;
         const gctx = c.getContext('2d');
+        if (!gctx) return null;
         const g = gctx.createRadialGradient(64, 64, 6, 64, 64, 64);
         g.addColorStop(0, 'rgba(255, 190, 55, 0.56)');
         g.addColorStop(0.5, 'rgba(255, 78, 28, 0.28)');
@@ -95,12 +96,13 @@ class EndlessBuildingRenderer {
         const scale = isMobLow ? 0.9 : 1.35;
         const key = `${arch}:${stage}:${scale}`;
         const hit = this._cache.get(key);
-        if (hit) return hit;
+        if (hit && hit.canvas && hit.canvas.width > 0) return hit;
 
         const c = document.createElement('canvas');
         c.width = Math.ceil(spec.cacheW * scale);
         c.height = Math.ceil(spec.cacheH * scale);
         const bctx = c.getContext('2d');
+        if (!bctx) return null;
         const ax = spec.cacheW * 0.5;
         const ay = spec.cacheH * spec.ay;
         bctx.scale(scale, scale);
@@ -136,7 +138,7 @@ class EndlessBuildingRenderer {
         }
 
         const sprite = this._getSprite(arch, stage);
-        ctx.drawImage(sprite.canvas, -sprite.ax, -sprite.ay, sprite.w, sprite.h);
+        if (sprite && sprite.canvas) ctx.drawImage(sprite.canvas, -sprite.ax, -sprite.ay, sprite.w, sprite.h);
 
         this._drawAnimatedOverlay(obs, ctx, arch, spec, stage, fireLvl, now);
     }

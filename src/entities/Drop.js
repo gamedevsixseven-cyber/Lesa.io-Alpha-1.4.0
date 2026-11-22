@@ -162,7 +162,7 @@ class Drop {
 
         // Cached Drop Shadow
         const shadow = Drop._getShadowSprite(this.radius);
-        ctx.drawImage(shadow.canvas, this.x - shadow.halfW, this.y + this.radius * 0.8 - shadow.halfH, shadow.w, shadow.h);
+        if (shadow && shadow.canvas) ctx.drawImage(shadow.canvas, this.x - shadow.halfW, this.y + this.radius * 0.8 - shadow.halfH, shadow.w, shadow.h);
 
         if (this.type === 'chrono_core') {
             ctx.save();
@@ -185,7 +185,7 @@ class Drop {
         const hit = cache.get(radius);
         if (hit) return hit;
 
-        const dpr = 2;
+        const dpr = (typeof MobilePerf !== 'undefined' && MobilePerf.isMobile) ? 1.25 : 2;
         const rx = radius * 0.8;
         const ry = radius * 0.35;
         const w = Math.ceil(rx * 2 + 4);
@@ -194,6 +194,7 @@ class Drop {
         c.width = w * dpr;
         c.height = h * dpr;
         const sctx = c.getContext('2d');
+        if (!sctx) return null;
         sctx.scale(dpr, dpr);
         sctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
         sctx.beginPath();
@@ -212,13 +213,14 @@ class Drop {
         const hit = cache.get(key);
         if (hit) return hit;
 
-        const dpr = 2;
+        const dpr = (typeof MobilePerf !== 'undefined' && MobilePerf.isMobile) ? 1.25 : 2;
         const logicalSize = Math.ceil(radius * 3.4) + 12;
         const half = logicalSize / 2;
         const c = document.createElement('canvas');
         c.width = logicalSize * dpr;
         c.height = logicalSize * dpr;
         const sctx = c.getContext('2d');
+        if (!sctx) return null;
         sctx.scale(dpr, dpr);
         sctx.translate(half, half);
 

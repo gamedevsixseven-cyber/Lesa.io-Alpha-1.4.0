@@ -43,12 +43,12 @@ class MobilePerf {
             maxComic: 3, maxDamage: 6, cacheMaxEntries: 50, snowCap: 24, fogCap: 6, emberCap: 8
         },
         medium: {
-            pixelBudget: 1550000, minDpr: 1.3, maxDpr: 1.75, smoothing: 'medium',
+            pixelBudget: 1250000, minDpr: 1.0, maxDpr: 1.45, smoothing: 'medium',
             groundScale: 0.75, tileSupScale: 1.5,
-            atlas: { pageSize: 1536, maxPages: 4, dprCap: 1.5 },
-            glows: false, ambientLighting: false, treeSize: 324,
+            atlas: { pageSize: 1024, maxPages: 3, dprCap: 1.25 },
+            glows: false, ambientLighting: false, treeSize: 288,
             maxParticles: 24, maxPopups: 11, maxMuzzles: 10, maxSplats: 12, maxPoofs: 10,
-            maxComic: 4, maxDamage: 8, cacheMaxEntries: 80, snowCap: 42, fogCap: 10, emberCap: 12
+            maxComic: 4, maxDamage: 8, cacheMaxEntries: 48, snowCap: 42, fogCap: 10, emberCap: 12
         },
         high: {
             pixelBudget: 2800000, minDpr: 1.75, maxDpr: 2.5, smoothing: 'high',
@@ -133,7 +133,7 @@ class MobilePerf {
         const raw = (typeof window !== 'undefined' && window.devicePixelRatio) || 1;
         if (!this.isMobile) return Math.min(raw, 2);
         const preset = this.getPreset();
-        const maxDpr = this.isIOS ? Math.min(preset.maxDpr, 1.75) : preset.maxDpr;
+        const maxDpr = this.isIOS ? Math.min(preset.maxDpr, 1.35) : preset.maxDpr;
         const vl = (typeof VirtualLandscape !== 'undefined' && VirtualLandscape.active) ? VirtualLandscape.getViewportSize() : null;
         const w = cssW || (vl && vl.width) || (typeof window !== 'undefined' && window.innerWidth) || 844;
         const h = cssH || (vl && vl.height) || (typeof window !== 'undefined' && window.innerHeight) || 390;
@@ -146,20 +146,20 @@ class MobilePerf {
     }
 
     static getAtlasConfig() {
-        return this.isMobile
-            ? this.getPreset().atlas
-            : { pageSize: 2048, maxPages: 8, dprCap: 2.0 };
+        if (!this.isMobile) return { pageSize: 2048, maxPages: 8, dprCap: 2.0 };
+        const a = this.getPreset().atlas;
+        return this.isIOS ? { pageSize: Math.min(a.pageSize, 1024), maxPages: Math.min(a.maxPages, 3), dprCap: Math.min(a.dprCap, 1.35) } : a;
     }
 
-    /**
-     * Create 2D canvas context with opaque backbuffer on mobile (avoids iOS desynchronized half-screen tears).
-     */
     static createContext(canvas) {
         if (!canvas) return null;
-        if (this.isMobile) {
-            return canvas.getContext('2d', { alpha: false }) || canvas.getContext('2d');
+        const ctx = (this.isMobile && !this.isIOS)
+            ? (canvas.getContext('2d', { alpha: false }) || canvas.getContext('2d'))
+            : canvas.getContext('2d');
+        if (this.isMobile && typeof MobileCanvasGuard !== 'undefined') {
+            MobileCanvasGuard.attachSaveDepthGuard(ctx);
         }
-        return canvas.getContext('2d');
+        return ctx;
     }
 
     static releaseCanvas(canvas) {
@@ -175,25 +175,31 @@ class MobilePerf {
      * Desktop keeps exact original settings; mobile caps DPR to 1.25, uses fast GPU bilinear
      * smoothing, and hooks visualViewport + app-resume canvas recovery for iOS Safari.
      */
-    static applyCanvasSettings(game) {
+    static applyCanvasSettings(game, forceResize = false) {
         if (!game || !game.canvas) return;
         const vl = (this.isMobile && typeof VirtualLandscape !== 'undefined' && VirtualLandscape.active) ? VirtualLandscape.getViewportSize() : null;
         const vv = (this.isMobile && !vl && typeof window !== 'undefined') ? window.visualViewport : null;
         const cssW = Math.max(1, Math.round((vl && vl.width) || (vv && vv.width) || window.innerWidth));
         const cssH = Math.max(1, Math.round((vl && vl.height) || (vv && vv.height) || window.innerHeight));
         const dpr = this.getCanvasDpr(cssW, cssH);
-
+        const tw = Math.max(1, Math.floor(cssW * dpr));
+        const th = Math.max(1, Math.floor(cssH * dpr));
+        const changed = forceResize || Math.abs(game.canvas.width - tw) > 1 || Math.abs(game.canvas.height - th) > 1;
         game.dpr = dpr;
-        game.canvas.width = Math.max(1, Math.floor(cssW * dpr));
-        game.canvas.height = Math.max(1, Math.floor(cssH * dpr));
-        game.canvas.style.width = cssW + 'px';
-        game.canvas.style.height = cssH + 'px';
-
+        game._mobileCssW = cssW;
+        game._mobileCssH = cssH;
+        if (changed) {
+            game.canvas.width = tw;
+            game.canvas.height = th;
+            game.canvas.style.width = cssW + 'px';
+            game.canvas.style.height = cssH + 'px';
+            if (game.arena) game.arena._mobileTilePatternCtx = null;
+        }
         if (game.ctx) {
             game.ctx.imageSmoothingEnabled = true;
             game.ctx.imageSmoothingQuality = this.isMobile ? this.getPreset().smoothing : 'high';
         }
-        if (game.arena) game.arena._mobileTilePatternCtx = null;
+        if (typeof MobileCanvasGuard !== 'undefined') MobileCanvasGuard.bindRecoveryListeners(game);
         if (game.camera) {
             game.camera.dpr = dpr;
             game.camera.zoomPunch = 0;
@@ -201,31 +207,9 @@ class MobilePerf {
             game.camera.zoom = game.camera.targetZoom;
         }
 
-        if (this.isMobile && !this._hooksBound && typeof window !== 'undefined') {
+        if (this.isMobile && !this._hooksBound && typeof MobileCanvasGuard !== 'undefined') {
             this._hooksBound = true;
-            let resizeTimer = null;
-            const scheduleResize = () => {
-                clearTimeout(resizeTimer);
-                resizeTimer = setTimeout(() => {
-                    if (window.gameInstance && typeof window.gameInstance.resize === 'function') {
-                        window.gameInstance.resize();
-                    }
-                }, 120);
-            };
-            if (window.visualViewport) {
-                window.visualViewport.addEventListener('resize', scheduleResize);
-            }
-            const recoverSurfaces = () => {
-                if (document.visibilityState && document.visibilityState !== 'visible') return;
-                const g = window.gameInstance;
-                if (!g) return;
-                if (typeof g.resize === 'function') g.resize();
-                if (g.arena && typeof g.arena.renderGroundCache === 'function') {
-                    g.arena.renderGroundCache();
-                }
-            };
-            document.addEventListener('visibilitychange', recoverSurfaces);
-            window.addEventListener('pageshow', recoverSurfaces);
+            MobileCanvasGuard.bindViewportHooks();
         }
     }
 
@@ -483,6 +467,7 @@ class MobilePerf {
             c.width = 256;
             c.height = 256;
             const gctx = c.getContext('2d');
+            if (!gctx) { this.releaseCanvas(c); return; }
             const g = gctx.createRadialGradient(128, 128, 66, 128, 128, 152);
             g.addColorStop(0, 'rgba(255, 252, 232, 0.05)');
             g.addColorStop(0.62, 'rgba(0, 0, 0, 0)');

@@ -212,6 +212,7 @@ class EndlessMapEvolution {
         c.width = 128;
         c.height = 128;
         const sctx = c.getContext('2d');
+        if (!sctx) return null;
         const g = sctx.createRadialGradient(64, 64, 8, 64, 64, 64);
         g.addColorStop(0, 'rgba(18, 12, 12, 0.84)');
         g.addColorStop(0.55, 'rgba(42, 24, 18, 0.52)');
@@ -228,6 +229,7 @@ class EndlessMapEvolution {
         c.width = 128;
         c.height = 128;
         const fctx = c.getContext('2d');
+        if (!fctx) return null;
         const g = fctx.createRadialGradient(64, 64, 4, 64, 64, 64);
         g.addColorStop(0, 'rgba(255, 165, 38, 0.65)');
         g.addColorStop(0.5, 'rgba(255, 62, 24, 0.30)');
@@ -245,6 +247,7 @@ class EndlessMapEvolution {
         c.width = size;
         c.height = size;
         const vctx = c.getContext('2d');
+        if (!vctx) return null;
         vctx.translate(size * 0.5, size * 0.5);
         vctx.scale(size / 2.05, size / 2.05);
         const vig = vctx.createRadialGradient(0, 0, 0.48, 0, 0, 1.06);

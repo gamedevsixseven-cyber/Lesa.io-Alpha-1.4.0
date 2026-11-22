@@ -285,8 +285,10 @@ class CombatRenderFX {
             const c = document.createElement('canvas');
             c.width = 160;
             c.height = 160;
+            const gctx = c.getContext('2d');
+            if (!gctx) return null;
             CombatRenderFX._ghostCanvas = c;
-            CombatRenderFX._ghostCtx = c.getContext('2d');
+            CombatRenderFX._ghostCtx = gctx;
             CombatRenderFX._ghostProxy = {};
         }
         return CombatRenderFX._ghostCanvas;
@@ -306,9 +308,9 @@ class CombatRenderFX {
 
         const tint = ghost.isBlade ? '#5ef2f2' : (ghost.isSprint ? '#ffbe76' : '#48dbfb');
         const buf = CombatRenderFX._getGhostBuffer();
+        const gctx = CombatRenderFX._ghostCtx;
 
-        if (buf && typeof HeroSkinRenderer !== 'undefined') {
-            const gctx = CombatRenderFX._ghostCtx;
+        if (buf && gctx && typeof HeroSkinRenderer !== 'undefined') {
             const proxy = CombatRenderFX._ghostProxy;
             proxy.radius = player.radius || 25;
             proxy.angle = typeof ghost.angle === 'number' ? ghost.angle : player.angle;

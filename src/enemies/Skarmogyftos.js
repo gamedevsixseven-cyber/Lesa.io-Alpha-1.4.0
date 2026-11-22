@@ -16,6 +16,7 @@ class SmokeHazard {
             c.width = 180;
             c.height = 180;
             const ctx = c.getContext('2d');
+            if (!ctx) return null;
             const grad = ctx.createRadialGradient(90, 90, 15, 90, 90, 90);
             grad.addColorStop(0, 'rgba(155, 89, 182, 0.85)');
             grad.addColorStop(0.5, 'rgba(142, 68, 173, 0.55)');
@@ -74,7 +75,14 @@ class SmokeHazard {
         ctx.save();
         ctx.globalAlpha = alpha;
         const sprite = SmokeHazard.getSprite();
-        ctx.drawImage(sprite, this.x - r, this.y - r, size, size);
+        if (sprite) {
+            ctx.drawImage(sprite, this.x - r, this.y - r, size, size);
+        } else {
+            ctx.fillStyle = 'rgba(142, 68, 173, 0.45)';
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, Math.max(1, r), 0, Math.PI * 2);
+            ctx.fill();
+        }
         ctx.restore();
     }
 }
@@ -155,9 +163,12 @@ class Skarmogyftos extends EnemyBase {
                     const ddy = this.y - drop.y;
                     const dDistSq = ddx * ddx + ddy * ddy;
                     if (dDistSq < 130 * 130) {
-                        // Vacuum toward Skarmogyftos
-                        drop.x += (ddx / Math.sqrt(dDistSq)) * 4.5 * dt;
-                        drop.y += (ddy / Math.sqrt(dDistSq)) * 4.5 * dt;
+                        // Vacuum toward Skarmogyftos (guard dDistSq === 0 division -> NaN)
+                        if (dDistSq > 0.0001) {
+                            const inv = 1 / Math.sqrt(dDistSq);
+                            drop.x += ddx * inv * 4.5 * dt;
+                            drop.y += ddy * inv * 4.5 * dt;
+                        }
 
                         if (dDistSq < 28 * 28) {
                             drop.dead = true;

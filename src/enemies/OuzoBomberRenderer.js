@@ -109,22 +109,25 @@ class OuzoBomberRenderer {
             } else {
                 let fireDisc = OuzoBomberRenderer._fireDisc;
                 if (!fireDisc) {
-                    fireDisc = OuzoBomberRenderer._fireDisc = document.createElement('canvas');
-                    fireDisc.width = 128;
-                    fireDisc.height = 128;
-                    const fctx = fireDisc.getContext('2d');
-                    const g = fctx.createRadialGradient(64, 64, 4, 64, 64, 64);
-                    g.addColorStop(0, 'rgba(255, 255, 255, 0.55)');
-                    g.addColorStop(0.45, 'rgba(0, 245, 255, 0.46)');
-                    g.addColorStop(1, 'rgba(9, 132, 227, 0.10)');
-                    fctx.fillStyle = g;
-                    fctx.beginPath();
-                    fctx.arc(64, 64, 64, 0, Math.PI * 2);
-                    fctx.fill();
+                    const c = document.createElement('canvas');
+                    c.width = 128;
+                    c.height = 128;
+                    const fctx = c.getContext('2d');
+                    if (fctx) {
+                        const g = fctx.createRadialGradient(64, 64, 4, 64, 64, 64);
+                        g.addColorStop(0, 'rgba(255, 255, 255, 0.55)');
+                        g.addColorStop(0.45, 'rgba(0, 245, 255, 0.46)');
+                        g.addColorStop(1, 'rgba(9, 132, 227, 0.10)');
+                        fctx.fillStyle = g;
+                        fctx.beginPath();
+                        fctx.arc(64, 64, 64, 0, Math.PI * 2);
+                        fctx.fill();
+                        fireDisc = OuzoBomberRenderer._fireDisc = c;
+                    }
                 }
                 const prevAlpha = ctx.globalAlpha;
                 ctx.globalAlpha = prevAlpha * alpha;
-                ctx.drawImage(fireDisc, z.x - z.radius, z.y - z.radius, z.radius * 2, z.radius * 2);
+                if (fireDisc) ctx.drawImage(fireDisc, z.x - z.radius, z.y - z.radius, z.radius * 2, z.radius * 2);
                 ctx.globalAlpha = prevAlpha;
 
                 ctx.strokeStyle = `rgba(0, 210, 211, ${0.78 * alpha})`;

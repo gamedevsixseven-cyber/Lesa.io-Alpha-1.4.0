@@ -44,8 +44,8 @@
     <link rel="stylesheet" href="styles/inventory.css?v=1.5.27">
     <link rel="stylesheet" href="styles/tabs-shared.css?v=1.5.62">
     <link rel="stylesheet" href="styles/loading.css">
-    <link rel="stylesheet" href="styles/mobile.css?v=1.7.7">
-    <link rel="stylesheet" href="styles/mobile-modals.css?v=1.8.4">
+    <link rel="stylesheet" href="styles/mobile.css?v=1.9.1">
+    <link rel="stylesheet" href="styles/mobile-modals.css?v=1.9.1">
     <link rel="stylesheet" href="styles/mobile-settings.css?v=1.6.23">
     <link rel="stylesheet" href="src/admin/admin.css?v=1.6.15">
     <link rel="stylesheet" href="styles/credits.css?v=1.4.0">
@@ -3229,9 +3229,10 @@
 
     <!-- 2. CORE MESSAGING & CANONICAL STATE -->
     <script src="src/core/EventBus.js?v=1.2.2"></script>
-    <script src="src/core/MobilePerf.js?v=1.9.0"></script>
+    <script src="src/core/MobilePerf.js?v=1.9.1"></script>
     <script src="src/core/MobileAdaptivePerf.js?v=1.9.0"></script>
     <script src="src/core/MobileAssetGuard.js?v=1.9.0"></script>
+    <script src="src/core/MobileCanvasGuard.js?v=1.9.1"></script>
     <script src="src/core/AutoUpdater.js?v=1.8.3"></script>
     <script src="src/save/SaveMigration.js?v=1.7.6"></script>
     <script src="src/core/GameState.js?v=1.7.6"></script>
@@ -3258,8 +3259,8 @@
     <script src="src/engine/Input.js?v=1.6.5"></script>
     <script src="src/engine/Camera.js?v=1.5.51"></script>
     <script src="src/engine/EndlessBuildingModels.js?v=1.5.73"></script>
-    <script src="src/engine/EndlessBuildingRenderer.js?v=1.5.73"></script>
-    <script src="src/engine/EndlessMapEvolution.js?v=1.5.73"></script>
+    <script src="src/engine/EndlessBuildingRenderer.js?v=1.9.1"></script>
+    <script src="src/engine/EndlessMapEvolution.js?v=1.9.1"></script>
     <script src="src/engine/CryptonXModel.js?v=1.5.78"></script>
     <script src="src/engine/OutsidePerimeterRoads.js?v=1.6.3"></script>
     <script src="src/engine/Arena.js?v=1.9.0"></script>
@@ -3278,17 +3279,17 @@
     <script src="src/engine/EpicPerkEffects.js?v=1.6.6"></script>
     <script src="src/engine/LegendaryPerkEffects.js?v=1.5.45"></script>
     <script src="src/engine/MythicPerkEffects.js?v=1.6.8"></script>
-    <script src="src/engine/PerkSystem.js?v=1.6.7"></script>
+    <script src="src/engine/PerkSystem.js?v=1.9.1"></script>
 
     <!-- 5. ENTITIES & HERO RENDERING -->
     <script src="src/entities/ParticleEffect.js?v=1.5.26"></script>
     <script src="src/entities/ComicPopupCache.js?v=1.9.0"></script>
-    <script src="src/entities/CombatRenderFX.js?v=1.9.0"></script>
+    <script src="src/entities/CombatRenderFX.js?v=1.9.1"></script>
     <script src="src/entities/CombatJuiceFX.js?v=1.5.69"></script>
     <script src="src/entities/Effects.js?v=1.7.7"></script>
     <script src="src/entities/Bullet.js?v=1.5.69"></script>
-    <script src="src/entities/Drop.js?v=1.8.7"></script>
-    <script src="src/entities/FoliageRenderer.js?v=1.5.26"></script>
+    <script src="src/entities/Drop.js?v=1.9.1"></script>
+    <script src="src/entities/FoliageRenderer.js?v=1.9.1"></script>
     <script src="src/entities/Obstacle.js?v=1.9.0"></script>
     <script src="src/entities/WaterPuddle.js?v=1.2.2"></script>
     <script src="src/entities/Weapons.js?v=1.7.6"></script>
@@ -3323,15 +3324,15 @@
     <script src="src/entities/RemotePlayer.js?v=1.8.0"></script>
 
     <!-- 6. ENEMIES -->
-    <script src="src/enemies/EnemyBase.js?v=1.9.0"></script>
+    <script src="src/enemies/EnemyBase.js?v=1.9.1"></script>
     <script src="src/enemies/Fatmir.js?v=1.5.26"></script>
     <script src="src/enemies/Casillas.js?v=1.5.26"></script>
-    <script src="src/enemies/Skarmogyftos.js?v=1.5.26"></script>
+    <script src="src/enemies/Skarmogyftos.js?v=1.9.1"></script>
     <script src="src/enemies/Astynomos.js?v=1.4.0"></script>
     <script src="src/enemies/Psaltis.js?v=1.5.26"></script>
     <script src="src/enemies/BouzoukiSniperRenderer.js?v=1.5.26"></script>
     <script src="src/enemies/KafeneioTankRenderer.js?v=1.5.26"></script>
-    <script src="src/enemies/OuzoBomberRenderer.js?v=1.5.26"></script>
+    <script src="src/enemies/OuzoBomberRenderer.js?v=1.9.1"></script>
     <script src="src/enemies/DimotikiEnforcerRenderer.js?v=1.5.26"></script>
     <script src="src/enemies/BioAlchemistRenderer.js?v=1.6.13"></script>
     <script src="src/enemies/EndlessEnemyRenderer.js?v=1.6.13"></script>
@@ -3356,7 +3357,7 @@
     <script src="src/Bosses/ButcherGoliathRenderer.js?v=1.5.18"></script>
     <script src="src/Bosses/DimarchosBossRenderer.js?v=1.5.18"></script>
     <script src="src/Bosses/SyndicateCapoRenderer.js?v=1.5.20"></script>
-    <script src="src/Bosses/KolossosArenaAtmosphere.js?v=1.5.51"></script>
+    <script src="src/Bosses/KolossosArenaAtmosphere.js?v=1.9.1"></script>
     <script src="src/Bosses/KolossosDrone.js?v=1.6.12"></script>
     <script src="src/Bosses/KolossosTrooper.js?v=1.6.12"></script>
     <script src="src/Bosses/KolossosJumpAttack.js?v=1.5.70"></script>
@@ -3446,7 +3447,7 @@
 
     <!-- 9. GAME COORDINATOR & BOOTSTRAP -->
     <script src="src/engine/WaveSkipperMachine.js?v=1.6.22"></script>
-    <script src="src/engine/Game.js?v=1.9.0"></script>
+    <script src="src/engine/Game.js?v=1.9.1"></script>
     <script src="src/main.js?v=1.8.0"></script>
 </body>
 

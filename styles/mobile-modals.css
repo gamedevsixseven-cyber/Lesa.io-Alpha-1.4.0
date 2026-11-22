@@ -304,7 +304,7 @@
 
     /* 9. Skill Button Image & Water Theme (Nerobalonaki) */
     #mobile-skill-btn .btn-skill-img-icon {
-        width: 26px !important; height: 26px !important; object-fit: contain !important; pointer-events: none !important; filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.4)) !important;
+        width: 26px !important; height: 26px !important; object-fit: contain !important; pointer-events: none !important;
     }
 
     #mobile-skill-btn.skill-water {
@@ -312,7 +312,7 @@
     }
 
     #mobile-skill-btn.skill-water .skill-ring {
-        stroke: #00cec9 !important; filter: drop-shadow(0 0 6px #00cec9) !important;
+        stroke: #00cec9 !important;
     }
 
     /* 10. Auto Fire Active: Enlarge Action Buttons (Joystick Untouched) */
@@ -444,6 +444,17 @@
     .gear-subtabs {
         touch-action: pan-x pan-y !important;
         overscroll-behavior-x: contain !important;
+    }
+}
+
+@media (pointer: coarse) {
+    #mobile-controls-container .mobile-action-btn,
+    #mobile-controls-container .btn-cooldown-ring,
+    #mobile-controls-container .btn-cooldown-ring circle,
+    #mobile-controls-container .btn-skill-img-icon,
+    #mobile-controls-container .btn-dash-img-icon,
+    #mobile-controls-container .btn-bubble-img-icon {
+        filter: none !important;
     }
 }
 

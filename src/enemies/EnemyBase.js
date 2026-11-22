@@ -409,9 +409,9 @@ class EnemyBase {
         if (hit && hit.canvas && hit.canvas.width > 0 && hit.canvas.height > 0) return hit;
 
         const isMob = typeof MobilePerf !== 'undefined' && MobilePerf.isMobile;
-        const maxCache = isMob ? 72 : 480;
+        const maxCache = isMob ? 48 : 480;
         if (cache.size >= maxCache) {
-            const evictLimit = isMob ? 24 : 80;
+            const evictLimit = isMob ? 16 : 80;
             let count = 0;
             for (const k of cache.keys()) {
                 cache.delete(k);

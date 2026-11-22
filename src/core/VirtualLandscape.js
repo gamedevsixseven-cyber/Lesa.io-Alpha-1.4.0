@@ -97,13 +97,17 @@ class VirtualLandscape {
 
         let timer = null;
         const onChange = () => {
+            const prevActive = this.active;
+            const prevW = this.logicalW;
+            const prevH = this.logicalH;
             this.sync();
             clearTimeout(timer);
             timer = setTimeout(() => {
-                this.sync();
-                if (window.gameInstance && typeof window.gameInstance.resize === 'function') {
-                    window.gameInstance.resize();
-                }
+                const vp = this.sync();
+                const g = window.gameInstance;
+                if (!g || typeof g.resize !== 'function') return;
+                if (g.state === 'PLAYING' && prevActive === vp.active && Math.abs(vp.width - prevW) < 24 && Math.abs(vp.height - prevH) < 24) return;
+                g.resize();
             }, 90);
         };
         window.addEventListener('DOMContentLoaded', onChange, { once: true });

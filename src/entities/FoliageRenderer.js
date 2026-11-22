@@ -145,12 +145,23 @@ class FoliageRenderer {
 
     static _getOrBake(key, lw, lh, ax, ay, drawFn) {
         let entry = FoliageRenderer._spriteCache.get(key);
-        if (entry) return entry;
-        const dpr = 1.5;
+        if (entry && entry.canvas && entry.canvas.width > 0) return entry;
+        const isMob = typeof MobilePerf !== 'undefined' && MobilePerf.isMobile;
+        if (isMob && FoliageRenderer._spriteCache.size >= 28) {
+            const firstKey = FoliageRenderer._spriteCache.keys().next().value;
+            const evicted = FoliageRenderer._spriteCache.get(firstKey);
+            if (evicted && evicted.canvas) MobilePerf.releaseCanvas(evicted.canvas);
+            FoliageRenderer._spriteCache.delete(firstKey);
+        }
+        const dpr = isMob ? 1.0 : 1.5;
         const c = document.createElement('canvas');
-        c.width = Math.ceil(lw * dpr);
-        c.height = Math.ceil(lh * dpr);
+        c.width = Math.max(1, Math.ceil(lw * dpr));
+        c.height = Math.max(1, Math.ceil(lh * dpr));
         const fctx = c.getContext('2d');
+        if (!fctx) {
+            if (isMob) MobilePerf.releaseCanvas(c);
+            return null;
+        }
         fctx.translate(ax * dpr, ay * dpr);
         fctx.scale(dpr, dpr);
         drawFn(fctx);
@@ -185,7 +196,12 @@ class FoliageRenderer {
             this.drawSaplingTrunk(bctx, r);
             this.drawBaseTufts(bctx, r);
         });
-        ctx.drawImage(trunkSprite.canvas, -trunkSprite.ax, -trunkSprite.ay, trunkSprite.lw, trunkSprite.lh);
+        if (trunkSprite) {
+            ctx.drawImage(trunkSprite.canvas, -trunkSprite.ax, -trunkSprite.ay, trunkSprite.lw, trunkSprite.lh);
+        } else {
+            this.drawSaplingTrunk(ctx, r);
+            this.drawBaseTufts(ctx, r);
+        }
 
         // 3. Cached Scalloped Crown (rotates smoothly by continuous sway)
         ctx.save();
@@ -206,7 +222,12 @@ class FoliageRenderer {
                 cctx.globalCompositeOperation = 'source-over';
             }
         });
-        ctx.drawImage(crownSprite.canvas, -crownSprite.ax, -crownSprite.ay, crownSprite.lw, crownSprite.lh);
+        if (crownSprite) {
+            ctx.drawImage(crownSprite.canvas, -crownSprite.ax, -crownSprite.ay, crownSprite.lw, crownSprite.lh);
+        } else {
+            ctx.translate(0, r * 0.10);
+            this._drawCrownVector(ctx, r, scale, variant);
+        }
         ctx.restore();
         ctx.restore();
     }

@@ -426,18 +426,21 @@ class PerkSystem {
         if (this.flameTrails.length > 0) {
             let flameDisc = PerkSystem._flameDisc;
             if (!flameDisc) {
-                flameDisc = PerkSystem._flameDisc = document.createElement('canvas');
-                flameDisc.width = 128;
-                flameDisc.height = 128;
-                const fctx = flameDisc.getContext('2d');
-                const g = fctx.createRadialGradient(64, 64, 4, 64, 64, 64);
-                g.addColorStop(0, 'rgba(255, 230, 0, 0.85)');
-                g.addColorStop(0.45, 'rgba(255, 71, 87, 0.7)');
-                g.addColorStop(1, 'rgba(235, 77, 75, 0)');
-                fctx.fillStyle = g;
-                fctx.beginPath();
-                fctx.arc(64, 64, 64, 0, Math.PI * 2);
-                fctx.fill();
+                const c = document.createElement('canvas');
+                c.width = 128;
+                c.height = 128;
+                const fctx = c.getContext('2d');
+                if (fctx) {
+                    const g = fctx.createRadialGradient(64, 64, 4, 64, 64, 64);
+                    g.addColorStop(0, 'rgba(255, 230, 0, 0.85)');
+                    g.addColorStop(0.45, 'rgba(255, 71, 87, 0.7)');
+                    g.addColorStop(1, 'rgba(235, 77, 75, 0)');
+                    fctx.fillStyle = g;
+                    fctx.beginPath();
+                    fctx.arc(64, 64, 64, 0, Math.PI * 2);
+                    fctx.fill();
+                    flameDisc = PerkSystem._flameDisc = c;
+                }
             }
             const prevAlpha = ctx.globalAlpha;
             for (let i = 0; i < this.flameTrails.length; i++) {
@@ -446,7 +449,7 @@ class PerkSystem {
                 ctx.globalAlpha = prevAlpha * alpha;
 
                 // Outer burning glow (cached radial disc)
-                ctx.drawImage(flameDisc, f.x - f.radius, f.y - f.radius, f.radius * 2, f.radius * 2);
+                if (flameDisc) ctx.drawImage(flameDisc, f.x - f.radius, f.y - f.radius, f.radius * 2, f.radius * 2);
 
                 // Inner flame tongue embers
                 ctx.fillStyle = '#fffa65';

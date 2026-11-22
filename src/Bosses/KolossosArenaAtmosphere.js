@@ -123,6 +123,7 @@ class KolossosArenaAtmosphere {
         c.width = size;
         c.height = size;
         const gctx = c.getContext('2d');
+        if (!gctx) return null;
         const g = gctx.createRadialGradient(size * 0.5, size * 0.5, size * 0.05, size * 0.5, size * 0.5, size * 0.5);
         g.addColorStop(0, 'rgba(235, 24, 52, 0.64)');
         g.addColorStop(0.55, 'rgba(170, 12, 32, 0.32)');
@@ -140,6 +141,7 @@ class KolossosArenaAtmosphere {
         c.width = size;
         c.height = size;
         const gctx = c.getContext('2d');
+        if (!gctx) return null;
         gctx.translate(size * 0.5, size * 0.5);
         gctx.scale(size / 2.05, size / 2.05);
         const vig = gctx.createRadialGradient(0, 0, 0.44, 0, 0, 1.06);
