@@ -254,6 +254,7 @@ class HeroUltimates {
         if (player._infernoStep % 2 === 0 && typeof Bullet !== 'undefined' && Array.isArray(bullets)) {
             const offset = player._infernoStep * 0.35;
             const boltDmg = Math.round(38 * (player.damageMultiplier || 1));
+            const spawned = [];
             for (let k = 0; k < 8; k++) {
                 const ang = offset + (k / 8) * Math.PI * 2;
                 const mx = player.x + Math.cos(ang) * 26;
@@ -276,6 +277,10 @@ class HeroUltimates {
                 });
                 b.color = '#ff6b35';
                 bullets.push(b);
+                spawned.push(b);
+            }
+            if (typeof window !== 'undefined' && window.gameInstance && window.gameInstance.coopSession && window.gameInstance.coopSession.isHost && player === window.gameInstance.player && typeof CoopCombatFx !== 'undefined') {
+                CoopCombatFx.emitBullets(window.gameInstance.coopSession.net, 'HOST_SHOOT', spawned);
             }
             if (effects) effects.addShockwave(player.x, player.y, radius * 0.9, 'rgba(255, 130, 30, 0.55)');
         }

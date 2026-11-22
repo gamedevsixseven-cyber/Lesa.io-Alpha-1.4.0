@@ -21,8 +21,13 @@ class CoopLobbyModal {
 
     getLocalUserData() {
         const gs = (typeof window !== 'undefined') ? window.GameState : null;
-        const name = (gs && gs.player && gs.player.name) || localStorage.getItem('lesaio_player_name') || 'Hero';
-        const heroType = (gs && gs.player && gs.player.selectedHero) || 'psanas';
+        const heroType = (gs && gs.player && gs.player.selectedHero) || (typeof localStorage !== 'undefined' && localStorage.getItem('lesaio_selected_hero')) || 'psanas';
+        const heroData = (typeof HEROES !== 'undefined' && HEROES[heroType]) ? HEROES[heroType] : null;
+        const heroDisplayName = (heroData && heroData.name) ? heroData.name : (heroType.charAt(0).toUpperCase() + heroType.slice(1));
+        const rawName = (gs && gs.player && gs.player.name) || (typeof localStorage !== 'undefined' && localStorage.getItem('lesaio_player_name')) || '';
+        const cleanRaw = String(rawName || '').trim();
+        const isUnsetDefault = !cleanRaw || (cleanRaw.toLowerCase() === 'psanas' && heroType !== 'psanas');
+        const name = isUnsetDefault ? heroDisplayName : cleanRaw;
         const weaponType = (typeof WeaponSystem !== 'undefined')
             ? WeaponSystem.resolveEquippedWeapon((typeof HEROES !== 'undefined' && HEROES[heroType]) ? HEROES[heroType].weaponType : 'pea')
             : ((gs && gs.player && (gs.player.selectedWeapon || gs.player.weaponType)) || localStorage.getItem('lesaio_selected_weapon') || 'pea');

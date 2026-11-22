@@ -158,6 +158,7 @@ class Player {
         if (this.invulnerableTimer > 0) this.invulnerableTimer -= dt;
         if (this.recoilOffset > 0) this.recoilOffset *= 0.85;
         if (this.bladeTimer > 0) this.bladeTimer -= dt;
+        if (this.isGrabbed) { this._grabFrames = (this._grabFrames || 0) + dt; if (this.hp <= 0 || this._grabFrames > 85) { this.isGrabbed = false; this.airZ = 0; this._grabFrames = 0; } } else { this._grabFrames = 0; }
         if (this.espressoHasteTimer > 0) this.espressoHasteTimer = Math.max(0, this.espressoHasteTimer - dt);
         if (typeof GearPassives !== 'undefined') GearPassives.update(dt, this, window.gameInstance);
         // Frenzy Buff

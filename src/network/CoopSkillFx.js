@@ -174,6 +174,118 @@ class CoopSkillFx {
             }
         }
     }
+
+    static playRemoteUlt(game, rp, ultData = {}, isHostAuthoritative = false) {
+        if (!rp || !game || rp.isDowned || rp.isDownedDisconnected) return;
+        const ultId = typeof ultData.ultId === 'string' ? ultData.ultId : '';
+        if (!ultId) return;
+        const fx = game.effects;
+        const se = (typeof window !== 'undefined') ? window.soundEngine : null;
+        const x = Number.isFinite(ultData.x) && Math.hypot(ultData.x - rp.x, ultData.y - rp.y) < 260 ? ultData.x : rp.x;
+        const y = Number.isFinite(ultData.y) && Math.hypot(ultData.x - rp.x, ultData.y - rp.y) < 260 ? ultData.y : rp.y;
+
+        rp.ultActive = true;
+        rp.ultId = ultId;
+        rp._ultStartedMs = (typeof performance !== 'undefined') ? performance.now() : Date.now();
+        rp._ultTick = 0;
+        rp._infernoStep = 0;
+        rp.ultTimer = ultId === 'rage' ? 402 : (ultId === 'inferno_storm' ? 330 : 390);
+        rp.ultMaxTimer = rp.ultTimer;
+        rp.rageUltActive = (ultId === 'rage');
+        rp.infernoUltActive = (ultId === 'inferno_storm');
+        rp.vf185Active = (ultId === 'vf185');
+        rp.stunTimer = 0;
+        rp.speedDebuffTimer = 0;
+        if (rp.vf185Active) {
+            rp.vf185Angle = Number.isFinite(ultData.angle) ? ultData.angle : (rp.angle || 0);
+            rp._vfWheelSpin = 0;
+            if (!rp._vfSkids) rp._vfSkids = [];
+        }
+
+        if (fx) {
+            if (rp.rageUltActive) {
+                fx.addComicSplash(x, y - 46, 'ARGHH!! 🔥', '#ff3838', 24, true);
+                fx.addShockwave(x, y, 175, 'rgba(255, 56, 56, 0.92)');
+                fx.addSparks(x, y, '#ff3838', 14);
+                fx.addSparks(x, y, '#ffd32a', 10);
+            } else if (rp.infernoUltActive) {
+                fx.addComicSplash(x, y - 46, '🌶️ INFERNO STORM!', '#ff9f1a', 22, true);
+                fx.addShockwave(x, y, 230, 'rgba(255, 159, 26, 0.92)');
+                fx.addSparks(x, y, '#ff4757', 14);
+                fx.addSparks(x, y, '#fff200', 12);
+            } else if (rp.vf185Active) {
+                fx.addComicSplash(x, y - 48, '🏍️ SYM VF185!!', '#ff4785', 22, true);
+                fx.addShockwave(x, y, 160, 'rgba(255, 71, 133, 0.92)');
+                fx.addDust(x, y + 12, 10, 14);
+                fx.addSparks(x, y + 10, '#eccc3b', 8);
+            }
+        }
+        if (se) {
+            if (typeof se.playHeroUlt === 'function') se.playHeroUlt(ultId);
+            else se.playLevelUp?.();
+        }
+    }
+
+    static updateRemoteUlt(game, rp, dt = 1, isHostAuthoritative = false, net = null) {
+        if (!game || !rp || !rp.ultActive || rp.isDowned || rp.isDownedDisconnected) return;
+        const normDt = dt || 1;
+        const fx = game.effects;
+        rp._ultTick = (rp._ultTick || 0) + normDt;
+
+        if (rp.ultTimer > 0) {
+            rp.ultTimer -= normDt;
+            if (rp.ultTimer <= 0) {
+                rp.ultActive = false; rp.ultId = null;
+                rp.rageUltActive = false; rp.infernoUltActive = false; rp.vf185Active = false;
+                return;
+            }
+        }
+
+        if (rp.rageUltActive) {
+            rp.stunTimer = 0; rp.speedDebuffTimer = 0;
+            if (fx && Math.random() < 0.35 * normDt) {
+                fx.addSparks(rp.x + (Math.random() - 0.5) * 26, rp.y + (Math.random() - 0.5) * 22, Math.random() < 0.5 ? '#ff3838' : '#ffd32a', 2);
+            }
+        } else if (rp.infernoUltActive) {
+            const prevTick = Math.floor((rp._ultTick - normDt) / 14);
+            const curTick = Math.floor(rp._ultTick / 14);
+            if (curTick > prevTick) {
+                rp._infernoStep = (rp._infernoStep || 0) + 1;
+                if (isHostAuthoritative && game.enemies) {
+                    const radius = 235, radiusSq = radius * radius;
+                    for (let i = 0; i < game.enemies.length; i++) {
+                        const e = game.enemies[i];
+                        if (!e || e.dead || e.isDying || e.isAirborneImmune) continue;
+                        const dx = e.x - rp.x, dy = e.y - rp.y;
+                        if (dx * dx + dy * dy <= radiusSq) {
+                            e.takeDamage(30, fx, false);
+                            if (fx && Math.random() < 0.45) fx.addSparks(e.x, e.y, '#ff9f1a', 2);
+                        }
+                    }
+                    if (rp._infernoStep % 2 === 0 && typeof Bullet !== 'undefined' && Array.isArray(game.bullets)) {
+                        const offset = rp._infernoStep * 0.35;
+                        const spawned = [];
+                        for (let k = 0; k < 8; k++) {
+                            const ang = offset + (k / 8) * Math.PI * 2;
+                            const b = new Bullet({
+                                x: rp.x + Math.cos(ang) * 26, y: rp.y + Math.sin(ang) * 26,
+                                vx: Math.cos(ang) * 14, vy: Math.sin(ang) * 14,
+                                damage: 38, speed: 14, radius: 10, type: 'pepper',
+                                isEnemy: false, pierce: 2, maxBounces: 0, range: 460, shooter: rp, isCrit: false
+                            });
+                            b.color = '#ff6b35';
+                            game.bullets.push(b);
+                            spawned.push(b);
+                        }
+                        if (net && typeof CoopCombatFx !== 'undefined') CoopCombatFx.emitBullets(net, 'HOST_SHOOT', spawned);
+                    }
+                }
+                if (rp._infernoStep % 2 === 0 && fx) {
+                    fx.addShockwave(rp.x, rp.y, 210, 'rgba(255, 130, 30, 0.55)');
+                }
+            }
+        }
+    }
 }
 
 if (typeof window !== 'undefined') {

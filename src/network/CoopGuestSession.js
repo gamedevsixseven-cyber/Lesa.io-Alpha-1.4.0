@@ -10,10 +10,13 @@ class CoopGuestSession {
         this.isHost = false;
         this.appliedMapSeed = mapSeed;
 
-        const name = (hostInfo && hostInfo.name) || 'Host';
         const heroType = (hostInfo && hostInfo.heroType) || 'psanas';
+        const heroMeta = (typeof HEROES !== 'undefined' && HEROES[heroType]) ? HEROES[heroType] : null;
+        const rawHostName = (hostInfo && hostInfo.name) ? String(hostInfo.name).trim() : '';
+        const name = (!rawHostName || (rawHostName.toLowerCase() === 'psanas' && heroType !== 'psanas'))
+            ? ((heroMeta && heroMeta.name) || heroType) : rawHostName;
         this.remotePlayer = new RemotePlayer(game.player.x - 60, game.player.y, heroType, name);
-        this.remotePlayer.applyHeroStats(heroType, hostInfo);
+        this.remotePlayer.applyHeroStats(heroType, { ...hostInfo, name });
         this.remotePlayer.isHost = true;
 
         this.inputSyncTimer = 0;
@@ -60,6 +63,10 @@ class CoopGuestSession {
                 }
             } else if (type === 'HOST_SKILL') {
                 this.playRemoteSkill(this.remotePlayer, payload);
+            } else if (type === 'HOST_ULT') {
+                if (typeof CoopSkillFx !== 'undefined') CoopSkillFx.playRemoteUlt(this.game, this.remotePlayer, payload, false);
+            } else if (type === 'KILOUMPAS_GRAB') {
+                this._handleKiloumpasGrab(payload);
             } else if (type === 'HOST_QUIT_MATCH') {
                 this.handleHostQuit(payload && payload.name);
             } else if (type === 'NET_PAUSE' || type === 'NET_PAUSE_STATE') {
@@ -218,6 +225,52 @@ class CoopGuestSession {
             if (ok) this.net.send('GUEST_SKILL', { skillId, level, x: Math.round(p.x), y: Math.round(p.y), angle: Number((p.angle || 0).toFixed(2)) });
             return ok;
         };
+        const origUlt = this.game.player.useUlt.bind(this.game.player);
+        this.game.player.useUlt = (enemies, effects, camera, game) => {
+            const p = this.game.player;
+            const wasActive = !!p.ultActive;
+            const res = origUlt(enemies, effects, camera, game);
+            if (!wasActive && p.ultActive && p.ultId) {
+                this.net.send('GUEST_ULT', {
+                    ultId: p.ultId, heroType: p.heroType,
+                    x: Math.round(p.x), y: Math.round(p.y),
+                    angle: Number((p.angle || 0).toFixed(2))
+                });
+            }
+            return res;
+        };
+    }
+
+    _handleKiloumpasGrab(data) {
+        const p = this.game && this.game.player;
+        const fx = this.game && this.game.effects;
+        if (!p || !data) return;
+        if (data.action === 'grab') {
+            const wasGrabbed = p.isGrabbed;
+            p.isGrabbed = true; p._grabFrames = 0; p.isAirborne = false;
+            p.vx = 0; p.vy = 0;
+            if (Number.isFinite(data.x)) p.x = data.x;
+            if (Number.isFinite(data.y)) p.y = data.y;
+            if (Number.isFinite(data.airZ)) p.airZ = data.airZ;
+            if (!wasGrabbed) {
+                if (fx) { fx.addComicSplash(p.x, p.y - 48, 'SE EPIASA! 💢'); fx.addDust(p.x, p.y, 8, 10); }
+                if (window.soundEngine && typeof window.soundEngine.playHit === 'function') window.soundEngine.playHit(false, true);
+            }
+        } else if (data.action === 'throw') {
+            p.isGrabbed = false; p._grabFrames = 0;
+            if (Number.isFinite(data.x)) p.x = data.x;
+            if (Number.isFinite(data.y)) p.y = data.y;
+            p.launchAirborne(data.vx || 0, data.vy || 0, data.vz || 17.5, 0);
+            if (fx) {
+                fx.addShockwave(p.x, p.y, 130, 'rgba(255, 71, 87, 0.95)');
+                fx.addDust(p.x, p.y, 16, 18);
+                fx.addComicSplash(p.x, p.y - 46, 'FYGE RE! 💨');
+            }
+            if (window.soundEngine && typeof window.soundEngine.playHit === 'function') window.soundEngine.playHit(true, true);
+        } else if (data.action === 'release') {
+            p.isGrabbed = false; p._grabFrames = 0;
+            if (!p.isAirborne) p.airZ = 0;
+        }
     }
 
     applyHostSnapshot(data) {
@@ -435,6 +488,9 @@ class CoopGuestSession {
 
     update(dt) {
         this.remotePlayer.update(dt);
+        if (typeof CoopSkillFx !== 'undefined' && typeof CoopSkillFx.updateRemoteUlt === 'function') {
+            CoopSkillFx.updateRemoteUlt(this.game, this.remotePlayer, dt, false, null);
+        }
         this._syncLocalHeal();
         this.inputSyncTimer++;
         const stateEvery = (this.net && this.net.latency > 180) ? 3 : 2;
@@ -444,6 +500,7 @@ class CoopGuestSession {
             const p = this.game.player;
             this.net.send('GUEST_STATE', {
                 seq: this._guestSeq,
+                name: (this.net && this.net.localUserData && this.net.localUserData.name) || p.name,
                 x: Math.round(p.x), y: Math.round(p.y),
                 vx: Number((p.vx || 0).toFixed(2)), vy: Number((p.vy || 0).toFixed(2)),
                 angle: Number((p.angle || 0).toFixed(2)),
@@ -451,6 +508,8 @@ class CoopGuestSession {
                 weaponType: p.weaponType, equippedArmorId: p.equippedArmorId || null,
                 armorEvolved: !!p.armorEvolved, weaponEvolved: !!p.weaponEvolved,
                 heroSkin: p.heroSkin || 'default', starBlessed: !!p._starBlessed,
+                ultId: p.ultActive ? (p.ultId || '') : '',
+                vfAng: p.vf185Active ? Number((p.vf185Angle || p.angle || 0).toFixed(2)) : undefined,
                 bubbleCharge: p.isChargingBubble ? Number((p.bubbleCharge || 0).toFixed(2)) : 0
             }, { droppable: true, fast: true });
         }

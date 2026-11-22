@@ -245,16 +245,20 @@ class CollisionSystem {
             }
 
             // Remote partner body collision (authoritative on Host)
-            if (p2 && !game.isCoopGuest && e.damage > 0) {
+            if (p2 && !game.isCoopGuest) {
                 const p2edx = e.x - p2.x;
                 const p2edy = e.y - p2.y;
-                const hitDist2 = e.radius + p2.radius;
+                const hitDist2 = p2.vf185Active ? (e.radius + p2.radius + 26) : (e.radius + p2.radius);
                 if (Math.abs(p2edx) <= hitDist2 && Math.abs(p2edy) <= hitDist2) {
                     if (p2edx * p2edx + p2edy * p2edy < hitDist2 * hitDist2) {
-                        p2.takeDamage(e.damage * 0.4, effects, camera);
-                        const angle2 = Math.atan2(p2.y - e.y, p2.x - e.x);
-                        p2.x += Math.cos(angle2) * 4;
-                        p2.y += Math.sin(angle2) * 4;
+                        if (p2.vf185Active && typeof HeroUltimates !== 'undefined') {
+                            HeroUltimates.onVF185RamEnemy(p2, e, effects, game);
+                        } else if (e.damage > 0) {
+                            p2.takeDamage(e.damage * 0.4, effects, camera);
+                            const angle2 = Math.atan2(p2.y - e.y, p2.x - e.x);
+                            p2.x += Math.cos(angle2) * 4;
+                            p2.y += Math.sin(angle2) * 4;
+                        }
                     }
                 }
             }
@@ -424,6 +428,7 @@ class CollisionSystem {
             game.drops.push(new Drop(enemy.x, enemy.y, 'heart', 50));
             game.drops.push(new Drop(enemy.x, enemy.y, 'star', 3));
         } else if (enemy.type === 'kiloumpas') {
+            if (typeof enemy.releaseGrab === 'function') enemy.releaseGrab();
             player.kiloumpasKills = (player.kiloumpasKills || 0) + 1;
             player.score += 450;
             if (!enemy.crateAwarded && !game.isCoopGuest) {

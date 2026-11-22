@@ -11,10 +11,13 @@ class CoopHostSession {
         this.mapSeed = mapSeed;
 
         guestInfo = guestInfo || (networkManager && networkManager.peerUserData) || null;
-        const name = (guestInfo && guestInfo.name) || 'Player 2';
         const heroType = (guestInfo && guestInfo.heroType) || 'petros';
+        const heroMeta = (typeof HEROES !== 'undefined' && HEROES[heroType]) ? HEROES[heroType] : null;
+        const rawGuestName = (guestInfo && guestInfo.name) ? String(guestInfo.name).trim() : '';
+        const name = (!rawGuestName || (rawGuestName.toLowerCase() === 'psanas' && heroType !== 'psanas'))
+            ? ((heroMeta && heroMeta.name) || heroType) : rawGuestName;
         this.remotePlayer = new RemotePlayer(game.player.x + 60, game.player.y, heroType, name);
-        this.remotePlayer.applyHeroStats(heroType, guestInfo);
+        this.remotePlayer.applyHeroStats(heroType, { ...guestInfo, name });
         this.remotePlayer.isHost = false;
         this.remotePlayer.onShieldConsumed = () => {
             if (this.net) this.net.send('GUEST_DROP_EFFECT', { type: 'shield_break' });
@@ -69,6 +72,21 @@ class CoopHostSession {
                 });
             }
             return ok;
+        };
+
+        const origUlt = this.game.player.useUlt.bind(this.game.player);
+        this.game.player.useUlt = (enemies, effects, camera, game) => {
+            const p = this.game.player;
+            const wasActive = !!p.ultActive;
+            const res = origUlt(enemies, effects, camera, game);
+            if (!wasActive && p.ultActive && p.ultId) {
+                this.net.send('HOST_ULT', {
+                    ultId: p.ultId, heroType: p.heroType,
+                    x: Math.round(p.x), y: Math.round(p.y),
+                    angle: Number((p.angle || 0).toFixed(2))
+                });
+            }
+            return res;
         };
 
         if (this.game.bossWarningOverlay) {
@@ -163,6 +181,10 @@ class CoopHostSession {
                 if (!this.remotePlayer.isDowned && !this.remotePlayer.isDownedDisconnected && this.game.state === 'PLAYING') {
                     this.playRemoteSkill(this.remotePlayer, payload, true);
                 }
+            } else if (type === 'GUEST_ULT') {
+                if (!this.remotePlayer.isDowned && !this.remotePlayer.isDownedDisconnected && this.game.state === 'PLAYING' && typeof CoopSkillFx !== 'undefined') {
+                    CoopSkillFx.playRemoteUlt(this.game, this.remotePlayer, payload, true);
+                }
             } else if (type === 'GUEST_COLLECT_DROP') {
                 this.handleGuestCollectDrop(payload);
             } else if (type === 'GUEST_CUTSCENE_ADVANCE' || type === 'GUEST_CUTSCENE_READY') {
@@ -209,8 +231,11 @@ class CoopHostSession {
         const p1 = this.game.player;
         const p2 = this.remotePlayer;
 
-        // 1. Update remote partner interpolation
+        // 1. Update remote partner interpolation & active remote Ult FX/ticks
         p2.update(dt);
+        if (typeof CoopSkillFx !== 'undefined' && typeof CoopSkillFx.updateRemoteUlt === 'function') {
+            CoopSkillFx.updateRemoteUlt(this.game, p2, dt, true, this.net);
+        }
 
         // 2. Intelligent Enemy Target Distribution
         // Assign each enemy's target to the closer of (local host player vs remote guest player)
@@ -383,6 +408,7 @@ class CoopHostSession {
             wTotal: safeInt(wm ? wm.waveTotalEnemies : 0, 0, 999, 0),
             wKilled: safeInt(wm ? wm.waveEnemiesKilled : 0, 0, 999, 0),
             host: {
+                name: (this.net && this.net.localUserData && this.net.localUserData.name) || p.name,
                 x: safeInt(p.x),
                 y: safeInt(p.y),
                 vx: safeFloat(p.vx, 2, 0),
@@ -393,6 +419,10 @@ class CoopHostSession {
                 isMoving: !!p.isMoving,
                 shieldActive: !!p.shieldActive,
                 isDashing: !!p.isDashing,
+                isGrabbed: !!p.isGrabbed,
+                isAirborne: !!p.isAirborne,
+                airZ: safeInt(p.airZ || 0, 0, 400, 0),
+                airRot: safeFloat(p.airRotation || 0, 2, 0),
                 heroType: p.heroType,
                 weaponType: p.weaponType,
                 equippedArmorId: p.equippedArmorId || null,
@@ -400,6 +430,8 @@ class CoopHostSession {
                 weaponEvolved: !!p.weaponEvolved,
                 heroSkin: p.heroSkin || 'default',
                 starBlessed: !!p._starBlessed,
+                ultId: p.ultActive ? (p.ultId || '') : '',
+                vfAng: p.vf185Active ? safeFloat(p.vf185Angle || p.angle || 0, 2, 0) : undefined,
                 bubbleCharge: p.isChargingBubble ? Number((p.bubbleCharge || 0).toFixed(2)) : 0
             },
             guestHp: safeInt(this.remotePlayer.hp, 0, 100000, 0),
@@ -436,6 +468,21 @@ class CoopHostSession {
         }
         if (typeof CoopSkillFx !== 'undefined') {
             CoopSkillFx.playRemoteSkill(this.game, remotePlayer, skillData, isHostAuthoritative);
+        }
+    }
+
+    syncKiloumpasEvent(action, boss, targetPlayer, extra = {}) {
+        if (!this.net || !this.net.connected) return;
+        if (targetPlayer === this.remotePlayer) {
+            this.net.send('KILOUMPAS_GRAB', {
+                action,
+                x: Number.isFinite(extra.x) ? extra.x : Math.round(this.remotePlayer.x),
+                y: Number.isFinite(extra.y) ? extra.y : Math.round(this.remotePlayer.y),
+                airZ: Number.isFinite(extra.airZ) ? extra.airZ : 0,
+                vx: extra.vx || 0,
+                vy: extra.vy || 0,
+                vz: extra.vz || 17.5
+            });
         }
     }
 

@@ -51,6 +51,18 @@ class RemotePlayer {
         this.airVz = 0;
         this.airRotation = 0;
         this.landingDamage = 0;
+        this.landingSquashTimer = 0;
+        this.age = 0;
+        this.ultActive = false;
+        this.ultId = null;
+        this.ultTimer = 0;
+        this.ultMaxTimer = 1;
+        this.rageUltActive = false;
+        this.infernoUltActive = false;
+        this.vf185Active = false;
+        this.vf185Angle = 0;
+        this._vfWheelSpin = 0;
+        this._vfSkids = [];
 
         this.applyHeroStats(heroType);
     }
@@ -60,15 +72,22 @@ class RemotePlayer {
         const wasFull = !this.hp || this.hp >= this.maxHp;
         const heroData = (typeof HEROES !== 'undefined' && HEROES[heroType]) ? HEROES[heroType] : null;
         if (heroData) {
+            this.radius = heroData.radius || (heroType === 'petros' ? 26 : 24);
+            this.heroName = heroData.name || heroType;
             this.maxHp = heroData.hp || 100;
             this.weaponType = heroData.weaponType || 'pea';
             this.heroColor = heroData.heroColor || '#1e70d6';
             this.damageReduction = heroData.damageReduction || 0;
         } else {
+            this.radius = heroType === 'petros' ? 26 : 24;
+            this.heroName = heroType;
             this.maxHp = heroType === 'petros' ? 150 : 100;
             this.weaponType = 'pea';
             this.heroColor = '#1e70d6';
             this.damageReduction = heroType === 'petros' ? 0.08 : 0;
+        }
+        if (this.name === 'Psanas' && heroType && heroType !== 'psanas' && this.heroName) {
+            this.name = this.heroName;
         }
         if (opts) {
             if (typeof opts.weaponType === 'string' && opts.weaponType) this.weaponType = opts.weaponType;
@@ -149,16 +168,9 @@ class RemotePlayer {
         this.knockbackVx = vx || 0;
         this.knockbackVy = vy || 0;
         this.airVz = vz || 17.5;
-        this.airZ = 24;
+        this.airZ = Math.max(this.airZ || 0, 24);
+        this.airRotation = this.airRotation || 0.2;
         this.landingDamage = damage || 38;
-        setTimeout(() => {
-            if (!this.isAirborne) return;
-            this.isAirborne = false;
-            this.airZ = 0;
-            this.airVz = 0;
-            if (this.landingDamage > 0 && !this.isDowned) this.takeDamage(this.landingDamage);
-            this.landingDamage = 0;
-        }, 700);
     }
 
     setTargetState(data) {
@@ -169,15 +181,18 @@ class RemotePlayer {
             this._lastRxSeq = data.seq;
         }
         this._lastNetRxMs = performance.now();
-        if (typeof data.x === 'number') this.targetX = data.x;
-        if (typeof data.y === 'number') this.targetY = data.y;
-        if (typeof data.vx === 'number') this.vx = data.vx;
-        if (typeof data.vy === 'number') this.vy = data.vy;
+        const lockPosFromKiloumpas = !this.isHost && (this.isGrabbed || this.isAirborne);
+        if (!lockPosFromKiloumpas) {
+            if (typeof data.x === 'number') this.targetX = data.x;
+            if (typeof data.y === 'number') this.targetY = data.y;
+            if (typeof data.vx === 'number') this.vx = data.vx;
+            if (typeof data.vy === 'number') this.vy = data.vy;
+        }
         if (typeof data.angle === 'number') this.targetAngle = data.angle;
 
         // Snap immediately if large discrepancy (e.g. spawn, teleport, or dash)
         const distSq = (this.targetX - this.x) ** 2 + (this.targetY - this.y) ** 2;
-        if (distSq > 20000 || data.isDashing) {
+        if (!lockPosFromKiloumpas && (distSq > 20000 || data.isDashing)) {
             this.x = this.targetX;
             this.y = this.targetY;
         }
@@ -186,6 +201,12 @@ class RemotePlayer {
             if (data.hp < this.hp) this.hitFlash = 10;
             this.hp = Math.max(0, Math.min(this.maxHp, data.hp));
             this.isDowned = (this.hp <= 0);
+        }
+        if (this.isHost) {
+            if (typeof data.isGrabbed === 'boolean') this.isGrabbed = data.isGrabbed;
+            if (typeof data.isAirborne === 'boolean') this.isAirborne = data.isAirborne;
+            if (typeof data.airZ === 'number') this.airZ = data.airZ;
+            if (typeof data.airRot === 'number') this.airRotation = data.airRot;
         }
         if (typeof data.maxHp === 'number' && Number.isFinite(data.maxHp)) {
             this.maxHp = Math.max(25, Math.min(1200, Math.round(data.maxHp)));
@@ -202,6 +223,20 @@ class RemotePlayer {
         if (typeof data.bubbleCharge === 'number') this.bubbleCharge = data.bubbleCharge;
         if (typeof data.heroSkin === 'string') this.heroSkin = data.heroSkin;
         if (typeof data.starBlessed === 'boolean') this.starBlessed = data.starBlessed;
+        if (typeof data.name === 'string' && data.name.trim()) this.name = data.name.trim();
+        if (typeof data.ultId === 'string') {
+            const uid = data.ultId || null;
+            const nowMs = (typeof performance !== 'undefined') ? performance.now() : Date.now();
+            if (uid || !this._ultStartedMs || (nowMs - this._ultStartedMs) > 280) {
+                this.ultId = uid;
+                this.ultActive = !!uid;
+                this.rageUltActive = (uid === 'rage');
+                this.infernoUltActive = (uid === 'inferno_storm');
+                this.vf185Active = (uid === 'vf185');
+                if (!uid) this.ultTimer = 0;
+            }
+        }
+        if (typeof data.vfAng === 'number' && Number.isFinite(data.vfAng)) this.vf185Angle = data.vfAng;
         if (data.heroType && data.heroType !== this.heroType) {
             const preserved = { maxHp: this.maxHp, damageReduction: this.damageReduction, magnetRadius: this.magnetRadius, starBlessed: this.starBlessed, equippedArmorId: this.equippedArmorId, armorEvolved: this.armorEvolved, weaponEvolved: this.weaponEvolved, ...data };
             this.applyHeroStats(data.heroType, preserved);
@@ -210,28 +245,62 @@ class RemotePlayer {
 
     update(dt) {
         const normDt = dt || 1.0;
+        this.age = (this.age || 0) + normDt;
+        if (this.landingSquashTimer > 0) this.landingSquashTimer = Math.max(0, this.landingSquashTimer - normDt);
 
-        // Clamped Dead Reckoning: cap extrapolation window on cellular packet stalls to prevent rubberbanding
-        if (this.isMoving && (this.vx || this.vy)) {
-            const netAgeMs = this._lastNetRxMs ? (performance.now() - this._lastNetRxMs) : 0;
-            if (netAgeMs < 160) {
-                const scale = netAgeMs > 70 ? Math.max(0.15, 1 - (netAgeMs - 70) / 100) : 1.0;
-                this.targetX += (this.vx || 0) * normDt * scale;
-                this.targetY += (this.vy || 0) * normDt * scale;
+        if (!this.isHost && this.isAirborne) {
+            this.isMoving = false;
+            this.airZ += this.airVz * normDt;
+            this.airVz -= 0.58 * normDt;
+            this.airRotation += 0.24 * normDt;
+            this.x += (this.knockbackVx || 0) * normDt;
+            this.y += (this.knockbackVy || 0) * normDt;
+            this.targetX = this.x;
+            this.targetY = this.y;
+            this.knockbackVx *= Math.pow(0.972, normDt);
+            this.knockbackVy *= Math.pow(0.972, normDt);
+            if (this.ghostTrails && Math.random() < 0.45 * normDt) {
+                this.ghostTrails.push({ x: this.x, y: this.y - this.airZ, alpha: 0.6, isAirborne: true });
             }
-        }
+            if (this.airZ <= 0 && this.airVz < 0) {
+                this.airZ = 0; this.airVz = 0; this.isAirborne = false; this.airRotation = 0;
+                this.knockbackVx = 0; this.knockbackVy = 0; this.landingSquashTimer = 14;
+                if (this.landingDamage > 0 && !this.isDowned) this.takeDamage(this.landingDamage);
+                this.landingDamage = 0;
+            }
+        } else if (!this.isGrabbed) {
+            // Clamped Dead Reckoning: cap extrapolation window on cellular packet stalls to prevent rubberbanding
+            if (this.isMoving && (this.vx || this.vy)) {
+                const netAgeMs = this._lastNetRxMs ? (performance.now() - this._lastNetRxMs) : 0;
+                if (netAgeMs < 160) {
+                    const scale = netAgeMs > 70 ? Math.max(0.15, 1 - (netAgeMs - 70) / 100) : 1.0;
+                    this.targetX += (this.vx || 0) * normDt * scale;
+                    this.targetY += (this.vy || 0) * normDt * scale;
+                }
+            }
 
-        // Adaptive responsive lerp: tighter convergence to eliminate dragging lag
-        const distSq = (this.targetX - this.x) ** 2 + (this.targetY - this.y) ** 2;
-        const lerpFactor = distSq > 15000 ? 1.0 : (distSq > 3000 ? Math.min(1.0, 0.72 * normDt) : Math.min(1.0, 0.52 * normDt));
-        this.x += (this.targetX - this.x) * lerpFactor;
-        this.y += (this.targetY - this.y) * lerpFactor;
+            // Adaptive responsive lerp: tighter convergence to eliminate dragging lag
+            const distSq = (this.targetX - this.x) ** 2 + (this.targetY - this.y) ** 2;
+            const lerpFactor = distSq > 15000 ? 1.0 : (distSq > 3000 ? Math.min(1.0, 0.72 * normDt) : Math.min(1.0, 0.52 * normDt));
+            this.x += (this.targetX - this.x) * lerpFactor;
+            this.y += (this.targetY - this.y) * lerpFactor;
+        }
 
         // Angle lerp with shortest-arc unwrapping
         let diff = this.targetAngle - this.angle;
         while (diff < -Math.PI) diff += Math.PI * 2;
         while (diff > Math.PI) diff -= Math.PI * 2;
         this.angle += diff * Math.min(1.0, 0.60 * normDt);
+
+        if (this.vf185Active && typeof VF185Model !== 'undefined') {
+            VF185Model.recordStep(this, normDt, null);
+        }
+        if (this.ghostTrails && this.ghostTrails.length > 0) {
+            for (let i = this.ghostTrails.length - 1; i >= 0; i--) {
+                this.ghostTrails[i].alpha -= 0.062 * normDt;
+                if (this.ghostTrails[i].alpha <= 0) this.ghostTrails.splice(i, 1);
+            }
+        }
 
         if (this.isMoving && !this.isDowned) {
             this.walkCycle += 0.26 * normDt;

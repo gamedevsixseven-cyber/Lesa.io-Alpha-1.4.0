@@ -49,22 +49,57 @@ class Kiloumpas extends EnemyBase {
         this.aimDuration = 0;
         this.isGrabbing = false;
         this.grabHoldTimer = 0;
+        this.grabbedPlayer = null;
         this.throwAnimTimer = 0;
         this.grabCooldown = 40;
         this.shoutTimer = 280;
+    }
+
+    releaseGrab() {
+        const gp = this.grabbedPlayer;
+        this.grabbedPlayer = null;
+        this.isGrabbing = false;
+        this.grabHoldTimer = 0;
+        if (gp && gp.isGrabbed) {
+            gp.isGrabbed = false;
+            gp.airZ = 0;
+            if (typeof window !== 'undefined' && window.gameInstance && window.gameInstance.coopSession && window.gameInstance.coopSession.isHost && typeof window.gameInstance.coopSession.syncKiloumpasEvent === 'function') {
+                window.gameInstance.coopSession.syncKiloumpasEvent('release', this, gp);
+            }
+        }
     }
 
     takeDamage(amount, effects = null, fromCrit = null, playSound = true) {
         // Invulnerable during introductory cutscene
         if (this.cutsceneState !== 'COMBAT') return;
         super.takeDamage(amount, effects, fromCrit, playSound);
+        if ((this.dead || this.hp <= 0) && this.isGrabbing) {
+            this.releaseGrab();
+        }
     }
 
     update(dt = 1, player = null, enemies = [], bullets = [], effects = null, arena = null) {
         this.age += dt;
         if (this.hitFlash > 0) this.hitFlash -= dt;
 
-        if (!player || player.hp <= 0) return;
+        if (this.dead || this.hp <= 0) {
+            if (this.isGrabbing) this.releaseGrab();
+            return;
+        }
+
+        if (this.isGrabbing && this.grabbedPlayer) {
+            if (this.grabbedPlayer.hp <= 0 || this.grabbedPlayer.isDowned || this.grabbedPlayer.isDownedDisconnected) {
+                this.releaseGrab();
+            } else {
+                this.updateCombat(dt, this.grabbedPlayer, enemies, bullets, effects, arena);
+                return;
+            }
+        }
+
+        if (!player || player.hp <= 0) {
+            if (this.isGrabbing) this.releaseGrab();
+            return;
+        }
 
         // Handle Cutscene Sequence
         if (this.cutsceneState !== 'COMBAT') {
@@ -297,7 +332,9 @@ class Kiloumpas extends EnemyBase {
 
     startGrabHold(player, effects) {
         this.isGrabbing = true;
+        this.grabbedPlayer = player;
         this.grabHoldTimer = 42; // Exactly 0.70 seconds at 60fps
+        this._lastGrabSyncMs = 0;
         this.throwAnimTimer = 0;
         this.isAiming = false;
         this.vx = 0;
@@ -307,6 +344,11 @@ class Kiloumpas extends EnemyBase {
         player.isAirborne = false;
         player.vx = 0;
         player.vy = 0;
+        player.airZ = 16;
+
+        if (typeof window !== 'undefined' && window.gameInstance && window.gameInstance.coopSession && window.gameInstance.coopSession.isHost && typeof window.gameInstance.coopSession.syncKiloumpasEvent === 'function') {
+            window.gameInstance.coopSession.syncKiloumpasEvent('grab', this, player, { x: Math.round(player.x), y: Math.round(player.y), airZ: 16 });
+        }
 
         if (effects) {
             effects.addComicSplash(this.x, this.y - 52, 'SE EPIASA! 💢');
@@ -318,37 +360,49 @@ class Kiloumpas extends EnemyBase {
     }
 
     updateGrabHold(dt, player, effects) {
+        const target = this.grabbedPlayer || player;
+        if (!target || target.hp <= 0 || target.isDowned || target.isDownedDisconnected || this.dead || this.hp <= 0) {
+            this.releaseGrab();
+            return;
+        }
         this.grabHoldTimer -= dt;
         this.vx = 0;
         this.vy = 0;
 
         // Face player firmly
-        const holdDist = this.radius + (player.radius || 25) - 4;
+        const holdDist = this.radius + (target.radius || 25) - 4;
         const holdX = this.x + Math.cos(this.angle) * holdDist;
         const holdY = this.y + Math.sin(this.angle) * holdDist;
 
         // Lock player position to Kiloumpas's grip with angry struggle jitter
         const jitter = (Math.random() - 0.5) * 3.5;
-        player.x = holdX + jitter;
-        player.y = holdY + jitter;
-        player.vx = 0;
-        player.vy = 0;
-        player.isGrabbed = true;
+        target.x = holdX + jitter;
+        target.y = holdY + jitter;
+        target.vx = 0;
+        target.vy = 0;
+        target.isGrabbed = true;
 
         // Lift player up during the 0.7 second hold (airZ rises from 16px to 38px)
         const liftProgress = Math.min(1.0, Math.max(0, 1.0 - (this.grabHoldTimer / 42)));
-        player.airZ = 16 + liftProgress * 22 + Math.sin(this.age * 0.6) * 3;
+        target.airZ = 16 + liftProgress * 22 + Math.sin(this.age * 0.6) * 3;
+
+        const nowMs = (typeof performance !== 'undefined') ? performance.now() : Date.now();
+        if (nowMs - (this._lastGrabSyncMs || 0) >= 48 && typeof window !== 'undefined' && window.gameInstance && window.gameInstance.coopSession && window.gameInstance.coopSession.isHost && typeof window.gameInstance.coopSession.syncKiloumpasEvent === 'function') {
+            this._lastGrabSyncMs = nowMs;
+            window.gameInstance.coopSession.syncKiloumpasEvent('grab', this, target, { x: Math.round(target.x), y: Math.round(target.y), airZ: Math.round(target.airZ) });
+        }
 
         if (effects && Math.random() < 0.25 * dt) {
-            effects.addDust(player.x, player.y, 1, 3);
+            effects.addDust(target.x, target.y, 1, 3);
         }
 
         // When 0.7 seconds is up: LAUNCH/THROW THE PLAYER FAR OUT IN THE AIR!
         if (this.grabHoldTimer <= 0) {
             this.isGrabbing = false;
+            this.grabbedPlayer = null;
             this.throwAnimTimer = 18;
             this.grabCooldown = 220; // Cooldown before next grab
-            this.throwPlayerAirborne(player, effects);
+            this.throwPlayerAirborne(target, effects);
         }
     }
 
@@ -364,13 +418,17 @@ class Kiloumpas extends EnemyBase {
         // Airborne Parabolic Launch (high in the air and far out, ~520px displacement)
         const launchSpeed = 20.0;
         const verticalLift = 17.5;
+        const tvx = Math.cos(throwAngle) * launchSpeed;
+        const tvy = Math.sin(throwAngle) * launchSpeed;
 
-        player.launchAirborne(
-            Math.cos(throwAngle) * launchSpeed,
-            Math.sin(throwAngle) * launchSpeed,
-            verticalLift,
-            38 // Damage dealt on landing impact
-        );
+        player.launchAirborne(tvx, tvy, verticalLift, 38);
+
+        if (typeof window !== 'undefined' && window.gameInstance && window.gameInstance.coopSession && window.gameInstance.coopSession.isHost && typeof window.gameInstance.coopSession.syncKiloumpasEvent === 'function') {
+            window.gameInstance.coopSession.syncKiloumpasEvent('throw', this, player, {
+                x: Math.round(player.x), y: Math.round(player.y),
+                vx: Number(tvx.toFixed(2)), vy: Number(tvy.toFixed(2)), vz: verticalLift
+            });
+        }
 
         if (effects) {
             effects.addShockwave(this.x, this.y, 130, 'rgba(255, 71, 87, 0.95)');
