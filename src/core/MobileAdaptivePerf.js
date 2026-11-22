@@ -104,18 +104,16 @@ class MobileAdaptivePerf {
             }
         }
 
-        if (game && (now - this._lastResizeAdjustMs) > 4500 && !(game.isCutsceneActive && game.isCutsceneActive())) {
-            this._lastResizeAdjustMs = now;
-            if (typeof game.resize === 'function') game.resize();
-        }
+        // Avoid mid-combat game.resize(): reallocating canvas width/height under heavy Wave 10 load triggers iOS WebKit tears
     }
 
     static applyAdaptiveCanvasScale(game) {
         if (!this.isActive() || !game || !game.canvas || this._reliefLevel < 2) return;
         if (typeof MobilePerf === 'undefined' || MobilePerf.getGraphicsQuality() === 'low') return;
-        const vv = (typeof window !== 'undefined') ? window.visualViewport : null;
-        const cssW = Math.max(1, Math.round((vv && vv.width) ? vv.width : window.innerWidth));
-        const cssH = Math.max(1, Math.round((vv && vv.height) ? vv.height : window.innerHeight));
+        const vl = (typeof VirtualLandscape !== 'undefined' && VirtualLandscape.active) ? VirtualLandscape.getViewportSize() : null;
+        const vv = (!vl && typeof window !== 'undefined') ? window.visualViewport : null;
+        const cssW = Math.max(1, Math.round((vl && vl.width) || (vv && vv.width) || window.innerWidth));
+        const cssH = Math.max(1, Math.round((vl && vl.height) || (vv && vv.height) || window.innerHeight));
         const targetDpr = Math.max(0.82, Math.min(game.dpr || 1.2, (game.dpr || 1.2) * 0.78));
         if (Math.abs(targetDpr - (game.dpr || 1)) < 0.08) return;
 

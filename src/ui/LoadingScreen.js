@@ -174,10 +174,14 @@ class LoadingScreen {
             'assets/SkillsIcons/NerobalonakiSkill.png',
             'assets/icons/StarterPackBannerIcon.png',
             'assets/icons/StarterPackChestIcon.png',
+            'assets/GearUIIcons/Gear&EquipmentIcon.png',
             'assets/casillas.jpg',
             'assets/skarmogyftos.jpg',
+            'assets/SelectScreenLesaio.png',
             'assets/LeftMenuScreenLogos.png',
-            'assets/UpdatedLoadingLesa.io.png'
+            'assets/UpdatedLoadingLesa.io.png',
+            'assets/GameWorldModels/FloorTexture1LesaIO.png',
+            'assets/GameWorldModels/UpdatedTreeLESAIO_transparent.png'
         ];
 
         const audioAssets = [
@@ -190,13 +194,14 @@ class LoadingScreen {
             'Audio/gameover.mp3'
         ];
 
+        const isMobile = typeof MobilePerf !== 'undefined' && MobilePerf.isMobile;
         // Minimum cinematic pacing floor for rock-solid stability (~2.2s total)
         const minLoadingDurationMs = 2100;
 
-        // Safety fallback timer: guarantees screen completes in max 3.2s
+        // Safety fallback timer: guarantees screen completes in max 3.2s desktop / 3.8s mobile
         const maxSafetyTimer = setTimeout(() => {
             this.targetProgress = 100;
-        }, 3200);
+        }, isMobile ? 3800 : 3200);
 
         try {
             // Stage 1: Warm up SoundEngine AudioContext
@@ -213,26 +218,43 @@ class LoadingScreen {
             }
             this.targetProgress = Math.max(this.targetProgress, 20);
 
-            // Stage 3: Preload Image Textures & Warm up GPU VRAM
+            // Stage 3: Preload Image Textures into shared caches & Warm up GPU VRAM
             let loadedImageObjects = [];
             let loadedCount = 0;
+            const loadSharedImg = (src) => {
+                if (src.includes('FloorTexture1LesaIO.png') && typeof Arena !== 'undefined') return Arena.getFloorTexture1();
+                if (src.includes('UpdatedTreeLESAIO_transparent.png') && typeof Obstacle !== 'undefined') return Obstacle.getTreeImage();
+                if (typeof CharacterSprites !== 'undefined') return CharacterSprites.get(src);
+                const el = new Image();
+                el.src = src;
+                return el;
+            };
             const imgPromises = imageAssets.map((src) => {
                 return new Promise((resolve) => {
-                    const img = new Image();
-                    img.onload = img.onerror = () => {
+                    const img = loadSharedImg(src);
+                    let done = false;
+                    const finishOne = () => {
+                        if (done) return;
+                        done = true;
                         loadedCount++;
                         loadedImageObjects.push(img);
                         const imgPct = 20 + Math.round((loadedCount / imageAssets.length) * 32);
                         this.targetProgress = Math.max(this.targetProgress, imgPct);
                         resolve();
                     };
-                    img.src = src;
+                    if (!img || (img.complete && img.naturalWidth > 0)) {
+                        finishOne();
+                        return;
+                    }
+                    img.addEventListener('load', finishOne, { once: true });
+                    img.addEventListener('error', finishOne, { once: true });
+                    setTimeout(finishOne, isMobile ? 2200 : 1200);
                 });
             });
 
             await Promise.race([
                 Promise.all(imgPromises),
-                new Promise((r) => setTimeout(r, 1200))
+                new Promise((r) => setTimeout(r, isMobile ? 2400 : 1200))
             ]);
 
             // Force GPU texture compilation into VRAM
@@ -304,6 +326,12 @@ class LoadingScreen {
                     menu.classList.remove('hidden');
                     menu.style.removeProperty('display');
                 }
+                if (typeof VirtualLandscape !== 'undefined' && VirtualLandscape.active) {
+                    VirtualLandscape.sync();
+                }
+                if (typeof MobileAssetGuard !== 'undefined') {
+                    MobileAssetGuard.sweepBrokenImages(document);
+                }
 
                 setTimeout(() => {
                     this.screen.classList.add('hidden');
@@ -316,6 +344,12 @@ class LoadingScreen {
                 if (menu) {
                     menu.classList.remove('hidden');
                     menu.style.removeProperty('display');
+                }
+                if (typeof VirtualLandscape !== 'undefined' && VirtualLandscape.active) {
+                    VirtualLandscape.sync();
+                }
+                if (typeof MobileAssetGuard !== 'undefined') {
+                    MobileAssetGuard.sweepBrokenImages(document);
                 }
                 if (typeof this.onComplete === 'function') {
                     this.onComplete();

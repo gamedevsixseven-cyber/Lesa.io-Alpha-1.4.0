@@ -133,11 +133,12 @@ class MobilePerf {
         const raw = (typeof window !== 'undefined' && window.devicePixelRatio) || 1;
         if (!this.isMobile) return Math.min(raw, 2);
         const preset = this.getPreset();
-        const w = cssW || (typeof window !== 'undefined' && window.innerWidth) || 844;
-        const h = cssH || (typeof window !== 'undefined' && window.innerHeight) || 390;
+        const maxDpr = this.isIOS ? Math.min(preset.maxDpr, 1.75) : preset.maxDpr;
+        const vl = (typeof VirtualLandscape !== 'undefined' && VirtualLandscape.active) ? VirtualLandscape.getViewportSize() : null;
+        const w = cssW || (vl && vl.width) || (typeof window !== 'undefined' && window.innerWidth) || 844;
+        const h = cssH || (vl && vl.height) || (typeof window !== 'undefined' && window.innerHeight) || 390;
         const budgetDpr = Math.sqrt(preset.pixelBudget / Math.max(1, w * h));
-        const targetCap = Math.max(preset.minDpr, Math.min(preset.maxDpr, budgetDpr));
-        return Math.min(raw, targetCap);
+        return Math.min(raw, Math.max(preset.minDpr, Math.min(maxDpr, budgetDpr)));
     }
 
     static getGroundCacheScale() {
@@ -151,12 +152,12 @@ class MobilePerf {
     }
 
     /**
-     * Create 2D canvas context with mobile GPU compositor hints (opaque backbuffer + low-latency scanout).
+     * Create 2D canvas context with opaque backbuffer on mobile (avoids iOS desynchronized half-screen tears).
      */
     static createContext(canvas) {
         if (!canvas) return null;
         if (this.isMobile) {
-            return canvas.getContext('2d', { alpha: false, desynchronized: true }) || canvas.getContext('2d');
+            return canvas.getContext('2d', { alpha: false }) || canvas.getContext('2d');
         }
         return canvas.getContext('2d');
     }
@@ -176,9 +177,10 @@ class MobilePerf {
      */
     static applyCanvasSettings(game) {
         if (!game || !game.canvas) return;
-        const vv = (this.isMobile && typeof window !== 'undefined') ? window.visualViewport : null;
-        const cssW = Math.max(1, Math.round((vv && vv.width) ? vv.width : window.innerWidth));
-        const cssH = Math.max(1, Math.round((vv && vv.height) ? vv.height : window.innerHeight));
+        const vl = (this.isMobile && typeof VirtualLandscape !== 'undefined' && VirtualLandscape.active) ? VirtualLandscape.getViewportSize() : null;
+        const vv = (this.isMobile && !vl && typeof window !== 'undefined') ? window.visualViewport : null;
+        const cssW = Math.max(1, Math.round((vl && vl.width) || (vv && vv.width) || window.innerWidth));
+        const cssH = Math.max(1, Math.round((vl && vl.height) || (vv && vv.height) || window.innerHeight));
         const dpr = this.getCanvasDpr(cssW, cssH);
 
         game.dpr = dpr;

@@ -11,6 +11,7 @@ class SpriteAtlasCache {
     static _pages = [];
     static _entries = new Map();
     static _fontKeys = new Set();
+    static _standaloneEntries = [];
     static _fontHooked = false;
 
     static _ensureFontHook() {
@@ -41,6 +42,10 @@ class SpriteAtlasCache {
         canvas.width = pageSize;
         canvas.height = pageSize;
         const ctx = canvas.getContext('2d');
+        if (!ctx) {
+            if (typeof MobilePerf !== 'undefined') MobilePerf.releaseCanvas(canvas);
+            return null;
+        }
         const page = {
             canvas,
             ctx,
@@ -106,29 +111,59 @@ class SpriteAtlasCache {
         const actualH = sh / dpr;
 
         const rect = SpriteAtlasCache._allocateRect(sw, sh);
+        const isMobile = typeof MobilePerf !== 'undefined' && MobilePerf.isMobile;
         let targetCanvas, targetCtx, sx, sy;
+        let isStandalone = false;
         if (rect) {
             targetCanvas = rect.page.canvas;
             targetCtx = rect.page.ctx;
             sx = rect.sx;
             sy = rect.sy;
         } else {
+            isStandalone = true;
+            if (isMobile) {
+                while (SpriteAtlasCache._standaloneEntries.length >= 28) {
+                    const old = SpriteAtlasCache._standaloneEntries.shift();
+                    if (old && SpriteAtlasCache._entries.get(old.key) === old.entry) {
+                        SpriteAtlasCache._entries.delete(old.key);
+                    }
+                    if (old && old.canvas) MobilePerf.releaseCanvas(old.canvas);
+                }
+            }
             targetCanvas = document.createElement('canvas');
             targetCanvas.width = sw;
             targetCanvas.height = sh;
             targetCtx = targetCanvas.getContext('2d');
+            if (!targetCtx) {
+                if (typeof MobilePerf !== 'undefined') MobilePerf.releaseCanvas(targetCanvas);
+                return {
+                    canvas: null,
+                    sx: 0,
+                    sy: 0,
+                    sw,
+                    sh,
+                    logicalW: actualW,
+                    logicalH: actualH,
+                    anchorX,
+                    anchorY,
+                    drawDirect: drawFn
+                };
+            }
             sx = 0;
             sy = 0;
         }
 
         targetCtx.save();
-        targetCtx.beginPath();
-        targetCtx.rect(sx, sy, sw, sh);
-        targetCtx.clip();
-        targetCtx.translate(sx + anchorX * dpr, sy + anchorY * dpr);
-        targetCtx.scale(dpr, dpr);
-        drawFn(targetCtx);
-        targetCtx.restore();
+        try {
+            targetCtx.beginPath();
+            targetCtx.rect(sx, sy, sw, sh);
+            targetCtx.clip();
+            targetCtx.translate(sx + anchorX * dpr, sy + anchorY * dpr);
+            targetCtx.scale(dpr, dpr);
+            drawFn(targetCtx);
+        } finally {
+            targetCtx.restore();
+        }
 
         const entry = {
             canvas: targetCanvas,
@@ -142,6 +177,9 @@ class SpriteAtlasCache {
             anchorY
         };
         SpriteAtlasCache._entries.set(key, entry);
+        if (isStandalone && isMobile) {
+            SpriteAtlasCache._standaloneEntries.push({ key, entry, canvas: targetCanvas });
+        }
         if (opts && opts.fontDependent) {
             SpriteAtlasCache._fontKeys.add(key);
         }
@@ -154,6 +192,19 @@ class SpriteAtlasCache {
     static drawCached(ctx, key, logicalW, logicalH, anchorX, anchorY, drawFn, opts) {
         const entry = SpriteAtlasCache.getOrBake(key, logicalW, logicalH, anchorX, anchorY, drawFn, opts);
         const flipX = !!(opts && opts.flipX);
+        if (!entry || !entry.canvas || entry.canvas.width === 0 || entry.canvas.height === 0) {
+            const directFn = (entry && entry.drawDirect) || drawFn;
+            if (typeof directFn === 'function') {
+                ctx.save();
+                try {
+                    if (flipX) ctx.scale(-1, 1);
+                    directFn(ctx);
+                } finally {
+                    ctx.restore();
+                }
+            }
+            return entry;
+        }
         if (flipX) {
             ctx.save();
             ctx.scale(-1, 1);
@@ -205,8 +256,12 @@ class SpriteAtlasCache {
             for (const p of SpriteAtlasCache._pages) {
                 if (p && p.canvas) MobilePerf.releaseCanvas(p.canvas);
             }
+            for (const s of SpriteAtlasCache._standaloneEntries) {
+                if (s && s.canvas) MobilePerf.releaseCanvas(s.canvas);
+            }
         }
         SpriteAtlasCache._pages.length = 0;
+        SpriteAtlasCache._standaloneEntries.length = 0;
         SpriteAtlasCache._entries.clear();
         SpriteAtlasCache._fontKeys.clear();
         if (typeof EnemyBase !== 'undefined' && EnemyBase._labelCache) {

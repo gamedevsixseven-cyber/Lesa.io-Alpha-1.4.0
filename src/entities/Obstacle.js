@@ -259,21 +259,26 @@ class Obstacle {
         if (this.olympusStyle === 'brazier') {
             let glow = Obstacle._brazierGlow;
             if (!glow) {
-                glow = Obstacle._brazierGlow = document.createElement('canvas');
-                glow.width = 128;
-                glow.height = 128;
-                const gctx = glow.getContext('2d');
-                const g = gctx.createRadialGradient(64, 64, 6, 64, 64, 64);
-                g.addColorStop(0, 'rgba(255, 196, 64, 0.42)');
-                g.addColorStop(1, 'rgba(255, 140, 20, 0)');
-                gctx.fillStyle = g;
-                gctx.beginPath();
-                gctx.arc(64, 64, 64, 0, Math.PI * 2);
-                gctx.fill();
+                const c = document.createElement('canvas');
+                c.width = 128;
+                c.height = 128;
+                const gctx = c.getContext('2d');
+                if (gctx) {
+                    const g = gctx.createRadialGradient(64, 64, 6, 64, 64, 64);
+                    g.addColorStop(0, 'rgba(255, 196, 64, 0.42)');
+                    g.addColorStop(1, 'rgba(255, 140, 20, 0)');
+                    gctx.fillStyle = g;
+                    gctx.beginPath();
+                    gctx.arc(64, 64, 64, 0, Math.PI * 2);
+                    gctx.fill();
+                    glow = Obstacle._brazierGlow = c;
+                }
             }
-            const pulse = 0.82 + Math.sin(Date.now() * 0.008 + this.x) * 0.18;
-            const gr = 84 * pulse;
-            ctx.drawImage(glow, -gr, -34 - gr, gr * 2, gr * 2);
+            if (glow) {
+                const pulse = 0.82 + Math.sin(Date.now() * 0.008 + this.x) * 0.18;
+                const gr = 84 * pulse;
+                ctx.drawImage(glow, -gr, -34 - gr, gr * 2, gr * 2);
+            }
         }
 
         return OlympusAssets.drawCenteredSprite(ctx, s.key, 0, 0, s.w, s.h, {
@@ -420,9 +425,20 @@ class Obstacle {
     static _scaledTreeCanvas = null;
     static _charredTreeCanvas = null;
     static getTreeImage() {
+        const src = 'assets/GameWorldModels/UpdatedTreeLESAIO_transparent.png';
+        const resetTreeCache = () => {
+            Obstacle._scaledTreeCanvas = null;
+            Obstacle._charredTreeCanvas = null;
+        };
         if (!Obstacle.treeImage && typeof Image !== 'undefined') {
-            Obstacle.treeImage = new Image();
-            Obstacle.treeImage.src = 'assets/GameWorldModels/UpdatedTreeLESAIO_transparent.png';
+            const img = new Image();
+            if (typeof MobileAssetGuard !== 'undefined') {
+                MobileAssetGuard.attachImageRetry(img, src, resetTreeCache);
+            }
+            img.src = src;
+            Obstacle.treeImage = img;
+        } else if (Obstacle.treeImage && typeof MobileAssetGuard !== 'undefined') {
+            MobileAssetGuard.ensureImageReady(Obstacle.treeImage, src, resetTreeCache);
         }
         return Obstacle.treeImage;
     }
@@ -439,6 +455,10 @@ class Obstacle {
         c.width = targetW;
         c.height = Math.round(targetW * (316 / 324));
         const tctx = c.getContext('2d');
+        if (!tctx) {
+            if (typeof MobilePerf !== 'undefined') MobilePerf.releaseCanvas(c);
+            return null;
+        }
         tctx.imageSmoothingEnabled = true;
         tctx.imageSmoothingQuality = (typeof MobilePerf !== 'undefined' && MobilePerf.isHighGraphics()) ? 'high' : 'medium';
         tctx.drawImage(img, 0, 0, c.width, c.height);
@@ -456,6 +476,10 @@ class Obstacle {
         c.width = base.width;
         c.height = base.height;
         const tctx = c.getContext('2d');
+        if (!tctx) {
+            if (typeof MobilePerf !== 'undefined') MobilePerf.releaseCanvas(c);
+            return null;
+        }
         tctx.drawImage(base, 0, 0);
         tctx.globalCompositeOperation = 'source-atop';
         tctx.fillStyle = 'rgba(72, 22, 12, 0.72)';

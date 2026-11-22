@@ -29,16 +29,20 @@ class OlympusAssets {
 
         for (const [key, src] of Object.entries(OLYMPUS_ASSET_PATHS)) {
             const img = new Image();
-            img.onload = () => {
+            const notifyReady = () => {
                 this._loadedCount++;
                 // Notify listeners (e.g. re-bake ground canvas when a tile finishes loading)
                 for (let i = 0; i < this._callbacks.length; i++) {
                     try { this._callbacks[i](key, img); } catch (_) { }
                 }
             };
+            img.onload = notifyReady;
             img.onerror = () => {
-                // Silent graceful degradation to vector fallback
+                // Silent graceful degradation to vector fallback (mobile retries via MobileAssetGuard)
             };
+            if (typeof MobileAssetGuard !== 'undefined') {
+                MobileAssetGuard.attachImageRetry(img, src);
+            }
             img.src = src;
             this._images[key] = img;
         }

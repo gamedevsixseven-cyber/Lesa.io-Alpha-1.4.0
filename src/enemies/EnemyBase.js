@@ -283,13 +283,16 @@ class EnemyBase {
         const offset = this.type === 'fatmir' ? 94 : (this.hudOffsetY || (this.radius + 14));
         const hudY = this.y - offset;
 
+        const isMobile = typeof MobilePerf !== 'undefined' && MobilePerf.isMobile;
         let displayName = this.name;
         let nameColor = this.type === 'fatmir' ? '#ff6b6b' : '#2ed573';
         if (this.stunTimer > 0) {
-            displayName = `💫 ${(this.stunTimer / 60).toFixed(1)}s`;
+            const stunSec = isMobile ? Math.ceil(this.stunTimer / 60) : (this.stunTimer / 60).toFixed(1);
+            displayName = `💫 ${stunSec}s`;
             nameColor = '#f1c40f';
         } else if (this.fearTimer > 0) {
-            displayName = `😱 FLEEING (${(this.fearTimer / 60).toFixed(1)}s)`;
+            const fearSec = isMobile ? Math.ceil(this.fearTimer / 60) : (this.fearTimer / 60).toFixed(1);
+            displayName = `😱 FLEEING (${fearSec}s)`;
             nameColor = '#74b9ff';
         } else if (this.iceSlowTimer > 0) {
             displayName = `${this.name} 🧊 -50%`;
@@ -338,7 +341,7 @@ class EnemyBase {
 
         // Trapped in Bubble Indicator Tag
         if (this.bubbleTrappedTimer > 0) {
-            const timeLeftSec = (this.bubbleTrappedTimer / 60).toFixed(1);
+            const timeLeftSec = isMobile ? Math.ceil(this.bubbleTrappedTimer / 60) : (this.bubbleTrappedTimer / 60).toFixed(1);
             const trapLbl = EnemyBase.getLabelSprite(
                 `🫧 TRAPPED (${timeLeftSec}s)`,
                 '800 11px "Luckiest Guy", cursive',
@@ -405,11 +408,14 @@ class EnemyBase {
         const hit = cache.get(key);
         if (hit && hit.canvas && hit.canvas.width > 0 && hit.canvas.height > 0) return hit;
 
-        if (cache.size >= 480) {
+        const isMob = typeof MobilePerf !== 'undefined' && MobilePerf.isMobile;
+        const maxCache = isMob ? 72 : 480;
+        if (cache.size >= maxCache) {
+            const evictLimit = isMob ? 24 : 80;
             let count = 0;
             for (const k of cache.keys()) {
                 cache.delete(k);
-                if (++count >= 80) break;
+                if (++count >= evictLimit) break;
             }
         }
 
@@ -420,7 +426,8 @@ class EnemyBase {
             EnemyBase._measureCtx = mc.getContext('2d');
         }
         const mctx = EnemyBase._measureCtx;
-        const dpr = 2;
+        if (!mctx) return null;
+        const dpr = isMob ? 1.25 : 2;
         mctx.font = font;
         const m = mctx.measureText(text);
         const pxMatch = /(\d+(?:\.\d+)?)px/.exec(font);
@@ -464,6 +471,7 @@ class EnemyBase {
                 paintLabel,
                 true
             );
+            if (!atlasEntry || !atlasEntry.canvas || atlasEntry.canvas.width === 0) return null;
             entry = {
                 canvas: atlasEntry.canvas,
                 sx: atlasEntry.sx,
@@ -480,6 +488,10 @@ class EnemyBase {
             c.width = Math.ceil(logicalW * dpr);
             c.height = Math.ceil(logicalH * dpr);
             const cctx = c.getContext('2d');
+            if (!cctx) {
+                if (typeof MobilePerf !== 'undefined') MobilePerf.releaseCanvas(c);
+                return null;
+            }
             cctx.scale(dpr, dpr);
             paintLabel(cctx);
             entry = {
@@ -515,6 +527,7 @@ class EnemyBase {
         c.width = size;
         c.height = size;
         const bctx = c.getContext('2d');
+        if (!bctx) return null;
         const g = bctx.createRadialGradient(r - r * 0.3, r - r * 0.3, r * 0.1, r, r, r);
         g.addColorStop(0, 'rgba(255, 255, 255, 0.7)');
         g.addColorStop(0.35, 'rgba(112, 161, 255, 0.45)');
@@ -539,7 +552,14 @@ class EnemyBase {
 
         // Translucent iridescent bubble enclosing the trapped enemy
         const disc = EnemyBase._getBubbleDisc();
-        ctx.drawImage(disc, this.x - R, this.y - R, R * 2, R * 2);
+        if (disc) {
+            ctx.drawImage(disc, this.x - R, this.y - R, R * 2, R * 2);
+        } else {
+            ctx.fillStyle = 'rgba(112, 161, 255, 0.45)';
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, R, 0, Math.PI * 2);
+            ctx.fill();
+        }
 
         ctx.strokeStyle = '#1e272e';
         ctx.lineWidth = 2.4;

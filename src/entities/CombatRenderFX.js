@@ -44,6 +44,7 @@ class CombatRenderFX {
         c.width = size;
         c.height = size;
         const gctx = c.getContext('2d');
+        if (!gctx) return null;
         gctx.translate(size * 0.5, size * 0.5);
         gctx.scale(size / 2.1, size / 2.1);
         const vig = gctx.createRadialGradient(0, 0, 0.54, 0, 0, 1.08);
@@ -63,6 +64,7 @@ class CombatRenderFX {
         c.width = size;
         c.height = size;
         const gctx = c.getContext('2d');
+        if (!gctx) return null;
         gctx.translate(size * 0.5, size * 0.5);
         gctx.scale(size / 2.1, size / 2.1);
         const flashGrad = gctx.createRadialGradient(0, 0, 0.15, 0, 0, 1.05);
@@ -83,6 +85,7 @@ class CombatRenderFX {
         c.width = size;
         c.height = size;
         const bctx = c.getContext('2d');
+        if (!bctx) return null;
         const g = bctx.createRadialGradient(-r * 0.3 + r, -r * 0.3 + r, r * 0.1, r, r, r);
         g.addColorStop(0, 'rgba(255, 255, 255, 0.85)');
         g.addColorStop(0.3, 'rgba(112, 161, 255, 0.45)');
@@ -116,10 +119,13 @@ class CombatRenderFX {
                 edgeAlpha = Math.max(edgeAlpha, Math.min(0.24, (player.hitFlash / 12) * 0.24));
             }
             if (edgeAlpha > 0.005) {
-                const prevAlpha = ctx.globalAlpha;
-                ctx.globalAlpha = prevAlpha * edgeAlpha;
-                ctx.drawImage(CombatRenderFX._getLowHpVignetteSprite(), -width * 0.025, -height * 0.025, width * 1.05, height * 1.05);
-                ctx.globalAlpha = prevAlpha;
+                const vigSprite = CombatRenderFX._getLowHpVignetteSprite();
+                if (vigSprite) {
+                    const prevAlpha = ctx.globalAlpha;
+                    ctx.globalAlpha = prevAlpha * edgeAlpha;
+                    ctx.drawImage(vigSprite, -width * 0.025, -height * 0.025, width * 1.05, height * 1.05);
+                    ctx.globalAlpha = prevAlpha;
+                }
             }
         }
 
@@ -128,10 +134,13 @@ class CombatRenderFX {
             const t = Math.max(0, this.screenFlash.timer / this.screenFlash.duration);
             const alpha = this.screenFlash.maxAlpha * (t * t);
             if (alpha > 0.004) {
-                const prevAlpha = ctx.globalAlpha;
-                ctx.globalAlpha = prevAlpha * Math.min(0.75, alpha * 1.25);
-                ctx.drawImage(CombatRenderFX._getFlashSprite(), -width * 0.025, -height * 0.025, width * 1.05, height * 1.05);
-                ctx.globalAlpha = prevAlpha;
+                const flashSprite = CombatRenderFX._getFlashSprite();
+                if (flashSprite) {
+                    const prevAlpha = ctx.globalAlpha;
+                    ctx.globalAlpha = prevAlpha * Math.min(0.75, alpha * 1.25);
+                    ctx.drawImage(flashSprite, -width * 0.025, -height * 0.025, width * 1.05, height * 1.05);
+                    ctx.globalAlpha = prevAlpha;
+                }
             }
         }
     }

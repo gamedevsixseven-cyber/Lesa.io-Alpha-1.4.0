@@ -39,9 +39,12 @@ class Arena {
             if (!tex1.complete || tex1.naturalWidth === 0) {
                 tex1.addEventListener('load', onTex1Ready);
                 if (isMobile) {
+                    if (typeof MobileAssetGuard !== 'undefined') {
+                        MobileAssetGuard.attachImageRetry(tex1, tex1.src, onTex1Ready);
+                    }
                     tex1.addEventListener('error', () => {
                         const fb = Arena.getFloorTextureGrass2();
-                        if (fb && !fb.complete) fb.addEventListener('load', onTex1Ready);
+                        if (fb && !fb.complete) fb.addEventListener('load', onTex1Ready, { once: true });
                         else this.renderGroundCache();
                     }, { once: true });
                 }
@@ -116,17 +119,27 @@ class Arena {
     }
 
     static getFloorTexture1() {
+        const src = 'assets/GameWorldModels/FloorTexture1LesaIO.png';
         if (!Arena.floorTexture1 && typeof Image !== 'undefined') {
-            Arena.floorTexture1 = new Image();
-            Arena.floorTexture1.src = 'assets/GameWorldModels/FloorTexture1LesaIO.png';
+            const img = new Image();
+            if (typeof MobileAssetGuard !== 'undefined') MobileAssetGuard.attachImageRetry(img, src);
+            img.src = src;
+            Arena.floorTexture1 = img;
+        } else if (Arena.floorTexture1 && typeof MobileAssetGuard !== 'undefined') {
+            MobileAssetGuard.ensureImageReady(Arena.floorTexture1, src);
         }
         return Arena.floorTexture1;
     }
 
     static getFloorTextureGrass2() {
+        const src = 'assets/GameWorldModels/FloorTextureGrass2.png';
         if (!Arena.floorTextureGrass2 && typeof Image !== 'undefined') {
-            Arena.floorTextureGrass2 = new Image();
-            Arena.floorTextureGrass2.src = 'assets/GameWorldModels/FloorTextureGrass2.png';
+            const img = new Image();
+            if (typeof MobileAssetGuard !== 'undefined') MobileAssetGuard.attachImageRetry(img, src);
+            img.src = src;
+            Arena.floorTextureGrass2 = img;
+        } else if (Arena.floorTextureGrass2 && typeof MobileAssetGuard !== 'undefined') {
+            MobileAssetGuard.ensureImageReady(Arena.floorTextureGrass2, src);
         }
         return Arena.floorTextureGrass2;
     }
@@ -174,6 +187,7 @@ class Arena {
             this.cachedGroundCanvas.height = this.height;
         }
         const gCtx = this.cachedGroundCanvas.getContext('2d');
+        if (!gCtx) return;
 
         const tex1 = Arena.getFloorTexture1();
         const tex2 = Arena.getFloorTextureGrass2();

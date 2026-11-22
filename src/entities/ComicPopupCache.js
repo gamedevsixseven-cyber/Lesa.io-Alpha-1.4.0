@@ -29,6 +29,10 @@ class ComicTextCache {
         // Create offscreen canvas for text rasterization
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
+        if (!ctx) {
+            if (typeof MobilePerf !== 'undefined') MobilePerf.releaseCanvas(canvas);
+            return null;
+        }
         const fontSize = isCrit ? 34 : 22;
         const fontStr = `900 ${fontSize}px "Luckiest Guy", "Fredoka", sans-serif`;
 

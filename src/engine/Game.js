@@ -579,12 +579,18 @@ class Game {
         const dt = Math.max(0, Math.min(frameMs / 16.666, 2.5)) * speedMult;
         this.lastTime = currentTime;
         try { this.update(dt); } catch (err) { console.error("Game update error caught:", err); }
+        if (this.ctx) this.ctx.save();
         try {
             if (typeof MobilePerf === 'undefined' || !MobilePerf.shouldSkipRender(this)) this.render();
         } catch (err) {
             console.error("Game render error caught:", err);
-            if (this.ctx) { this.ctx.globalAlpha = 1; this.ctx.shadowBlur = 0; this.ctx.restore(); }
         } finally {
+            if (this.ctx) {
+                if (typeof this.ctx.setTransform === 'function') this.ctx.setTransform(1, 0, 0, 1, 0, 0);
+                this.ctx.globalAlpha = 1;
+                this.ctx.shadowBlur = 0;
+                this.ctx.restore();
+            }
             requestAnimationFrame((t) => this.loop(t));
         }
     }

@@ -14,18 +14,30 @@ class LilXasRenderer {
     }
 
     static ensureLoaded() {
-        if (this._rawStatus !== 'idle' || typeof Image === 'undefined') return;
+        if (this._rawStatus === 'ready' || typeof Image === 'undefined') return;
+        if (this._rawStatus === 'loading' && this._rawImg) {
+            if (typeof MobileAssetGuard !== 'undefined') MobileAssetGuard.ensureImageReady(this._rawImg, this.getFaceImageSrc());
+            return;
+        }
         this._rawStatus = 'loading';
+        const src = this.getFaceImageSrc();
         const img = new Image();
-        img.onload = () => {
+        const onReady = () => {
             this._rawImg = img;
             this._rawStatus = 'ready';
             this._buildHeadCanvas();
         };
+        img.onload = onReady;
         img.onerror = () => {
-            this._rawStatus = 'error';
+            if (typeof MobilePerf === 'undefined' || !MobilePerf.isMobile) {
+                this._rawStatus = 'error';
+            }
         };
-        img.src = this.getFaceImageSrc();
+        if (typeof MobileAssetGuard !== 'undefined') {
+            MobileAssetGuard.attachImageRetry(img, src);
+        }
+        img.src = src;
+        this._rawImg = img;
     }
 
     /**
