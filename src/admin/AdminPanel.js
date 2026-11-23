@@ -133,6 +133,7 @@ class AdminPanelController {
     close() {
         if (this.modal) this.modal.classList.add('hidden');
         if (window.soundEngine) window.soundEngine.playGoBack();
+        if (window.DevGiftManager) window.DevGiftManager.closeComposer();
         this.stopTelemetry();
     }
 
@@ -400,6 +401,7 @@ class AdminPanelController {
                 searchBtn.disabled = true;
                 searchBtn.textContent = 'SEARCHING...';
                 const matches = await window.DevAccountManager.lookupAccounts(q);
+                if (window.DevGiftManager) window.DevGiftManager.closeComposer();
                 this._renderDevAccountResults(matches, resultsEl);
             } catch (err) {
                 resultsEl.innerHTML = `<div class="admin-dev-empty">${this._escHtml(err.message)}</div>`;
@@ -427,16 +429,24 @@ class AdminPanelController {
         container.innerHTML = accounts.map((acc, idx) => `
             <div class="admin-dev-acc-card">
                 <div class="admin-dev-acc-meta">
-                    <div class="admin-dev-acc-title">${this._escHtml(acc.name)} <span style="color:#fed330;">${this._escHtml(acc.tag)}</span> ${acc.isAdmin ? '<span style="color:#2ed573;font-size:0.74rem;">[ADMIN]</span>' : ''}</div>
-                    <div class="admin-dev-acc-sub">UID: ${this._escHtml(acc.uid)}${acc.email ? ` | Email: ${this._escHtml(acc.email)}` : ''}</div>
+                    <div class="admin-dev-acc-title">${this._escHtml(acc.name)} <span style="color:#fed330;">${this._escHtml(acc.tag)}</span> ${acc.hasVipPass ? '<span style="color:#fed330;font-size:0.74rem;">[👑 VIP]</span> ' : ''}${acc.isAdmin ? '<span style="color:#2ed573;font-size:0.74rem;">[ADMIN]</span>' : ''}</div>
+                    <div class="admin-dev-acc-sub">UID: ${this._escHtml(acc.uid)}${acc.email ? ` | Email: ${this._escHtml(acc.email)}` : ''}${acc.pendingDevGiftsCount > 0 ? ` | 🎁 Queued Gifts: ${acc.pendingDevGiftsCount}` : ''}</div>
                     <div class="admin-dev-acc-sub">Lv.${acc.level} | 🪙 ${acc.coins.toLocaleString()} | 💎 ${acc.gems.toLocaleString()} | 🏆 Score: ${acc.highScore.toLocaleString()} | 🔥 W${acc.endlessWave} | ⚔️ ${acc.totalKills.toLocaleString()}</div>
                 </div>
                 <div class="admin-dev-acc-actions">
+                    <button type="button" class="admin-control-btn btn-success admin-dev-gift-btn" data-idx="${idx}">🎁 GIFT</button>
                     <button type="button" class="admin-control-btn btn-warning admin-dev-wipe-btn" data-idx="${idx}">WIPE LV.1</button>
                     <button type="button" class="admin-control-btn btn-danger admin-dev-delete-btn" data-idx="${idx}">DELETE EVERYWHERE</button>
                 </div>
             </div>
         `).join('');
+
+        container.querySelectorAll('.admin-dev-gift-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const acc = accounts[parseInt(btn.getAttribute('data-idx'), 10)];
+                if (acc && window.DevGiftManager) window.DevGiftManager.openComposer(acc, this);
+            });
+        });
 
         container.querySelectorAll('.admin-dev-wipe-btn').forEach(btn => {
             btn.addEventListener('click', async () => {

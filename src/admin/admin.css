@@ -435,3 +435,85 @@
     gap: 8px;
     flex-wrap: wrap;
 }
+
+.admin-dev-gift-composer {
+    margin-top: 12px;
+    padding: 12px;
+    border-radius: 10px;
+    background: rgba(46, 213, 115, 0.08);
+    border: 1px solid rgba(46, 213, 115, 0.45);
+}
+
+.admin-dev-gift-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+}
+
+.admin-dev-gift-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+    gap: 10px;
+}
+
+.admin-dev-gift-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.admin-dev-gift-field label {
+    font-size: 0.78rem;
+    font-weight: 800;
+    color: #dfe4ea;
+}
+
+.admin-dev-gift-presets {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+}
+
+.admin-gift-chip {
+    padding: 3px 8px;
+    border-radius: 6px;
+    border: 1px solid rgba(254, 211, 48, 0.5);
+    background: rgba(254, 211, 48, 0.14);
+    color: #fed330;
+    font-size: 0.72rem;
+    font-weight: 800;
+    cursor: pointer;
+}
+
+.admin-gift-chip.is-clear {
+    border-color: rgba(255, 255, 255, 0.25);
+    background: rgba(255, 255, 255, 0.08);
+    color: #ced6e0;
+}
+
+.admin-dev-chest-row {
+    display: flex;
+    gap: 6px;
+}
+
+.admin-dev-qty-input {
+    max-width: 72px;
+}
+
+.admin-dev-vip-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.84rem !important;
+    color: #fed330 !important;
+    cursor: pointer;
+}
+
+.admin-dev-gift-footer {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 10px;
+}

@@ -47,7 +47,7 @@
     <link rel="stylesheet" href="styles/mobile.css?v=1.9.1">
     <link rel="stylesheet" href="styles/mobile-modals.css?v=1.9.2">
     <link rel="stylesheet" href="styles/mobile-settings.css?v=1.6.23">
-    <link rel="stylesheet" href="src/admin/admin.css?v=1.6.15">
+    <link rel="stylesheet" href="src/admin/admin.css?v=1.9.2">
     <link rel="stylesheet" href="styles/credits.css?v=1.4.0">
     <link rel="stylesheet" href="styles/gamemode.css?v=1.5.0">
     <link rel="stylesheet" href="styles/coop.css?v=1.8.4">
@@ -2850,11 +2850,11 @@
                     <div id="admin-dev-account-section" class="admin-section admin-dev-danger-section hidden">
                         <div class="admin-section-title">
                             <img src="assets/ui-icons/warn.svg" class="ui-icon ui-icon-sm" alt="" loading="lazy" decoding="async">
-                            <span>Primary Dev Account Wipe &amp; Delete</span>
+                            <span>Primary Dev Player Controls (Gift, Wipe &amp; Delete)</span>
                             <span class="admin-dev-only-pill">DEV ONLY</span>
                         </div>
                         <p style="font-size: 0.85rem; color: #f5b7b1; line-height: 1.45; margin-bottom: 12px;">
-                            Permanently wipe progression to Lv.1 or erase an account from Cloud Saves, Global Leaderboards, Usernames, Friend Lists, and Co-op Invites. Restricted exclusively to the signed-in Primary Developer account.
+                            Send Diamonds, Gold, Chests, or Battle Pass VIP gifts, or wipe/erase accounts across Cloud Saves, Leaderboards, Usernames, Friend Lists, and Co-op Invites. Restricted exclusively to the signed-in Primary Developer account.
                         </p>
                         <div class="admin-input-group">
                             <input type="text" id="admin-dev-account-query"
@@ -2862,6 +2862,7 @@
                             <button id="admin-btn-lookup-account" class="admin-control-btn btn-warning">FIND ACCOUNT</button>
                         </div>
                         <div id="admin-dev-account-results" class="admin-dev-results-list"></div>
+                        <div id="admin-dev-gift-composer" class="admin-dev-gift-composer hidden"></div>
                     </div>
                 </div>
 
@@ -3185,7 +3186,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
     <script src="src/save/PlayerIdentity.js?v=1.7.4"></script>
-    <script src="src/firebase.js?v=1.7.6"></script>
+    <script src="src/firebase.js?v=1.9.2"></script>
 
     <!-- GAME SCRIPTS IN CLEAN DEPENDENCY ORDER -->
     <!-- 1. DATA DEFINITIONS -->
@@ -3420,8 +3421,9 @@
     <!-- 8.5. ADMIN & PLAYTESTING SUBSYSTEM -->
     <script src="src/admin/AdminAuth.js?v=1.6.15"></script>
     <script src="src/admin/AdminCheats.js?v=1.7.4"></script>
-    <script src="src/admin/DevAccountManager.js?v=1.7.4"></script>
-    <script src="src/admin/AdminPanel.js?v=1.6.19"></script>
+    <script src="src/admin/DevAccountManager.js?v=1.9.2"></script>
+    <script src="src/admin/DevGiftManager.js?v=1.9.2"></script>
+    <script src="src/admin/AdminPanel.js?v=1.9.2"></script>
 
     <!-- 8.7. MOBILE TOUCH SUBSYSTEM -->
     <script src="src/engine/MobileAimAssist.js?v=1.6.22"></script>

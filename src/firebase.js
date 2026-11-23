@@ -336,6 +336,9 @@ class CloudSaveService {
         if (hasPendingDebounce || this.hasUnflushedLocalMutation || ((this._pendingCloudSaves || 0) > 0 && now - (this.lastLocalSaveTimestamp || 0) < 4000) || (now - (this.lastLocalMutationDirtyAt || 0) < 4000)) {
             this.lastCloudData = data;
             this.hasCompletedInitialSync = true;
+            if (Array.isArray(data.devGifts) && data.devGifts.length > 0 && typeof DevGiftManager !== 'undefined') {
+                DevGiftManager.scheduleClaimRetry(data, this);
+            }
             return;
         }
         this.lastCloudData = data;
@@ -487,6 +490,11 @@ class CloudSaveService {
         if (_preferLocal && window.SaveSerializer && window.GameState) {
             const p = window.SaveSerializer.serialize(window.GameState);
             if (p) setTimeout(() => this.saveToCloud(p), 400);
+        }
+
+        // Primary Dev Player Gift Delivery Queue
+        if (Array.isArray(data.devGifts) && data.devGifts.length > 0 && typeof DevGiftManager !== 'undefined') {
+            DevGiftManager.claimPendingGifts(data, this);
         }
 
         // Real-time Developer Mail Inbox Delivery (Explicit mail objects only)
