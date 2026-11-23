@@ -450,12 +450,115 @@
 }
 .pub-empty-note { font-size: 0.76rem; color: #e2e8f0; font-weight: 700; }
 
-@media (max-width: 720px), (max-height: 520px) {
-    .prof-showcase-bar { flex-direction: column; align-items: flex-start; padding: 6px 8px; margin: 6px 0 8px; }
-    .prof-tabs-bar { gap: 4px; }
-    .prof-tab-btn { font-size: 0.68rem; padding: 6px 4px; }
-    .cos-grid-2 { grid-template-columns: 1fr; }
+@media (max-width: 860px), (max-height: 560px), (pointer: coarse) and (max-height: 720px) {
+    /* Zoomed-out, compact Hero Profile Modal on Phones */
+    #player-profile-modal .modal-panel {
+        max-width: min(94vw, 660px) !important;
+        width: 94vw !important;
+        max-height: 92vh !important;
+        max-height: 92dvh !important;
+        padding: 8px 12px 10px !important;
+        border-radius: 16px !important;
+    }
+    #player-profile-modal .modal-title {
+        font-size: 0.95rem !important;
+        margin: 0 0 5px 0 !important;
+    }
+    #player-profile-modal .profile-header-card {
+        padding: 6px 10px !important;
+        gap: 10px !important;
+        border-radius: 12px !important;
+        border-width: 2.5px !important;
+        margin-bottom: 5px !important;
+    }
+    #player-profile-modal .prof-avatar-wrap {
+        width: 42px !important;
+        height: 42px !important;
+        border-width: 2.5px !important;
+    }
+    #player-profile-modal .prof-crown-badge {
+        top: -8px !important;
+        font-size: 0.85rem !important;
+    }
+    #player-profile-modal .prof-identity-col { gap: 2px !important; }
+    #player-profile-modal .prof-name-row { gap: 6px !important; }
+    #player-profile-modal .prof-name-text { font-size: 0.96rem !important; line-height: 1.05 !important; }
+    #player-profile-modal .player-level-badge,
+    #player-profile-modal .pub-vip-pass-tag {
+        font-size: 0.6rem !important;
+        padding: 1px 6px !important;
+        border-radius: 8px !important;
+    }
+    #player-profile-modal .prof-rename-btn,
+    #player-profile-modal .prof-copy-id-btn {
+        font-size: 0.6rem !important;
+        padding: 1px 6px !important;
+        border-radius: 6px !important;
+    }
+    #player-profile-modal .prof-xp-bar-wrap { gap: 6px !important; }
+    #player-profile-modal .prof-xp-bar { width: 115px !important; height: 9px !important; }
+    #player-profile-modal .prof-xp-text,
+    #player-profile-modal .prof-id-pill { font-size: 0.6rem !important; }
+
+    /* Compact single-row Showcased Coins & Tabs */
+    .prof-showcase-bar {
+        flex-direction: row !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        flex-wrap: wrap !important;
+        padding: 4px 8px !important;
+        margin: 0 0 5px 0 !important;
+        gap: 6px !important;
+        border-radius: 9px !important;
+    }
+    .prof-showcase-title { font-size: 0.6rem !important; }
+    .prof-showcase-coins { gap: 4px !important; }
+    .prof-showcase-slot { padding: 2px 6px !important; font-size: 0.58rem !important; gap: 4px !important; border-radius: 7px !important; }
+    .prof-showcase-slot .cos-coin-sm { width: 18px !important; height: 18px !important; }
+    .prof-showcase-lbl { max-width: 68px !important; }
+
+    .prof-tabs-bar { gap: 4px !important; margin-bottom: 6px !important; }
+    .prof-tab-btn { font-size: 0.62rem !important; padding: 4px 4px !important; border-radius: 8px !important; border-width: 2px !important; box-shadow: 0 2px 0 #0f172a !important; }
+
+    /* Compact 4-column Career Stats Grid on Mobile */
+    #player-profile-modal .prof-section-title { font-size: 0.74rem !important; margin: 2px 0 4px 0 !important; }
+    #player-profile-modal .profile-stats-grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+        gap: 5px !important;
+        margin-bottom: 6px !important;
+    }
+    #player-profile-modal .prof-stat-box {
+        padding: 5px 6px !important;
+        gap: 5px !important;
+        border-radius: 10px !important;
+        border-width: 2px !important;
+        box-shadow: 1.5px 1.5px 0 var(--dark-outline) !important;
+    }
+    #player-profile-modal .stat-icon { font-size: 1rem !important; }
+    #player-profile-modal .stat-icon .ui-icon-box { width: 18px !important; height: 18px !important; }
+    #player-profile-modal .stat-lbl { font-size: 0.52rem !important; letter-spacing: 0.15px !important; }
+    #player-profile-modal .stat-val { font-size: 0.8rem !important; }
+
+    /* Compact 2-Column Cosmetics Grid (Banners, Frames, Coins) */
     .prof-cosmetics-section { max-height: none; overflow-y: visible; }
+    .cos-sub-note { font-size: 0.62rem !important; padding: 3px 8px !important; margin-bottom: 5px !important; }
+    .cos-grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 6px !important; }
+    .cos-card { border-radius: 9px !important; border-width: 2px !important; }
+    .cos-banner-preview { padding: 7px 8px !important; min-height: 42px !important; }
+    .cos-preview-name, .cos-frame-title, .cos-coin-name { font-size: 0.68rem !important; }
+    .cos-rarity-pill { font-size: 0.5rem !important; padding: 1px 5px !important; }
+    .cos-frame-stage { flex-direction: row !important; justify-content: flex-start !important; padding: 5px 8px !important; gap: 7px !important; }
+    .cos-frame-demo { width: 34px !important; height: 34px !important; flex-shrink: 0 !important; }
+    .cos-coin-top { padding: 5px 8px !important; gap: 7px !important; }
+    .cos-coin-top .cos-coin-lg { width: 32px !important; height: 32px !important; }
+    .cos-card-body { padding: 5px 7px !important; gap: 3px !important; }
+    .cos-card-desc { font-size: 0.58rem !important; line-height: 1.18 !important; }
+    .cos-unlock-hint, .cos-prog-text, .cos-prog-done { font-size: 0.56rem !important; }
+    .cos-prog-bar { height: 5px !important; }
+    .cos-action-btn { padding: 4px 6px !important; font-size: 0.62rem !important; border-radius: 6px !important; }
+    #player-profile-modal .modal-actions { margin-top: 6px !important; }
+    #player-profile-modal #close-profile-btn { padding: 4px 18px !important; font-size: 0.74rem !important; }
+
     .menu-profile-coins { margin-top: 2px; gap: 3px; padding: 1px 4px; }
     .cos-coin-xs { width: 16px; height: 16px; }
     .lb-modal-panel { padding: 12px 14px; max-height: 92vh; max-height: 92dvh; }
@@ -471,4 +574,9 @@
     .lb-score-col { min-width: 64px; }
     .lb-score-val { font-size: 0.86rem; }
     .lb-inspect-hint { font-size: 0.58rem; }
+}
+@media (max-width: 480px) {
+    #player-profile-modal .profile-stats-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    }
 }

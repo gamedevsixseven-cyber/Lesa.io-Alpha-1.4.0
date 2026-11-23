@@ -213,6 +213,10 @@ class GearModalUI {
         const items = (typeof GEAR_ITEMS !== 'undefined' && GEAR_ITEMS[slot]) ? GEAR_ITEMS[slot] : [];
         const visibleItems = items.filter(item => !item.hideWhenLocked || (typeof GearManager !== 'undefined' && GearManager.isUnlocked(item.id)));
         const currentEquipped = (typeof GearManager !== 'undefined') ? GearManager.getEquipped(slot) : null;
+        const equippedStats = currentEquipped
+            ? ((typeof GearManager !== 'undefined' && typeof GearManager.getEffectiveStats === 'function')
+                ? GearManager.getEffectiveStats(currentEquipped) : (currentEquipped.stats || {}))
+            : null;
 
         if (badgeCount) {
             const label = slotTitle.toLowerCase().endsWith('s') ? slotTitle.toUpperCase() : `${slotTitle.toUpperCase()}S`;
@@ -248,23 +252,8 @@ class GearModalUI {
             const card = document.createElement('div');
             card.className = `gear-card rarity-${rClass} ${isEquipped ? 'is-equipped' : ''} ${!isUnlocked ? 'is-locked' : ''} ${isEvolved ? 'is-evolved-card' : ''}`;
 
-            // Build Stats HTML
-            let statsHtml = '';
-            const statEntries = Object.entries(effStats);
-            statEntries.forEach(([k, v], idx) => {
-                const def = this.STAT_LABELS[k] || { label: k, unit: '', icon: '✨', iconKey: 'sparkle' };
-                const statIc = def.iconKey && typeof UiIcons !== 'undefined' ? UiIcons.i(def.iconKey, 'ui-icon-sm') : def.icon;
-                const isPrimary = idx === 0;
-                const nextVal = nextStats && typeof nextStats[k] === 'number' ? nextStats[k] : v;
-                const delta = nextVal - v;
-                const deltaHtml = delta > 0 ? `<span class="gear-stat-delta">(+${delta}${def.unit})</span>` : '';
-                statsHtml += `
-                    <div class="gear-stat-badge-row ${isPrimary ? 'primary-stat' : 'secondary-stat'}">
-                        <span class="gear-stat-badge-label">${statIc} ${def.label}</span>
-                        <span class="gear-stat-badge-val">+${v}${def.unit}${deltaHtml}</span>
-                    </div>
-                `;
-            });
+            // Build Stats HTML with Live Stat Diff Comparison against currently equipped piece
+            const statsHtml = this._buildStatsWithDiffHtml(effStats, nextStats, (!isEquipped && equippedStats) ? equippedStats : null, currentEquipped ? currentEquipped.name : '');
 
             let passiveHtml = '';
             if (item.passive) {
@@ -470,6 +459,36 @@ class GearModalUI {
                 }, 60);
             });
         }
+    }
+
+    static _buildStatsWithDiffHtml(effStats, nextStats, equippedStats = null, equippedName = '') {
+        let html = '';
+        const vsTip = equippedName ? `vs Equipped (${equippedName})` : 'vs Equipped';
+        Object.entries(effStats).forEach(([k, v], idx) => {
+            const def = this.STAT_LABELS[k] || { label: k, unit: '', icon: '✨', iconKey: 'sparkle' };
+            const statIc = def.iconKey && typeof UiIcons !== 'undefined' ? UiIcons.i(def.iconKey, 'ui-icon-sm') : def.icon;
+            const nextVal = nextStats && typeof nextStats[k] === 'number' ? nextStats[k] : v;
+            const delta = Math.round((nextVal - v) * 10) / 10;
+            const deltaHtml = delta > 0 ? `<span class="gear-stat-delta" title="Next Upgrade">(+${delta}${def.unit})</span>` : '';
+            let diffHtml = '';
+            if (equippedStats) {
+                const eqVal = typeof equippedStats[k] === 'number' ? equippedStats[k] : 0;
+                const diff = Math.round((v - eqVal) * 10) / 10;
+                if (diff > 0) diffHtml = `<span class="gear-stat-diff is-pos" title="${vsTip}: +${diff}${def.unit}">▲ +${diff}${def.unit}</span>`;
+                else if (diff < 0) diffHtml = `<span class="gear-stat-diff is-neg" title="${vsTip}: ${diff}${def.unit}">▼ ${diff}${def.unit}</span>`;
+                else if (eqVal > 0) diffHtml = `<span class="gear-stat-diff is-eq" title="${vsTip}: No change">= 0${def.unit}</span>`;
+            }
+            html += `<div class="gear-stat-badge-row ${idx === 0 ? 'primary-stat' : 'secondary-stat'}"><span class="gear-stat-badge-label">${statIc} ${def.label}</span><span class="gear-stat-badge-val">+${v}${def.unit}${deltaHtml}${diffHtml}</span></div>`;
+        });
+        if (equippedStats) {
+            Object.entries(equippedStats).forEach(([k, eqVal]) => {
+                if (k in effStats || !(eqVal > 0)) return;
+                const def = this.STAT_LABELS[k] || { label: k, unit: '', icon: '✨', iconKey: 'sparkle' };
+                const statIc = def.iconKey && typeof UiIcons !== 'undefined' ? UiIcons.i(def.iconKey, 'ui-icon-sm') : def.icon;
+                html += `<div class="gear-stat-badge-row is-lost-stat"><span class="gear-stat-badge-label">${statIc} ${def.label}</span><span class="gear-stat-badge-val">+0${def.unit}<span class="gear-stat-diff is-neg" title="${vsTip}: -${eqVal}${def.unit}">▼ -${eqVal}${def.unit}</span></span></div>`;
+            });
+        }
+        return html;
     }
 
     static _buildLevelHeaderHtml(level, maxLevel, isEvolved, isAscended = false) {

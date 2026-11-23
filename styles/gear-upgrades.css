@@ -148,6 +148,45 @@
     margin-left: 2px;
 }
 
+/* Live Stat Diff Comparison (vs Equipped Slot Gear) */
+.gear-stat-diff {
+    display: inline-flex;
+    align-items: center;
+    padding: 1px 5px;
+    margin-left: 5px;
+    border-radius: 6px;
+    font-size: 0.66rem;
+    font-weight: 900;
+    letter-spacing: 0.2px;
+    line-height: 1.2;
+    vertical-align: middle;
+}
+
+.gear-stat-diff.is-pos {
+    background: #dcfce7;
+    color: #15803d;
+    border: 1px solid #86efac;
+}
+
+.gear-stat-diff.is-neg {
+    background: #fee2e2;
+    color: #b91c1c;
+    border: 1px solid #fca5a5;
+}
+
+.gear-stat-diff.is-eq {
+    background: #e2e8f0;
+    color: #475569;
+    border: 1px solid #cbd5e1;
+}
+
+.gear-stat-badge-row.is-lost-stat {
+    background: #fff1f2;
+    color: #9f1239;
+    border: 1px dashed #fda4af;
+    opacity: 0.92;
+}
+
 /* Awakened / Evolved Mythic Card Aura */
 .gear-card.is-evolved-card,
 .weapon-card.is-evolved-card {
