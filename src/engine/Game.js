@@ -118,23 +118,21 @@ class Game {
     }
 
     startNewGame(heroType = 'psanas', gameMode = 'story') {
+        if (typeof window !== 'undefined' && window.GameState && typeof window.GameState.syncLiveGame === 'function') {
+            window.GameState.syncLiveGame(this, true);
+            window.GameState.beginMatchSession(heroType, gameMode);
+        }
         this.gameMode = gameMode;
         this.player = new Player(0, 0, heroType);
         this.coinsEarnedThisRun = 0;
-        if (typeof WeaponSystem !== 'undefined') {
-            this.player.weaponType = WeaponSystem.resolveEquippedWeapon(this.player.weaponType);
-        }
+        if (typeof WeaponSystem !== 'undefined') this.player.weaponType = WeaponSystem.resolveEquippedWeapon(this.player.weaponType);
         this.enemies.length = 0;
         this.bullets.length = 0;
         this.drops.length = 0;
         if (this.hazards) this.hazards.length = 0;
         this.effects.clear();
-        if (typeof window !== 'undefined' && window.perkSystem) {
-            window.perkSystem.init(this);
-        }
-        if (typeof GearPassives !== 'undefined') {
-            GearPassives.initPlayer(this.player);
-        }
+        if (typeof window !== 'undefined' && window.perkSystem) window.perkSystem.init(this);
+        if (typeof GearPassives !== 'undefined') GearPassives.initPlayer(this.player);
 
         this.gameTime = 0;
         if (typeof EndlessMapEvolution !== 'undefined') EndlessMapEvolution.reset();
@@ -168,10 +166,9 @@ class Game {
     pauseGame(pausedByName = null, isRemote = false) {
         if (this.state === 'PLAYING') {
             this.state = 'PAUSED';
+            if (typeof window !== 'undefined' && window.GameState && typeof window.GameState.syncLiveGame === 'function') window.GameState.syncLiveGame(this, false, true);
             const name = pausedByName || (this.player ? this.player.name : 'Hero');
-            if (this.coopSession && !isRemote && typeof this.coopSession.sendPause === 'function') {
-                this.coopSession.sendPause(name);
-            }
+            if (this.coopSession && !isRemote && typeof this.coopSession.sendPause === 'function') this.coopSession.sendPause(name);
             this.ui.showPauseModal(name);
             if (this.touchInput) this.touchInput.hide();
             if (typeof LilXasEvent !== 'undefined') LilXasEvent.setPaused(true);
@@ -319,6 +316,7 @@ class Game {
         if (this.state !== 'PLAYING') return;
 
         this.gameTime += dt;
+        if (typeof window !== 'undefined' && window.GameState && typeof window.GameState.syncLiveGame === 'function') window.GameState.syncLiveGame(this, false);
         if (!this.isCoopGuest) {
             this.waveManager.update(dt, this);
         }

@@ -483,47 +483,17 @@ class GameState {
         }
     }
 
-    /**
-     * Record match completion and merge lifetime career stats
-     */
-    recordMatch(score, wave, timeSeconds, fatmirs, casillas, heroId, skarmogyftos = 0, totalMatchKills = null, gameMode = null) {
-        const stats = this.player.stats;
-        stats.matchesPlayed += 1;
-        stats.totalTimeSeconds += Math.floor(timeSeconds);
-        stats.totalFatmirs += fatmirs;
-        stats.totalCasillas += casillas;
-        stats.totalSkarmogyftos = (stats.totalSkarmogyftos || 0) + skarmogyftos;
-        const matchKills = typeof totalMatchKills === 'number' ? totalMatchKills : (fatmirs + casillas + skarmogyftos);
-        stats.totalKills += matchKills;
+    beginMatchSession(heroId = 'psanas', gameMode = 'story') {
+        if (typeof StatsManager !== 'undefined') StatsManager.beginMatchSession(this, heroId, gameMode);
+    }
 
-        if (score > stats.highScore) {
-            stats.highScore = score;
-            localStorage.setItem('lesaio_highscore', score.toString());
-        }
+    syncLiveGame(game, finalize = false, forceNow = false) {
+        if (typeof StatsManager !== 'undefined') StatsManager.syncLiveGame(this, game, finalize, forceNow);
+    }
 
-        if (wave > stats.maxWave) {
-            stats.maxWave = wave;
-            localStorage.setItem('lesaio_max_wave', wave.toString());
-        }
-        if (gameMode && typeof PerkProgression !== 'undefined') {
-            PerkProgression.recordWaveProgress(this, gameMode, wave);
-        }
-
-        if (heroId) {
-            stats.heroPlays[heroId] = (stats.heroPlays[heroId] || 0) + 1;
-            localStorage.setItem('lesaio_hero_plays', JSON.stringify(stats.heroPlays));
-        }
-
-        localStorage.setItem('lesaio_total_kills', stats.totalKills.toString());
-        localStorage.setItem('lesaio_total_fatmirs', stats.totalFatmirs.toString());
-        localStorage.setItem('lesaio_total_casillas', stats.totalCasillas.toString());
-        localStorage.setItem('lesaio_total_skarmogyftos', stats.totalSkarmogyftos.toString());
-        localStorage.setItem('lesaio_matches_played', stats.matchesPlayed.toString());
-        localStorage.setItem('lesaio_total_time_seconds', stats.totalTimeSeconds.toString());
-        this._touchMutation();
-
-        if (window.EventBus) {
-            window.EventBus.emit('statsUpdated', { stats });
+    recordMatch(score, wave, timeSeconds, fatmirs, casillas, heroId, skarmogyftos = 0, totalMatchKills = null, gameMode = null, isLiveTick = false) {
+        if (typeof StatsManager !== 'undefined') {
+            StatsManager.recordMatchProgress(this, score, wave, timeSeconds, fatmirs, casillas, heroId, skarmogyftos, totalMatchKills, gameMode, isLiveTick);
         }
     }
 

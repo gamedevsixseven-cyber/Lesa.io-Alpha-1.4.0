@@ -393,6 +393,7 @@ class UIController {
     }
 
     startCreditsSequence(player, wave = 20, gameTime = 0) {
+        if (window.GameState && typeof window.GameState.syncLiveGame === 'function' && window.gameInstance) window.GameState.syncLiveGame(window.gameInstance, true);
         if (window.gameInstance) window.gameInstance.state = 'CREDITS';
         if (typeof CreditsScreen !== 'undefined' && typeof CreditsScreen.cleanupInputOverlays === 'function') {
             CreditsScreen.cleanupInputOverlays();
@@ -406,15 +407,14 @@ class UIController {
         }
 
         if (this.creditsScreen) {
-            this.creditsScreen.start(() => {
-                this.showMenuScreen();
-            });
+            this.creditsScreen.start(() => this.showMenuScreen());
         } else {
             this.showMenuScreen();
         }
     }
 
     showStoryVictoryModal(player, wave = 20, gameTime = 0) {
+        if (window.GameState && typeof window.GameState.syncLiveGame === 'function' && window.gameInstance) window.GameState.syncLiveGame(window.gameInstance, true);
         const score = player ? player.score : 0;
         const kills = player ? player.kills : 0;
         const minutes = Math.floor(gameTime / 3600);
@@ -447,13 +447,14 @@ class UIController {
     }
 
     hideStoryVictoryModal() {
-        if (this.storyVictoryModal) {
-            this.storyVictoryModal.classList.add('hidden');
-        }
+        if (this.storyVictoryModal) this.storyVictoryModal.classList.add('hidden');
     }
 
     showMenuScreen() {
         if (window.gameInstance) {
+            if (window.GameState && typeof window.GameState.syncLiveGame === 'function') {
+                window.GameState.syncLiveGame(window.gameInstance, true);
+            }
             window.gameInstance.state = 'MENU';
             window.gameInstance.enemies.length = 0;
             window.gameInstance.bullets.length = 0;
@@ -543,21 +544,15 @@ window.addEventListener('DOMContentLoaded', () => {
     // Launch Rockstar-Style Dev Intro, then smoothly transition into Comic Loading Screen
     const startLoading = () => {
         const loadingEl = document.getElementById('loading-screen');
-        if (loadingEl) {
-            loadingEl.classList.remove('hidden');
-        }
+        if (loadingEl) loadingEl.classList.remove('hidden');
         if (typeof LoadingScreen !== 'undefined') {
             const loader = new LoadingScreen(() => {
                 if (window.soundEngine && (!window.gameInstance || window.gameInstance.state === 'MENU')) {
                     window.soundEngine.startMenuBGM();
                 }
-                if (ui && ui.currencyManager) {
-                    ui.currencyManager.updateUI(false);
-                }
-                if (typeof TributeManager !== 'undefined') {
-                    if (localStorage.getItem('lesaio_player_name_chosen')) {
-                        TributeManager.checkAndShow();
-                    }
+                if (ui && ui.currencyManager) ui.currencyManager.updateUI(false);
+                if (typeof TributeManager !== 'undefined' && localStorage.getItem('lesaio_player_name_chosen')) {
+                    TributeManager.checkAndShow();
                 }
                 setTimeout(() => {
                     if (typeof BossRewardModalUI !== 'undefined') BossRewardModalUI.checkAndShowPending();
@@ -577,6 +572,9 @@ window.addEventListener('DOMContentLoaded', () => {
 
     // Ensure immediate disconnect message & pending local progress save on close/reload
     const handleTabUnload = () => {
+        if (window.GameState && typeof window.GameState.syncLiveGame === 'function' && window.gameInstance) {
+            try { window.GameState.syncLiveGame(window.gameInstance, true); } catch (e) {}
+        }
         if (window.SaveManager && typeof window.SaveManager.flushLocal === 'function') {
             try { window.SaveManager.flushLocal(); } catch (e) {}
         }
