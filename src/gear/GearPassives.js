@@ -151,16 +151,17 @@ class GearPassives {
         if (player.isDashing && this.has('sonic_slipstream') && enemies.length > 0) {
             if (!s.sonicDashHitSet) s.sonicDashHitSet = new Set();
             const slipDmg = Math.round(35 * (player.damageMultiplier || 1));
-            for (let i = 0; i < enemies.length; i++) {
-                const e = enemies[i];
-                if (!e || e.dead || e.isDying || s.sonicDashHitSet.has(e)) continue;
-                const rad = (player.radius || 22) + (e.radius || 22) + 18;
-                if (Math.hypot(e.x - player.x, e.y - player.y) <= rad) {
+            const reach = (player.radius || 22) + 18;
+            const visitSlip = (e) => {
+                if (!e || e.dead || e.isDying || s.sonicDashHitSet.has(e)) return;
+                if (Math.hypot(e.x - player.x, e.y - player.y) <= reach + (e.radius || 22)) {
                     s.sonicDashHitSet.add(e);
                     if (typeof e.takeDamage === 'function') e.takeDamage(slipDmg, effects, false);
                     if (effects) effects.addSparks(e.x, e.y, '#fed330', 6);
                 }
-            }
+            };
+            if (typeof SpatialHashGrid !== 'undefined') SpatialHashGrid.forEachEnemyNear(player.x, player.y, reach, enemies, visitSlip);
+            else for (let i = 0; i < enemies.length; i++) visitSlip(enemies[i]);
         }
 
         // Seismic Step: landing a dash triggers quake stomp stunning enemies for 0.8s
@@ -177,15 +178,16 @@ class GearPassives {
                 s.charcoalTimer = 90;
                 const burnDmg = Math.round(18 * (player.damageMultiplier || 1));
                 let scorchedAny = false;
-                for (let i = 0; i < enemies.length; i++) {
-                    const e = enemies[i];
-                    if (!e || e.dead || e.isDying) continue;
+                const visitBurn = (e) => {
+                    if (!e || e.dead || e.isDying) return;
                     if (Math.hypot(e.x - player.x, e.y - player.y) <= 155 + (e.radius || 20)) {
                         scorchedAny = true;
                         if (typeof e.takeDamage === 'function') e.takeDamage(burnDmg, effects, false);
                         if (effects) effects.addSparks(e.x, e.y, '#ff6b35', 4);
                     }
-                }
+                };
+                if (typeof SpatialHashGrid !== 'undefined') SpatialHashGrid.forEachEnemyNear(player.x, player.y, 155, enemies, visitBurn);
+                else for (let i = 0; i < enemies.length; i++) visitBurn(enemies[i]);
                 if (scorchedAny && effects) {
                     effects.addShockwave(player.x, player.y, 155, 'rgba(255, 107, 53, 0.45)');
                     if (typeof CoopCombatFx !== 'undefined') CoopCombatFx.relayRing(player, 155, 'rgba(255, 107, 53, 0.45)', '', '#ff6b35', 6);
@@ -308,19 +310,18 @@ class GearPassives {
         }
         if (this.has('hot_coals') && game && Array.isArray(game.enemies)) {
             const coalDmg = Math.round(25 * (player.damageMultiplier || 1));
-            for (let i = 0; i < game.enemies.length; i++) {
-                const e = game.enemies[i];
-                if (!e || e.dead || e.isDying) continue;
-                const d = Math.hypot(e.x - player.x, e.y - player.y);
-                if (d <= 130 + (e.radius || 20)) {
+            const visitCoals = (e) => {
+                if (!e || e.dead || e.isDying) return;
+                if (Math.hypot(e.x - player.x, e.y - player.y) <= 130 + (e.radius || 20)) {
                     const ang = Math.atan2(e.y - player.y, e.x - player.x);
-                    e.x += Math.cos(ang) * 28;
-                    e.y += Math.sin(ang) * 28;
+                    e.x += Math.cos(ang) * 28; e.y += Math.sin(ang) * 28;
                     if (typeof e.takeDamage === 'function') e.takeDamage(coalDmg, effects, false);
                     if (game.isCoopGuest) e.dead = false;
                     if (effects) effects.addSparks(e.x, e.y, '#ff6348', 5);
                 }
-            }
+            };
+            if (typeof SpatialHashGrid !== 'undefined') SpatialHashGrid.forEachEnemyNear(player.x, player.y, 130, game.enemies, visitCoals);
+            else for (let i = 0; i < game.enemies.length; i++) visitCoals(game.enemies[i]);
             if (effects) {
                 effects.addShockwave(player.x, player.y, 130, 'rgba(255, 99, 72, 0.85)');
                 effects.addComicSplash(player.x, player.y - 46, '🔥 HOT COALS!');
@@ -350,12 +351,13 @@ class GearPassives {
             const visited = new Set([targetEnemy]);
             for (let step = 0; step < 2; step++) {
                 let best = null, bestSq = 240 * 240;
-                for (let i = 0; i < enemies.length; i++) {
-                    const cand = enemies[i];
-                    if (!cand || cand.dead || cand.isDying || cand.isAirborneImmune || visited.has(cand)) continue;
+                const pick = (cand) => {
+                    if (!cand || cand.dead || cand.isDying || cand.isAirborneImmune || visited.has(cand)) return;
                     const dSq = (cand.x - lastX) ** 2 + (cand.y - lastY) ** 2;
                     if (dSq < bestSq) { bestSq = dSq; best = cand; }
-                }
+                };
+                if (typeof SpatialHashGrid !== 'undefined') SpatialHashGrid.forEachEnemyNear(lastX, lastY, 240, enemies, pick);
+                else for (let i = 0; i < enemies.length; i++) pick(enemies[i]);
                 if (!best) break;
                 visited.add(best);
                 jumps++;
@@ -371,14 +373,15 @@ class GearPassives {
         // Too Hot to Handle: oversized explosive 8th shot AoE
         if (bullet.isExplosiveMitts && Array.isArray(enemies)) {
             const blastDmg = Math.max(10, Math.round(damageDealt * 0.50));
-            for (let i = 0; i < enemies.length; i++) {
-                const e = enemies[i];
-                if (!e || e.dead || e.isDying || e.isAirborneImmune || e === targetEnemy) continue;
+            const visitMitts = (e) => {
+                if (!e || e.dead || e.isDying || e.isAirborneImmune || e === targetEnemy) return;
                 if (Math.hypot(e.x - bullet.x, e.y - bullet.y) <= 95 + (e.radius || 20)) {
                     if (typeof e.takeDamage === 'function') e.takeDamage(blastDmg, effects, false);
                     if (game && game.isCoopGuest) e.dead = false;
                 }
-            }
+            };
+            if (typeof SpatialHashGrid !== 'undefined') SpatialHashGrid.forEachEnemyNear(bullet.x, bullet.y, 95, enemies, visitMitts);
+            else for (let i = 0; i < enemies.length; i++) visitMitts(enemies[i]);
             if (effects) {
                 effects.addShockwave(bullet.x, bullet.y, 95, 'rgba(255, 159, 67, 0.9)');
                 effects.addSparks(bullet.x, bullet.y, '#ff9f43', 10);
@@ -413,11 +416,9 @@ class GearPassives {
     static _triggerRadialStomp(player, enemies, effects, radius, damage, stunFrames, label, color) {
         if (Array.isArray(enemies)) {
             const dmg = Math.round(damage);
-            for (let i = 0; i < enemies.length; i++) {
-                const e = enemies[i];
-                if (!e || e.dead || e.isDying || e.isAirborneImmune) continue;
-                const d = Math.hypot(e.x - player.x, e.y - player.y);
-                if (d <= radius + (e.radius || 20)) {
+            const visitStomp = (e) => {
+                if (!e || e.dead || e.isDying || e.isAirborneImmune) return;
+                if (Math.hypot(e.x - player.x, e.y - player.y) <= radius + (e.radius || 20)) {
                     if (dmg > 0 && typeof e.takeDamage === 'function') e.takeDamage(dmg, effects, false);
                     if (!e.isStationary) {
                         if (stunFrames > 0) e.stunTimer = Math.max(e.stunTimer || 0, stunFrames);
@@ -427,7 +428,9 @@ class GearPassives {
                     }
                     if (effects) effects.addSparks(e.x, e.y, color, 4);
                 }
-            }
+            };
+            if (typeof SpatialHashGrid !== 'undefined') SpatialHashGrid.forEachEnemyNear(player.x, player.y, radius, enemies, visitStomp);
+            else for (let i = 0; i < enemies.length; i++) visitStomp(enemies[i]);
         }
         if (effects) {
             effects.addShockwave(player.x, player.y, radius, color);

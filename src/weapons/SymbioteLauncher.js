@@ -288,18 +288,14 @@ class SymbioteLauncher extends WeaponBase {
 
         let best = null;
         let bestD2 = 520 * 520;
-        for (let i = 0; i < enemies.length; i++) {
-            const e = enemies[i];
-            if (!e || e.dead || e.hp <= 0 || e.isDying || e.isAirborneImmune) continue;
-            if (b.hitEntities && b.hitEntities.has(e)) continue;
-            const dx = e.x - b.x;
-            const dy = e.y - b.y;
-            const d2 = dx * dx + dy * dy;
-            if (d2 < bestD2) {
-                bestD2 = d2;
-                best = e;
-            }
-        }
+        const pickTendril = (e) => {
+            if (!e || e.dead || e.hp <= 0 || e.isDying || e.isAirborneImmune) return;
+            if (b.hitEntities && b.hitEntities.has(e)) return;
+            const dx = e.x - b.x, dy = e.y - b.y, d2 = dx * dx + dy * dy;
+            if (d2 < bestD2) { bestD2 = d2; best = e; }
+        };
+        if (typeof SpatialHashGrid !== 'undefined' && enemies.length > 45) SpatialHashGrid.forEachEnemyNear(b.x, b.y, 520, enemies, pickTendril);
+        else for (let i = 0; i < enemies.length; i++) pickTendril(enemies[i]);
         if (best) {
             const curAng = Math.atan2(b.vy, b.vx);
             const targetAng = Math.atan2(best.y - b.y, best.x - b.x);

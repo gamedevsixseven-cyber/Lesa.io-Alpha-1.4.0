@@ -110,10 +110,12 @@ class LeaderboardModal {
         const snap = (typeof CosmeticManager !== 'undefined') ? CosmeticManager.getProgressSnapshot(gs) : {};
         const cos = (typeof CosmeticManager !== 'undefined') ? CosmeticManager.getPublicSummary() : {};
 
+        const cl = (typeof window !== 'undefined' && window.clanService && window.clanService.currentClan) || null;
         return {
             uid: (me && me.uid) || (typeof PlayerIdentity !== 'undefined' ? PlayerIdentity.getOrCreateProfileId() : 'local_player'),
             name: (me && me.name) || p.name || localStorage.getItem('lesaio_player_name') || 'Hero',
             tag: (me && me.tag) || (typeof PlayerIdentity !== 'undefined' ? PlayerIdentity.getOnlineTag() : '#HERO00'),
+            clanTag: (me && me.clanTag) || (cl ? cl.tag : null), clanName: (me && me.clanName) || (cl ? cl.name : null),
             level: (me && me.level) || p.accountLevel || 1,
             hero: (me && me.selectedHero) || p.selectedHero || 'psanas',
             isOnline: true,
@@ -124,6 +126,7 @@ class LeaderboardModal {
             olympusMaxFloor: Math.max((me && me.olympusMaxFloor) || 0, snap.olympusMaxFloor || 0),
             totalKills: Math.max((me && me.totalKills) || 0, stats.totalKills || 0),
             cosmetics: cos,
+            loadout: (typeof PlayerLoadoutExtractor !== 'undefined') ? PlayerLoadoutExtractor.getLocalSummary() : null,
             isSelf: true,
             isLocalStub: !(fs && typeof fs.getDb === 'function' && fs.getDb())
         };
@@ -313,6 +316,7 @@ class LeaderboardModal {
                     </div>
                     <div class="lb-main-info">
                         <div class="lb-name-row">
+                            ${entry.clanTag ? `<span class="clan-inline-tag">[${this._esc(entry.clanTag)}]</span>` : ''}
                             <span class="lb-player-name">${this._esc(entry.name)}</span>
                             ${entry.isSelf ? '<span class="lb-you-pill">YOU</span>' : ''}
                             <span class="lb-tag-chip">${this._esc(entry.tag || '#HERO00')}</span>

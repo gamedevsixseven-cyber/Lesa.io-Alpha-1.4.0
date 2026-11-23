@@ -159,28 +159,18 @@ class PerkSystem {
 
             // Check enemies within flame radius
             if (game.enemies && game.enemies.length > 0) {
-                for (let ei = 0; ei < game.enemies.length; ei++) {
-                    const e = game.enemies[ei];
-                    if (e.dead || e.isDying) continue;
-
-                    const dx = e.x - flame.x;
-                    const dy = e.y - flame.y;
-                    const distSq = dx * dx + dy * dy;
-                    const totalRad = flame.radius + e.radius;
-
-                    if (distSq < totalRad * totalRad) {
-                        // Apply flame slow factor for 20 frames
+                const visitFlame = (e) => {
+                    if (!e || e.dead || e.isDying) return;
+                    const dx = e.x - flame.x, dy = e.y - flame.y, totalRad = flame.radius + e.radius;
+                    if (dx * dx + dy * dy < totalRad * totalRad) {
                         e.slowTimer = Math.max(e.slowTimer || 0, 20);
                         e.slowFactor = flame.slowFactor || 0.70;
-
-                        // Apply burn tick damage (playSound = false to prevent repetitive hitmarker clicks)
                         e.takeDamage(flame.dps * dt, null, false, false);
-
-                        if (Math.random() < 0.12 * dt && game.effects) {
-                            game.effects.addSparks(e.x, e.y, '#ff6b81', 2);
-                        }
+                        if (Math.random() < 0.12 * dt && game.effects) game.effects.addSparks(e.x, e.y, '#ff6b81', 2);
                     }
-                }
+                };
+                if (typeof SpatialHashGrid !== 'undefined') SpatialHashGrid.forEachEnemyNear(flame.x, flame.y, flame.radius, game.enemies, visitFlame);
+                else for (let ei = 0; ei < game.enemies.length; ei++) visitFlame(game.enemies[ei]);
             }
         }
 
@@ -191,29 +181,20 @@ class PerkSystem {
             cp.y += cp.vy * dt;
             cp.life -= dt;
 
-            // Check collision with enemies
             if (game.enemies) {
-                for (let ei = 0; ei < game.enemies.length; ei++) {
-                    const e = game.enemies[ei];
-                    if (e.dead || e.isDying || cp.hitEnemies.has(e)) continue;
-
-                    const dist = Math.hypot(e.x - cp.x, e.y - cp.y);
-                    if (dist < cp.radius + e.radius) {
+                const visitCp = (e) => {
+                    if (!e || e.dead || e.isDying || cp.hitEnemies.has(e)) return;
+                    if (Math.hypot(e.x - cp.x, e.y - cp.y) < cp.radius + e.radius) {
                         cp.hitEnemies.add(e);
                         e.takeDamage(cp.damage, game.effects, true);
-
-                        // Push enemy away strongly (knockback)
-                        const kb = cp.knockback || 36;
-                        const pushAngle = Math.atan2(cp.vy, cp.vx);
+                        const kb = cp.knockback || 36, pushAngle = Math.atan2(cp.vy, cp.vx);
                         e.x += Math.cos(pushAngle) * kb;
                         e.y += Math.sin(pushAngle) * kb;
-
-                        if (game.effects) {
-                            game.effects.addSparks(e.x, e.y, '#f39c12', 4);
-                            game.effects.addComicSplash(e.x, e.y - 18, 'POW!');
-                        }
+                        if (game.effects) { game.effects.addSparks(e.x, e.y, '#f39c12', 4); game.effects.addComicSplash(e.x, e.y - 18, 'POW!'); }
                     }
-                }
+                };
+                if (typeof SpatialHashGrid !== 'undefined') SpatialHashGrid.forEachEnemyNear(cp.x, cp.y, cp.radius, game.enemies, visitCp);
+                else for (let ei = 0; ei < game.enemies.length; ei++) visitCp(game.enemies[ei]);
             }
 
             if (cp.life <= 0) {
@@ -256,21 +237,18 @@ class PerkSystem {
                 // AoE Damage & Knockback to nearby enemies
                 if (game.enemies) {
                     const blastSq = d.radius * d.radius;
-                    for (let ei = 0; ei < game.enemies.length; ei++) {
-                        const e = game.enemies[ei];
-                        if (e.dead || e.isDying) continue;
-
-                        const dx = e.x - d.x;
-                        const dy = e.y - d.y;
-                        const distSq = dx * dx + dy * dy;
-
-                        if (distSq <= blastSq) {
+                    const visitDyn = (e) => {
+                        if (!e || e.dead || e.isDying) return;
+                        const dx = e.x - d.x, dy = e.y - d.y;
+                        if (dx * dx + dy * dy <= blastSq) {
                             e.takeDamage(d.damage, game.effects, true);
                             const dist = Math.hypot(dx, dy) || 1;
                             e.x += (dx / dist) * 28;
                             e.y += (dy / dist) * 28;
                         }
-                    }
+                    };
+                    if (typeof SpatialHashGrid !== 'undefined') SpatialHashGrid.forEachEnemyNear(d.x, d.y, d.radius, game.enemies, visitDyn);
+                    else for (let ei = 0; ei < game.enemies.length; ei++) visitDyn(game.enemies[ei]);
                 }
             }
         }

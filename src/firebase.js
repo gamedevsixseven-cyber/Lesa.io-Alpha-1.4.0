@@ -75,6 +75,7 @@ class CloudSaveService {
                             window.uiController.settingsManager.updateCloudUI();
                         }
                         if (window.friendService) window.friendService.onAuthChanged();
+                        if (window.clanService) window.clanService.onAuthChanged();
                     });
                 }
             }

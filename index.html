@@ -40,7 +40,7 @@
     <link rel="stylesheet" href="styles/gear.css?v=1.0.3">
     <link rel="stylesheet" href="styles/gear-upgrades.css?v=1.0.3">
     <link rel="stylesheet" href="styles/perks.css?v=1.0.3">
-    <link rel="stylesheet" href="styles/chests.css?v=1.5.28">
+    <link rel="stylesheet" href="styles/chests.css?v=1.1.0">
     <link rel="stylesheet" href="styles/inventory.css?v=1.0.3">
     <link rel="stylesheet" href="styles/tabs-shared.css?v=1.5.62">
     <link rel="stylesheet" href="styles/loading.css">
@@ -53,13 +53,15 @@
     <link rel="stylesheet" href="styles/coop.css?v=1.8.4">
     <link rel="stylesheet" href="styles/events.css?v=1.8.8">
     <link rel="stylesheet" href="styles/tribute.css?v=1.4.0">
-    <link rel="stylesheet" href="styles/friends.css?v=1.8.2">
+    <link rel="stylesheet" href="styles/friends.css?v=1.1.0">
+    <link rel="stylesheet" href="styles/clans.css?v=1.1.1">
     <link rel="stylesheet" href="styles/olympus-altar.css?v=1.5.13">
     <link rel="stylesheet" href="styles/olympus-victory.css?v=1.5.41">
     <link rel="stylesheet" href="styles/boss-rewards.css?v=1.5.73">
     <link rel="stylesheet" href="styles/cosmetics.css?v=1.0.2">
-    <link rel="stylesheet" href="styles/cosmetics-fx.css?v=1.5.49">
+    <link rel="stylesheet" href="styles/cosmetics-fx.css?v=1.1.0">
     <link rel="stylesheet" href="styles/cosmetics-advanced.css?v=1.9.14">
+    <link rel="stylesheet" href="styles/public-loadout.css?v=1.0.9">
     <link rel="stylesheet" href="styles/battlepass.css?v=1.6.22">
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -303,6 +305,7 @@
                 <button id="btn-clans" class="bottom-square-btn">
                     <span class="bot-btn-icon"><img src="assets/GearUIIcons/DEF.png" class="ui-icon" alt=""></span>
                     <span class="bot-btn-text">CLANS</span>
+                    <span id="clans-badge" class="badge-notify hidden">!</span>
                 </button>
                 <button id="btn-mail" class="bottom-square-btn">
                     <span class="bot-btn-icon"><img src="assets/ui-icons/mail.svg" class="ui-icon" alt=""></span>
@@ -317,7 +320,7 @@
             </div>
 
             <!-- GAME VERSION (BOTTOM RIGHT) -->
-            <div id="menu-game-version" class="menu-game-version">Version 1.0.1</div>
+            <div id="menu-game-version" class="menu-game-version">Version 1.1.0</div>
         </div>
 
         <!-- ================= IN-GAME CARTOON HUD ================= -->
@@ -2031,6 +2034,94 @@
                                             class="stat-val">+16% Crit • 4th Singularity • 8th Omega Beam</span></div>
                                 </div>
                             </div>
+
+                            <!-- Weapon 12: Skewer Charcoal Rifle (Rare Chest Drop Unlock) -->
+                            <div class="weapon-card" data-weapon="skewer_rifle">
+                                <div class="weapon-card-top">
+                                    <div class="weapon-card-left">
+                                        <div class="weapon-icon-wrap">
+                                            <img src="assets/WeaponIcons/SkewerCharcoalRifle.png" class="weapon-card-img"
+                                                alt="Skewer Charcoal Rifle" loading="lazy" decoding="async">
+                                        </div>
+                                        <h3 class="weapon-name">SKEWER CHARCOAL RIFLE</h3>
+                                    </div>
+                                    <div class="weapon-badge badge-rare">RARE</div>
+                                </div>
+                                <div class="weapon-stats-list">
+                                    <div class="weapon-stat-row"><span class="stat-key">Damage:</span> <span
+                                            class="stat-val">42 Incendiary</span></div>
+                                    <div class="weapon-stat-row"><span class="stat-key">Fire Delay:</span> <span
+                                            class="stat-val">Medium (0.30s)</span></div>
+                                    <div class="weapon-stat-row"><span class="stat-key">Trait:</span> <span
+                                            class="stat-val">+14% Crit • +3 Pierces • Charcoal Burn + Pop</span></div>
+                                </div>
+                            </div>
+
+                            <!-- Weapon 13: Hephaestus Vulcan Minigun (Mythic Chest Drop Unlock) -->
+                            <div class="weapon-card rarity-mythic" data-weapon="vulcan_minigun">
+                                <div class="weapon-card-top">
+                                    <div class="weapon-card-left">
+                                        <div class="weapon-icon-wrap">
+                                            <img src="assets/WeaponIcons/HephaestusVulcanMinigun.png" class="weapon-card-img"
+                                                alt="Hephaestus Vulcan Minigun" loading="lazy" decoding="async">
+                                        </div>
+                                        <h3 class="weapon-name">HEPHAESTUS VULCAN MINIGUN</h3>
+                                    </div>
+                                    <div class="weapon-badge badge-mythic">MYTHIC</div>
+                                </div>
+                                <div class="weapon-stats-list">
+                                    <div class="weapon-stat-row"><span class="stat-key">Damage:</span> <span
+                                            class="stat-val">20 Molten</span></div>
+                                    <div class="weapon-stat-row"><span class="stat-key">Fire Delay:</span> <span
+                                            class="stat-val">Rapid + Spin (0.15s)</span></div>
+                                    <div class="weapon-stat-row"><span class="stat-key">Trait:</span> <span
+                                            class="stat-val">Spin-Up Speed • 8th Molten Buster</span></div>
+                                </div>
+                            </div>
+
+                            <!-- Weapon 14: Hades Oblivion Railgun (Apex Mythic-Chest Drop Unlock) -->
+                            <div class="weapon-card rarity-apex" data-weapon="hades_railgun">
+                                <div class="weapon-card-top">
+                                    <div class="weapon-card-left">
+                                        <div class="weapon-icon-wrap">
+                                            <img src="assets/WeaponIcons/HadesOblivionRailgun.png" class="weapon-card-img"
+                                                alt="Hades Oblivion Railgun" loading="lazy" decoding="async">
+                                        </div>
+                                        <h3 class="weapon-name">HADES OBLIVION RAILGUN</h3>
+                                    </div>
+                                    <div class="weapon-badge badge-apex">APEX</div>
+                                </div>
+                                <div class="weapon-stats-list">
+                                    <div class="weapon-stat-row"><span class="stat-key">Damage:</span> <span
+                                            class="stat-val">74 Stygian Void</span></div>
+                                    <div class="weapon-stat-row"><span class="stat-key">Fire Delay:</span> <span
+                                            class="stat-val">Heavy Rail (0.37s)</span></div>
+                                    <div class="weapon-stat-row"><span class="stat-key">Trait:</span> <span
+                                            class="stat-val">+18% Crit • +8 Pierces • 15% Execute • Siphon</span></div>
+                                </div>
+                            </div>
+
+                            <!-- Weapon 15: Medusa's Gorgon Gaze (Mythic Chest Drop Unlock) -->
+                            <div class="weapon-card rarity-mythic" data-weapon="medusa_gaze">
+                                <div class="weapon-card-top">
+                                    <div class="weapon-card-left">
+                                        <div class="weapon-icon-wrap">
+                                            <img src="assets/WeaponIcons/MedusasGorgonGaze.png" class="weapon-card-img"
+                                                alt="Medusa's Gorgon Gaze" loading="lazy" decoding="async">
+                                        </div>
+                                        <h3 class="weapon-name">MEDUSA'S GORGON GAZE</h3>
+                                    </div>
+                                    <div class="weapon-badge badge-mythic">MYTHIC</div>
+                                </div>
+                                <div class="weapon-stats-list">
+                                    <div class="weapon-stat-row"><span class="stat-key">Damage:</span> <span
+                                            class="stat-val">38 Gorgon Plasma</span></div>
+                                    <div class="weapon-stat-row"><span class="stat-key">Fire Delay:</span> <span
+                                            class="stat-val">Medium (0.28s)</span></div>
+                                    <div class="weapon-stat-row"><span class="stat-key">Trait:</span> <span
+                                            class="stat-val">Weaving Bolts • Petrify + Shatter Snakes</span></div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -2410,6 +2501,14 @@
                             <div class="setting-desc">Pause combat automatically if switching apps or tabs</div>
                         </div>
                         <button id="toggle-autopause-btn" class="comic-btn comic-btn-sm">ON</button>
+                    </div>
+                    <!-- Privacy Toggle: Hide Equipped Gear & Weapon Collection -->
+                    <div class="setting-row" data-mob-tab="gameplay">
+                        <div class="setting-info">
+                            <div class="setting-title"><img src="assets/ui-icons/shield.svg" class="ui-icon ui-icon-sm" alt="" loading="lazy" decoding="async"> Private Gear &amp; Weapons</div>
+                            <div class="setting-desc">Hide your equipped gear and weapon collection from other players</div>
+                        </div>
+                        <button id="toggle-private-loadout-btn" class="comic-btn comic-btn-sm">OFF</button>
                     </div>
                 </div>
 
@@ -3193,7 +3292,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
     <script src="src/save/PlayerIdentity.js?v=1.9.9"></script>
-    <script src="src/firebase.js?v=1.9.9"></script>
+    <script src="src/firebase.js?v=1.1.0"></script>
 
     <!-- GAME SCRIPTS IN CLEAN DEPENDENCY ORDER -->
     <!-- 1. DATA DEFINITIONS -->
@@ -3209,6 +3308,10 @@
     <script src="src/weapons/BoomerangSawblade.js?v=1.6.6"></script>
     <script src="src/weapons/ChronoRifle.js?v=1.6.7"></script>
     <script src="src/weapons/SymbioteLauncher.js?v=1.6.7"></script>
+    <script src="src/weapons/SkewerCharcoalRifle.js?v=1.1.0"></script>
+    <script src="src/weapons/HephaestusVulcanMinigun.js?v=1.1.0"></script>
+    <script src="src/weapons/HadesOblivionRailgun.js?v=1.1.0"></script>
+    <script src="src/weapons/MedusaGorgonGaze.js?v=1.1.0"></script>
     <script src="src/weapons/Exclusive/BubbleGun.js?v=1.2.4"></script>
     <script src="src/weapons/BossWeapons/KiloumpasCarbine.js?v=1.5.15"></script>
     <script src="src/weapons/BossWeapons/RoufDialToneBlaster.js?v=1.5.15"></script>
@@ -3216,7 +3319,7 @@
     <script src="src/weapons/BossWeapons/HeliosOmegaCannon.js?v=1.6.7"></script>
     <script src="src/weapons/BattlePassWeapons.js?v=1.5.83"></script>
     <script src="src/data/heroes.js?v=1.5.56"></script>
-    <script src="src/data/weapons.js?v=1.5.83"></script>
+    <script src="src/data/weapons.js?v=1.1.0"></script>
     <script src="src/data/skills.js?v=1.5.44"></script>
     <script src="src/data/skills_ext.js?v=1.6.2"></script>
     <script src="src/data/quests.js?v=1.5.36"></script>
@@ -3227,11 +3330,11 @@
     <script src="src/data/perks.js?v=1.5.37"></script>
     <script src="src/data/gear.js?v=1.5.8"></script>
     <script src="src/data/gearEndgame.js?v=1.9.15"></script>
-    <script src="src/data/chests.js?v=1.5.67"></script>
-    <script src="src/data/materials.js?v=1.8.8"></script>
+    <script src="src/data/chests.js?v=1.1.0"></script>
+    <script src="src/data/materials.js?v=1.1.0"></script>
     <script src="src/data/bossRanks.js?v=1.5.16"></script>
     <script src="src/data/profile_cosmetics.js?v=1.9.13"></script>
-    <script src="src/data/profile_cosmetics_ext.js?v=1.9.14"></script>
+    <script src="src/data/profile_cosmetics_ext.js?v=1.1.0"></script>
     <script src="src/ui/CosmeticEffectsEngine.js?v=1.9.14"></script>
     <script src="src/data/creditsData.js?v=1.4.1"></script>
 
@@ -3243,23 +3346,24 @@
     <script src="src/core/MobileCanvasGuard.js?v=1.9.1"></script>
     <script src="src/core/AutoUpdater.js?v=1.0.2"></script>
     <script src="src/save/SaveMigration.js?v=1.0.4"></script>
-    <script src="src/core/GameState.js?v=1.0.3"></script>
+    <script src="src/core/GameState.js?v=1.0.9"></script>
     <script src="src/progression/PerkProgression.js?v=1.0.7"></script>
     <script src="src/progression/CosmeticManager.js?v=1.9.13"></script>
     <script src="src/progression/EventManager.js?v=1.8.8"></script>
     <script src="src/dungeons/AscentCrestManager.js?v=1.5.14"></script>
     <script src="src/core/CharacterSprites.js?v=1.9.0"></script>
     <script src="src/engine/SpriteAtlasCache.js?v=1.9.0"></script>
-    <script src="src/save/SaveSerializer.js?v=1.0.4"></script>
+    <script src="src/save/SaveSerializer.js?v=1.0.9"></script>
     <script src="src/save/SaveManager.js?v=1.9.8"></script>
-    <script src="src/save/AccountSyncManager.js?v=1.7.4"></script>
+    <script src="src/save/AccountSyncManager.js?v=1.0.9"></script>
     <script src="src/gear/GearManager.js?v=1.6.14"></script>
     <script src="src/gear/GearUpgradeManager.js?v=1.6.0"></script>
     <script src="src/weapons/WeaponEvolutionManager.js?v=1.5.72"></script>
     <script src="src/gear/GearPassives.js?v=1.6.8"></script>
+    <script src="src/social/PlayerLoadoutExtractor.js?v=1.0.9"></script>
 
     <!-- 3. AUDIO & SYNTHESIS -->
-    <script src="src/engine/ProceduralSynth.js?v=1.5.69"></script>
+    <script src="src/engine/ProceduralSynth.js?v=1.1.0"></script>
     <script src="src/engine/BgmController.js?v=1.6.23"></script>
     <script src="src/audio.js?v=1.6.23"></script>
 
@@ -3272,6 +3376,7 @@
     <script src="src/engine/CryptonXModel.js?v=1.5.78"></script>
     <script src="src/engine/OutsidePerimeterRoads.js?v=1.6.3"></script>
     <script src="src/engine/Arena.js?v=1.9.0"></script>
+    <script src="src/engine/SpatialHashGrid.js?v=1.1.0"></script>
     <script src="src/engine/WaveManager.js?v=1.6.6"></script>
     <script src="src/engine/EndlessWaveDirector.js?v=1.0.7"></script>
     <script src="src/dungeons/OlympusAssets.js?v=1.9.0"></script>
@@ -3282,7 +3387,7 @@
     <script src="src/dungeons/DungeonMapTheme.js?v=1.5.66"></script>
     <script src="src/dungeons/DungeonManager.js?v=1.0.7"></script>
     <script src="src/progression/BossRewardManager.js?v=1.0.7"></script>
-    <script src="src/engine/CollisionSystem.js?v=1.8.0"></script>
+    <script src="src/engine/CollisionSystem.js?v=1.1.0"></script>
     <script src="src/engine/NameValidator.js?v=1.6.24"></script>
     <script src="src/engine/EpicPerkEffects.js?v=1.6.6"></script>
     <script src="src/engine/LegendaryPerkEffects.js?v=1.5.45"></script>
@@ -3292,15 +3397,15 @@
     <!-- 5. ENTITIES & HERO RENDERING -->
     <script src="src/entities/ParticleEffect.js?v=1.5.26"></script>
     <script src="src/entities/ComicPopupCache.js?v=1.9.0"></script>
-    <script src="src/entities/CombatRenderFX.js?v=1.9.1"></script>
-    <script src="src/entities/CombatJuiceFX.js?v=1.5.69"></script>
-    <script src="src/entities/Effects.js?v=1.7.7"></script>
-    <script src="src/entities/Bullet.js?v=1.5.69"></script>
-    <script src="src/entities/Drop.js?v=1.9.1"></script>
+    <script src="src/entities/CombatRenderFX.js?v=1.1.0"></script>
+    <script src="src/entities/CombatJuiceFX.js?v=1.1.0"></script>
+    <script src="src/entities/Effects.js?v=1.1.0"></script>
+    <script src="src/entities/Bullet.js?v=1.1.0"></script>
+    <script src="src/entities/Drop.js?v=1.1.0"></script>
     <script src="src/entities/FoliageRenderer.js?v=1.9.1"></script>
     <script src="src/entities/Obstacle.js?v=1.9.0"></script>
     <script src="src/entities/WaterPuddle.js?v=1.2.2"></script>
-    <script src="src/entities/Weapons.js?v=1.7.6"></script>
+    <script src="src/entities/Weapons.js?v=1.1.0"></script>
     <script src="src/heroes/HeroSkinSystem.js?v=1.5.83"></script>
     <script src="src/heroes/PsanasHero.js?v=1.2.2"></script>
     <script src="src/heroes/PetrosHero.js?v=1.2.2"></script>
@@ -3328,7 +3433,7 @@
     <script src="src/skills/VF185Model.js?v=1.5.74"></script>
     <script src="src/skills/HeroUltimates.js?v=1.7.8"></script>
     <script src="src/entities/PlayerSkills.js?v=1.6.2"></script>
-    <script src="src/entities/Player.js?v=1.0.7"></script>
+    <script src="src/entities/Player.js?v=1.1.0"></script>
     <script src="src/entities/RemotePlayer.js?v=1.0.7"></script>
 
     <!-- 6. ENEMIES -->
@@ -3389,10 +3494,10 @@
     <script src="src/dungeons/ZeusBoss.js?v=1.5.51"></script>
 
     <!-- 7. PROGRESSION & PROFILE -->
-    <script src="src/ui/UiIcons.js?v=1.6.0"></script>
+    <script src="src/ui/UiIcons.js?v=1.1.0"></script>
     <script src="src/progression/CurrencyManager.js?v=1.7.6"></script>
     <script src="src/progression/QuestManager.js?v=1.5.80"></script>
-    <script src="src/progression/BattlePassManager.js?v=1.8.9"></script>
+    <script src="src/progression/BattlePassManager.js?v=1.1.0"></script>
     <script src="src/ui/BattlePassModalUI.js?v=1.8.1"></script>
     <script src="src/profile/StatsManager.js?v=1.0.3"></script>
 
@@ -3403,10 +3508,10 @@
     <script src="src/ui/OlympusVictoryModal.js?v=1.8.7"></script>
     <script src="src/ui/GearModalUI.js?v=1.0.2"></script>
     <script src="src/ui/ProfileCosmeticsUI.js?v=1.9.13"></script>
-    <script src="src/ui/PublicProfileModal.js?v=1.0.4"></script>
-    <script src="src/ui/LeaderboardModal.js?v=1.0.4"></script>
+    <script src="src/ui/PublicProfileModal.js?v=1.1.0"></script>
+    <script src="src/ui/LeaderboardModal.js?v=1.1.0"></script>
     <script src="src/ui/ModalManager.js?v=1.8.7"></script>
-    <script src="src/ui/HUDController.js?v=1.0.7"></script>
+    <script src="src/ui/HUDController.js?v=1.1.0"></script>
     <script src="src/ui/ProfileManager.js?v=1.0.4"></script>
     <script src="src/ui/HeroRoster.js?v=1.6.0"></script>
     <script src="src/ui/SkillManager.js?v=1.6.2"></script>
@@ -3414,16 +3519,16 @@
     <script src="src/ui/PerkManager.js?v=1.5.34"></script>
     <script src="src/ui/MailManager.js?v=1.5.10"></script>
     <script src="src/ui/StarterPackModal.js?v=1.5.10"></script>
-    <script src="src/ui/SettingsManager.js?v=1.7.4"></script>
-    <script src="src/ui/MenuController.js?v=1.8.8"></script>
+    <script src="src/ui/SettingsManager.js?v=1.0.9"></script>
+    <script src="src/ui/MenuController.js?v=1.1.0"></script>
     <script src="src/ui/BossWarningOverlay.js?v=1.9.0"></script>
     <script src="src/ui/CinematicCutsceneOverlay.js?v=1.8.0"></script>
     <script src="src/ui/CreditsScreen.js?v=1.8.0"></script>
-    <script src="src/chests/ChestManager.js?v=1.9.6"></script>
+    <script src="src/chests/ChestManager.js?v=1.1.0"></script>
     <script src="src/ui/ChestModalUI.js?v=1.5.61"></script>
     <script src="src/progression/InventoryManager.js?v=1.9.6"></script>
     <script src="src/ui/InventoryModalUI.js?v=1.9.6"></script>
-    <script src="src/ui/TributeManager.js?v=1.0.1"></script>
+    <script src="src/ui/TributeManager.js?v=1.1.0"></script>
 
     <!-- 8.5. ADMIN & PLAYTESTING SUBSYSTEM -->
     <script src="src/admin/AdminAuth.js?v=1.6.15"></script>
@@ -3443,21 +3548,30 @@
     <script src="src/network/NetworkManager.js?v=1.0.6"></script>
     <script src="src/network/CoopSkillFx.js?v=1.7.8"></script>
     <script src="src/network/CoopDropSync.js?v=1.8.7"></script>
-    <script src="src/network/CoopCombatFx.js?v=1.7.7"></script>
+    <script src="src/network/CoopCombatFx.js?v=1.1.0"></script>
     <script src="src/network/CoopPauseSync.js?v=1.7.5"></script>
     <script src="src/network/CoopHostSession.js?v=1.0.8"></script>
     <script src="src/network/CoopGuestSession.js?v=1.0.8"></script>
-    <script src="src/network/CoopLobbyModal.js?v=1.8.4"></script>
+    <script src="src/network/CoopLobbyModal.js?v=1.1.0"></script>
 
     <!-- 8.9. FRIENDS & ONLINE PLAYER ID SUBSYSTEM -->
-    <script src="src/social/FriendService.js?v=1.0.4"></script>
-    <script src="src/ui/FriendsCardRenderer.js?v=1.0.4"></script>
-    <script src="src/ui/FriendsModal.js?v=1.9.7"></script>
+    <script src="src/social/FriendService.js?v=1.1.0"></script>
+    <script src="src/social/ChatService.js?v=1.1.0"></script>
+    <script src="src/ui/FriendsCardRenderer.js?v=1.1.0"></script>
+    <script src="src/ui/DirectMessageView.js?v=1.1.0"></script>
+    <script src="src/ui/FriendsModal.js?v=1.1.0"></script>
+    <script src="src/data/clanConfig.js?v=1.1.0"></script>
+    <script src="src/social/ClanBuffs.js?v=1.1.0"></script>
+    <script src="src/social/ClanVaultService.js?v=1.1.0"></script>
+    <script src="src/social/ClanService.js?v=1.1.0"></script>
+    <script src="src/ui/ClanChatView.js?v=1.1.0"></script>
+    <script src="src/ui/ClanCardRenderer.js?v=1.1.0"></script>
+    <script src="src/ui/ClansModal.js?v=1.1.0"></script>
 
     <!-- 9. GAME COORDINATOR & BOOTSTRAP -->
     <script src="src/engine/WaveSkipperMachine.js?v=1.6.22"></script>
-    <script src="src/engine/Game.js?v=1.0.3"></script>
-    <script src="src/main.js?v=1.0.3"></script>
+    <script src="src/engine/Game.js?v=1.1.0"></script>
+    <script src="src/main.js?v=1.1.0"></script>
 </body>
 
 </html>

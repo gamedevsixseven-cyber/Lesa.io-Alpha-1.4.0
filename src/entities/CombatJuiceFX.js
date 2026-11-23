@@ -307,6 +307,27 @@ class CombatJuiceFX {
             ctx.beginPath(); ctx.moveTo(2, -3); ctx.lineTo(18, 0); ctx.lineTo(2, 3); ctx.closePath(); ctx.fill();
             ctx.fillStyle = '#ffffff';
             ctx.beginPath(); ctx.arc(5, 0, 3.6, 0, Math.PI * 2); ctx.fill();
+        } else if (m.type === 'skewer_rifle' || m.type === 'vulcan_minigun') {
+            ctx.fillStyle = '#ff6b35';
+            ctx.beginPath(); ctx.moveTo(0, -5.5); ctx.lineTo(26, 0); ctx.lineTo(0, 5.5); ctx.closePath(); ctx.fill();
+            ctx.fillStyle = '#fed330';
+            ctx.beginPath(); ctx.moveTo(0, -2.5); ctx.lineTo(17, 0); ctx.lineTo(0, 2.5); ctx.closePath(); ctx.fill();
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath(); ctx.arc(3, 0, 2.5, 0, Math.PI * 2); ctx.fill();
+        } else if (m.type === 'hades_railgun') {
+            ctx.fillStyle = '#a855f7';
+            ctx.beginPath(); ctx.moveTo(0, -6); ctx.lineTo(30, 0); ctx.lineTo(0, 6); ctx.closePath(); ctx.fill();
+            ctx.fillStyle = '#f43f5e';
+            ctx.beginPath(); ctx.moveTo(0, -2.6); ctx.lineTo(20, 0); ctx.lineTo(0, 2.6); ctx.closePath(); ctx.fill();
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath(); ctx.arc(4, 0, 3.2, 0, Math.PI * 2); ctx.fill();
+        } else if (m.type === 'medusa_gaze') {
+            ctx.fillStyle = '#2ed573';
+            ctx.beginPath(); ctx.moveTo(0, -5.5); ctx.lineTo(26, 0); ctx.lineTo(0, 5.5); ctx.closePath(); ctx.fill();
+            ctx.fillStyle = '#fed330';
+            ctx.beginPath(); ctx.arc(7, 0, 3.8, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath(); ctx.arc(5, 0, 2.0, 0, Math.PI * 2); ctx.fill();
         } else if (m.type === 'dialtone' || m.type === 'soundwave') {
             ctx.strokeStyle = '#00d2d3';
             ctx.lineWidth = 2.4;
@@ -371,6 +392,12 @@ class CombatJuiceFX {
             symbiote: ['#ff2e63', '#9b59b6'],
             symbiote_tendril: ['#9b59b6', '#ff2e63'],
             helios_cannon: ['#ff2e4c', '#fed330'],
+            skewer_rifle: ['#ff6b35', '#fed330'],
+            vulcan_minigun: ['#ff4757', '#ff9f43'],
+            hades_railgun: ['#a855f7', '#f43f5e'],
+            medusa_gaze: ['#2ed573', '#fed330'],
+            medusa_serpent: ['#4ade80', '#fed330'],
+            medusa_shard: ['#6ee7b7', '#2ed573'],
             dialtone: ['#00d2d3', '#fed330'],
             soundwave: ['#00d2d3', '#fed330'],
             ice_spike: ['rgba(116, 185, 255, 0.75)', '#ffffff']

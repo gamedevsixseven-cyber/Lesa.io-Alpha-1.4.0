@@ -187,20 +187,28 @@ class CombatRenderFX {
             } else if (type === 'pepper') {
                 ctx.fillStyle = i < 2 ? '#ffa502' : '#ff4757';
                 ctx.beginPath(); ctx.arc(pt.x, pt.y, Math.max(2, bullet.radius * ratio * 0.8), 0, Math.PI * 2); ctx.fill();
-            } else if (type === 'carbine' || type === 'm4_carbine' || type === 'spas12' || type === 'zeus_thunderbolt' || type === 'chrono_rifle') {
-                const segW = Math.max(4, (type === 'zeus_thunderbolt' ? 17 : (type === 'spas12' ? 9 : (type === 'm4_carbine' ? 11 : 14))) * ratio);
+            } else if (type === 'carbine' || type === 'm4_carbine' || type === 'spas12' || type === 'zeus_thunderbolt' || type === 'chrono_rifle' || type === 'skewer_rifle' || type === 'vulcan_minigun' || type === 'hades_railgun') {
+                const segW = Math.max(4, (type === 'zeus_thunderbolt' || type === 'hades_railgun' ? 17 : (type === 'spas12' ? 9 : (type === 'm4_carbine' || type === 'skewer_rifle' || type === 'vulcan_minigun' ? 11 : 14))) * ratio);
                 ctx.save();
                 ctx.translate(pt.x, pt.y);
                 ctx.rotate(Math.atan2(bullet.vy, bullet.vx));
                 ctx.fillStyle = type === 'zeus_thunderbolt'
                     ? (i % 2 === 0 ? '#fed330' : '#00f5ff')
-                    : (type === 'chrono_rifle' ? (i % 2 === 0 ? '#00f5ff' : '#a55eea') : ((type === 'spas12' && bullet._spasBreach) ? '#ff4757' : (i % 2 === 0 ? '#ffd32a' : '#ff9f43')));
+                    : (type === 'hades_railgun' ? (i % 2 === 0 ? '#e879f9' : '#f43f5e')
+                    : (type === 'skewer_rifle' ? (i % 2 === 0 ? '#ff6b35' : '#fed330')
+                    : (type === 'vulcan_minigun' ? (bullet.isMoltenBuster ? '#ff4757' : (i % 2 === 0 ? '#ff9f43' : '#ffd32a'))
+                    : (type === 'chrono_rifle' ? (i % 2 === 0 ? '#00f5ff' : '#a55eea') : ((type === 'spas12' && bullet._spasBreach) ? '#ff4757' : (i % 2 === 0 ? '#ffd32a' : '#ff9f43'))))));
                 ctx.fillRect(-segW * 0.5, -1.6 * ratio, segW, 3.2 * ratio);
                 ctx.restore();
             } else if (type === 'symbiote' || type === 'symbiote_tendril') {
                 ctx.fillStyle = i % 2 === 0 ? '#ff2e63' : '#9b59b6';
                 ctx.beginPath();
                 ctx.arc(pt.x, pt.y, Math.max(2, (bullet.radius || 8) * ratio * 0.56), 0, Math.PI * 2);
+                ctx.fill();
+            } else if (type === 'medusa_gaze' || type === 'medusa_serpent') {
+                ctx.fillStyle = bullet.isWeaponEvolved ? (i % 2 === 0 ? '#fed330' : '#4ade80') : (i % 2 === 0 ? '#2ed573' : '#6ee7b7');
+                ctx.beginPath();
+                ctx.arc(pt.x, pt.y, Math.max(2.2, (bullet.radius || 9) * ratio * 0.62), 0, Math.PI * 2);
                 ctx.fill();
             } else if (type === 'helios_cannon') {
                 ctx.fillStyle = i % 2 === 0 ? '#ff2e4c' : '#fed330';

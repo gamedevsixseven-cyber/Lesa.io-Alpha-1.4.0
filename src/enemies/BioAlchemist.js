@@ -45,20 +45,19 @@ class BioAlchemist extends EnemyBase {
         let best = null;
         let bestRatio = 1.01;
         const rSq = this.tetherRange * this.tetherRange;
-
-        for (let i = 0; i < enemies.length; i++) {
-            const ally = enemies[i];
-            if (!ally || ally === this || ally.dead || ally.isDying || ally.isBoss || ally.isMiniBoss || ally.isEndlessBoss) continue;
+        const visit = (ally) => {
+            if (!ally || ally === this || ally.dead || ally.isDying || ally.isBoss || ally.isMiniBoss || ally.isEndlessBoss) return;
             const dx = ally.x - this.x;
             const dy = ally.y - this.y;
-            if (dx * dx + dy * dy > rSq) continue;
-
+            if (dx * dx + dy * dy > rSq) return;
             const ratio = ally.maxHp > 0 ? (ally.hp / ally.maxHp) : 1;
             if (ratio < 0.99 && ratio < bestRatio) {
                 bestRatio = ratio;
                 best = ally;
             }
-        }
+        };
+        if (typeof SpatialHashGrid !== 'undefined') SpatialHashGrid.forEachEnemyNear(this.x, this.y, this.tetherRange + 16, enemies, visit);
+        else for (let i = 0; i < enemies.length; i++) visit(enemies[i]);
         return best;
     }
 
@@ -92,12 +91,11 @@ class BioAlchemist extends EnemyBase {
     _triggerCleansePulse(enemies, effects) {
         const radSq = this.cleanseRadius * this.cleanseRadius;
         let affected = 0;
-        for (let i = 0; i < enemies.length; i++) {
-            const ally = enemies[i];
-            if (!ally || ally.dead || ally.isDying || ally.isBoss || ally.isMiniBoss || ally.isEndlessBoss) continue;
+        const visit = (ally) => {
+            if (!ally || ally.dead || ally.isDying || ally.isBoss || ally.isMiniBoss || ally.isEndlessBoss) return;
             const dx = ally.x - this.x;
             const dy = ally.y - this.y;
-            if (dx * dx + dy * dy > radSq) continue;
+            if (dx * dx + dy * dy > radSq) return;
 
             const pct = ally === this ? 0.04 : 0.065;
             const healAmt = Math.max(15, Math.round(ally.maxHp * pct));
@@ -112,7 +110,9 @@ class BioAlchemist extends EnemyBase {
                 ally.waterDrenchedTimer = 0; ally.waterSlowMultiplier = 1.0;
             }
             if (ally.hp > before) affected++;
-        }
+        };
+        if (typeof SpatialHashGrid !== 'undefined') SpatialHashGrid.forEachEnemyNear(this.x, this.y, this.cleanseRadius + 16, enemies, visit);
+        else for (let i = 0; i < enemies.length; i++) visit(enemies[i]);
         if (effects) {
             effects.addShockwave(this.x, this.y, this.cleanseRadius, 'rgba(46, 213, 115, 0.9)');
             effects.addComicSplash(this.x, this.y - 42, affected > 0 ? 'CLEANSE PULSE! 💚' : 'PURIFY! 🧪', '#2ed573', 20, true);

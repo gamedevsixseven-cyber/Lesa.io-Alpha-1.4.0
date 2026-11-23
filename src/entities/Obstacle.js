@@ -78,19 +78,19 @@ class Obstacle {
 
             // Damage nearby enemies for 250 AoE damage
             if (activeGame.enemies) {
-                for (let i = 0; i < activeGame.enemies.length; i++) {
-                    const e = activeGame.enemies[i];
-                    if (e.dead) continue;
+                const visitBlast = (e) => {
+                    if (!e || e.dead) return;
                     const dx = e.x - this.x;
                     const dy = e.y - this.y;
                     if (dx * dx + dy * dy <= blastRadiusSq) {
                         e.takeDamage(250, effects);
-                        // Blast knockback
                         const dist = Math.hypot(dx, dy) || 1;
                         e.x += (dx / dist) * 35;
                         e.y += (dy / dist) * 35;
                     }
-                }
+                };
+                if (typeof SpatialHashGrid !== 'undefined') SpatialHashGrid.forEachEnemyNear(this.x, this.y, blastRadius, activeGame.enemies, visitBlast);
+                else for (let i = 0; i < activeGame.enemies.length; i++) visitBlast(activeGame.enemies[i]);
             }
 
             // Damage player & co-op partner if standing too close

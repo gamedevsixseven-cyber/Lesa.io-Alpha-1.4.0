@@ -4,7 +4,7 @@
  * from GitHub Pages instead of stale cached app files, while keeping offline fallback.
  */
 
-const CACHE_NAME = 'lesaio-shell-v1.0.8';
+const CACHE_NAME = 'lesaio-shell-v1.1.0';
 const ASSET_CACHE = 'lesaio-assets-v1';
 
 self.addEventListener('install', (event) => {

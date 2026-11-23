@@ -220,11 +220,15 @@ class MenuController {
         if (clansBtn) {
             clansBtn.addEventListener('click', () => {
                 if (window.soundEngine) window.soundEngine.playSelect();
-                this.ui.modalManager.showFeatureModal(
-                    '🛡️ CLANS & GUILDS',
-                    'Coming soon!',
-                    'Coming soon!\n\nVillage Clans are currently in the works — get ready to squad up in a future update!'
-                );
+                if (window.clansModal && typeof window.clansModal.show === 'function') {
+                    window.clansModal.show();
+                } else {
+                    this.ui.modalManager.showFeatureModal(
+                        '🛡️ CLANS & GUILDS',
+                        'Guild Hall Loading...',
+                        'Clans are initializing — try again in a moment!'
+                    );
+                }
             });
         }
 

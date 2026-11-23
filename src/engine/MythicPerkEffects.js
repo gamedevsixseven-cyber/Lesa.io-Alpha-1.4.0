@@ -204,17 +204,16 @@ class MythicPerkEffects {
 
         const radSq = radius * radius;
         if (Array.isArray(enemies)) {
-            for (let i = 0; i < enemies.length; i++) {
-                const e = enemies[i];
-                if (!e || e.dead || e.isDying || e.isAirborneImmune) continue;
+            const visitBolt = (e) => {
+                if (!e || e.dead || e.isDying || e.isAirborneImmune) return;
                 const dSq = (e.x - targetEnemy.x) ** 2 + (e.y - targetEnemy.y) ** 2;
                 if (dSq <= radSq + (e.radius || 20) ** 2) {
-                    if (typeof e.applyShockVulnerability === 'function') {
-                        e.applyShockVulnerability(2.5, shockMult, effects);
-                    }
+                    if (typeof e.applyShockVulnerability === 'function') e.applyShockVulnerability(2.5, shockMult, effects);
                     this._damageEnemy(e, boltDmg, effects, game, true);
                 }
-            }
+            };
+            if (typeof SpatialHashGrid !== 'undefined') SpatialHashGrid.forEachEnemyNear(targetEnemy.x, targetEnemy.y, radius, enemies, visitBolt);
+            else for (let i = 0; i < enemies.length; i++) visitBolt(enemies[i]);
         }
 
         if (effects) {
@@ -246,11 +245,9 @@ class MythicPerkEffects {
         const g = game || (typeof window !== 'undefined' ? window.gameInstance : null);
         const enemies = (g && Array.isArray(g.enemies)) ? g.enemies : [];
         const radSq = radius * radius;
-        for (let i = 0; i < enemies.length; i++) {
-            const e = enemies[i];
-            if (!e || e.dead || e.isDying || e.isAirborneImmune) continue;
-            const dx = e.x - player.x;
-            const dy = e.y - player.y;
+        const visitRevive = (e) => {
+            if (!e || e.dead || e.isDying || e.isAirborneImmune) return;
+            const dx = e.x - player.x, dy = e.y - player.y;
             if ((dx * dx + dy * dy) <= radSq + (e.radius || 20) ** 2) {
                 if (typeof e.applyStun === 'function') e.applyStun(stunSec, effects);
                 const dist = Math.hypot(dx, dy) || 1;
@@ -258,7 +255,9 @@ class MythicPerkEffects {
                 e.y += (dy / dist) * 44;
                 this._damageEnemy(e, burstDmg, effects, g, true);
             }
-        }
+        };
+        if (typeof SpatialHashGrid !== 'undefined') SpatialHashGrid.forEachEnemyNear(player.x, player.y, radius, enemies, visitRevive);
+        else for (let i = 0; i < enemies.length; i++) visitRevive(enemies[i]);
 
         if (camera && typeof camera.addShake === 'function') camera.addShake(14);
         if (effects) {
@@ -321,16 +320,14 @@ class MythicPerkEffects {
                 this.chronoField = null;
             } else {
                 const cf = this.chronoField;
-                for (let i = 0; i < enemies.length; i++) {
-                    const e = enemies[i];
-                    if (!e || e.dead || e.isDying) continue;
-                    const dist = Math.hypot(e.x - cf.x, e.y - cf.y);
-                    if (dist <= cf.radius + (e.radius || 20)) {
-                        if (typeof e.applyChronoSlow === 'function') {
-                            e.applyChronoSlow(0.35, cf.slowMult);
-                        }
+                const visitChrono = (e) => {
+                    if (!e || e.dead || e.isDying) return;
+                    if (Math.hypot(e.x - cf.x, e.y - cf.y) <= cf.radius + (e.radius || 20)) {
+                        if (typeof e.applyChronoSlow === 'function') e.applyChronoSlow(0.35, cf.slowMult);
                     }
-                }
+                };
+                if (typeof SpatialHashGrid !== 'undefined') SpatialHashGrid.forEachEnemyNear(cf.x, cf.y, cf.radius, enemies, visitChrono);
+                else for (let i = 0; i < enemies.length; i++) visitChrono(enemies[i]);
             }
         }
 

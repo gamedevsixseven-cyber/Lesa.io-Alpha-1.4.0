@@ -115,31 +115,28 @@ class EnemyBase {
     }
 
     applySeparation(enemies) {
-        // High-Performance Separation with Push Budget (Prevents O(N^2) CPU spikes in massive swarms)
-        const myX = this.x;
-        const myY = this.y;
-        const myRad = this.radius;
+        if (typeof SpatialHashGrid !== 'undefined') {
+            SpatialHashGrid.separateEnemy(this, enemies);
+            return;
+        }
+        // Fallback separation with Push Budget
+        const myX = this.x, myY = this.y, myRad = this.radius;
         let appliedPushes = 0;
-
         for (let i = 0; i < enemies.length; i++) {
             const other = enemies[i];
             if (other === this || other.dead) continue;
-
             const minDist = myRad + other.radius;
             const edx = myX - other.x;
             if (Math.abs(edx) >= minDist) continue;
-
             const edy = myY - other.y;
             if (Math.abs(edy) >= minDist) continue;
-
             const distSq = edx * edx + edy * edy;
             if (distSq > 0 && distSq < minDist * minDist) {
                 const edist = Math.sqrt(distSq);
                 const push = (minDist - edist) * 0.08;
                 this.x += (edx / edist) * push;
                 this.y += (edy / edist) * push;
-                appliedPushes++;
-                if (appliedPushes >= 5) break; // Maximum push saturation reached
+                if (++appliedPushes >= 5) break;
             }
         }
     }

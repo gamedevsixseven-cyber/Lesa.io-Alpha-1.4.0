@@ -429,6 +429,10 @@ class EffectsManager {
         if (typeof ChronoRifle !== 'undefined') ChronoRifle.update(dt, gameRef);
         if (typeof SymbioteLauncher !== 'undefined') SymbioteLauncher.update(dt, gameRef);
         if (typeof HeliosOmegaCannon !== 'undefined') HeliosOmegaCannon.update(dt, gameRef);
+        if (typeof SkewerCharcoalRifle !== 'undefined') SkewerCharcoalRifle.update(dt, gameRef);
+        if (typeof HephaestusVulcanMinigun !== 'undefined') HephaestusVulcanMinigun.update(dt, gameRef);
+        if (typeof HadesOblivionRailgun !== 'undefined') HadesOblivionRailgun.update(dt);
+        if (typeof MedusaGorgonGaze !== 'undefined') MedusaGorgonGaze.update(dt);
         if (typeof EndlessMapEvolution !== 'undefined') {
             EndlessMapEvolution.update(dt, gameRef);
         }
@@ -479,6 +483,9 @@ class EffectsManager {
         if (typeof ChronoRifle !== 'undefined') ChronoRifle.drawWorld(ctx, cam);
         if (typeof SymbioteLauncher !== 'undefined') SymbioteLauncher.drawWorld(ctx, cam);
         if (typeof HeliosOmegaCannon !== 'undefined') HeliosOmegaCannon.drawWorld(ctx, cam);
+        if (typeof SkewerCharcoalRifle !== 'undefined') SkewerCharcoalRifle.drawWorld(ctx, cam);
+        if (typeof HadesOblivionRailgun !== 'undefined') HadesOblivionRailgun.drawWorld(ctx, cam);
+        if (typeof MedusaGorgonGaze !== 'undefined') MedusaGorgonGaze.drawWorld(ctx, cam);
 
         if (typeof EndlessMapEvolution !== 'undefined') {
             EndlessMapEvolution.drawWorldForeground(ctx, cam);
@@ -518,6 +525,9 @@ class EffectsManager {
         if (typeof ChronoRifle !== 'undefined') ChronoRifle.clear();
         if (typeof SymbioteLauncher !== 'undefined') SymbioteLauncher.clear();
         if (typeof HeliosOmegaCannon !== 'undefined') HeliosOmegaCannon.clear();
+        if (typeof SkewerCharcoalRifle !== 'undefined') SkewerCharcoalRifle.clear();
+        if (typeof HadesOblivionRailgun !== 'undefined') HadesOblivionRailgun.clear();
+        if (typeof MedusaGorgonGaze !== 'undefined') MedusaGorgonGaze.clear();
         if (typeof EndlessMapEvolution !== 'undefined') {
             EndlessMapEvolution.reset();
         }

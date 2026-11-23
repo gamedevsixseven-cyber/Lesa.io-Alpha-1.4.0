@@ -10,6 +10,7 @@
 class TributeManager {
     static STORAGE_KEY = 'lesaio_mazonakis_tribute_claimed';
     static UPDATE_101_KEY = 'lesaio_update_1_0_1_seen';
+    static UPDATE_110_KEY = 'lesaio_update_1_1_0_seen';
     static EXPIRY_DATE = new Date('2026-09-13T23:59:59');
 
     static isEligible() {
@@ -38,7 +39,7 @@ class TributeManager {
     static checkAndShowUpdateNotice() {
         try {
             if (typeof document === 'undefined') return;
-            if (localStorage.getItem(this.UPDATE_101_KEY) === 'true') return;
+            if (localStorage.getItem(this.UPDATE_110_KEY) === 'true') return;
             const firstNameModal = document.getElementById('first-time-name-modal');
             if (firstNameModal && !firstNameModal.classList.contains('hidden')) return;
             setTimeout(() => {
@@ -52,36 +53,39 @@ class TributeManager {
     static showUpdateNoticeModal() {
         if (typeof document === 'undefined') return;
         try {
-            if (localStorage.getItem(this.UPDATE_101_KEY) === 'true') return;
-            localStorage.setItem(this.UPDATE_101_KEY, 'true');
+            if (localStorage.getItem(this.UPDATE_110_KEY) === 'true') return;
+            localStorage.setItem(this.UPDATE_110_KEY, 'true');
         } catch (_) {}
 
-        let modal = document.getElementById('update-101-modal');
+        let modal = document.getElementById('update-110-modal');
         if (!modal) {
             modal = document.createElement('div');
-            modal.id = 'update-101-modal';
+            modal.id = 'update-110-modal';
             modal.className = 'modal-overlay hidden';
             const layer = document.querySelector('.ui-layer') || document.body;
             layer.appendChild(modal);
         }
 
+        const ico = (k) => (typeof UiIcons !== 'undefined') ? UiIcons.i(k, 'ui-icon-sm') : '';
         modal.innerHTML = `
-            <div class="modal-panel tribute-modal-panel" style="max-width: 470px !important;">
+            <div class="modal-panel tribute-modal-panel" style="max-width: 520px !important;">
                 <div class="tribute-header-banner">
-                    <div class="tribute-dove-badge"><img src="assets/ui-icons/gear_cog.svg" class="ui-icon ui-icon-box" alt=""></div>
-                    <h2 class="tribute-title">UPDATE 1.0.1</h2>
-                    <div class="tribute-years">WHAT'S NEW IN LESA.IO</div>
+                    <div class="tribute-dove-badge"><img src="assets/GearUIIcons/DEF.png" class="ui-icon ui-icon-box" alt=""></div>
+                    <h2 class="tribute-title">UPDATE 1.1.0</h2>
+                    <div class="tribute-years">THE CLANS UPDATE</div>
                 </div>
-                <div class="tribute-quote-box" style="text-align: left; padding: 18px 22px;">
-                    <p class="tribute-intro" style="text-align: center; font-style: normal; margin-bottom: 12px;">
-                        Bug fixes, performance improvements, leaderboard UI bug fixed.
+                <div class="tribute-quote-box" style="text-align: left; padding: 16px 20px;">
+                    <p class="tribute-intro" style="text-align: center; font-style: normal; margin-bottom: 10px;">
+                        Squad up with your Clan, wield 4 new weapons &amp; inspect rivals!
                     </p>
-                    <p class="tribute-body" style="margin: 6px 0;">• <strong>Bug fixes</strong></p>
-                    <p class="tribute-body" style="margin: 6px 0;">• <strong>Performance improvements</strong></p>
-                    <p class="tribute-body" style="margin: 6px 0;">• <strong>Leaderboard UI bug fixed</strong></p>
+                    <p class="tribute-body" style="margin: 6px 0;">${ico('shield')} <strong>Clans System:</strong> Guild Hall perks, Tax Vault, Weekly Bounties, Honor Crest Shop, Role Promotions &amp; Live Clan Chat</p>
+                    <p class="tribute-body" style="margin: 6px 0;">${ico('swords')} <strong>4 New Weapons:</strong> Skewer Charcoal Rifle, Hephaestus Vulcan Minigun, Hades Oblivion Railgun &amp; Medusa&apos;s Gorgon Gaze</p>
+                    <p class="tribute-body" style="margin: 6px 0;">${ico('hero_card')} <strong>View Players&apos; Gear &amp; Weapons:</strong> Inspect Equipped Gear &amp; Weapon Collections (with Privacy toggles in Settings)</p>
+                    <p class="tribute-body" style="margin: 6px 0;">${ico('chat')} <strong>QoL &amp; Social Polish:</strong> Direct Messages in Friends List, unread badges &amp; crisp SVG Friends UI overhaul</p>
+                    <p class="tribute-body" style="margin: 6px 0;">${ico('bolt')} <strong>Performance &amp; Fixes:</strong> Spatial Hash Grid collision &amp; off-screen swarm optimization, mobile FPS boosts &amp; bug fixes</p>
                 </div>
-                <div class="modal-actions" style="margin-top: 16px;">
-                    <button type="button" id="dismiss-update-101-btn" class="comic-btn tribute-claim-btn">GOT IT!</button>
+                <div class="modal-actions" style="margin-top: 14px;">
+                    <button type="button" id="dismiss-update-110-btn" class="comic-btn tribute-claim-btn">LET&apos;S GO!</button>
                 </div>
             </div>
         `;
@@ -91,7 +95,7 @@ class TributeManager {
             window.soundEngine.playPickup('star');
         }
 
-        const dismissBtn = modal.querySelector('#dismiss-update-101-btn');
+        const dismissBtn = modal.querySelector('#dismiss-update-110-btn');
         if (dismissBtn) {
             dismissBtn.addEventListener('click', () => this.hideUpdateNoticeModal());
         }
@@ -99,9 +103,9 @@ class TributeManager {
 
     static hideUpdateNoticeModal() {
         try {
-            localStorage.setItem(this.UPDATE_101_KEY, 'true');
+            localStorage.setItem(this.UPDATE_110_KEY, 'true');
         } catch (_) {}
-        const modal = typeof document !== 'undefined' ? document.getElementById('update-101-modal') : null;
+        const modal = typeof document !== 'undefined' ? document.getElementById('update-110-modal') : null;
         if (modal) modal.classList.add('hidden');
         if (window.soundEngine && typeof window.soundEngine.playSelect === 'function') {
             window.soundEngine.playSelect();

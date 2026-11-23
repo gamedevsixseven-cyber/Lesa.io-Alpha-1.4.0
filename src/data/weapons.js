@@ -405,6 +405,121 @@ const WEAPONS = {
                 trait: '+22% Crit • 4th Singularity • 6th Omega + Star-Lances'
             }
         }
+    },
+    skewer_rifle: {
+        id: 'skewer_rifle',
+        name: 'Skewer Charcoal Rifle',
+        rarity: 'Rare',
+        icon: '🍢',
+        baseDelay: 18,
+        baseDamage: 42,
+        radius: 8,
+        extraPierce: 3,
+        maxBounces: 0,
+        speedMultiplier: 1.56,
+        critChanceBonus: 0.14,
+        range: 1080,
+        color: '#ff6b35',
+        image: 'assets/WeaponIcons/SkewerCharcoalRifle.png',
+        unlockSource: 'chest_drop',
+        unlockLabel: 'CHEST DROP',
+        hideWhenLocked: true
+    },
+    vulcan_minigun: {
+        id: 'vulcan_minigun',
+        name: 'Hephaestus Vulcan Minigun',
+        rarity: 'Mythic',
+        icon: '🔥',
+        baseDelay: 9,
+        baseDamage: 20,
+        radius: 7,
+        extraPierce: 1,
+        maxBounces: 0,
+        speedMultiplier: 1.54,
+        critChanceBonus: 0.08,
+        range: 920,
+        busterEveryNShots: 8,
+        color: '#ff9f43',
+        image: 'assets/WeaponIcons/HephaestusVulcanMinigun.png',
+        unlockSource: 'chest_drop',
+        unlockLabel: 'CHEST DROP',
+        hideWhenLocked: true,
+        evolved: {
+            baseDamage: 27,
+            baseDelay: 7,
+            extraPierce: 2,
+            critChanceBonus: 0.14,
+            busterEveryNShots: 6,
+            uiStats: {
+                damage: '27 Awakened',
+                fireDelay: 'Awakened (0.12s + Spin)',
+                trait: '+55% Max Spin-Up • 6th Molten Buster + Forge Shards'
+            }
+        }
+    },
+    hades_railgun: {
+        id: 'hades_railgun',
+        name: 'Hades Oblivion Railgun',
+        rarity: 'Apex',
+        icon: '💀',
+        baseDelay: 22,
+        baseDamage: 74,
+        radius: 10,
+        extraPierce: 8,
+        maxBounces: 0,
+        speedMultiplier: 1.85,
+        critChanceBonus: 0.18,
+        range: 1200,
+        phantomEveryNShots: 3,
+        color: '#a855f7',
+        image: 'assets/WeaponIcons/HadesOblivionRailgun.png',
+        unlockSource: 'chest_drop',
+        unlockLabel: 'MYTHIC CHEST',
+        hideWhenLocked: true,
+        evolved: {
+            baseDamage: 98,
+            baseDelay: 18,
+            extraPierce: 12,
+            critChanceBonus: 0.25,
+            phantomEveryNShots: 3,
+            uiStats: {
+                damage: '98 Awakened',
+                fireDelay: 'Awakened (0.30s)',
+                trait: '+25% Crit • +12 Pierces • <20% Execute • 3rd Phantom Lances'
+            }
+        }
+    },
+    medusa_gaze: {
+        id: 'medusa_gaze',
+        name: "Medusa's Gorgon Gaze",
+        rarity: 'Mythic',
+        icon: '🐍',
+        baseDelay: 17,
+        baseDamage: 38,
+        radius: 10,
+        extraPierce: 3,
+        maxBounces: 0,
+        speedMultiplier: 1.50,
+        critChanceBonus: 0.14,
+        range: 980,
+        stareEveryNShots: 4,
+        color: '#2ed573',
+        image: 'assets/WeaponIcons/MedusasGorgonGaze.png',
+        unlockSource: 'chest_drop',
+        unlockLabel: 'CHEST DROP',
+        hideWhenLocked: true,
+        evolved: {
+            baseDamage: 52,
+            baseDelay: 14,
+            extraPierce: 5,
+            critChanceBonus: 0.20,
+            stareEveryNShots: 4,
+            uiStats: {
+                damage: '52 Awakened',
+                fireDelay: 'Awakened (0.23s)',
+                trait: '+20% Crit • +5 Pierces • Petrify + Shatter • 4th Stare Cone'
+            }
+        }
     }
 };
 

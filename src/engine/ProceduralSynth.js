@@ -87,6 +87,38 @@ class ProceduralSynth {
             gain.gain.exponentialRampToValueAtTime(0.01, now + 0.12);
             osc.start(now);
             osc.stop(now + 0.13);
+        } else if (type === 'skewer_rifle') {
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(1520 + Math.random() * 140, now);
+            osc.frequency.exponentialRampToValueAtTime(175, now + 0.10);
+            gain.gain.setValueAtTime(masterVolume * 0.74, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.11);
+            osc.start(now);
+            osc.stop(now + 0.12);
+        } else if (type === 'vulcan_minigun') {
+            osc.type = 'square';
+            osc.frequency.setValueAtTime(720 + Math.random() * 180, now);
+            osc.frequency.exponentialRampToValueAtTime(150, now + 0.06);
+            gain.gain.setValueAtTime(masterVolume * 0.50, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.065);
+            osc.start(now);
+            osc.stop(now + 0.075);
+        } else if (type === 'hades_railgun') {
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(1850 + Math.random() * 160, now);
+            osc.frequency.exponentialRampToValueAtTime(220, now + 0.14);
+            gain.gain.setValueAtTime(masterVolume * 0.85, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+            osc.start(now);
+            osc.stop(now + 0.16);
+        } else if (type === 'medusa_gaze') {
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(1750 + Math.random() * 140, now);
+            osc.frequency.exponentialRampToValueAtTime(520, now + 0.13);
+            gain.gain.setValueAtTime(masterVolume * 0.72, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.14);
+            osc.start(now);
+            osc.stop(now + 0.15);
         } else if (type === 'spas12' || type === 'sawnoff_shotgun') {
             osc.type = 'sawtooth';
             osc.frequency.setValueAtTime((type === 'sawnoff_shotgun' ? 380 : 340) + Math.random() * 50, now);

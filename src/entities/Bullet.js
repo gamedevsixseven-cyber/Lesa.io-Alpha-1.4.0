@@ -130,63 +130,50 @@ class Bullet {
 
     explode(effects) {
         if (this.type === 'helios_cannon' && typeof HeliosOmegaCannon !== 'undefined') HeliosOmegaCannon.onExpire(this, effects);
+        if (this.type === 'vulcan_minigun' && typeof HephaestusVulcanMinigun !== 'undefined') HephaestusVulcanMinigun.onExpire(this, effects);
         if (!effects) return;
         if (typeof BossProjectileFX !== 'undefined' && BossProjectileFX.explodeBullet(this, effects)) {
         } else if (this.type === 'watermelon') {
-            effects.addShockwave(this.x, this.y, 90, 'rgba(235, 77, 75, 0.7)');
-            effects.addSparks(this.x, this.y, '#eb4d4b', 10);
-            effects.addSparks(this.x, this.y, '#6ab04c', 8);
+            effects.addShockwave(this.x, this.y, 90, 'rgba(235, 77, 75, 0.7)'); effects.addSparks(this.x, this.y, '#eb4d4b', 10); effects.addSparks(this.x, this.y, '#6ab04c', 8);
         } else if (this.type === 'pepper') {
             effects.addSparks(this.x, this.y, '#ff4757', 8);
         } else if (this.type === 'soccer') {
             effects.addDust(this.x, this.y, 4, 8);
         } else if (this.type === 'bubble') {
             if (this.isChargedBubble) {
-                effects.addShockwave(this.x, this.y, 75, 'rgba(0, 206, 201, 0.85)');
-                effects.addSparks(this.x, this.y, '#00d2d3', 10);
-                effects.addSparks(this.x, this.y, '#70a1ff', 8);
-                effects.addComicSplash(this.x, this.y - 22, '🫧 POP!');
+                effects.addShockwave(this.x, this.y, 75, 'rgba(0, 206, 201, 0.85)'); effects.addSparks(this.x, this.y, '#00d2d3', 10); effects.addSparks(this.x, this.y, '#70a1ff', 8); effects.addComicSplash(this.x, this.y - 22, '🫧 POP!');
             } else {
-                effects.addSparks(this.x, this.y, '#70a1ff', 6);
-                effects.addSparks(this.x, this.y, '#00d2d3', 4);
+                effects.addSparks(this.x, this.y, '#70a1ff', 6); effects.addSparks(this.x, this.y, '#00d2d3', 4);
             }
-            if (window.soundEngine && typeof window.soundEngine.playShoot === 'function') {
-                window.soundEngine.playShoot('bubble');
-            }
+            if (window.soundEngine && typeof window.soundEngine.playShoot === 'function') window.soundEngine.playShoot('bubble');
         } else if (this.type === 'burger') {
-            effects.addSparks(this.x, this.y, '#e59b52', 6);
-            effects.addSparks(this.x, this.y, '#2ecc71', 5);
-            effects.addSparks(this.x, this.y, '#e74c3c', 5);
-            effects.addComicSplash(this.x, this.y - 15, 'SPLAT!');
+            effects.addSparks(this.x, this.y, '#e59b52', 6); effects.addSparks(this.x, this.y, '#2ecc71', 5); effects.addSparks(this.x, this.y, '#e74c3c', 5); effects.addComicSplash(this.x, this.y - 15, 'SPLAT!');
         } else if (this.type === 'lightning' || this.type === 'zeus_thunderbolt') {
-            effects.addShockwave(this.x, this.y, 65, this.type === 'zeus_thunderbolt' ? 'rgba(254, 211, 48, 0.8)' : 'rgba(0, 210, 211, 0.7)');
-            effects.addSparks(this.x, this.y, '#00d2d3', 9);
-            effects.addSparks(this.x, this.y, '#ffffff', 6);
+            effects.addShockwave(this.x, this.y, 65, this.type === 'zeus_thunderbolt' ? 'rgba(254, 211, 48, 0.8)' : 'rgba(0, 210, 211, 0.7)'); effects.addSparks(this.x, this.y, '#00d2d3', 9); effects.addSparks(this.x, this.y, '#ffffff', 6);
         } else if (this.type === 'carbine' || this.type === 'm4_carbine' || this.type === 'spas12' || this.type === 'rusty_smg' || this.type === 'sawnoff_shotgun') {
-            effects.addSparks(this.x, this.y, this._spasBreach ? '#ff4757' : '#ffd32a', 7);
-            effects.addSparks(this.x, this.y, '#ff9f43', 4);
+            effects.addSparks(this.x, this.y, this._spasBreach ? '#ff4757' : '#ffd32a', 7); effects.addSparks(this.x, this.y, '#ff9f43', 4);
+        } else if (this.type === 'skewer_rifle' || this.type === 'vulcan_minigun') {
+            effects.addSparks(this.x, this.y, '#ff6b35', 7); effects.addSparks(this.x, this.y, '#fed330', 5);
+        } else if (this.type === 'hades_railgun') {
+            effects.addShockwave(this.x, this.y, 56, 'rgba(168, 85, 247, 0.72)'); effects.addSparks(this.x, this.y, '#e879f9', 8); effects.addSparks(this.x, this.y, '#f43f5e', 5);
+        } else if (this.type === 'medusa_gaze' || this.type === 'medusa_serpent' || this.type === 'medusa_shard') {
+            effects.addSparks(this.x, this.y, '#2ed573', 7); effects.addSparks(this.x, this.y, '#fed330', 4);
         } else if (this.type === 'boomerang_saw') {
-            effects.addSparks(this.x, this.y, '#ff9f43', 6);
-            effects.addSparks(this.x, this.y, '#00f5ff', 4);
+            effects.addSparks(this.x, this.y, '#ff9f43', 6); effects.addSparks(this.x, this.y, '#00f5ff', 4);
         } else if (this.type === 'frost_cannon' || this.type === 'cryo_shard') {
             effects.addSparks(this.x, this.y, '#00f5ff', 7); effects.addSparks(this.x, this.y, '#ffffff', 5);
         } else if (this.type === 'chrono_rifle') {
-            effects.addSparks(this.x, this.y, '#00f5ff', 6);
-            effects.addSparks(this.x, this.y, '#a55eea', 5);
+            effects.addSparks(this.x, this.y, '#00f5ff', 6); effects.addSparks(this.x, this.y, '#a55eea', 5);
         } else if (this.type === 'symbiote' || this.type === 'symbiote_tendril') {
-            effects.addSparks(this.x, this.y, '#ff2e63', 6);
-            effects.addSparks(this.x, this.y, '#9b59b6', 5);
+            effects.addSparks(this.x, this.y, '#ff2e63', 6); effects.addSparks(this.x, this.y, '#9b59b6', 5);
         } else if (this.type === 'greek_flag') {
             effects.addSparks(this.x, this.y, '#0d5eaf', 6); effects.addSparks(this.x, this.y, '#ffffff', 5);
         } else if (this.type === 'dialtone' || this.type === 'soundwave') {
-            effects.addShockwave(this.x, this.y, 52, 'rgba(0, 210, 211, 0.65)');
-            effects.addSparks(this.x, this.y, '#fed330', 6);
+            effects.addShockwave(this.x, this.y, 52, 'rgba(0, 210, 211, 0.65)'); effects.addSparks(this.x, this.y, '#fed330', 6);
         } else {
             effects.addSparks(this.x, this.y, this.isEnemy ? '#ff3b30' : '#7bed9f', 5);
         }
-        if (typeof effects.addImpactSplat === 'function') {
-            effects.addImpactSplat(this.x, this.y, this.type, this.isCrit, this.isEnemy, this.isChargedBubble ? 1.4 : 1.0);
-        }
+        if (typeof effects.addImpactSplat === 'function') effects.addImpactSplat(this.x, this.y, this.type, this.isCrit, this.isEnemy, this.isChargedBubble ? 1.4 : 1.0);
     }
 
     draw(ctx) {
@@ -245,7 +232,7 @@ class Bullet {
             watermelon: '#eb4d4b', bubble: '#70a1ff', pepper: '#ff6b6b', soccer: '#ffffff',
             smoke: '#9b59b6', money_gun: '#f39c12', euro: '#f39c12', carbine: '#f39c12',
             soundwave: '#fed330', dialtone: '#fed330', burger: '#e59b52', lightning: '#00d2d3',
-            greek_flag: '#1e90ff', m4_carbine: '#ffa502', spas12: '#ff6348', rusty_smg: '#ff9f43', nail_gun: '#fed330', plasma_pistol: '#00f5ff', sawnoff_shotgun: '#ff9f43', frost_cannon: '#00f5ff', cryo_shard: '#70a1ff', boomerang_saw: '#ff9f43', chrono_rifle: '#a55eea', symbiote: '#ff2e63', symbiote_tendril: '#e056fd', zeus_thunderbolt: '#fed330', helios_cannon: '#ff9f43'
+            greek_flag: '#1e90ff', m4_carbine: '#ffa502', spas12: '#ff6348', rusty_smg: '#ff9f43', nail_gun: '#fed330', plasma_pistol: '#00f5ff', sawnoff_shotgun: '#ff9f43', frost_cannon: '#00f5ff', cryo_shard: '#70a1ff', boomerang_saw: '#ff9f43', chrono_rifle: '#a55eea', symbiote: '#ff2e63', symbiote_tendril: '#e056fd', zeus_thunderbolt: '#fed330', helios_cannon: '#ff9f43', skewer_rifle: '#ff6b35', vulcan_minigun: '#ff9f43', hades_railgun: '#a855f7', medusa_gaze: '#2ed573', medusa_serpent: '#4ade80', medusa_shard: '#6ee7b7'
         };
         return map[this.type] || this.color || (this.isEnemy ? '#ff4757' : '#2ed573');
     }

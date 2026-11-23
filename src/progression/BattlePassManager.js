@@ -329,11 +329,11 @@ class BattlePassManager {
             const type = data && data.enemyType;
             const bonus = (type === 'kleanthis' || type === 'rouf' || type === 'zeus' || type === 'kolossos') ? 45
                 : ((type === 'kiloumpas') ? 25 : 2);
-            const eventXpMult = (typeof EventManager !== 'undefined') ? EventManager.getXpMultiplier() : 1.0;
+            const eventXpMult = ((typeof EventManager !== 'undefined') ? EventManager.getXpMultiplier() : 1.0) * ((typeof ClanBuffs !== 'undefined') ? ClanBuffs.getXpMultiplier() : 1.0);
             this.addXp(Math.round(bonus * eventXpMult), 'kill');
         });
         window.EventBus.on('waveCompleted', () => {
-            const eventXpMult = (typeof EventManager !== 'undefined') ? EventManager.getXpMultiplier() : 1.0;
+            const eventXpMult = ((typeof EventManager !== 'undefined') ? EventManager.getXpMultiplier() : 1.0) * ((typeof ClanBuffs !== 'undefined') ? ClanBuffs.getXpMultiplier() : 1.0);
             this.addXp(Math.round(35 * eventXpMult), 'wave');
         });
         window.EventBus.on('questClaimed', () => this.addXp(120, 'quest'));

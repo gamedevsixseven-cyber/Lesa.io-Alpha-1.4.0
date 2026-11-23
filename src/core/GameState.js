@@ -129,7 +129,8 @@ class GameState {
             sfxVolume: parseFloat(localStorage.getItem('lesaio_sfx_volume') || '0.8'),
             showPopups: localStorage.getItem('lesaio_popups') !== 'false',
             showDamage: localStorage.getItem('lesaio_damage_numbers') !== 'false',
-            screenShake: localStorage.getItem('lesaio_screenshake') !== 'false'
+            screenShake: localStorage.getItem('lesaio_screenshake') !== 'false',
+            privateLoadout: localStorage.getItem('lesaio_private_loadout') === 'true'
         };
 
         // Active Session Transient State

@@ -134,14 +134,15 @@ class Psaltis extends EnemyBase {
     }
 
     hasAudience(enemies) {
-        for (let i = 0; i < enemies.length; i++) {
-            const e = enemies[i];
-            if (!e || e === this || e.dead || e.isBoss || e.isMiniBoss) continue;
-            const edx = e.x - this.x;
-            const edy = e.y - this.y;
-            if (edx * edx + edy * edy < 340 * 340) return true;
-        }
-        return false;
+        let found = false;
+        const visit = (e) => {
+            if (!e || e === this || e.dead || e.isBoss || e.isMiniBoss) return;
+            const edx = e.x - this.x, edy = e.y - this.y;
+            if (edx * edx + edy * edy < 340 * 340) { found = true; return false; }
+        };
+        if (typeof SpatialHashGrid !== 'undefined') SpatialHashGrid.forEachEnemyNear(this.x, this.y, 356, enemies, visit);
+        else for (let i = 0; i < enemies.length && !found; i++) visit(enemies[i]);
+        return found;
     }
 
     startSinging(effects) {
@@ -185,18 +186,20 @@ class Psaltis extends EnemyBase {
             }
         }
 
-        // Apply / refresh the cheer on allies inside the aura, revoke it outside
-        for (let i = 0; i < enemies.length; i++) {
-            const e = enemies[i];
-            if (!e || e === this || e.dead || e.isBoss || e.isMiniBoss) continue;
-            const edx = e.x - this.x;
-            const edy = e.y - this.y;
-            if (edx * edx + edy * edy <= Psaltis.CHEER_RADIUS * Psaltis.CHEER_RADIUS) {
-                this.applyCheer(e);
-            } else if (this.cheered.has(e)) {
-                this.removeCheer(e);
+        // Revoke cheer from allies that died or left the aura, then buff nearby allies
+        const cheerSq = Psaltis.CHEER_RADIUS * Psaltis.CHEER_RADIUS;
+        if (this.cheered.size > 0) {
+            for (const e of this.cheered.keys()) {
+                if (!e || e.dead || ((e.x - this.x) ** 2 + (e.y - this.y) ** 2) > cheerSq) this.removeCheer(e);
             }
         }
+        const visitCheer = (e) => {
+            if (!e || e === this || e.dead || e.isBoss || e.isMiniBoss) return;
+            const edx = e.x - this.x, edy = e.y - this.y;
+            if (edx * edx + edy * edy <= cheerSq) this.applyCheer(e);
+        };
+        if (typeof SpatialHashGrid !== 'undefined') SpatialHashGrid.forEachEnemyNear(this.x, this.y, Psaltis.CHEER_RADIUS + 16, enemies, visitCheer);
+        else for (let i = 0; i < enemies.length; i++) visitCheer(enemies[i]);
     }
 
     applyCheer(e) {
@@ -502,14 +505,13 @@ class Psaltis extends EnemyBase {
     }
 
     drawBuffedAllyNotes(ctx) {
-        if (typeof window === 'undefined' || !window.gameInstance || !window.gameInstance.enemies) return;
-        const enemies = window.gameInstance.enemies;
+        if (!this.cheered || this.cheered.size === 0) return;
         const noteLbl = EnemyBase.getLabelSprite('♪', '900 17px "Fredoka", sans-serif', '#f1c40f', '#1e272e', 3, 0, 'bottom');
-
-        for (let i = 0; i < enemies.length; i++) {
-            const e = enemies[i];
-            if (!e || !e._psaltisCheer || e === this) continue;
-            const noteY = e.y - e.radius - 30 + Math.sin(this.age * 0.12 + i) * 3;
+        let idx = 0;
+        for (const e of this.cheered.keys()) {
+            idx++;
+            if (!e || e.dead || !e._psaltisCheer || e === this) continue;
+            const noteY = e.y - e.radius - 30 + Math.sin(this.age * 0.12 + idx) * 3;
             EnemyBase.drawLabel(ctx, noteLbl, e.x, noteY);
         }
     }

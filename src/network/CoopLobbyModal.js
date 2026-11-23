@@ -56,9 +56,13 @@ class CoopLobbyModal {
             maxHp = Math.max(25, Math.round(maxHp * (1 - (st.maxHpPenalty || 0.25))));
         }
         if (starBlessed) maxHp = Math.round(maxHp * 1.10);
+        if (typeof ClanBuffs !== 'undefined') maxHp = Math.round(maxHp * ClanBuffs.getMaxHpMultiplier());
+        const clanRef = (typeof window !== 'undefined' && window.clanService && window.clanService.currentClan) ? window.clanService.currentClan : null;
         return {
             name, heroType, weaponType, heroSkin, heroStyle, starBlessed,
             equippedArmorId, armorEvolved, weaponEvolved,
+            clanId: clanRef ? clanRef.id : null,
+            clanTag: clanRef ? clanRef.tag : null,
             maxHp: Math.min(1200, Math.round(maxHp)),
             damageReduction,
             magnetRadius: Math.max(80, Math.min(400, Math.round(magnetRadius)))

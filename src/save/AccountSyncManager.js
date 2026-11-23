@@ -213,10 +213,14 @@ class AccountSyncManager {
                             sfxVolume: parseFloat(localStorage.getItem('lesaio_sfx_volume') || '0.8'),
                             showPopups: true,
                             showDamage: true,
-                            screenShake: true
+                            screenShake: true,
+                            privateLoadout: Boolean((docData.settings && docData.settings.privateLoadout) || (docData.publicLoadout && docData.publicLoadout.private))
                         }
                     };
 
+                    if (masterSaveV2.settings && typeof masterSaveV2.settings.privateLoadout === 'boolean') {
+                        localStorage.setItem('lesaio_private_loadout', String(masterSaveV2.settings.privateLoadout));
+                    }
                     // Persist to local storage
                     localStorage.setItem('lesaio_save_v2', JSON.stringify(masterSaveV2));
                     if (typeof SaveMigration !== 'undefined') SaveMigration.writeBackup(masterSaveV2);
@@ -489,6 +493,7 @@ class AccountSyncManager {
             'lesaio_hero_plays',
             'lesaio_cloud_payload',
             'lesaio_last_cloud_sync',
+            'lesaio_private_loadout',
             'lesaio_google_linked',
             'lesaio_google_uid',
             'lesaio_google_email',

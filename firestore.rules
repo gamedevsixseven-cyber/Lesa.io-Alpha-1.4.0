@@ -193,6 +193,34 @@ service cloud.firestore {
           || (request.auth != null && request.auth.uid in resource.data.users)
         )
       );
+
+      // Direct Messages subcollection between accepted friends
+      match /messages/{msgId} {
+        allow read: if true;
+
+        allow create: if isPrimaryDev() || (
+          exists(/databases/$(database)/documents/friendships/$(relId))
+          && get(/databases/$(database)/documents/friendships/$(relId)).data.status == 'accepted'
+          && request.resource.data.keys().hasAll(['senderUid', 'senderName', 'text', 'createdAt'])
+          && request.resource.data.keys().size() <= 8
+          && request.resource.data.senderUid is string
+          && request.resource.data.senderUid in get(/databases/$(database)/documents/friendships/$(relId)).data.users
+          && (
+            isSignedInOwner(request.resource.data.senderUid)
+            || isGuestProfileId(request.resource.data.senderUid)
+          )
+          && request.resource.data.senderName is string
+          && request.resource.data.senderName.size() >= 1
+          && request.resource.data.senderName.size() <= 40
+          && request.resource.data.text is string
+          && request.resource.data.text.size() >= 1
+          && request.resource.data.text.size() <= 240
+          && request.resource.data.createdAt is int
+          && request.resource.data.createdAt > 0
+        );
+
+        allow update, delete: if isPrimaryDev();
+      }
     }
 
     // =========================================================================
@@ -228,7 +256,87 @@ service cloud.firestore {
     }
 
     // =========================================================================
-    // 6. DEFAULT DENY CATCH-ALL
+    // 6. CLANS, TAX VAULT, SHARED WEEKLY BOUNTIES & CLAN CHAT
+    // - Protects immutable Clan ID/Tag/Name and Google-linked Leaders
+    // - Allows Tax Vault donations, Weekly Bounties, Role Promotions & Live Chat
+    // =========================================================================
+    match /clans/{clanId} {
+      allow read: if true;
+
+      allow create: if isPrimaryDev() || (
+        request.resource.data.keys().size() <= 24
+        && request.resource.data.id == clanId
+        && request.resource.data.name is string
+        && request.resource.data.name.size() >= 3
+        && request.resource.data.name.size() <= 20
+        && request.resource.data.tag is string
+        && request.resource.data.tag.size() >= 3
+        && request.resource.data.tag.size() <= 4
+        && request.resource.data.leaderUid is string
+        && (
+          isSignedInOwner(request.resource.data.leaderUid)
+          || isGuestProfileId(request.resource.data.leaderUid)
+        )
+        && request.resource.data.members is map
+        && request.resource.data.leaderUid in request.resource.data.members
+        && isNonNegNum(request.resource.data.xp, 100000000)
+      );
+
+      allow update: if isPrimaryDev() || (
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'members', 'memberCount', 'joinRequests', 'activityLog', 'leaderUid',
+          'motto', 'vault', 'xp', 'level', 'bounties', 'claimedXpKeys'
+        ])
+        && isNonNegNum(request.resource.data.xp, 100000000)
+        && isNonNegNum(request.resource.data.level, 50)
+        && (
+          !request.resource.data.diff(resource.data).affectedKeys().hasAny(['leaderUid'])
+          || isSignedInOwner(resource.data.leaderUid)
+          || isGuestProfileId(resource.data.leaderUid)
+        )
+      );
+
+      allow delete: if isPrimaryDev() || (
+        resource != null
+        && resource.data.memberCount <= 1
+        && (
+          isSignedInOwner(resource.data.leaderUid)
+          || isGuestProfileId(resource.data.leaderUid)
+        )
+      );
+
+      // Clan Guild Hall Chat subcollection (members only)
+      match /messages/{msgId} {
+        allow read: if true;
+
+        allow create: if isPrimaryDev() || (
+          exists(/databases/$(database)/documents/clans/$(clanId))
+          && request.resource.data.keys().hasAll(['senderUid', 'senderName', 'text', 'createdAt'])
+          && request.resource.data.keys().size() <= 10
+          && request.resource.data.senderUid is string
+          && request.resource.data.senderUid in get(/databases/$(database)/documents/clans/$(clanId)).data.members
+          && (
+            isSignedInOwner(request.resource.data.senderUid)
+            || isGuestProfileId(request.resource.data.senderUid)
+          )
+          && request.resource.data.senderName is string
+          && request.resource.data.senderName.size() >= 1
+          && request.resource.data.senderName.size() <= 40
+          && request.resource.data.text is string
+          && request.resource.data.text.size() >= 1
+          && request.resource.data.text.size() <= 240
+          && request.resource.data.createdAt is int
+          && request.resource.data.createdAt > 0
+          && (!('senderLevel' in request.resource.data) || (request.resource.data.senderLevel is int && request.resource.data.senderLevel >= 1 && request.resource.data.senderLevel <= 999))
+          && (!('senderRole' in request.resource.data) || request.resource.data.senderRole in ['leader', 'co_leader', 'officer', 'member'])
+        );
+
+        allow update, delete: if isPrimaryDev();
+      }
+    }
+
+    // =========================================================================
+    // 7. DEFAULT DENY CATCH-ALL
     // =========================================================================
     match /{document=**} {
       allow read, write: if false;

@@ -153,20 +153,19 @@ class LegendaryPerkEffects {
                 const stunSec = st.stunSec || 1.0;
 
                 if (g && Array.isArray(g.enemies)) {
-                    for (let i = 0; i < g.enemies.length; i++) {
-                        const e = g.enemies[i];
-                        if (!e || e.dead || e.isDying || e.isAirborneImmune) continue;
-                        const dx = e.x - player.x;
-                        const dy = e.y - player.y;
-                        const dist = Math.hypot(dx, dy);
-                        if (dist > range + (e.radius || 20)) continue;
+                    const visitSlam = (e) => {
+                        if (!e || e.dead || e.isDying || e.isAirborneImmune) return;
+                        const dx = e.x - player.x, dy = e.y - player.y, dist = Math.hypot(dx, dy);
+                        if (dist > range + (e.radius || 20)) return;
                         let angleDiff = Math.abs(Math.atan2(dy, dx) - dir);
                         if (angleDiff > Math.PI) angleDiff = Math.PI * 2 - angleDiff;
                         if (dist <= 75 || angleDiff <= 1.2) {
                             this._damageEnemy(e, dmg, effects, g, true);
                             if (!e.dead && typeof e.applyStun === 'function') e.applyStun(stunSec, effects);
                         }
-                    }
+                    };
+                    if (typeof SpatialHashGrid !== 'undefined') SpatialHashGrid.forEachEnemyNear(player.x, player.y, range, g.enemies, visitSlam);
+                    else for (let i = 0; i < g.enemies.length; i++) visitSlam(g.enemies[i]);
                 }
                 this.phalanxCones.push({ x: player.x, y: player.y, angle: dir, range, timer: 18, maxTimer: 18 });
                 if (effects) {
@@ -232,16 +231,17 @@ class LegendaryPerkEffects {
         const shatterDmg = Math.max(35, Math.round(refDmg * (0.40 + (st.vulnBonus || 0.20))));
         if (Array.isArray(enemies)) {
             const radSq = shatterRadius * shatterRadius;
-            for (let i = 0; i < enemies.length; i++) {
-                const e = enemies[i];
-                if (!e || e.dead || e.isDying || e.isAirborneImmune) continue;
+            const visitShatter = (e) => {
+                if (!e || e.dead || e.isDying || e.isAirborneImmune) return;
                 const dSq = (e.x - centerEnemy.x) ** 2 + (e.y - centerEnemy.y) ** 2;
                 if (dSq <= radSq + (e.radius || 20) ** 2) {
                     e._permafrostVulnTimer = Math.max(e._permafrostVulnTimer || 0, Math.round((freezeSec + 1.5) * 60));
                     e._permafrostVulnBonus = Math.max(e._permafrostVulnBonus || 0, st.vulnBonus || 0.20);
                     this._damageEnemy(e, shatterDmg, effects, game, true);
                 }
-            }
+            };
+            if (typeof SpatialHashGrid !== 'undefined') SpatialHashGrid.forEachEnemyNear(centerEnemy.x, centerEnemy.y, shatterRadius, enemies, visitShatter);
+            else for (let i = 0; i < enemies.length; i++) visitShatter(enemies[i]);
         }
         if (effects) {
             effects.addShockwave(centerEnemy.x, centerEnemy.y, shatterRadius, 'rgba(116, 185, 255, 0.90)');
@@ -292,15 +292,16 @@ class LegendaryPerkEffects {
                 const st = this.activeDashShatter.stats;
                 const reach = ((st.shatterRadius || 150) * 0.65) + (player.radius || 22);
                 const refDmg = 75 * (player.damageMultiplier || 1);
-                for (let i = 0; i < enemies.length; i++) {
-                    const e = enemies[i];
-                    if (!e || e.dead || e.isDying || this.activeDashShatter.hitSet.has(e)) continue;
-                    if (!(e._chillStacks > 0 || e.iceSlowTimer > 0)) continue;
+                const visitDash = (e) => {
+                    if (!e || e.dead || e.isDying || this.activeDashShatter.hitSet.has(e)) return;
+                    if (!(e._chillStacks > 0 || e.iceSlowTimer > 0)) return;
                     if (Math.hypot(e.x - player.x, e.y - player.y) <= reach + (e.radius || 20)) {
                         this.activeDashShatter.hitSet.add(e);
                         this._triggerFreezeShatter(e, st, enemies, effects, game, refDmg);
                     }
-                }
+                };
+                if (typeof SpatialHashGrid !== 'undefined') SpatialHashGrid.forEachEnemyNear(player.x, player.y, reach, enemies, visitDash);
+                else for (let i = 0; i < enemies.length; i++) visitDash(enemies[i]);
             } else {
                 this.activeDashShatter = null;
             }
@@ -313,16 +314,18 @@ class LegendaryPerkEffects {
             const pathDmg = (st.pathDamage || 75) * (player.damageMultiplier || 1);
             const hitWidth = st.tetherWidth || 34;
 
-            for (let i = 0; i < enemies.length; i++) {
-                const e = enemies[i];
-                if (!e || e.dead || e.isDying || bk.hitSet.has(e)) continue;
+            const visitBlink = (e) => {
+                if (!e || e.dead || e.isDying || bk.hitSet.has(e)) return;
                 const r = (e.radius || 20) + hitWidth;
                 if (this._distToSegmentSq(e.x, e.y, bk.startX, bk.startY, player.x, player.y) <= r * r) {
                     bk.hitSet.add(e);
                     this._damageEnemy(e, pathDmg, effects, game, true);
                     if (effects) effects.addSparks(e.x, e.y, '#00f5ff', 6);
                 }
-            }
+            };
+            if (typeof SpatialHashGrid !== 'undefined') {
+                SpatialHashGrid.forEachEnemyInBox(Math.min(bk.startX, player.x), Math.min(bk.startY, player.y), Math.max(bk.startX, player.x), Math.max(bk.startY, player.y), hitWidth, enemies, visitBlink);
+            } else for (let i = 0; i < enemies.length; i++) visitBlink(enemies[i]);
 
             if (!player.isDashing) {
                 const dur = Math.round((st.tetherDurationSec || 1.5) * 60);
@@ -347,15 +350,17 @@ class LegendaryPerkEffects {
             if (t.tickCd <= 0) {
                 t.tickCd = 15;
                 const zapDmg = Math.max(8, Math.round(t.dps * 0.25));
-                for (let ei = 0; ei < enemies.length; ei++) {
-                    const e = enemies[ei];
-                    if (!e || e.dead || e.isDying || e.isAirborneImmune) continue;
+                const visitZap = (e) => {
+                    if (!e || e.dead || e.isDying || e.isAirborneImmune) return;
                     const r = (e.radius || 20) + t.width;
                     if (this._distToSegmentSq(e.x, e.y, t.x1, t.y1, t.x2, t.y2) <= r * r) {
                         this._damageEnemy(e, zapDmg, effects, game, false);
                         if (effects && Math.random() < 0.45) effects.addSparks(e.x, e.y, '#74b9ff', 4);
                     }
-                }
+                };
+                if (typeof SpatialHashGrid !== 'undefined') {
+                    SpatialHashGrid.forEachEnemyInBox(Math.min(t.x1, t.x2), Math.min(t.y1, t.y2), Math.max(t.x1, t.x2), Math.max(t.y1, t.y2), t.width, enemies, visitZap);
+                } else for (let ei = 0; ei < enemies.length; ei++) visitZap(enemies[ei]);
             }
             if (t.timer <= 0) this.blinkTethers.splice(i, 1);
         }

@@ -83,16 +83,17 @@ class FriendService {
             ? PerkProgression.getFeatSnapshot(gs) : null;
         const endlessMaxWave = FriendService._maxNum(p.combatFeats && p.combatFeats.endlessMaxWave, featSnap && featSnap.endlessMaxWave, rawMaxWave > 20 ? rawMaxWave : 0);
 
+        const _cl = (typeof window !== 'undefined' && window.clanService && window.clanService.currentClan) || null;
         return {
             uid, tag, tagClean, name, nameLower: name.trim().toLowerCase(),
+            clanId: _cl ? _cl.id : null, clanTag: _cl ? _cl.tag : null, clanName: _cl ? _cl.name : null,
             level: p.accountLevel || parseInt(localStorage.getItem('lesaio_account_level') || '1', 10) || 1,
             selectedHero: p.selectedHero || localStorage.getItem('lesaio_selected_hero') || 'psanas',
             highScore: FriendService._maxNum(stats.highScore, parseInt(localStorage.getItem('lesaio_highscore') || '0', 10)),
-            maxWave: rawMaxWave,
-            totalKills: FriendService._maxNum(stats.totalKills, parseInt(localStorage.getItem('lesaio_total_kills') || '0', 10)),
-            endlessMaxWave,
-            olympusMaxFloor: FriendService._maxNum(p.combatFeats && p.combatFeats.olympusMaxFloor, featSnap && featSnap.olympusMaxFloor),
-            cosmetics: typeof CosmeticManager !== 'undefined' ? CosmeticManager.getPublicSummary() : {}
+            maxWave: rawMaxWave, totalKills: FriendService._maxNum(stats.totalKills, parseInt(localStorage.getItem('lesaio_total_kills') || '0', 10)),
+            endlessMaxWave, olympusMaxFloor: FriendService._maxNum(p.combatFeats && p.combatFeats.olympusMaxFloor, featSnap && featSnap.olympusMaxFloor),
+            cosmetics: typeof CosmeticManager !== 'undefined' ? CosmeticManager.getPublicSummary() : {},
+            loadout: typeof PlayerLoadoutExtractor !== 'undefined' ? PlayerLoadoutExtractor.getLocalSummary() : null
         };
     }
 
@@ -163,13 +164,16 @@ class FriendService {
             const ew = FriendService._maxNum(0, me.endlessMaxWave, cpEndless, mw > 20 ? mw : 0);
             const tk = FriendService._maxNum(0, me.totalKills, csStats.totalKills, cSocial.totalKills, !wiped && c && c.lbTotalKills);
             Object.assign(baseDoc, {
-                friendTag: me.tag, friendTagClean: me.tagClean,
-                playerName: me.name, playerNameLower: me.nameLower,
+                friendTag: me.tag, friendTagClean: me.tagClean, playerName: me.name, playerNameLower: me.nameLower,
                 accountLevel: lvl, level: lvl, selectedHero: me.selectedHero,
                 socialStats: { highScore: hs, maxWave: mw, totalKills: tk, endlessMaxWave: ew, olympusMaxFloor: me.olympusMaxFloor },
-                cosmetics: me.cosmetics, lbHighScore: hs,
-                lbEndlessWave: ew, lbTotalKills: tk
+                clanId: me.clanId || null, clanTag: me.clanTag || null, clanName: me.clanName || null,
+                cosmetics: me.cosmetics, lbHighScore: hs, lbEndlessWave: ew, lbTotalKills: tk
             });
+            if (typeof PlayerLoadoutExtractor !== 'undefined') {
+                baseDoc.publicLoadout = PlayerLoadoutExtractor.serializeForPublicCloud();
+                baseDoc.privateLoadout = PlayerLoadoutExtractor.isLocalPrivate();
+            }
         }
 
         try {
@@ -334,15 +338,15 @@ class FriendService {
 
         return {
             uid, name, tag, tagClean: (data.friendTagClean || tag.replace(/[^A-Z0-9]/g, '')).toUpperCase(),
+            clanId: data.clanId || null, clanTag: data.clanTag || null, clanName: data.clanName || null,
             level, hero, isOnline, lastSeenAt,
             currentStatus: isOnline ? (data.currentStatus || 'In Lobby') : 'Offline',
             coopRoomCode: isOnline ? (data.coopRoomCode || null) : null,
             highScore: FriendService._maxNum(social.highScore, pStats.highScore, rStats.highScore, data.highScore, data.lbHighScore),
-            maxWave,
-            totalKills: FriendService._maxNum(social.totalKills, pStats.totalKills, rStats.totalKills, data.totalKills, data.lbTotalKills),
-            endlessMaxWave,
-            olympusMaxFloor: FriendService._maxNum(social.olympusMaxFloor, pFeats.olympusMaxFloor, cosRaw.olympusMaxFloor),
-            cosmetics: typeof CosmeticManager !== 'undefined' ? CosmeticManager.extractPublicCosmetics(data) : {}
+            maxWave, totalKills: FriendService._maxNum(social.totalKills, pStats.totalKills, rStats.totalKills, data.totalKills, data.lbTotalKills),
+            endlessMaxWave, olympusMaxFloor: FriendService._maxNum(social.olympusMaxFloor, pFeats.olympusMaxFloor, cosRaw.olympusMaxFloor),
+            cosmetics: typeof CosmeticManager !== 'undefined' ? CosmeticManager.extractPublicCosmetics(data) : {},
+            loadout: typeof PlayerLoadoutExtractor !== 'undefined' ? PlayerLoadoutExtractor.extractFromDoc(data, { isSelf: uid === this.getMyUid() }) : null
         };
     }
 

@@ -292,7 +292,8 @@ class ChestManager {
      */
     rollAndGrantLootForDef(def, showModal = true) {
         // 1. Roll Coins
-        const coins = Math.floor(Math.random() * (def.maxCoins - def.minCoins + 1)) + def.minCoins;
+        const rawCoins = Math.floor(Math.random() * (def.maxCoins - def.minCoins + 1)) + def.minCoins;
+        const coins = Math.round(rawCoins * ((typeof ClanBuffs !== 'undefined') ? ClanBuffs.getChestCoinsMultiplier() : 1.0));
 
         // 2. Roll Gems
         let gems = 0;

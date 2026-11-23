@@ -43,6 +43,10 @@ class UiIcons {
         weapon_dialtone: 'assets/WeaponIcons/RoufBlaster.png',
         weapon_zeus_thunderbolt: 'assets/WeaponIcons/ZeusThunderbolt.png',
         weapon_helios_cannon: 'assets/WeaponIcons/HeliosOmegaCannon.png',
+        weapon_skewer_rifle: 'assets/WeaponIcons/SkewerCharcoalRifle.png',
+        weapon_vulcan_minigun: 'assets/WeaponIcons/HephaestusVulcanMinigun.png',
+        weapon_hades_railgun: 'assets/WeaponIcons/HadesOblivionRailgun.png',
+        weapon_medusa_gaze: 'assets/WeaponIcons/MedusasGorgonGaze.png',
 
         // Custom Comic SVG Icons
         coin: 'assets/ui-icons/coin.svg',
@@ -125,7 +129,10 @@ class UiIcons {
         mat_mati_crystal: 'assets/ui-icons/mat_mati_crystal.svg',
         mat_olympian_bronze: 'assets/ui-icons/mat_olympian_bronze.svg',
         mat_ambrosia_spark: 'assets/ui-icons/mat_ambrosia_spark.svg',
-        evolution_stone: 'assets/ui-icons/evolution_stone.svg'
+        evolution_stone: 'assets/ui-icons/evolution_stone.svg',
+        chat: 'assets/ui-icons/chat.svg',
+        hero_card: 'assets/ui-icons/hero_card.svg',
+        send: 'assets/ui-icons/send.svg'
     };
 
     // Ordered replacement list so multi-codepoint glyphs (e.g. variation selectors) match before bare glyphs.
@@ -133,23 +140,25 @@ class UiIcons {
         ['⚠️', 'warn'], ['⚔️', 'swords'], ['🛡️', 'shield'], ['⏱️', 'timer'], ['🗡️', 'sword'],
         ['✉️', 'mail'], ['⚙️', 'gear_cog'], ['🏛️', 'temple'], ['ℹ️', 'info'], ['❤️', 'heart'],
         ['✏️', 'edit'], ['🛠️', 'wrench'], ['🪙', 'coin'], ['💎', 'gem'], ['🔒', 'lock'],
-        ['🔓', 'unlock'], ['✅', 'check'], ['❌', 'cross'], ['⭐', 'star'], ['🌟', 'star'],
+        ['🔓', 'unlock'], ['✅', 'check'], ['✓', 'check'], ['❌', 'cross'], ['✕', 'cross'],
+        ['⭐', 'star'], ['🌟', 'star'], ['💬', 'chat'], ['👤', 'hero_card'], ['📤', 'send'],
         ['⏱', 'timer'], ['⏳', 'hourglass'], ['🎉', 'celebrate'], ['🎁', 'gift'], ['🎯', 'target'],
         ['💥', 'boom'], ['🔥', 'flame'], ['💣', 'bomb'], ['⚡', 'bolt'], ['➕', 'plus'],
-        ['🔍', 'search'], ['📦', 'crate'], ['📜', 'scroll'], ['🥊', 'boxing_glove'], ['🌊', 'wave'],
-        ['🍪', 'cookie'], ['🧊', 'snowflake'], ['❄️', 'snowflake'], ['👑', 'crown'], ['🏆', 'trophy'],
-        ['👥', 'people'], ['🔔', 'bell'], ['📅', 'calendar'], ['🎵', 'music'], ['🔊', 'sound'],
-        ['🔇', 'sound'], ['☁️', 'cloud'], ['☁', 'cloud'], ['🔄', 'sync'], ['📋', 'copy'],
-        ['📊', 'chart'], ['📈', 'chart'], ['🎮', 'gamepad'], ['⚽', 'soccer'], ['🚀', 'rocket'],
-        ['🤝', 'handshake'], ['🟢', 'orb_green'], ['🔵', 'orb_blue'], ['🟣', 'orb_purple'],
-        ['🟠', 'orb_orange'], ['🔴', 'orb_red'], ['⚫', 'orb_dark'], ['❓', 'mystery'],
+        ['🔍', 'search'], ['🔎', 'search'], ['🌐', 'people'], ['📦', 'crate'], ['📜', 'scroll'],
+        ['🥊', 'boxing_glove'], ['🌊', 'wave'], ['🍪', 'cookie'], ['🧊', 'snowflake'],
+        ['❄️', 'snowflake'], ['👑', 'crown'], ['🏆', 'trophy'], ['👥', 'people'], ['🔔', 'bell'],
+        ['📅', 'calendar'], ['🎵', 'music'], ['🔊', 'sound'], ['🔇', 'sound'], ['☁️', 'cloud'],
+        ['☁', 'cloud'], ['🔄', 'sync'], ['📋', 'copy'], ['📊', 'chart'], ['📈', 'chart'],
+        ['🎮', 'gamepad'], ['⚽', 'soccer'], ['🚀', 'rocket'], ['🤝', 'handshake'],
+        ['🟢', 'orb_green'], ['🔵', 'orb_blue'], ['🟣', 'orb_purple'], ['🟠', 'orb_orange'],
+        ['🔴', 'orb_red'], ['⚫', 'orb_dark'], ['●', 'orb_green'], ['❓', 'mystery'],
         ['✨', 'sparkle'], ['💡', 'tip_bulb'], ['⛶', 'fullscreen'], ['⏸', 'pause'],
         ['🏡', 'home'], ['▶', 'play'], ['👟', 'boot'], ['💨', 'wind'], ['🌀', 'swirl'],
         ['🧲', 'magnet'], ['👆', 'tap'], ['🚨', 'siren'], ['🚔', 'siren'], ['📱', 'phone_rotate'],
         ['🕊️', 'dove'], ['🕊', 'dove'], ['💰', 'bag_gold'], ['💳', 'credit_card'], ['🛒', 'cart'],
         ['🔐', 'key'], ['📖', 'book'], ['📢', 'megaphone'], ['🎒', 'inventory'], ['🪖', 'heroes'],
-        ['🎖️', 'talents'], ['🎖', 'talents'], ['📊', 'chart'], ['📨', 'mail'], ['💚', 'heart'],
-        ['👴', 'heroes'], ['👑', 'crown'], ['👾', 'gamepad'], ['🪑', 'crate'], ['🦸', 'heroes'],
+        ['🎖️', 'talents'], ['🎖', 'talents'], ['📨', 'mail'], ['📩', 'mail'], ['💚', 'heart'],
+        ['👴', 'heroes'], ['👾', 'gamepad'], ['🪑', 'crate'], ['🦸', 'heroes'],
         ['🦹', 'bomb'], ['🧿', 'mat_mati_crystal']
     ];
 

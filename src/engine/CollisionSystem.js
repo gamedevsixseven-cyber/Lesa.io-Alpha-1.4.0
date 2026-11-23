@@ -31,6 +31,13 @@ class CollisionSystem {
             else if (p.y > maxY) { p.y = maxY; if (p.vy > 0) p.vy = 0; }
         }
 
+        const hasGrid = typeof SpatialHashGrid !== 'undefined';
+        if (hasGrid) SpatialHashGrid.beginCollisionPass(game);
+        const eGrid = hasGrid ? SpatialHashGrid.enemyGrid : null;
+        const oGrid = hasGrid ? SpatialHashGrid.obstacleGrid : null;
+        const useEGrid = !!(eGrid && eGrid.source === enemies);
+        const useOGrid = !!(oGrid && oGrid.source === obstacles);
+
         // 1. Bullets Collision Pass
         for (let bi = 0; bi < bullets.length; bi++) {
             const b = bullets[bi];
@@ -38,8 +45,10 @@ class CollisionSystem {
 
             if (!b.isEnemy) {
                 // Player Bullet vs Enemies
-                for (let ei = 0; ei < enemies.length; ei++) {
-                    const e = enemies[ei];
+                const eBuf = hasGrid ? SpatialHashGrid._bulletEnemyBuf : null;
+                const eLen = useEGrid ? eGrid.queryIndices(b.x, b.y, b.radius + eGrid.maxRadius + 2, eBuf) : enemies.length;
+                for (let ei = 0; ei < eLen; ei++) {
+                    const e = useEGrid ? enemies[eBuf[ei]] : enemies[ei];
                     if (e.dead || e.isDying || e.isAirborneImmune) continue;
                     if (b.hitEntities && b.hitEntities.has(e)) continue;
 
@@ -97,8 +106,10 @@ class CollisionSystem {
 
                 // Player Bullet vs Crates, Barrels, Trees & Buildings
                 if (!b.dead) {
-                    for (let oi = 0; oi < obstacles.length; oi++) {
-                        const obs = obstacles[oi];
+                    const oBuf = hasGrid ? SpatialHashGrid._bulletObsBuf : null;
+                    const oLen = useOGrid ? oGrid.queryIndices(b.x, b.y, b.radius + oGrid.maxRadius + 2, oBuf) : obstacles.length;
+                    for (let oi = 0; oi < oLen; oi++) {
+                        const obs = useOGrid ? obstacles[oBuf[oi]] : obstacles[oi];
                         if (obs.dead) continue;
                         if (obs.type === 'crate' || obs.type === 'barrel' || obs.type === 'tree' || obs.type === 'building') {
                             const odx = b.x - obs.x;
@@ -135,8 +146,10 @@ class CollisionSystem {
                 }
             } else {
                 // Enemy Bullet vs Obstacles (Crates, Barrels, Mushrooms, Trees & Buildings)
-                for (let oi = 0; oi < obstacles.length; oi++) {
-                    const obs = obstacles[oi];
+                const oBuf = hasGrid ? SpatialHashGrid._bulletObsBuf : null;
+                const oLen = useOGrid ? oGrid.queryIndices(b.x, b.y, b.radius + oGrid.maxRadius + 2, oBuf) : obstacles.length;
+                for (let oi = 0; oi < oLen; oi++) {
+                    const obs = useOGrid ? obstacles[oBuf[oi]] : obstacles[oi];
                     if (obs.dead) continue;
                     if (obs.type === 'crate' || obs.type === 'barrel' || obs.type === 'mushroom' || obs.type === 'tree' || obs.type === 'building') {
                         const odx = b.x - obs.x;
@@ -199,124 +212,90 @@ class CollisionSystem {
         }
 
         // 2. Player & Co-op Partner vs Enemy Body Collision
+        const pBuf = hasGrid ? SpatialHashGrid._playerEnemyBuf : null;
+        this._checkUnitEnemyBody(p, enemies, eGrid, useEGrid, pBuf, effects, game, camera, true);
         const p2 = (game.coopSession && game.coopSession.remotePlayer && !game.coopSession.remotePlayer.isDowned)
-            ? game.coopSession.remotePlayer
-            : null;
+            ? game.coopSession.remotePlayer : null;
+        if (p2 && !game.isCoopGuest) {
+            const p2Buf = hasGrid ? SpatialHashGrid._partnerEnemyBuf : null;
+            this._checkUnitEnemyBody(p2, enemies, eGrid, useEGrid, p2Buf, effects, game, camera, false);
+        }
 
-        for (let i = 0; i < enemies.length; i++) {
-            const e = enemies[i];
-            if (e.dead || e.isDying || e.bubbleTrappedTimer > 0 || e.isAirborneImmune) continue;
-            const edx = e.x - p.x;
-            const edy = e.y - p.y;
-            const hitDist = p.isBladeRushing ? (e.radius + p.radius + 35) : (p.vf185Active ? (e.radius + p.radius + 26) : (e.radius + p.radius));
-            if (Math.abs(edx) <= hitDist && Math.abs(edy) <= hitDist) {
-                if (edx * edx + edy * edy < hitDist * hitDist) {
-                    if (p.vf185Active && typeof HeroUltimates !== 'undefined') {
-                        HeroUltimates.onVF185RamEnemy(p, e, effects, game);
-                    } else if (p.isBladeRushing) {
-                        // Slicing through enemy during Blade Rush!
-                        if (!p.bladeRushHitEnemies) p.bladeRushHitEnemies = new Set();
-                        if (!p.bladeRushHitEnemies.has(e)) {
-                            p.bladeRushHitEnemies.add(e);
-                            const slashDamage = 85 * (p.damageMultiplier || 1);
-                            e.takeDamage(slashDamage, effects);
-                            if (!e.isStationary) {
-                                e.x += Math.cos(p.angle) * 18;
-                                e.y += Math.sin(p.angle) * 18;
-                            }
-                            if (effects) {
-                                effects.addSlash(e.x, e.y, p.angle, 65, '#00d2d3');
-                                effects.addSparks(e.x, e.y, '#00d2d3', 6);
-                                effects.addComicSplash(e.x, e.y - 20, 'SLASH!');
-                            }
-                            if (window.soundEngine) {
-                                window.soundEngine.playHit(true, true);
-                            }
-                        }
-                    } else if (e.damage > 0 && !p.isGrabbed && !p.isAirborne) {
-                        if (!game.isCoopGuest) {
-                            p.takeDamage(e.damage * 0.4, effects, camera);
-                        }
-                        const angle = Math.atan2(p.y - e.y, p.x - e.x);
-                        p.x += Math.cos(angle) * 4;
-                        p.y += Math.sin(angle) * 4;
+        // 3A. Player vs Obstacles (Mushrooms, Crates, Trees & Buildings)
+        const poBuf = hasGrid ? SpatialHashGrid._playerObsBuf : null;
+        const poLen = useOGrid ? oGrid.queryIndices(p.x, p.y, p.radius + oGrid.maxRadius + 2, poBuf) : obstacles.length;
+        for (let i = 0; i < poLen; i++) {
+            const obs = useOGrid ? obstacles[poBuf[i]] : obstacles[i];
+            if (obs.dead) continue;
+            const odx = p.x - obs.x, ody = p.y - obs.y, radSum = p.radius + obs.radius;
+            if (Math.abs(odx) > radSum || Math.abs(ody) > radSum) continue;
+            const hit = obs.hitTestCircle ? obs.hitTestCircle(p.x, p.y, p.radius) : null;
+            if (!hit) continue;
+            if (obs.type === 'mushroom') { obs.triggerMushroom(p, effects); continue; }
+            if (obs.type === 'crate' || obs.type === 'barrel' || obs.type === 'tree' || obs.type === 'building') {
+                if (obs.type !== 'tree' && obs.type !== 'building' && (p.isBladeRushing || p.vf185Active)) {
+                    const destroyed = !game.isCoopGuest ? obs.takeDamage(85, effects, game) : false;
+                    if (destroyed && obs.type === 'crate') {
+                        game.drops.push(new Drop(obs.x, obs.y, 'xp', 20));
+                        if (Math.random() < 0.35) game.drops.push(new Drop(obs.x, obs.y, 'heart', 25));
                     }
-                }
-            }
-
-            // Remote partner body collision (authoritative on Host)
-            if (p2 && !game.isCoopGuest) {
-                const p2edx = e.x - p2.x;
-                const p2edy = e.y - p2.y;
-                const hitDist2 = p2.vf185Active ? (e.radius + p2.radius + 26) : (e.radius + p2.radius);
-                if (Math.abs(p2edx) <= hitDist2 && Math.abs(p2edy) <= hitDist2) {
-                    if (p2edx * p2edx + p2edy * p2edy < hitDist2 * hitDist2) {
-                        if (p2.vf185Active && typeof HeroUltimates !== 'undefined') {
-                            HeroUltimates.onVF185RamEnemy(p2, e, effects, game);
-                        } else if (e.damage > 0 && !p2.isGrabbed && !p2.isAirborne) {
-                            p2.takeDamage(e.damage * 0.4, effects, camera);
-                            const angle2 = Math.atan2(p2.y - e.y, p2.x - e.x);
-                            p2.x += Math.cos(angle2) * 4;
-                            p2.y += Math.sin(angle2) * 4;
-                        }
-                    }
-                }
+                } else { p.x = hit.pushX; p.y = hit.pushY; }
             }
         }
 
-        // 3. Player & Enemy vs Obstacles (Mushrooms, Crates, Trees & Buildings)
+        // 3B. Visible Obstacles (Mushrooms, Trees & Buildings) vs Enemies via Spatial Hash Grid
+        const oeBuf = hasGrid ? SpatialHashGrid._obsEnemyBuf : null;
         for (let i = 0; i < obstacles.length; i++) {
             const obs = obstacles[i];
             if (obs.dead) continue;
-            const odx = p.x - obs.x;
-            const ody = p.y - obs.y;
-            const radSum = p.radius + obs.radius;
+            const isMush = obs.type === 'mushroom';
+            const isSolid = obs.type === 'tree' || obs.type === 'building';
+            if (!isMush && !isSolid) continue;
+            const visPad = isMush ? obs.radius + 60 : (obs.cullRadius || obs.radius) + 80;
+            if (camera && !camera.isVisible(obs.x, obs.y, visPad)) continue;
 
-            if (Math.abs(odx) <= radSum && Math.abs(ody) <= radSum) {
-                const hit = obs.hitTestCircle ? obs.hitTestCircle(p.x, p.y, p.radius) : null;
-                if (hit) {
-                    if (obs.type === 'mushroom') {
-                        obs.triggerMushroom(p, effects);
-                    } else if (obs.type === 'crate' || obs.type === 'barrel' || obs.type === 'tree' || obs.type === 'building') {
-                        if (obs.type !== 'tree' && obs.type !== 'building' && (p.isBladeRushing || p.vf185Active)) {
-                            const destroyed = !game.isCoopGuest ? obs.takeDamage(85, effects, game) : false;
-                            if (destroyed && obs.type === 'crate') {
-                                game.drops.push(new Drop(obs.x, obs.y, 'xp', 20));
-                                if (Math.random() < 0.35) game.drops.push(new Drop(obs.x, obs.y, 'heart', 25));
-                            }
-                        } else {
-                            p.x = hit.pushX;
-                            p.y = hit.pushY;
-                        }
-                    }
+            const oeLen = useEGrid ? eGrid.queryIndices(obs.x, obs.y, obs.radius + eGrid.maxRadius + 2, oeBuf) : enemies.length;
+            for (let ei = 0; ei < oeLen; ei++) {
+                const e = useEGrid ? enemies[oeBuf[ei]] : enemies[ei];
+                if (e.dead) continue;
+                if (isSolid && (e.isAirborne || e.isAirborneImmune || (e.cutsceneState && e.cutsceneState !== 'COMBAT'))) continue;
+                const eRadSum = e.radius + obs.radius, edx = e.x - obs.x, edy = e.y - obs.y;
+                if (Math.abs(edx) > eRadSum || Math.abs(edy) > eRadSum) continue;
+                if (isMush) {
+                    if (edx * edx + edy * edy < eRadSum * eRadSum) obs.triggerMushroom(e, effects);
+                } else {
+                    const eHit = obs.hitTestCircle ? obs.hitTestCircle(e.x, e.y, e.radius) : null;
+                    if (eHit) { e.x = eHit.pushX; e.y = eHit.pushY; }
                 }
             }
+        }
+    }
 
-            if (obs.type === 'mushroom') {
-                if (!camera || camera.isVisible(obs.x, obs.y, obs.radius + 60)) {
-                    for (let ei = 0; ei < enemies.length; ei++) {
-                        const e = enemies[ei];
-                        if (e.dead) continue;
-                        const eRadSum = e.radius + obs.radius;
-                        const edx = e.x - obs.x;
-                        if (Math.abs(edx) > eRadSum) continue;
-                        const edy = e.y - obs.y;
-                        if (Math.abs(edy) > eRadSum) continue;
-                        if (edx * edx + edy * edy < eRadSum * eRadSum) obs.triggerMushroom(e, effects);
-                    }
+    static _checkUnitEnemyBody(unit, enemies, eGrid, useEGrid, buf, effects, game, camera, allowBladeRush) {
+        const rush = allowBladeRush && unit.isBladeRushing;
+        const pad = rush ? 35 : (unit.vf185Active ? 26 : 0);
+        const len = useEGrid ? eGrid.queryIndices(unit.x, unit.y, unit.radius + pad + eGrid.maxRadius + 2, buf) : enemies.length;
+        for (let i = 0; i < len; i++) {
+            const e = useEGrid ? enemies[buf[i]] : enemies[i];
+            if (e.dead || e.isDying || e.bubbleTrappedTimer > 0 || e.isAirborneImmune) continue;
+            const edx = e.x - unit.x, edy = e.y - unit.y, hitDist = unit.radius + e.radius + pad;
+            if (Math.abs(edx) > hitDist || Math.abs(edy) > hitDist || edx * edx + edy * edy >= hitDist * hitDist) continue;
+            if (unit.vf185Active && typeof HeroUltimates !== 'undefined') {
+                HeroUltimates.onVF185RamEnemy(unit, e, effects, game);
+            } else if (rush) {
+                if (!unit.bladeRushHitEnemies) unit.bladeRushHitEnemies = new Set();
+                if (!unit.bladeRushHitEnemies.has(e)) {
+                    unit.bladeRushHitEnemies.add(e);
+                    e.takeDamage(85 * (unit.damageMultiplier || 1), effects);
+                    if (!e.isStationary) { e.x += Math.cos(unit.angle) * 18; e.y += Math.sin(unit.angle) * 18; }
+                    if (effects) { effects.addSlash(e.x, e.y, unit.angle, 65, '#00d2d3'); effects.addSparks(e.x, e.y, '#00d2d3', 6); effects.addComicSplash(e.x, e.y - 20, 'SLASH!'); }
+                    if (window.soundEngine) window.soundEngine.playHit(true, true);
                 }
-            } else if (obs.type === 'tree' || obs.type === 'building') {
-                // Keep enemies from walking through solid tree trunks or buildings
-                if (!camera || camera.isVisible(obs.x, obs.y, (obs.cullRadius || obs.radius) + 80)) {
-                    for (let ei = 0; ei < enemies.length; ei++) {
-                        const e = enemies[ei];
-                        if (e.dead || e.isAirborne || e.isAirborneImmune || (e.cutsceneState && e.cutsceneState !== 'COMBAT')) continue;
-                        const eRadSum = e.radius + obs.radius;
-                        if (Math.abs(e.x - obs.x) > eRadSum || Math.abs(e.y - obs.y) > eRadSum) continue;
-                        const eHit = obs.hitTestCircle ? obs.hitTestCircle(e.x, e.y, e.radius) : null;
-                        if (eHit) { e.x = eHit.pushX; e.y = eHit.pushY; }
-                    }
-                }
+            } else if (e.damage > 0 && !unit.isGrabbed && !unit.isAirborne) {
+                if (!game.isCoopGuest) unit.takeDamage(e.damage * 0.4, effects, camera);
+                const angle = Math.atan2(unit.y - e.y, unit.x - e.x);
+                unit.x += Math.cos(angle) * 4;
+                unit.y += Math.sin(angle) * 4;
             }
         }
     }
@@ -326,6 +305,7 @@ class CollisionSystem {
      */
     static handleDeath(game, enemy) {
         if (typeof SymbioteLauncher !== 'undefined') SymbioteLauncher.onEnemyDeath(enemy, game);
+        if (typeof SkewerCharcoalRifle !== 'undefined') SkewerCharcoalRifle.onEnemyDeath(enemy, game);
         const player = game.player;
         if (typeof HeroUltimates !== 'undefined') HeroUltimates.onEnemyKilled(player, enemy);
         player.kills++;
@@ -550,12 +530,18 @@ class CollisionSystem {
         let lastX = startEnemy.x;
         let lastY = startEnemy.y;
 
+        const hasGrid = typeof SpatialHashGrid !== 'undefined';
+        const eGrid = hasGrid ? SpatialHashGrid.enemyGrid : null;
+        const useGrid = !!(eGrid && eGrid.source === enemies);
+        const cBuf = hasGrid ? SpatialHashGrid._chainBuf : null;
+
         for (let step = 0; step < maxChained; step++) {
             let closest = null;
             let closestDistSq = 250 * 250; // max chain jump distance 250px
+            const cLen = useGrid ? eGrid.queryIndices(lastX, lastY, 252, cBuf) : enemies.length;
 
-            for (let i = 0; i < enemies.length; i++) {
-                const cand = enemies[i];
+            for (let i = 0; i < cLen; i++) {
+                const cand = useGrid ? enemies[cBuf[i]] : enemies[i];
                 if (cand.dead || cand.isDying || cand.isAirborneImmune || chained.has(cand)) continue;
 
                 const dx = cand.x - lastX;

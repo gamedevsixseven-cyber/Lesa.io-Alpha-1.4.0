@@ -161,7 +161,7 @@ const CHEST_TYPES = {
         gearCount: 6,
         guaranteedLegendary: 2,
         weaponDropChance: 1.00,
-        weaponOdds: { rare: 0.10, epic: 0.30, legendary: 0.40, mythic: 0.20 },
+        weaponOdds: { rare: 0.08, epic: 0.28, legendary: 0.38, mythic: 0.20, apex: 0.06 },
         gearOdds: {
             common: 0.00,
             uncommon: 0.00,

@@ -131,6 +131,32 @@
             targetVal: () => 60,
             currentVal: (s) => (s.totalKills >= 75000) ? 60 : Math.min(60, s.endlessMaxWave),
             isUnlocked: (s) => s.endlessMaxWave >= 60 || s.totalKills >= 75000
+        },
+        {
+            id: 'banner_clan_spartan',
+            name: 'Spartan Phalanx',
+            rarity: 'epic',
+            cssClass: 'cos-banner-clan-spartan',
+            fxTheme: 'embers_warm',
+            clanShopOnly: true,
+            desc: 'CLAN SHOP: Crimson & gold Spartan shieldwall banner swept by ember sparks.',
+            unlockHint: 'Buy in Clan Shop (260 Honor Crests)',
+            targetVal: () => 1,
+            currentVal: () => (typeof ClanBuffs !== 'undefined' && ClanBuffs.hasBanner('banner_clan_spartan')) ? 1 : 0,
+            isUnlocked: () => typeof ClanBuffs !== 'undefined' && ClanBuffs.hasBanner('banner_clan_spartan')
+        },
+        {
+            id: 'banner_clan_obsidian',
+            name: 'Obsidian Citadel',
+            rarity: 'mythic',
+            cssClass: 'cos-banner-clan-obsidian',
+            fxTheme: 'lightning',
+            clanShopOnly: true,
+            desc: 'CLAN SHOP: Sovereign royal purple & gilded obsidian Citadel banner.',
+            unlockHint: 'Buy in Clan Shop (450 Honor Crests)',
+            targetVal: () => 1,
+            currentVal: () => (typeof ClanBuffs !== 'undefined' && ClanBuffs.hasBanner('banner_clan_obsidian')) ? 1 : 0,
+            isUnlocked: () => typeof ClanBuffs !== 'undefined' && ClanBuffs.hasBanner('banner_clan_obsidian')
         }
     ];
 

@@ -124,7 +124,7 @@ class Player {
         const s = GearManager.getEquippedTotalStats();
 
         const oldMaxHp = this.maxHp || this.archetypeMaxHp || 100;
-        this.maxHp = (this.archetypeMaxHp || 100) + (s.maxHp || 0);
+        this.maxHp = Math.round(((this.archetypeMaxHp || 100) + (s.maxHp || 0)) * (typeof ClanBuffs !== 'undefined' ? ClanBuffs.getMaxHpMultiplier() : 1));
         if (this.hp === undefined || this.hp >= oldMaxHp) {
             this.hp = this.maxHp;
         } else {
@@ -134,7 +134,7 @@ class Player {
         this.baseSpeed = Math.min(7.5, (this.archetypeSpeed || 5.0) * (1 + (s.speed || 0) / 100));
         this.speed = this.baseSpeed;
 
-        this.damageMultiplier = (this.baseDamageMultiplier !== undefined ? this.baseDamageMultiplier : 1.0) * (1 + (s.bulletDamage || 0) / 100);
+        this.damageMultiplier = (this.baseDamageMultiplier !== undefined ? this.baseDamageMultiplier : 1.0) * (1 + (s.bulletDamage || 0) / 100) * (typeof ClanBuffs !== 'undefined' ? ClanBuffs.getDamageMultiplier() : 1);
         this.fireRateMultiplier = (this.baseFireRateMultiplier !== undefined ? this.baseFireRateMultiplier : 1.0) * (1 + (s.fireRate || 0) / 100);
         this.bulletSpeed = (this.baseBulletSpeed !== undefined ? this.baseBulletSpeed : 14) * (1 + (s.bulletSpeed || 0) / 100);
         this.critChance = Math.min(0.45, (this.baseCritChance !== undefined ? this.baseCritChance : 0.1) + (s.critChance || 0) / 100);

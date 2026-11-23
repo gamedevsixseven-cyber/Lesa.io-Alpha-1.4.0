@@ -234,9 +234,9 @@ class MaterialRegistry {
         const perkLuck = (typeof window !== 'undefined' && window.perkSystem && typeof window.perkSystem.getMaterialDropLuckBonus === 'function')
             ? Math.max(0, window.perkSystem.getMaterialDropLuckBonus())
             : 0;
-        const eventLuck = (typeof EventManager !== 'undefined' && typeof EventManager.getMaterialLuckBonus === 'function')
-            ? Math.max(0, EventManager.getMaterialLuckBonus())
-            : 0;
+        const eventLuck = ((typeof EventManager !== 'undefined' && typeof EventManager.getMaterialLuckBonus === 'function')
+            ? Math.max(0, EventManager.getMaterialLuckBonus()) : 0)
+            + ((typeof ClanBuffs !== 'undefined' && typeof ClanBuffs.getMaterialLuckBonus === 'function') ? Math.max(0, ClanBuffs.getMaterialLuckBonus()) : 0);
         const luck = perkLuck + eventLuck;
         if (luck <= 0) return rewardMap;
         const isZeusSummit = options.source === 'olympus_floor' && options.sourceName === 'Olympus F5';
@@ -259,9 +259,9 @@ class MaterialRegistry {
         const mode = game.gameMode || 'story';
         if (!wm || mode === 'dungeons') return;
 
-        const eventLuck = (typeof EventManager !== 'undefined' && typeof EventManager.getMaterialLuckBonus === 'function')
-            ? Math.max(0, EventManager.getMaterialLuckBonus())
-            : 0;
+        const eventLuck = ((typeof EventManager !== 'undefined' && typeof EventManager.getMaterialLuckBonus === 'function')
+            ? Math.max(0, EventManager.getMaterialLuckBonus()) : 0)
+            + ((typeof ClanBuffs !== 'undefined' && typeof ClanBuffs.getMaterialLuckBonus === 'function') ? Math.max(0, ClanBuffs.getMaterialLuckBonus()) : 0);
         const hasMatBoost = eventLuck > 0;
         const wave = Math.max(1, wm.wave || 1);
         const maxPerWave = mode === 'endless'

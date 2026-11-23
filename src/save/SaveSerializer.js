@@ -135,7 +135,8 @@ class SaveSerializer {
                 sfxVolume: state.settings.sfxVolume ?? 0.8,
                 showPopups: state.settings.showPopups ?? true,
                 showDamage: state.settings.showDamage ?? true,
-                screenShake: state.settings.screenShake ?? true
+                screenShake: state.settings.screenShake ?? true,
+                privateLoadout: state.settings.privateLoadout ?? (ls ? ls.getItem('lesaio_private_loadout') === 'true' : false)
             }
         };
     }
@@ -458,6 +459,10 @@ class SaveSerializer {
                 state.settings.showPopups = data.settings.showPopups ?? state.settings.showPopups;
                 state.settings.showDamage = data.settings.showDamage ?? state.settings.showDamage;
                 state.settings.screenShake = data.settings.screenShake ?? state.settings.screenShake;
+                if (typeof data.settings.privateLoadout === 'boolean') {
+                    state.settings.privateLoadout = data.settings.privateLoadout;
+                    if (typeof localStorage !== 'undefined') localStorage.setItem('lesaio_private_loadout', String(data.settings.privateLoadout));
+                }
             }
 
             return true;
@@ -555,6 +560,7 @@ class SaveSerializer {
             lbEndlessWave: endlessWave,
             lbTotalKills: statsKills,
             socialStats: { highScore: statsHigh, maxWave: statsWave, totalKills: statsKills, endlessMaxWave: endlessWave, olympusMaxFloor: olympusFloor },
+            ...(typeof PlayerLoadoutExtractor !== 'undefined' ? { publicLoadout: PlayerLoadoutExtractor.serializeForPublicCloud() } : {}),
             skillLevels: pSkills,
             player: {
                 ...basePlayer,

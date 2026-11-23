@@ -322,16 +322,16 @@ class ChronoRifle extends WeaponBase {
             const splashR = (e.radius || 22) + 115;
             const splashR2 = splashR * splashR;
             const aoeDmg = Math.max(12, Math.round(shatterDmg * 0.68));
-            for (let i = 0; i < enemies.length; i++) {
-                const other = enemies[i];
-                if (!other || other === e || other.dead) continue;
-                const dx = other.x - e.x;
-                const dy = other.y - e.y;
+            const visitSplash = (other) => {
+                if (!other || other === e || other.dead) return;
+                const dx = other.x - e.x, dy = other.y - e.y;
                 if (dx * dx + dy * dy <= splashR2 && typeof other.takeDamage === 'function') {
                     other.takeDamage(aoeDmg, effects, false, false);
                     if (game && game.isCoopGuest) other.dead = false;
                 }
-            }
+            };
+            if (typeof SpatialHashGrid !== 'undefined') SpatialHashGrid.forEachEnemyNear(e.x, e.y, splashR, enemies, visitSplash);
+            else for (let i = 0; i < enemies.length; i++) visitSplash(enemies[i]);
         }
         if (effects) {
             effects.addShockwave(e.x, e.y, (e.radius || 22) + 108, 'rgba(165, 94, 234, 0.88)');

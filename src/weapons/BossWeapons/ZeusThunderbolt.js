@@ -221,15 +221,15 @@ class ZeusThunderbolt extends WeaponBase {
                 window.soundEngine.playCrit();
             }
 
-            for (let i = 0; i < enemies.length; i++) {
-                const cand = enemies[i];
-                if (!cand || cand === target || cand.dead || cand.isDying || cand.isAirborneImmune) continue;
-                const d = Math.hypot(cand.x - target.x, cand.y - target.y);
-                if (d <= aoeRadius + (cand.radius || 0)) {
+            const visitBoltSplash = (cand) => {
+                if (!cand || cand === target || cand.dead || cand.isDying || cand.isAirborneImmune) return;
+                if (Math.hypot(cand.x - target.x, cand.y - target.y) <= aoeRadius + (cand.radius || 0)) {
                     cand.takeDamage(splashDmg, effects, false);
                     if (game && game.isCoopGuest) cand.dead = false;
                 }
-            }
+            };
+            if (typeof SpatialHashGrid !== 'undefined') SpatialHashGrid.forEachEnemyNear(target.x, target.y, aoeRadius, enemies, visitBoltSplash);
+            else for (let i = 0; i < enemies.length; i++) visitBoltSplash(enemies[i]);
         }
 
         // 2. Forked Arc: 25% / 100% Crit -> 2 targets within 190px @ 55% dmg (Evolved ★: 40% / 100% Crit -> 3 targets within 220px @ 65% dmg)
@@ -241,16 +241,13 @@ class ZeusThunderbolt extends WeaponBase {
         const arcDmg = finalDmg * (isEvo ? 0.65 : 0.55);
         const candidates = [];
 
-        for (let i = 0; i < enemies.length; i++) {
-            const cand = enemies[i];
-            if (!cand || cand === target || cand.dead || cand.isDying || cand.isAirborneImmune) continue;
-            const dx = cand.x - target.x;
-            const dy = cand.y - target.y;
-            const distSq = dx * dx + dy * dy;
-            if (distSq <= maxArcRangeSq) {
-                candidates.push({ enemy: cand, distSq });
-            }
-        }
+        const collectArc = (cand) => {
+            if (!cand || cand === target || cand.dead || cand.isDying || cand.isAirborneImmune) return;
+            const dx = cand.x - target.x, dy = cand.y - target.y, distSq = dx * dx + dy * dy;
+            if (distSq <= maxArcRangeSq) candidates.push({ enemy: cand, distSq });
+        };
+        if (typeof SpatialHashGrid !== 'undefined') SpatialHashGrid.forEachEnemyNear(target.x, target.y, maxArcRange, enemies, collectArc);
+        else for (let i = 0; i < enemies.length; i++) collectArc(enemies[i]);
 
         if (candidates.length === 0) return;
         candidates.sort((a, b) => a.distSq - b.distSq);

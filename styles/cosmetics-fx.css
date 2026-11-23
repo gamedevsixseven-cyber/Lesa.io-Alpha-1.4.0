@@ -168,6 +168,20 @@
     animation: cosGleamTrack 2.9s ease-in-out infinite, cosPrismaticPulse 3s ease-in-out infinite;
     border-color: #f472b6 !important;
 }
+.cos-banner-clan-spartan {
+    background: linear-gradient(115deg, transparent 34%, rgba(254, 211, 48, 0.42) 50%, transparent 66%),
+                linear-gradient(135deg, #7f1d1d 0%, #b91c1c 45%, #d97706 85%, #f59e0b 100%) !important;
+    background-size: 210% 100%, 160% 160% !important;
+    animation: cosGleamTrack 3.6s ease-in-out infinite;
+    border-color: #fed330 !important;
+}
+.cos-banner-clan-obsidian {
+    background: linear-gradient(112deg, transparent 32%, rgba(250, 204, 21, 0.48) 50%, transparent 68%),
+                linear-gradient(135deg, #1e1b4b 0%, #581c87 48%, #9333ea 82%, #f59e0b 100%) !important;
+    background-size: 200% 100%, 170% 170% !important;
+    animation: cosGleamTrack 3.1s ease-in-out infinite;
+    border-color: #facc15 !important;
+}
 
 /* Readability safety on all banner surfaces */
 #menu-player-profile .player-name-text,

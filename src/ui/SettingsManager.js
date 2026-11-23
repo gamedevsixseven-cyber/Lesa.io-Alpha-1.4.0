@@ -19,6 +19,7 @@ class SettingsManager {
         this.toggleDamageBtn = document.getElementById('toggle-damage-btn');
         this.toggleShakeBtn = document.getElementById('toggle-shake-btn');
         this.toggleAutofireBtn = document.getElementById('toggle-autofire-btn');
+        this.togglePrivateLoadoutBtn = document.getElementById('toggle-private-loadout-btn');
 
         // Mobile-Only Tabbed Settings & Extra Controls
         this.mobTabBtns = document.querySelectorAll('#mobile-settings-tabs .mob-stab-btn');
@@ -142,6 +143,23 @@ class SettingsManager {
                     if (typeof window.gameInstance.touchInput.updateAutoFireState === 'function') {
                         window.gameInstance.touchInput.updateAutoFireState();
                     }
+                }
+                this.updateSettingsUI();
+            });
+        }
+
+        if (this.togglePrivateLoadoutBtn) {
+            this.togglePrivateLoadoutBtn.addEventListener('click', () => {
+                if (window.soundEngine) window.soundEngine.playSelect();
+                const cur = (typeof PlayerLoadoutExtractor !== 'undefined')
+                    ? PlayerLoadoutExtractor.isLocalPrivate()
+                    : (localStorage.getItem('lesaio_private_loadout') === 'true');
+                const next = !cur;
+                if (typeof PlayerLoadoutExtractor !== 'undefined') {
+                    PlayerLoadoutExtractor.setLocalPrivate(next, true);
+                } else {
+                    localStorage.setItem('lesaio_private_loadout', String(next));
+                    if (window.GameState && window.GameState.settings) window.GameState.settings.privateLoadout = next;
                 }
                 this.updateSettingsUI();
             });
@@ -435,6 +453,10 @@ class SettingsManager {
         this._renderToggleBtn(this.toggleDamageBtn, window.effectsManager ? window.effectsManager.showDamage : true);
         this._renderToggleBtn(this.toggleShakeBtn, localStorage.getItem('lesaio_screenshake') !== 'false');
         this._renderToggleBtn(this.toggleAutofireBtn, localStorage.getItem('lesaio_autofire') === 'true');
+        const isPriv = (typeof PlayerLoadoutExtractor !== 'undefined')
+            ? PlayerLoadoutExtractor.isLocalPrivate()
+            : (localStorage.getItem('lesaio_private_loadout') === 'true');
+        this._renderToggleBtn(this.togglePrivateLoadoutBtn, isPriv);
         this._updateMobileSettingsUI();
 
         this.updateCloudUI();

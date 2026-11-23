@@ -322,7 +322,8 @@ class EpicPerkEffects {
     _triggerOuzoChain(origin, baseDamage, st, enemies, effects, game) {
         if (!origin || !Array.isArray(enemies) || enemies.length === 0) return;
         const maxJumps = st.maxJumps || 2;
-        const radiusSq = (st.arcRadius || 160) ** 2;
+        const arcRadius = st.arcRadius || 160;
+        const radiusSq = arcRadius * arcRadius;
         const visited = new Set([origin]);
         let lastX = origin.x;
         let lastY = origin.y;
@@ -331,15 +332,13 @@ class EpicPerkEffects {
         for (let step = 0; step < maxJumps; step++) {
             let best = null;
             let bestSq = radiusSq;
-            for (let i = 0; i < enemies.length; i++) {
-                const cand = enemies[i];
-                if (!cand || cand.dead || cand.isDying || cand.isAirborneImmune || visited.has(cand)) continue;
+            const pick = (cand) => {
+                if (!cand || cand.dead || cand.isDying || cand.isAirborneImmune || visited.has(cand)) return;
                 const dSq = (cand.x - lastX) ** 2 + (cand.y - lastY) ** 2;
-                if (dSq <= bestSq) {
-                    bestSq = dSq;
-                    best = cand;
-                }
-            }
+                if (dSq <= bestSq) { bestSq = dSq; best = cand; }
+            };
+            if (typeof SpatialHashGrid !== 'undefined') SpatialHashGrid.forEachEnemyNear(lastX, lastY, arcRadius, enemies, pick);
+            else for (let i = 0; i < enemies.length; i++) pick(enemies[i]);
             if (!best) break;
             visited.add(best);
             jumped++;
@@ -397,16 +396,17 @@ class EpicPerkEffects {
             if (d.life <= 0) {
                 this.decoys.splice(i, 1);
                 const blastSq = d.blastRadius * d.blastRadius;
-                for (let ei = 0; ei < enemies.length; ei++) {
-                    const e = enemies[ei];
-                    if (!e || e.dead || e.isDying || e.isAirborneImmune) continue;
+                const visitDecoy = (e) => {
+                    if (!e || e.dead || e.isDying || e.isAirborneImmune) return;
                     const distSq = (e.x - d.x) ** 2 + (e.y - d.y) ** 2;
                     if (distSq <= blastSq + (e.radius || 20) ** 2) {
                         if (typeof e.takeDamage === 'function') e.takeDamage(d.blastDamage, effects, true);
                         if (game.isCoopGuest) e.dead = false;
                         if (typeof e.applySonicSlow === 'function') e.applySonicSlow(1.2, 0.70, effects);
                     }
-                }
+                };
+                if (typeof SpatialHashGrid !== 'undefined') SpatialHashGrid.forEachEnemyNear(d.x, d.y, d.blastRadius, enemies, visitDecoy);
+                else for (let ei = 0; ei < enemies.length; ei++) visitDecoy(enemies[ei]);
                 if (effects) {
                     effects.addShockwave(d.x, d.y, d.blastRadius, 'rgba(108, 92, 231, 0.9)');
                     effects.addSparks(d.x, d.y, '#a29bfe', 12);
@@ -422,9 +422,8 @@ class EpicPerkEffects {
             cb.y += cb.vy * dt;
             cb.life -= dt;
 
-            for (let ei = 0; ei < enemies.length; ei++) {
-                const e = enemies[ei];
-                if (!e || e.dead || e.isDying || e.isAirborneImmune || cb.hitEnemies.has(e)) continue;
+            const visitCb = (e) => {
+                if (!e || e.dead || e.isDying || e.isAirborneImmune || cb.hitEnemies.has(e)) return;
                 if (Math.hypot(e.x - cb.x, e.y - cb.y) <= cb.radius + (e.radius || 20)) {
                     cb.hitEnemies.add(e);
                     if (typeof e.takeDamage === 'function') e.takeDamage(cb.damage, effects, true);
@@ -432,7 +431,9 @@ class EpicPerkEffects {
                     if (cb.freezeChill && typeof e.applyIceSlow === 'function') e.applyIceSlow(cb.slowSec, 0.55, effects);
                     if (effects) effects.addSparks(e.x, e.y, '#74b9ff', 6);
                 }
-            }
+            };
+            if (typeof SpatialHashGrid !== 'undefined') SpatialHashGrid.forEachEnemyNear(cb.x, cb.y, cb.radius, enemies, visitCb);
+            else for (let ei = 0; ei < enemies.length; ei++) visitCb(enemies[ei]);
             if (cb.life <= 0) this.curseBolts.splice(i, 1);
         }
     }

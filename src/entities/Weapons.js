@@ -4,7 +4,7 @@
  */
 
 class WeaponSystem {
-    static SHARED_UNLOCKABLE_IDS = ['bubble', 'rusty_smg', 'nail_gun', 'plasma_pistol', 'sawnoff_shotgun', 'frost_cannon', 'm4_carbine', 'spas12', 'boomerang_saw', 'chrono_rifle', 'symbiote', 'carbine', 'dialtone', 'zeus_thunderbolt', 'helios_cannon'];
+    static SHARED_UNLOCKABLE_IDS = ['bubble', 'rusty_smg', 'nail_gun', 'plasma_pistol', 'sawnoff_shotgun', 'frost_cannon', 'm4_carbine', 'spas12', 'boomerang_saw', 'chrono_rifle', 'symbiote', 'carbine', 'dialtone', 'zeus_thunderbolt', 'helios_cannon', 'skewer_rifle', 'vulcan_minigun', 'hades_railgun', 'medusa_gaze'];
 
     static isSharedWeapon(weaponType) {
         return this.SHARED_UNLOCKABLE_IDS.includes(weaponType);
@@ -203,6 +203,10 @@ class WeaponSystem {
             HeliosOmegaCannon.drawWeapon(ctx, flash, recoil, isEvolved);
             return true;
         }
+        if (weaponType === 'skewer_rifle' && typeof SkewerCharcoalRifle !== 'undefined') { SkewerCharcoalRifle.drawWeapon(ctx, flash, recoil); return true; }
+        if (weaponType === 'vulcan_minigun' && typeof HephaestusVulcanMinigun !== 'undefined') { HephaestusVulcanMinigun.drawWeapon(ctx, flash, recoil, isEvolved, player); return true; }
+        if (weaponType === 'hades_railgun' && typeof HadesOblivionRailgun !== 'undefined') { HadesOblivionRailgun.drawWeapon(ctx, flash, recoil, isEvolved); return true; }
+        if (weaponType === 'medusa_gaze' && typeof MedusaGorgonGaze !== 'undefined') { MedusaGorgonGaze.drawWeapon(ctx, flash, recoil, isEvolved); return true; }
         if (weaponType === 'bubble' && typeof BubbleGun !== 'undefined' && typeof BubbleGun.drawWeapon === 'function') {
             BubbleGun.drawWeapon(ctx, flash, recoil, player ? (player.bubbleCharge || 0) : 0);
             return true;
@@ -216,6 +220,9 @@ class WeaponSystem {
         }
         if (b.type === 'symbiote_tendril' && typeof SymbioteLauncher !== 'undefined') {
             return SymbioteLauncher.updateBullet(b, dt, effects, arena);
+        }
+        if ((b.type === 'medusa_gaze' || b.type === 'medusa_serpent') && typeof MedusaGorgonGaze !== 'undefined') {
+            return MedusaGorgonGaze.updateBullet(b, dt, effects, arena);
         }
         return false;
     }
@@ -235,6 +242,10 @@ class WeaponSystem {
         if (b.type === 'dialtone' && typeof RoufDialToneBlaster !== 'undefined') { RoufDialToneBlaster.drawBullet(ctx, b); return true; }
         if (b.type === 'zeus_thunderbolt' && typeof ZeusThunderbolt !== 'undefined') { ZeusThunderbolt.drawBullet(ctx, b); return true; }
         if (b.type === 'helios_cannon' && typeof HeliosOmegaCannon !== 'undefined') { HeliosOmegaCannon.drawBullet(ctx, b); return true; }
+        if (b.type === 'skewer_rifle' && typeof SkewerCharcoalRifle !== 'undefined') { SkewerCharcoalRifle.drawBullet(ctx, b); return true; }
+        if (b.type === 'vulcan_minigun' && typeof HephaestusVulcanMinigun !== 'undefined') { HephaestusVulcanMinigun.drawBullet(ctx, b); return true; }
+        if (b.type === 'hades_railgun' && typeof HadesOblivionRailgun !== 'undefined') { HadesOblivionRailgun.drawBullet(ctx, b); return true; }
+        if ((b.type === 'medusa_gaze' || b.type === 'medusa_serpent' || b.type === 'medusa_shard') && typeof MedusaGorgonGaze !== 'undefined') { MedusaGorgonGaze.drawBullet(ctx, b); return true; }
         return false;
     }
 
@@ -243,6 +254,14 @@ class WeaponSystem {
             ZeusThunderbolt.onHit(b, e, finalDmg, enemies, effects, game);
         } else if (b.type === 'helios_cannon' && typeof HeliosOmegaCannon !== 'undefined') {
             HeliosOmegaCannon.onHit(b, e, finalDmg, enemies, effects, game);
+        } else if (b.type === 'skewer_rifle' && typeof SkewerCharcoalRifle !== 'undefined') {
+            SkewerCharcoalRifle.onHit(b, e, finalDmg, enemies, effects, game);
+        } else if (b.type === 'vulcan_minigun' && typeof HephaestusVulcanMinigun !== 'undefined') {
+            HephaestusVulcanMinigun.onHit(b, e, finalDmg, enemies, effects, game);
+        } else if (b.type === 'hades_railgun' && typeof HadesOblivionRailgun !== 'undefined') {
+            HadesOblivionRailgun.onHit(b, e, finalDmg, enemies, effects, game);
+        } else if ((b.type === 'medusa_gaze' || b.type === 'medusa_serpent' || b.type === 'medusa_shard') && typeof MedusaGorgonGaze !== 'undefined') {
+            MedusaGorgonGaze.onHit(b, e, finalDmg, enemies, effects, game);
         } else if (b.type === 'spas12' && typeof Spas12 !== 'undefined') {
             Spas12.onHit(b, e, finalDmg, enemies, effects, game);
         } else if (b.type === 'nail_gun' && typeof VillageNailgun !== 'undefined') {
@@ -285,6 +304,12 @@ class WeaponSystem {
             ? WeaponEvolutionManager.getEffectiveConfig(player.weaponType, baseConfig, isEvolved)
             : baseConfig;
         let delay = config.baseDelay;
+        if (player.weaponType === 'vulcan_minigun') {
+            const nowMs = typeof performance !== 'undefined' ? performance.now() : Date.now();
+            player._vulcanHeat = Math.min(1.0, (player._vulcanHeat || 0) + (isEvolved ? 0.13 : 0.11));
+            player._vulcanLastShotAt = nowMs;
+            delay *= 1 / (1 + player._vulcanHeat * (isEvolved ? 0.55 : 0.45));
+        }
 
         if (player.frappesFrenzyTimer > 0) {
             delay *= player.frappesFireRateBuff ? Math.min(0.55, 1 / player.frappesFireRateBuff) : 0.55;
@@ -340,6 +365,29 @@ class WeaponSystem {
             isHeliosBeam = (player._heliosShotCount % beamN) === 0;
             isHeliosSingularity = !isHeliosBeam && (player._heliosShotCount % singN) === 0;
         }
+        // Hephaestus Vulcan Minigun: every 8th shot (6th Evolved ★) fires a Molten Buster Slug
+        let isVulcanBuster = false;
+        if (player.weaponType === 'vulcan_minigun') {
+            const busterN = config.busterEveryNShots || 8;
+            player._vulcanShotCount = ((player._vulcanShotCount || 0) + 1) % busterN;
+            isVulcanBuster = player._vulcanShotCount === 0;
+        }
+        // Hades Oblivion Railgun (Evolved ★): every 3rd shot unleashes twin flanking Phantom Rail Lances
+        let isHadesPhantomTurn = false;
+        if (player.weaponType === 'hades_railgun' && isEvolved) {
+            const phN = config.phantomEveryNShots || 3;
+            player._hadesShotCount = ((player._hadesShotCount || 0) + 1) % phN;
+            if (player._hadesShotCount === 0) {
+                fanOffsets = [-0.11, 0, 0.11];
+                isHadesPhantomTurn = true;
+            }
+        }
+        // Medusa's Gorgon Gaze (Evolved ★): every 4th shot unleashes a 130° Gorgon Stare Cone Flash
+        let isMedusaStare = false;
+        if (player.weaponType === 'medusa_gaze') {
+            player._medusaShotCount = ((player._medusaShotCount || 0) + 1);
+            isMedusaStare = isEvolved && ((player._medusaShotCount % (config.stareEveryNShots || 4)) === 0);
+        }
         // SPAS-12 fires 6 buckshot pellets normally and an 8-pellet Breacher salvo on every 4th trigger pull
         let isSpasBreach = false;
         if (player.weaponType === 'spas12') {
@@ -365,15 +413,17 @@ class WeaponSystem {
                     ? (Math.random() - 0.5) * 0.064
                     : (player.weaponType === 'rusty_smg'
                         ? (Math.random() - 0.5) * 0.15
-                        : ((player.weaponType === 'spas12' || player.weaponType === 'sawnoff_shotgun') ? (Math.random() - 0.5) * 0.035 : 0));
+                        : (player.weaponType === 'vulcan_minigun'
+                            ? (Math.random() - 0.5) * 0.055
+                            : ((player.weaponType === 'spas12' || player.weaponType === 'sawnoff_shotgun') ? (Math.random() - 0.5) * 0.035 : 0)));
                 const shotAngle = baseAngle + fOff + jitter;
                 const aimAngle = (player.weaponType === 'spas12' || player.weaponType === 'sawnoff_shotgun') ? baseAngle : shotAngle;
                 const pr = player.radius || 25;
                 let muzzleX = player.x + Math.cos(aimAngle) * (pr + 14);
                 let muzzleY = player.y + Math.sin(aimAngle) * (pr + 14);
-                if (player.weaponType === 'm4_carbine' || player.weaponType === 'spas12' || player.weaponType === 'boomerang_saw' || player.weaponType === 'chrono_rifle' || player.weaponType === 'symbiote' || player.weaponType === 'helios_cannon' || player.weaponType === 'rusty_smg' || player.weaponType === 'nail_gun' || player.weaponType === 'plasma_pistol' || player.weaponType === 'sawnoff_shotgun' || player.weaponType === 'frost_cannon') {
+                if (player.weaponType === 'm4_carbine' || player.weaponType === 'spas12' || player.weaponType === 'boomerang_saw' || player.weaponType === 'chrono_rifle' || player.weaponType === 'symbiote' || player.weaponType === 'helios_cannon' || player.weaponType === 'rusty_smg' || player.weaponType === 'nail_gun' || player.weaponType === 'plasma_pistol' || player.weaponType === 'sawnoff_shotgun' || player.weaponType === 'frost_cannon' || player.weaponType === 'skewer_rifle' || player.weaponType === 'vulcan_minigun' || player.weaponType === 'hades_railgun' || player.weaponType === 'medusa_gaze') {
                     const tip = player.weaponType === 'boomerang_saw' ? 43 : (player.weaponType === 'm4_carbine' ? 46 : (player.weaponType === 'rusty_smg' || player.weaponType === 'plasma_pistol' || player.weaponType === 'nail_gun' || player.weaponType === 'sawnoff_shotgun' || player.weaponType === 'frost_cannon' ? 38 : 48));
-                    const gyBase = (player.weaponType === 'spas12' || player.weaponType === 'sawnoff_shotgun') ? 2.1 : ((player.weaponType === 'symbiote' || player.weaponType === 'helios_cannon') ? 0 : 1.05);
+                    const gyBase = (player.weaponType === 'spas12' || player.weaponType === 'sawnoff_shotgun') ? 2.1 : ((player.weaponType === 'symbiote' || player.weaponType === 'helios_cannon' || player.weaponType === 'vulcan_minigun' || player.weaponType === 'hades_railgun' || player.weaponType === 'medusa_gaze') ? 0 : 1.05);
                     const gy = Math.cos(aimAngle) < 0 ? gyBase : -gyBase;
                     muzzleX = player.x + Math.cos(aimAngle) * tip - Math.sin(aimAngle) * gy;
                     muzzleY = (player.y - pr * 0.32) + Math.sin(aimAngle) * tip + Math.cos(aimAngle) * gy;
@@ -381,10 +431,13 @@ class WeaponSystem {
 
                 const pelletSpeed = (player.weaponType === 'spas12' || player.weaponType === 'sawnoff_shotgun') ? shotSpeed * (0.94 + Math.random() * 0.12) : shotSpeed;
                 const isCrit = Math.random() < critChance;
+                const isPhantomBolt = isHadesPhantomTurn && fOff !== 0;
                 let dmg = config.baseDamage * (player.damageMultiplier || 1);
                 if (adminDmgBoost) dmg *= 10;
                 if (isZeusSkyBolt) dmg *= 1.6;
                 if (isSpasBreach) dmg *= 1.28;
+                if (isVulcanBuster) dmg *= isEvolved ? 1.85 : 1.75;
+                if (isPhantomBolt) dmg *= 0.65;
                 if (perkFire && perkFire.shardDmgMult) dmg *= perkFire.shardDmgMult;
                 if (isCrit) dmg *= ((player.critMultiplier || 2.0) + perkCritBonus);
 
@@ -395,10 +448,10 @@ class WeaponSystem {
                     vy: Math.sin(shotAngle) * pelletSpeed,
                     damage: dmg,
                     speed: pelletSpeed,
-                    radius: isHeliosSingularity ? (config.radius + 3) : config.radius,
+                    radius: isHeliosSingularity ? (config.radius + 3) : (isVulcanBuster ? config.radius + 4 : config.radius),
                     type: player.weaponType,
                     isEnemy: false,
-                    pierce: isHeliosSingularity ? 1 : (player.pierce + config.extraPierce),
+                    pierce: isHeliosSingularity ? 1 : (isPhantomBolt ? Math.max(4, (player.pierce + config.extraPierce) - 4) : (player.pierce + config.extraPierce)),
                     maxBounces: config.maxBounces > 0 ? config.maxBounces : player.maxBounces,
                     range: isHeliosSingularity ? Math.min(shotRange, 560) : shotRange,
                     shooter: player,
@@ -409,12 +462,20 @@ class WeaponSystem {
                 if (isZeusSkyBolt) b.isSkyBolt = true;
                 if (isHeliosSingularity) b.isSingularityCore = true;
                 if (isSpasBreach) b._spasBreach = true;
+                if (isVulcanBuster) b.isMoltenBuster = true;
+                if (isPhantomBolt) b.isPhantomRail = true;
+                if (isMedusaStare && i === 0 && fIdx === 0) b.isStareShot = true;
+                if (player.weaponType === 'medusa_gaze') b._wavePhase = ((player._medusaShotCount || 0) % 2) * Math.PI;
                 if (perkFire && perkFire.isPermafrostShard) b.isPermafrostShard = true;
                 bullets.push(b);
 
-                if (effects && (player.weaponType !== 'spas12' || fIdx === 0)) {
+                if (player.weaponType === 'hades_railgun' && i === 0 && fOff === 0 && typeof HadesOblivionRailgun !== 'undefined') {
+                    HadesOblivionRailgun.addShotRift(muzzleX, muzzleY, aimAngle, isEvolved);
+                }
+
+                if (effects && ((player.weaponType !== 'spas12' && !isHadesPhantomTurn) || fIdx === 0)) {
                     if (typeof effects.addMuzzleFlash === 'function') {
-                        effects.addMuzzleFlash(muzzleX, muzzleY, aimAngle, player.weaponType, isSpasBreach ? 1.25 : 1.0, false);
+                        effects.addMuzzleFlash(muzzleX, muzzleY, aimAngle, player.weaponType, (isSpasBreach || isVulcanBuster) ? 1.25 : 1.0, false);
                     }
                     effects.addDust(muzzleX, muzzleY, 1, 3);
                 }
@@ -423,6 +484,9 @@ class WeaponSystem {
 
         if (isHeliosBeam && typeof HeliosOmegaCannon !== 'undefined') {
             HeliosOmegaCannon.fireBeam(player, player.angle, config.baseDamage * (player.damageMultiplier || 1), isEvolved, effects, (typeof window !== 'undefined' ? window.gameInstance : null));
+        }
+        if (isMedusaStare && typeof MedusaGorgonGaze !== 'undefined') {
+            MedusaGorgonGaze.fireStareCone(player, player.angle, config.baseDamage * (player.damageMultiplier || 1), effects, (typeof window !== 'undefined' ? window.gameInstance : null));
         }
         if (typeof GearPassives !== 'undefined') {
             GearPassives.onShoot(player, bullets, effects);
@@ -448,6 +512,7 @@ class WeaponSystem {
             window.GameState.player.selectedWeapon = wt;
         }
         if (typeof localStorage !== 'undefined') localStorage.setItem('lesaio_selected_weapon', wt);
+        if (typeof window !== 'undefined' && window.SaveManager && typeof window.SaveManager.requestSave === 'function') window.SaveManager.requestSave(300);
         if (modalManager && typeof modalManager.updateGearScreen === 'function') modalManager.updateGearScreen();
         if (typeof window !== 'undefined' && window.soundEngine && typeof window.soundEngine.playSelect === 'function') {
             window.soundEngine.playSelect();

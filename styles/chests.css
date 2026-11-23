@@ -386,6 +386,7 @@
 .cr-item-card.tier-epic { border-color: #9b59b6; }
 .cr-item-card.tier-legendary { border-color: #f39c12; }
 .cr-item-card.tier-mythic { border-color: #e056fd; }
+.cr-item-card.tier-apex { border-color: #ff2e63; box-shadow: 0 0 18px rgba(217, 70, 239, 0.55); }
 
 .cr-card-rarity-ribbon {
     font-family: 'Luckiest Guy', cursive;
@@ -404,6 +405,7 @@
 .tier-epic .cr-card-rarity-ribbon { background: #9b59b6; }
 .tier-legendary .cr-card-rarity-ribbon { background: #f39c12; }
 .tier-mythic .cr-card-rarity-ribbon { background: #e056fd; }
+.tier-apex .cr-card-rarity-ribbon { background: linear-gradient(135deg, #ff2e63, #a855f7); }
 
 .cr-item-img {
     width: 72px;

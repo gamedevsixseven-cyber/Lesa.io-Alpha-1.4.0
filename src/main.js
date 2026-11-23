@@ -76,6 +76,7 @@ class UIController {
             }
             this.friendService.start();
         }
+        if (typeof ClanService !== 'undefined') { this.clanService = ClanService.boot(); this.clansModal = window.clansModal || null; }
         if (typeof LeaderboardModal !== 'undefined') {
             this.leaderboardModal = new LeaderboardModal();
             window.leaderboardModal = this.leaderboardModal;

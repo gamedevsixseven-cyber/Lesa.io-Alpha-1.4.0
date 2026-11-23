@@ -386,12 +386,9 @@ class HeliosOmegaCannon extends WeaponBase {
             if (doTick) v.tickAcc -= 18;
 
             if (enemies) {
-                for (let j = 0; j < enemies.length; j++) {
-                    const e = enemies[j];
-                    if (!e || e.dead || e.isDying || e.hp <= 0 || e.isAirborneImmune) continue;
-                    const dx = v.x - e.x;
-                    const dy = v.y - e.y;
-                    const dist = Math.hypot(dx, dy);
+                const visitVortex = (e) => {
+                    if (!e || e.dead || e.isDying || e.hp <= 0 || e.isAirborneImmune) return;
+                    const dx = v.x - e.x, dy = v.y - e.y, dist = Math.hypot(dx, dy);
                     if (dist <= v.radius + (e.radius || 20)) {
                         if (dist > 14) {
                             const pullScale = (e.isBoss || e.isMiniBoss) ? 0.35 : 1.0;
@@ -405,7 +402,9 @@ class HeliosOmegaCannon extends WeaponBase {
                             if (g && g.isCoopGuest) e.dead = false;
                         }
                     }
-                }
+                };
+                if (typeof SpatialHashGrid !== 'undefined') SpatialHashGrid.forEachEnemyNear(v.x, v.y, v.radius, enemies, visitVortex);
+                else for (let j = 0; j < enemies.length; j++) visitVortex(enemies[j]);
             }
             if (v.timer <= 0) this._vortices.splice(i, 1);
         }
@@ -427,16 +426,17 @@ class HeliosOmegaCannon extends WeaponBase {
                 if (enemies) {
                     const ex = bm.x + Math.cos(bm.angle) * bm.length;
                     const ey = bm.y + Math.sin(bm.angle) * bm.length;
-                    for (let j = 0; j < enemies.length; j++) {
-                        const e = enemies[j];
-                        if (!e || e.dead || e.isDying || e.hp <= 0 || e.isAirborneImmune) continue;
-                        const d = this._pointToSegDist(e.x, e.y, bm.x, bm.y, ex, ey);
-                        if (d <= bm.halfWidth + (e.radius || 22) * 0.85) {
+                    const visitBeam = (e) => {
+                        if (!e || e.dead || e.isDying || e.hp <= 0 || e.isAirborneImmune) return;
+                        if (this._pointToSegDist(e.x, e.y, bm.x, bm.y, ex, ey) <= bm.halfWidth + (e.radius || 22) * 0.85) {
                             e.takeDamage(bm.tickDmg, effects, Math.random() < 0.25);
                             if (g && g.isCoopGuest) e.dead = false;
                             if (effects) effects.addSparks(e.x, e.y, '#fed330', 4);
                         }
-                    }
+                    };
+                    if (typeof SpatialHashGrid !== 'undefined') {
+                        SpatialHashGrid.forEachEnemyInBox(Math.min(bm.x, ex), Math.min(bm.y, ey), Math.max(bm.x, ex), Math.max(bm.y, ey), bm.halfWidth, enemies, visitBeam);
+                    } else for (let j = 0; j < enemies.length; j++) visitBeam(enemies[j]);
                 }
             }
             if (bm.timer <= 0) this._beams.splice(i, 1);

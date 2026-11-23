@@ -311,7 +311,8 @@ class HUDController {
             m4_carbine: 'M4 Carbine', spas12: 'SPAS-12', rusty_smg: 'Street Uzi', nail_gun: 'Village Nailgun',
             plasma_pistol: 'Neon Arc Pistol', sawnoff_shotgun: 'Sawn-Off DB', frost_cannon: 'Cryo Vortex',
             boomerang_saw: 'Boomerang Sawblade', chrono_rifle: 'Chrono Stutter Rifle', symbiote: 'Symbiote Launcher',
-            carbine: "Kiloumpas's Carbine", dialtone: 'Dial-Tone Blaster', zeus_thunderbolt: "Zeus's Thunderbolt", helios_cannon: 'Helios Omega Cannon'
+            carbine: "Kiloumpas's Carbine", dialtone: 'Dial-Tone Blaster', zeus_thunderbolt: "Zeus's Thunderbolt", helios_cannon: 'Helios Omega Cannon',
+            skewer_rifle: 'Skewer Charcoal Rifle', vulcan_minigun: 'Hephaestus Vulcan Minigun', hades_railgun: 'Hades Oblivion Railgun', medusa_gaze: "Medusa's Gorgon Gaze"
         };
         const weaponKeys = {
             pea: 'weapon_pea', watermelon: 'weapon_watermelon', bubble: 'weapon_bubble', pepper: 'weapon_pepper',
@@ -319,12 +320,14 @@ class HUDController {
             m4_carbine: 'weapon_m4_carbine', spas12: 'weapon_spas12', rusty_smg: 'weapon_rusty_smg', nail_gun: 'weapon_nail_gun',
             plasma_pistol: 'weapon_plasma_pistol', sawnoff_shotgun: 'weapon_sawnoff_shotgun', frost_cannon: 'weapon_frost_cannon',
             boomerang_saw: 'weapon_boomerang_saw', chrono_rifle: 'weapon_chrono_rifle', symbiote: 'weapon_symbiote',
-            carbine: 'weapon_carbine', dialtone: 'weapon_dialtone', zeus_thunderbolt: 'weapon_zeus_thunderbolt', helios_cannon: 'weapon_helios_cannon'
+            carbine: 'weapon_carbine', dialtone: 'weapon_dialtone', zeus_thunderbolt: 'weapon_zeus_thunderbolt', helios_cannon: 'weapon_helios_cannon',
+            skewer_rifle: 'weapon_skewer_rifle', vulcan_minigun: 'weapon_vulcan_minigun', hades_railgun: 'weapon_hades_railgun', medusa_gaze: 'weapon_medusa_gaze'
         };
         const weaponIcons = {
             pea: '🌱', watermelon: '🍉', bubble: '🫧', pepper: '🌶️', money_gun: '💵', burger: '🍔', lightning: '⚡', greek_flag: '🇬🇷',
             m4_carbine: '🔫', spas12: '🔫', rusty_smg: '🔫', nail_gun: '🔨', plasma_pistol: '⚡', sawnoff_shotgun: '💥',
-            frost_cannon: '❄️', boomerang_saw: '🪚', chrono_rifle: '⏳', symbiote: '🦠', carbine: '🔫', dialtone: '📱', zeus_thunderbolt: '⚡', helios_cannon: '☀️'
+            frost_cannon: '❄️', boomerang_saw: '🪚', chrono_rifle: '⏳', symbiote: '🦠', carbine: '🔫', dialtone: '📱', zeus_thunderbolt: '⚡', helios_cannon: '☀️',
+            skewer_rifle: '🍢', vulcan_minigun: '🔥', hades_railgun: '💀', medusa_gaze: '🐍'
         };
         if (this.weaponIcon) {
             const wKey = weaponKeys[player.weaponType] || 'weapon_pea';

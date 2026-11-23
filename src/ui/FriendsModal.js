@@ -16,17 +16,20 @@ class FriendsModal {
         this.feedbackText = '';
         this.expandedStatsUid = null;
         this.confirmRemoveUid = null;
+        this.activeDmRelId = null;
         this._refreshInterval = null;
         this.modal = null;
         this.toastEl = null;
         this.reqToastEl = null;
         this._deferredFriendReq = null;
 
+        if (typeof ChatService !== 'undefined') ChatService.boot();
         this.ensureMarkup();
         this.bindEvents();
         this.updateBadge();
     }
 
+    ico(key, fb = '') { return typeof FriendsCardRenderer !== 'undefined' ? FriendsCardRenderer._ico(key, fb) : fb; }
     esc(str) { return typeof FriendsCardRenderer !== 'undefined' ? FriendsCardRenderer.esc(str) : String(str || ''); }
     getHeroAvatar(heroId) { return typeof FriendsCardRenderer !== 'undefined' ? FriendsCardRenderer.getHeroAvatar(heroId) : 'assets/HeroesIcons/PsanasAvatar.png'; }
 
@@ -86,6 +89,7 @@ class FriendsModal {
             el.addEventListener('click', () => {
                 if (window.soundEngine) window.soundEngine.playSelect();
                 this.activeTab = tabName;
+                this.closeDm(false);
                 this.feedbackText = '';
                 this.render();
             });
@@ -111,6 +115,16 @@ class FriendsModal {
             window.EventBus.on('cosmeticsUpdated', () => {
                 if (this.modal && !this.modal.classList.contains('hidden')) this.render();
             });
+            window.EventBus.on('socialChatUpdated', () => {
+                this.updateBadge();
+                if (!this.modal || this.modal.classList.contains('hidden')) return;
+                this._syncTabLabels();
+                if (this.activeTab === 'friends' && this.activeDmRelId && typeof DirectMessageView !== 'undefined' && window.chatService) {
+                    DirectMessageView.paintMessages(this.activeDmRelId, window.chatService);
+                } else if (this.activeTab === 'friends' && !this.activeDmRelId) {
+                    this.render();
+                }
+            });
         }
     }
 
@@ -119,12 +133,14 @@ class FriendsModal {
         this.activeTab = initialTab || (pendingTotal > 0 ? 'requests' : 'friends');
         this.feedbackText = '';
         this.confirmRemoveUid = null;
+        this.closeDm(false);
         if (this.activeTab === 'requests' && this.reqToastEl) this.reqToastEl.classList.add('hidden');
         if (this.service) {
             this.service.syncMyProfile(true);
             this.service.pollFriendships();
             this.service.refreshFriendStatuses();
         }
+        if (window.chatService) window.chatService.syncSubscriptions();
         this.render();
         if (this.modal) this.modal.classList.remove('hidden');
 
@@ -138,8 +154,22 @@ class FriendsModal {
     }
 
     hide() {
+        this.closeDm(false);
         if (this.modal) this.modal.classList.add('hidden');
         if (this._refreshInterval) { clearInterval(this._refreshInterval); this._refreshInterval = null; }
+    }
+
+    openDm(friend) {
+        if (!friend || !friend.relId) return;
+        this.activeDmRelId = friend.relId;
+        if (window.chatService) window.chatService.setActiveDm(friend.relId);
+        this.render();
+    }
+
+    closeDm(rerender = true) {
+        this.activeDmRelId = null;
+        if (window.chatService) window.chatService.setActiveDm(null);
+        if (rerender) this.render();
     }
 
     setFeedback(msg) {
@@ -154,7 +184,8 @@ class FriendsModal {
         const badge = document.getElementById('friends-badge');
         const btn = document.getElementById('btn-friends');
         if (!badge || !this.service) return;
-        const count = this.service.getTotalNotificationCount();
+        const dmUnread = (typeof window !== 'undefined' && window.chatService) ? window.chatService.getTotalDmUnread() : 0;
+        const count = this.service.getTotalNotificationCount() + dmUnread;
         badge.textContent = count > 9 ? '9+' : String(count);
         badge.classList.toggle('hidden', count <= 0);
         if (btn) btn.classList.toggle('has-notif', count > 0);
@@ -172,10 +203,18 @@ class FriendsModal {
     _syncTabLabels() {
         if (!this.service) return;
         const reqTotal = this.service.incomingRequests.length + this.service.incomingInvites.length;
+        const dmUnread = (typeof window !== 'undefined' && window.chatService) ? window.chatService.getTotalDmUnread() : 0;
         const fBtn = document.getElementById('ftab-friends'), rBtn = document.getElementById('ftab-requests'), aBtn = document.getElementById('ftab-add');
-        const setTxt = (el, txt) => { if (typeof UiIcons !== 'undefined') UiIcons.setRichText(el, txt, 'ui-icon-sm'); else el.textContent = txt; };
-        if (fBtn) { setTxt(fBtn, `👥 FRIENDS (${this.service.friends.length})`); fBtn.classList.toggle('active', this.activeTab === 'friends'); }
-        if (rBtn) { setTxt(rBtn, `🔔 REQUESTS (${reqTotal})`); rBtn.classList.toggle('active', this.activeTab === 'requests'); rBtn.classList.toggle('has-pending', reqTotal > 0); }
+        if (fBtn) {
+            const pill = dmUnread > 0 ? ` <span class="friends-tab-badge">${dmUnread > 9 ? '9+' : dmUnread}</span>` : '';
+            fBtn.innerHTML = `${this.ico('people')} FRIENDS (${this.service.friends.length})${pill}`;
+            fBtn.classList.toggle('active', this.activeTab === 'friends');
+        }
+        if (rBtn) {
+            rBtn.innerHTML = `${this.ico('bell')} REQUESTS (${reqTotal})`;
+            rBtn.classList.toggle('active', this.activeTab === 'requests');
+            rBtn.classList.toggle('has-pending', reqTotal > 0);
+        }
         if (aBtn) aBtn.classList.toggle('active', this.activeTab === 'add');
     }
 
@@ -191,7 +230,8 @@ class FriendsModal {
                 coopRoomCode: live.coopRoomCode || null,
                 highScore: live.highScore || 0, maxWave: live.maxWave || 1, totalKills: live.totalKills || 0,
                 endlessMaxWave: live.endlessMaxWave || 0, olympusMaxFloor: live.olympusMaxFloor || 0,
-                cosmetics: live.cosmetics || f.profile.cosmetics || {}
+                cosmetics: live.cosmetics || f.profile.cosmetics || {},
+                loadout: live.loadout || null
             };
         }).sort((a, b) => {
             const aScore = (a.coopRoomCode ? 2 : (a.isOnline ? 1 : 0));
@@ -215,7 +255,7 @@ class FriendsModal {
         if (nameEl) nameEl.textContent = `${me.name} · LVL ${me.level}`;
         if (tagEl) tagEl.textContent = me.tag;
         if (onlinePill) {
-            onlinePill.textContent = `● ${onlineCount} ONLINE`;
+            onlinePill.innerHTML = `${this.ico(onlineCount > 0 ? 'orb_green' : 'orb_dark')} ${onlineCount} ONLINE`;
             onlinePill.classList.toggle('is-active', onlineCount > 0);
         }
 
@@ -244,7 +284,7 @@ class FriendsModal {
     _buildPendingBannerHtml() {
         const n = this.service ? this.service.incomingRequests.length : 0;
         if (n <= 0) return '';
-        return `<div class="friends-pending-banner"><span>🔔 You have <b>${n}</b> pending friend request${n > 1 ? 's' : ''}!</span><button type="button" id="friends-banner-view-req" class="friend-btn friend-btn-accept">VIEW REQUESTS</button></div>`;
+        return `<div class="friends-pending-banner"><span>${this.ico('bell')} You have <b>${n}</b> pending friend request${n > 1 ? 's' : ''}!</span><button type="button" id="friends-banner-view-req" class="friend-btn friend-btn-accept">VIEW REQUESTS</button></div>`;
     }
 
     _wirePendingBanner() {
@@ -253,70 +293,58 @@ class FriendsModal {
     }
 
     _renderFriendsTab(body, enriched) {
+        if (this.activeDmRelId && typeof DirectMessageView !== 'undefined') {
+            const dmFriend = enriched.find(f => f.relId === this.activeDmRelId);
+            if (dmFriend) { DirectMessageView.render(body, dmFriend, window.chatService, this); return; }
+            this.closeDm(false);
+        }
         const bannerHtml = this._buildPendingBannerHtml();
         if (!enriched.length) {
-            body.innerHTML = `${bannerHtml}
-                <div class="friends-empty">
-                    <div class="friends-empty-title">Your Squad Roster is Empty!</div>
-                    <p>Search by Hero Name or <b>#OnlineID</b> to add friends and launch Co-op together.</p>
-                    <button type="button" id="friends-empty-add-btn" class="friends-search-btn friends-empty-cta">+ FIND FRIENDS</button>
-                </div>`;
+            body.innerHTML = `${bannerHtml}<div class="friends-empty"><div class="friends-empty-title">Your Squad Roster is Empty!</div><p>Search by Hero Name or <b>#OnlineID</b> to add friends and launch Co-op together.</p><button type="button" id="friends-empty-add-btn" class="friends-search-btn friends-empty-cta">${this.ico('plus', '+')} FIND FRIENDS</button></div>`;
             this._wirePendingBanner();
-            const goAdd = document.getElementById('friends-empty-add-btn');
-            if (goAdd) goAdd.addEventListener('click', () => { this.activeTab = 'add'; this.render(); });
+            document.getElementById('friends-empty-add-btn')?.addEventListener('click', () => { this.activeTab = 'add'; this.render(); });
             return;
         }
-
         const onlineTotal = enriched.filter(f => f.isOnline).length;
         const roomTotal = enriched.filter(f => f.coopRoomCode).length;
         const q = (this.friendSearchQuery || '').trim().toLowerCase();
-
         const visible = enriched.filter((f) => {
             if (this.friendFilter === 'ONLINE' && !f.isOnline && !f.coopRoomCode) return false;
             if (this.friendFilter === 'ROOM' && !f.coopRoomCode) return false;
-            if (q && !(f.name || '').toLowerCase().includes(q) && !(f.tag || '').toLowerCase().includes(q)) return false;
-            return true;
+            return !q || (f.name || '').toLowerCase().includes(q) || (f.tag || '').toLowerCase().includes(q);
         });
-
         body.innerHTML = `${bannerHtml}
             <div class="friends-toolbar">
                 <div class="friends-filter-chips">
                     <button type="button" class="tab-filter-chip ${this.friendFilter === 'ALL' ? 'active' : ''}" data-ffilter="ALL">ALL (${enriched.length})</button>
-                    <button type="button" class="tab-filter-chip ${this.friendFilter === 'ONLINE' ? 'active' : ''}" data-ffilter="ONLINE">🟢 ONLINE (${onlineTotal})</button>
-                    <button type="button" class="tab-filter-chip ${this.friendFilter === 'ROOM' ? 'active' : ''}" data-ffilter="ROOM">🎮 IN ROOM (${roomTotal})</button>
+                    <button type="button" class="tab-filter-chip ${this.friendFilter === 'ONLINE' ? 'active' : ''}" data-ffilter="ONLINE">${this.ico('orb_green')} ONLINE (${onlineTotal})</button>
+                    <button type="button" class="tab-filter-chip ${this.friendFilter === 'ROOM' ? 'active' : ''}" data-ffilter="ROOM">${this.ico('gamepad')} IN ROOM (${roomTotal})</button>
                 </div>
                 <input id="friends-roster-filter" class="friends-quick-input" type="text" maxlength="20" value="${this.esc(this.friendSearchQuery)}" placeholder="Filter roster..." autocomplete="off">
             </div>
-            <div id="friends-roster-list" class="friends-list"></div>
-        `;
+            <div id="friends-roster-list" class="friends-list"></div>`;
         this._wirePendingBanner();
-
         const listEl = document.getElementById('friends-roster-list');
         if (!visible.length) {
             listEl.innerHTML = `<div class="friends-empty">No friends match your filter right now.</div>`;
         } else {
-            const joinable = visible.filter(f => f.coopRoomCode);
-            const onlineOnly = visible.filter(f => f.isOnline && !f.coopRoomCode);
-            const offlineOnly = visible.filter(f => !f.isOnline && !f.coopRoomCode);
             const appendSection = (label, items) => {
                 if (!items.length) return;
                 if (visible.length > 1) {
                     const hdr = document.createElement('div');
                     hdr.className = 'friends-section-label';
-                    hdr.textContent = `${label} (${items.length})`;
+                    hdr.innerHTML = `${label} (${items.length})`;
                     listEl.appendChild(hdr);
                 }
-                items.forEach((f) => {
-                    const card = FriendsCardRenderer.buildFriendCard(f, {
-                        isExpanded: this.expandedStatsUid === f.uid,
-                        confirmRemove: this.confirmRemoveUid === f.uid
-                    });
-                    listEl.appendChild(card);
-                });
+                items.forEach((f) => listEl.appendChild(FriendsCardRenderer.buildFriendCard(f, {
+                    isExpanded: this.expandedStatsUid === f.uid,
+                    confirmRemove: this.confirmRemoveUid === f.uid,
+                    dmUnread: window.chatService ? window.chatService.getDmUnread(f.relId) : 0
+                })));
             };
-            appendSection('🎮 ACTIVE CO-OP ROOMS', joinable);
-            appendSection('🟢 ONLINE', onlineOnly);
-            appendSection('⚫ OFFLINE', offlineOnly);
+            appendSection(`${this.ico('gamepad')} ACTIVE CO-OP ROOMS`, visible.filter(f => f.coopRoomCode));
+            appendSection(`${this.ico('orb_green')} ONLINE`, visible.filter(f => f.isOnline && !f.coopRoomCode));
+            appendSection(`${this.ico('orb_dark')} OFFLINE`, visible.filter(f => !f.isOnline && !f.coopRoomCode));
             FriendsCardRenderer.applySocialCosmetics(listEl);
         }
 
@@ -347,7 +375,10 @@ class FriendsModal {
     async _handleFriendCardAction(btn, enriched = []) {
         const action = btn.dataset.action;
         const uid = btn.dataset.uid;
-        if (action === 'stats') {
+        if (action === 'dm') {
+            const target = enriched.find(f => f.uid === uid);
+            if (target) { if (window.soundEngine) window.soundEngine.playSelect(); this.openDm(target); }
+        } else if (action === 'stats') {
             this.expandedStatsUid = (this.expandedStatsUid === uid) ? null : uid;
             if (window.soundEngine) window.soundEngine.playSelect();
             this.render();
@@ -385,7 +416,7 @@ class FriendsModal {
         if (invites.length) {
             const h = document.createElement('div');
             h.className = 'friends-section-label is-gold';
-            h.textContent = `🎮 LIVE CO-OP INVITES (${invites.length})`;
+            h.innerHTML = `${this.ico('gamepad')} LIVE CO-OP INVITES (${invites.length})`;
             wrap.appendChild(h);
             invites.forEach(inv => wrap.appendChild(FriendsCardRenderer.buildInviteCard(inv)));
         }
@@ -393,7 +424,7 @@ class FriendsModal {
         if (inc.length) {
             const row = document.createElement('div');
             row.className = 'friends-section-row';
-            row.innerHTML = `<span class="friends-section-label">📩 INCOMING FRIEND REQUESTS (${inc.length})</span>${inc.length > 1 ? '<button type="button" id="friends-accept-all-btn" class="friend-btn friend-btn-accept">✓ ACCEPT ALL</button>' : ''}`;
+            row.innerHTML = `<span class="friends-section-label">${this.ico('mail')} INCOMING FRIEND REQUESTS (${inc.length})</span>${inc.length > 1 ? `<button type="button" id="friends-accept-all-btn" class="friend-btn friend-btn-accept">${this.ico('check')} ACCEPT ALL</button>` : ''}`;
             wrap.appendChild(row);
             inc.forEach(req => wrap.appendChild(FriendsCardRenderer.buildIncomingReqCard(req)));
         }
@@ -401,7 +432,7 @@ class FriendsModal {
         if (out.length) {
             const h = document.createElement('div');
             h.className = 'friends-section-label';
-            h.textContent = `📤 SENT REQUESTS (${out.length})`;
+            h.innerHTML = `${this.ico('send')} SENT REQUESTS (${out.length})`;
             wrap.appendChild(h);
             out.forEach(req => wrap.appendChild(FriendsCardRenderer.buildOutgoingReqCard(req)));
         }
@@ -426,13 +457,13 @@ class FriendsModal {
     }
 
     _renderAddTab(body) {
-        const searchIco = typeof UiIcons !== 'undefined' ? UiIcons.i('search', 'ui-icon-sm') : '🔍';
+        const searchIco = this.ico('search', '🔍');
         body.innerHTML = `
             <div class="friends-search-bar">
                 <input id="friends-search-input" class="friends-search-input" type="text" maxlength="24" value="${this.esc(this.lastQuery)}" placeholder="Search Hero Name or #OnlineID (e.g. #K8M4P2)..." autocomplete="off">
                 <button id="friends-search-btn" class="friends-search-btn">${searchIco} FIND</button>
             </div>
-            <div class="friends-discover-hint">💡 Tip: Tap any player card to inspect their Showcase Coins, Career Stats &amp; Banner!</div>
+            <div class="friends-discover-hint">${this.ico('tip_bulb')} Tip: Tap any player card to inspect their Profile, Equipped Gear &amp; Weapons!</div>
             <div id="friends-search-results" class="friends-list"></div>
         `;
 
@@ -473,7 +504,7 @@ class FriendsModal {
                 : `<div class="friends-empty">No recent active players right now.<br>Search by your friend's exact <b>#OnlineID</b> or <b>Hero Name</b>!</div>`;
             return;
         }
-        container.innerHTML = `<div class="friends-section-label">${this.hasSearched ? '🔎 SEARCH RESULTS' : '🌐 RECENT ACTIVE PLAYERS'} (${this.searchResults.length})</div>`;
+        container.innerHTML = `<div class="friends-section-label">${this.hasSearched ? `${this.ico('search')} SEARCH RESULTS` : `${this.ico('people')} RECENT ACTIVE PLAYERS`} (${this.searchResults.length})</div>`;
         this.searchResults.forEach((u) => {
             container.appendChild(FriendsCardRenderer.buildSearchResultCard(u, this.service.getRelationState(u.uid)));
         });
@@ -502,24 +533,17 @@ class FriendsModal {
         if (!window.networkManager) return;
         this.hide();
         if (!window.coopLobbyModal && typeof CoopLobbyModal !== 'undefined') window.coopLobbyModal = new CoopLobbyModal();
-        if (window.coopLobbyModal) {
-            window.coopLobbyModal.activeTab = 'host';
-            window.coopLobbyModal.show();
-            const statusEl = document.getElementById('coop-host-status');
-            if (statusEl) statusEl.textContent = `⏳ Opening room before inviting ${friendName}...`;
-            const ready = await window.networkManager.waitUntilReady(6500);
-            const code = window.coopLobbyModal.roomCode;
-            const mode = window.coopLobbyModal.selectedMode || 'story';
-            if (ready && code && window.networkManager.isHost) {
-                await this.service.sendCoopInvite(friendUid, code, mode);
-                if (statusEl && !window.networkManager.connected) {
-                    if (typeof UiIcons !== 'undefined') UiIcons.setRichText(statusEl, `📨 Invite sent to ${friendName}! Waiting to connect...`, 'ui-icon-sm');
-                    else statusEl.textContent = `📨 Invite sent to ${friendName}! Waiting to connect...`;
-                }
-            } else if (statusEl) {
-                statusEl.textContent = '⚠️ Could not register room on signaling server — please try again.';
-            }
-        }
+        const modal = window.coopLobbyModal;
+        if (!modal) return;
+        modal.activeTab = 'host'; modal.show();
+        const statusEl = document.getElementById('coop-host-status');
+        const setStat = (t) => { if (statusEl) { if (typeof UiIcons !== 'undefined') UiIcons.setRichText(statusEl, t, 'ui-icon-sm'); else statusEl.textContent = t; } };
+        setStat(`⏳ Opening room before inviting ${friendName}...`);
+        const ready = await window.networkManager.waitUntilReady(6500);
+        if (ready && modal.roomCode && window.networkManager.isHost) {
+            await this.service.sendCoopInvite(friendUid, modal.roomCode, modal.selectedMode || 'story');
+            if (statusEl && !window.networkManager.connected) setStat(`📨 Invite sent to ${friendName}! Waiting to connect...`);
+        } else { setStat('⚠️ Could not register room on signaling server — please try again.'); }
     }
 
     joinRoomCode(roomCode, inviteId = null) {
@@ -528,25 +552,20 @@ class FriendsModal {
         if (this.toastEl) this.toastEl.classList.add('hidden');
         if (this.service && typeof this.service.setPendingInvite === 'function') this.service.setPendingInvite(inviteId);
         if (!window.coopLobbyModal && typeof CoopLobbyModal !== 'undefined') window.coopLobbyModal = new CoopLobbyModal();
-        if (!window.coopLobbyModal) return;
-        if (typeof window.coopLobbyModal.joinRoomWithCode === 'function') {
-            window.coopLobbyModal.joinRoomWithCode(roomCode, inviteId);
-            return;
-        }
-        window.coopLobbyModal.activeTab = 'join';
-        window.coopLobbyModal.show();
-        const tabJoin = document.getElementById('coop-tab-join'), input = document.getElementById('coop-join-code-input'), btn = document.getElementById('coop-connect-btn');
-        if (tabJoin) tabJoin.click();
-        if (input) input.value = roomCode;
-        if (btn) btn.click();
+        const modal = window.coopLobbyModal;
+        if (!modal) return;
+        if (typeof modal.joinRoomWithCode === 'function') { modal.joinRoomWithCode(roomCode, inviteId); return; }
+        modal.activeTab = 'join'; modal.show();
+        document.getElementById('coop-tab-join')?.click();
+        const inp = document.getElementById('coop-join-code-input'); if (inp) inp.value = roomCode;
+        document.getElementById('coop-connect-btn')?.click();
     }
 
     showInviteToast(invite) {
-        if (!this.toastEl || !invite) return;
-        if (window.gameInstance && window.gameInstance.state === 'PLAYING') return;
+        if (!this.toastEl || !invite || (window.gameInstance && window.gameInstance.state === 'PLAYING')) return;
         this.toastEl.innerHTML = typeof FriendsCardRenderer !== 'undefined' ? FriendsCardRenderer.buildInviteToastHtml(invite) : '';
         this.toastEl.classList.remove('hidden');
-        document.getElementById('toast-join-coop-btn').onclick = () => { this.joinRoomCode(invite.roomCode, invite.id); };
+        document.getElementById('toast-join-coop-btn').onclick = () => this.joinRoomCode(invite.roomCode, invite.id);
         document.getElementById('toast-dismiss-coop-btn').onclick = () => { this.service.dismissInvite(invite.id); this.toastEl.classList.add('hidden'); };
     }
 
@@ -557,18 +576,13 @@ class FriendsModal {
         this.reqToastEl.innerHTML = typeof FriendsCardRenderer !== 'undefined' ? FriendsCardRenderer.buildFriendReqToastHtml(req) : '';
         this.reqToastEl.classList.remove('hidden');
         if (window.soundEngine) window.soundEngine.playSelect();
-
         document.getElementById('toast-accept-req-btn').onclick = async () => {
             if (window.soundEngine) window.soundEngine.playSelect();
             this.reqToastEl.classList.add('hidden');
             await this.service.acceptFriendRequest(req.id);
             if (this.modal && !this.modal.classList.contains('hidden')) this.render();
         };
-        document.getElementById('toast-view-req-btn').onclick = () => {
-            if (window.soundEngine) window.soundEngine.playSelect();
-            this.reqToastEl.classList.add('hidden');
-            this.show('requests');
-        };
+        document.getElementById('toast-view-req-btn').onclick = () => { if (window.soundEngine) window.soundEngine.playSelect(); this.reqToastEl.classList.add('hidden'); this.show('requests'); };
         document.getElementById('toast-dismiss-req-btn').onclick = () => this.reqToastEl.classList.add('hidden');
     }
 }

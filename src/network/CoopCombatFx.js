@@ -22,6 +22,8 @@ class CoopCombatFx {
             isSingularityCore: !!b.isSingularityCore, isSpasBreach: !!b._spasBreach,
             isPermafrostShard: !!b.isPermafrostShard, isCryoShard: !!b.isCryoShard,
             isExplosiveMitts: !!b.isExplosiveMitts,
+            isMoltenBuster: !!b.isMoltenBuster, isPhantomRail: !!b.isPhantomRail,
+            isStareShot: !!b.isStareShot, wavePhase: b._wavePhase || 0,
             muzzle: (b.type !== 'spas12' && b.type !== 'sawnoff_shotgun') || idx === 0
         });
         const sendOpts = { droppable: true, maxBufferedBytes: 196608 };
@@ -71,7 +73,7 @@ class CoopCombatFx {
             dmg = Math.max(1, Math.min(450, dmg));
             speed = Math.max(1, Math.min(42, speed));
             radius = Math.max(3, Math.min(40, radius));
-            pierce = Math.max(1, Math.min(10, Math.round(pierce)));
+            pierce = Math.max(1, Math.min(16, Math.round(pierce)));
             bounces = Math.max(0, Math.min(5, Math.round(bounces)));
             range = Math.max(120, Math.min(1600, range));
         }
@@ -89,6 +91,17 @@ class CoopCombatFx {
         if (bData.isPermafrostShard) bullet.isPermafrostShard = true;
         if (bData.isCryoShard) bullet.isCryoShard = true;
         if (bData.isExplosiveMitts) bullet.isExplosiveMitts = true;
+        if (bData.isMoltenBuster) bullet.isMoltenBuster = true;
+        if (bData.isPhantomRail) bullet.isPhantomRail = true;
+        if (bData.wavePhase) bullet._wavePhase = Number(bData.wavePhase) || 0;
+        if (bType === 'vulcan_minigun') {
+            rp._vulcanHeat = Math.min(1.0, (rp._vulcanHeat || 0) + 0.11);
+            rp._vulcanLastShotAt = performance.now();
+        } else if (bType === 'hades_railgun' && bData.muzzle !== false && typeof HadesOblivionRailgun !== 'undefined') {
+            HadesOblivionRailgun.addShotRift(bx, by, Math.atan2(vy, vx), !!bData.isWeaponEvolved);
+        } else if (bType === 'medusa_gaze' && bData.isStareShot && typeof MedusaGorgonGaze !== 'undefined') {
+            MedusaGorgonGaze.fireStareCone(rp, Math.atan2(vy, vx), dmg, game.effects, game);
+        }
 
         if (isHostAuthoritative) {
             const latencyMs = (session.net && session.net.latency) ? session.net.latency : 25;

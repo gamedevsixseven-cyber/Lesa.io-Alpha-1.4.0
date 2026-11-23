@@ -43,29 +43,24 @@ class WaterPuddle {
         const currentRadius = this.radius * Math.min(1.0, this.age / 12);
         const radiusSq = (currentRadius + 30) * (currentRadius + 30);
 
-        // Check collision with all active enemies
+        // Check collision with nearby active enemies
         if (enemies && enemies.length > 0) {
-            for (let i = 0; i < enemies.length; i++) {
-                const enemy = enemies[i];
-                if (enemy.dead) continue;
-
+            const visit = (enemy) => {
+                if (!enemy || enemy.dead) return;
                 const dx = enemy.x - this.x;
                 const dy = enemy.y - this.y;
-                const distSq = dx * dx + dy * dy;
-
-                if (distSq <= (currentRadius + enemy.radius) * (currentRadius + enemy.radius)) {
-                    // Apply Drenched Debuff
-                    enemy.waterDrenchedTimer = 50; // Keeps active for ~0.8s after stepping off
-                    enemy.waterSlowMultiplier = this.slowMultiplier; // Scaled by skill level
-                    enemy.damageVulnerabilityMultiplier = this.damageAmp; // Scaled by skill level
-
-                    // Drenching water droplet splash effect
+                if (dx * dx + dy * dy <= (currentRadius + enemy.radius) ** 2) {
+                    enemy.waterDrenchedTimer = 50;
+                    enemy.waterSlowMultiplier = this.slowMultiplier;
+                    enemy.damageVulnerabilityMultiplier = this.damageAmp;
                     if (effects && Math.random() < 0.12 * dt) {
                         effects.addSparks(enemy.x, enemy.y, '#00d2d3', 2);
                         effects.addSparks(enemy.x, enemy.y, '#54a0ff', 2);
                     }
                 }
-            }
+            };
+            if (typeof SpatialHashGrid !== 'undefined') SpatialHashGrid.forEachEnemyNear(this.x, this.y, currentRadius, enemies, visit);
+            else for (let i = 0; i < enemies.length; i++) visit(enemies[i]);
         }
     }
 
