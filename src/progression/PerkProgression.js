@@ -232,7 +232,7 @@ class PerkProgression {
         return changed;
     }
 
-    static recordBossDefeat(state, bossId) {
+    static recordBossDefeat(state, bossId, syncCoop = true) {
         if (!bossId) return false;
         const gs = state || (typeof window !== 'undefined' ? window.GameState : null);
         if (!gs || !gs.player) return false;
@@ -254,8 +254,13 @@ class PerkProgression {
         if (bossId === 'zeus') feats.olympusMaxFloor = 5;
 
         gs.player.combatFeats = this.saveFeats(feats);
-        if (typeof window !== 'undefined' && window.EventBus) {
-            window.EventBus.emit('combatFeatsUpdated', { bossId, combatFeats: gs.player.combatFeats });
+        if (typeof window !== 'undefined') {
+            if (window.EventBus) window.EventBus.emit('combatFeatsUpdated', { bossId, combatFeats: gs.player.combatFeats });
+            if (typeof CosmeticManager !== 'undefined') CosmeticManager.syncUnlocks({ silent: false, syncRemote: false });
+            const g = window.gameInstance;
+            if (syncCoop !== false && g && g.coopSession && !g.isCoopGuest && g.coopSession.net && g.coopSession.net.connected) {
+                g.coopSession.net.send('BOSS_FEAT_DEFEAT', { bossId });
+            }
         }
         return true;
     }

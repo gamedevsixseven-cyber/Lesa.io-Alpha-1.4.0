@@ -393,6 +393,9 @@ class DungeonManager {
             game.ui.addKillfeed(`🌟 JACKPOT! ${sourceLabel} dropped OLYMPIAN STAR-STONE (${pct}%)! 🌟`);
         }
         if (typeof window !== 'undefined' && window.soundEngine && typeof window.soundEngine.playLevelUp === 'function') window.soundEngine.playLevelUp();
+        if (game && game.coopSession && !game.isCoopGuest && game.coopSession.net && game.coopSession.net.connected) {
+            game.coopSession.net.send('STAR_STONE_REWARD', { sourceLabel });
+        }
         return true;
     }
 

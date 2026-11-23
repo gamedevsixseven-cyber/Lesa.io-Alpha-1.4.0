@@ -197,6 +197,10 @@ class CoopHostSession {
                 CoopCombatFx.handleRemoteBeam(this, payload, true);
             } else if (type === 'COOP_FX' && typeof CoopCombatFx !== 'undefined') {
                 CoopCombatFx.handleRemoteFx(this, payload);
+            } else if (type === 'COOP_CHAT' && payload && this.game && this.game.ui && this.game.ui.hud) {
+                this.game.ui.hud.receiveChatMessage(payload.name || this.remotePlayer.name, payload.text, this.remotePlayer, false);
+            } else if (type === 'DEV_COOP_CMD' && payload && typeof window !== 'undefined' && window.AdminCheats) {
+                window.AdminCheats.handleRemoteCoopCmd(this.game, payload);
             } else if (type === 'GUEST_HEAL' && payload) {
                 const p2 = this.remotePlayer;
                 const amt = Number(payload.amount);
@@ -281,6 +285,10 @@ class CoopHostSession {
 
         // 4. Check Double KO (Only triggers game over when BOTH players fall)
         if (p1.hp <= 0 && this.remotePlayer.isDowned && this.game.state === 'PLAYING') {
+            this.broadcastSnapshot();
+            if (this.net && this.net.connected) {
+                this.net.send('COOP_GAME_OVER', { wave: this.game.waveManager ? this.game.waveManager.wave : 1 });
+            }
             this.game.gameOver();
             return;
         }

@@ -26,9 +26,31 @@ class InputManager {
         this.init();
     }
 
+    isChatTyping() {
+        return typeof document !== 'undefined' && document.activeElement && document.activeElement.id === 'ingame-chat-input';
+    }
+
     init() {
         // Keyboard Listeners
         window.addEventListener('keydown', (e) => {
+            if (e.code === 'Enter' || e.key === 'Enter') {
+                const g = typeof window !== 'undefined' ? window.gameInstance : null;
+                const hud = g && g.ui && g.ui.hud;
+                const inCutscene = g && typeof g.isCutsceneActive === 'function' && g.isCutsceneActive();
+                if (g && g.state === 'PLAYING' && !inCutscene && hud && typeof hud.handleEnterKey === 'function') {
+                    e.preventDefault();
+                    this.keys = {};
+                    hud.handleEnterKey();
+                    return;
+                }
+            }
+            if (this.isChatTyping()) {
+                if (e.code === 'Escape' && window.gameInstance && window.gameInstance.ui && window.gameInstance.ui.hud) {
+                    e.preventDefault();
+                    window.gameInstance.ui.hud.closeChatInput();
+                }
+                return;
+            }
             this.keys[e.code] = true;
             this.keys[e.key.toLowerCase()] = true;
 
@@ -114,6 +136,7 @@ class InputManager {
     }
 
     getMovementVector() {
+        if (this.isChatTyping()) return { dx: 0, dy: 0 };
         // 1. Mobile Virtual Joystick ONLY if on actual touch device and actively moving
         if (this.touchInput && this.touchInput.isTouchDevice && this.touchInput.isMoving) {
             return this.touchInput.getMovementVector();

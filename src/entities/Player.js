@@ -590,7 +590,7 @@ class Player {
         }
     }
 
-    draw(ctx) { if (typeof HeroRenderer !== 'undefined') HeroRenderer.draw(this, ctx); }
+    draw(ctx) { if (typeof HeroRenderer !== 'undefined') HeroRenderer.draw(this, ctx); if (typeof RemotePlayer !== 'undefined' && RemotePlayer.drawChatBubble) RemotePlayer.drawChatBubble(ctx, this); }
 }
 
 if (typeof window !== 'undefined') window.Player = Player;

@@ -30,7 +30,7 @@
     <link rel="stylesheet" href="styles/animations.css">
     <link rel="stylesheet" href="styles/menu.css?v=1.6.22">
     <link rel="stylesheet" href="styles/cards.css?v=1.7.2">
-    <link rel="stylesheet" href="styles/hud.css?v=1.6.22">
+    <link rel="stylesheet" href="styles/hud.css?v=1.0.7">
     <link rel="stylesheet" href="styles/ultimates.css?v=1.5.74">
     <link rel="stylesheet" href="styles/modals.css?v=1.7.3">
     <link rel="stylesheet" href="styles/roster.css?v=1.6.0">
@@ -2507,11 +2507,14 @@
                 <div id="admin-tab-cheats" class="admin-tab-content">
                     <div class="admin-section">
                         <div class="admin-section-title"><img src="assets/ui-icons/bolt.svg" class="ui-icon ui-icon-sm"
-                                alt="" loading="lazy" decoding="async"> Combat & Power Modifiers</div>
+                                alt="" loading="lazy" decoding="async"> Combat &amp; Co-op Modifiers (Works Online)</div>
                         <div class="admin-btn-grid">
                             <button id="admin-toggle-godmode" class="admin-control-btn">GOD MODE: OFF</button>
+                            <button id="admin-toggle-squad-god" class="admin-control-btn">SQUAD GOD: OFF</button>
                             <button id="admin-toggle-inf-dash" class="admin-control-btn">INF DASH: OFF</button>
                             <button id="admin-toggle-inf-skill" class="admin-control-btn">0s SKILL CD: OFF</button>
+                            <button id="admin-toggle-inf-ult" class="admin-control-btn">INF ULTIMATE: OFF</button>
+                            <button id="admin-toggle-super-speed" class="admin-control-btn">2x SPEED: OFF</button>
                             <button id="admin-toggle-dmg-boost" class="admin-control-btn">10x DMG + CRIT: OFF</button>
                             <button id="admin-toggle-instakill" class="admin-control-btn">1-HIT AURA: OFF</button>
                         </div>
@@ -2519,17 +2522,21 @@
 
                     <div class="admin-section">
                         <div class="admin-section-title"><img src="assets/ui-icons/swords.svg"
-                                class="ui-icon ui-icon-sm" alt="" loading="lazy" decoding="async"> Instant Arena Actions</div>
+                                class="ui-icon ui-icon-sm" alt="" loading="lazy" decoding="async"> Instant Arena &amp; Squad Actions</div>
                         <div class="admin-btn-grid">
                             <button id="admin-btn-full-heal" class="admin-control-btn btn-success"><img
                                     src="assets/GearUIIcons/HP.png" class="ui-icon ui-icon-sm" alt="" loading="lazy" decoding="async"> FULL
                                 HEAL</button>
+                            <button id="admin-btn-revive-squad" class="admin-control-btn btn-success">🤝 REVIVE SQUAD</button>
+                            <button id="admin-btn-fill-ult" class="admin-control-btn btn-warning">⚡ CHARGE ULT</button>
                             <button id="admin-btn-level-up" class="admin-control-btn btn-info"><img
                                     src="assets/ui-icons/rocket.svg" class="ui-icon ui-icon-sm" alt="" loading="lazy" decoding="async"> +1
                                 LEVEL</button>
                             <button id="admin-btn-nuke" class="admin-control-btn btn-danger"><img
                                     src="assets/ui-icons/boom.svg" class="ui-icon ui-icon-sm" alt="" loading="lazy" decoding="async"> NUKE
                                 ARENA</button>
+                            <button id="admin-btn-skip-wave" class="admin-control-btn btn-info">⏭️ SKIP WAVE</button>
+                            <button id="admin-btn-squad-coins" class="admin-control-btn btn-warning">🎁 +500 SQUAD GOLD</button>
                             <button id="admin-btn-magnet" class="admin-control-btn btn-warning"><img
                                     src="assets/ui-icons/magnet.svg" class="ui-icon ui-icon-sm" alt="" loading="lazy" decoding="async"> MAGNET
                                 DROPS</button>
@@ -3237,7 +3244,7 @@
     <script src="src/core/AutoUpdater.js?v=1.0.2"></script>
     <script src="src/save/SaveMigration.js?v=1.0.4"></script>
     <script src="src/core/GameState.js?v=1.0.3"></script>
-    <script src="src/progression/PerkProgression.js?v=1.8.5"></script>
+    <script src="src/progression/PerkProgression.js?v=1.0.7"></script>
     <script src="src/progression/CosmeticManager.js?v=1.9.13"></script>
     <script src="src/progression/EventManager.js?v=1.8.8"></script>
     <script src="src/dungeons/AscentCrestManager.js?v=1.5.14"></script>
@@ -3257,7 +3264,7 @@
     <script src="src/audio.js?v=1.6.23"></script>
 
     <!-- 4. ENGINE SUBSYSTEMS -->
-    <script src="src/engine/Input.js?v=1.6.5"></script>
+    <script src="src/engine/Input.js?v=1.0.8"></script>
     <script src="src/engine/Camera.js?v=1.5.51"></script>
     <script src="src/engine/EndlessBuildingModels.js?v=1.5.73"></script>
     <script src="src/engine/EndlessBuildingRenderer.js?v=1.9.1"></script>
@@ -3266,15 +3273,15 @@
     <script src="src/engine/OutsidePerimeterRoads.js?v=1.6.3"></script>
     <script src="src/engine/Arena.js?v=1.9.0"></script>
     <script src="src/engine/WaveManager.js?v=1.6.6"></script>
-    <script src="src/engine/EndlessWaveDirector.js?v=1.6.20"></script>
+    <script src="src/engine/EndlessWaveDirector.js?v=1.0.7"></script>
     <script src="src/dungeons/OlympusAssets.js?v=1.9.0"></script>
     <script src="src/dungeons/OlympusLayouts.js?v=1.5.4"></script>
     <script src="src/dungeons/OlympusAltarUI.js?v=1.5.13"></script>
     <script src="src/dungeons/OlympusClimbTransition.js?v=1.5.14"></script>
     <script src="src/dungeons/OlympusAscentSystem.js?v=1.5.51"></script>
     <script src="src/dungeons/DungeonMapTheme.js?v=1.5.66"></script>
-    <script src="src/dungeons/DungeonManager.js?v=1.6.6"></script>
-    <script src="src/progression/BossRewardManager.js?v=1.5.69"></script>
+    <script src="src/dungeons/DungeonManager.js?v=1.0.7"></script>
+    <script src="src/progression/BossRewardManager.js?v=1.0.7"></script>
     <script src="src/engine/CollisionSystem.js?v=1.8.0"></script>
     <script src="src/engine/NameValidator.js?v=1.6.24"></script>
     <script src="src/engine/EpicPerkEffects.js?v=1.6.6"></script>
@@ -3321,8 +3328,8 @@
     <script src="src/skills/VF185Model.js?v=1.5.74"></script>
     <script src="src/skills/HeroUltimates.js?v=1.7.8"></script>
     <script src="src/entities/PlayerSkills.js?v=1.6.2"></script>
-    <script src="src/entities/Player.js?v=1.7.9"></script>
-    <script src="src/entities/RemotePlayer.js?v=1.8.0"></script>
+    <script src="src/entities/Player.js?v=1.0.7"></script>
+    <script src="src/entities/RemotePlayer.js?v=1.0.7"></script>
 
     <!-- 6. ENEMIES -->
     <script src="src/enemies/EnemyBase.js?v=1.9.1"></script>
@@ -3399,7 +3406,7 @@
     <script src="src/ui/PublicProfileModal.js?v=1.0.4"></script>
     <script src="src/ui/LeaderboardModal.js?v=1.0.4"></script>
     <script src="src/ui/ModalManager.js?v=1.8.7"></script>
-    <script src="src/ui/HUDController.js?v=1.7.7"></script>
+    <script src="src/ui/HUDController.js?v=1.0.7"></script>
     <script src="src/ui/ProfileManager.js?v=1.0.4"></script>
     <script src="src/ui/HeroRoster.js?v=1.6.0"></script>
     <script src="src/ui/SkillManager.js?v=1.6.2"></script>
@@ -3420,10 +3427,10 @@
 
     <!-- 8.5. ADMIN & PLAYTESTING SUBSYSTEM -->
     <script src="src/admin/AdminAuth.js?v=1.6.15"></script>
-    <script src="src/admin/AdminCheats.js?v=1.7.4"></script>
+    <script src="src/admin/AdminCheats.js?v=1.0.8"></script>
     <script src="src/admin/DevAccountManager.js?v=1.9.2"></script>
-    <script src="src/admin/DevGiftManager.js?v=1.0.1"></script>
-    <script src="src/admin/AdminPanel.js?v=1.9.2"></script>
+    <script src="src/admin/DevGiftManager.js?v=1.0.8"></script>
+    <script src="src/admin/AdminPanel.js?v=1.0.8"></script>
 
     <!-- 8.7. MOBILE TOUCH SUBSYSTEM -->
     <script src="src/engine/MobileAimAssist.js?v=1.6.22"></script>
@@ -3438,8 +3445,8 @@
     <script src="src/network/CoopDropSync.js?v=1.8.7"></script>
     <script src="src/network/CoopCombatFx.js?v=1.7.7"></script>
     <script src="src/network/CoopPauseSync.js?v=1.7.5"></script>
-    <script src="src/network/CoopHostSession.js?v=1.8.0"></script>
-    <script src="src/network/CoopGuestSession.js?v=1.8.7"></script>
+    <script src="src/network/CoopHostSession.js?v=1.0.8"></script>
+    <script src="src/network/CoopGuestSession.js?v=1.0.8"></script>
     <script src="src/network/CoopLobbyModal.js?v=1.8.4"></script>
 
     <!-- 8.9. FRIENDS & ONLINE PLAYER ID SUBSYSTEM -->

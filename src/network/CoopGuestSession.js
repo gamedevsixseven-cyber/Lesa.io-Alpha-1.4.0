@@ -140,7 +140,31 @@ class CoopGuestSession {
                     ZeusSkyPhase.grantZeusFirstKillRewards(null, this.game);
                 }
             } else if (type === 'BOSS_REWARD_UNLOCK' && payload && payload.bossId && typeof BossRewardManager !== 'undefined') {
-                BossRewardManager.queueBossDrops(payload.bossId, { effects: this.game && this.game.effects, syncCoop: false, bossName: payload.bossName });
+                const p = this.game && this.game.player;
+                BossRewardManager.queueBossDrops(payload.bossId, { effects: this.game && this.game.effects, x: p ? p.x : 0, y: p ? p.y : 0, game: this.game, syncCoop: false, bossName: payload.bossName });
+                if (typeof window !== 'undefined' && window.SaveManager && typeof window.SaveManager.saveNow === 'function') window.SaveManager.saveNow();
+            } else if (type === 'BOSS_FEAT_DEFEAT' && payload && payload.bossId && typeof PerkProgression !== 'undefined') {
+                PerkProgression.recordBossDefeat(typeof window !== 'undefined' ? window.GameState : null, payload.bossId, false);
+                if (typeof window !== 'undefined' && window.SaveManager && typeof window.SaveManager.saveNow === 'function') window.SaveManager.saveNow();
+            } else if (type === 'STAR_STONE_REWARD' && typeof DungeonManager !== 'undefined') {
+                DungeonManager.addOlympianStarStone(1);
+                if (this.game && this.game.effects && this.game.player) {
+                    this.game.effects.addConfetti(this.game.player.x, this.game.player.y, 160);
+                    this.game.effects.addComicSplash(this.game.player.x, this.game.player.y - 80, '🌟 OLYMPIAN STAR-STONE ACQUIRED! 🌟');
+                }
+                if (typeof window !== 'undefined' && window.soundEngine && typeof window.soundEngine.playLevelUp === 'function') window.soundEngine.playLevelUp();
+            } else if (type === 'COOP_GAME_OVER') {
+                if (payload && Number.isFinite(payload.wave) && this.game.waveManager) this.game.waveManager.wave = Math.max(this.game.waveManager.wave || 1, payload.wave);
+                if (this.game && (this.game.state === 'PLAYING' || this.game.state === 'PAUSED')) this.game.gameOver();
+            } else if (type === 'COOP_CHAT' && payload && this.game && this.game.ui && this.game.ui.hud) {
+                this.game.ui.hud.receiveChatMessage(payload.name || this.remotePlayer.name, payload.text, this.remotePlayer, false);
+            } else if (type === 'DEV_COOP_SYNC' && payload && payload.kind === 'warp' && this.game) {
+                if (payload.mode && this.game.gameMode !== payload.mode) {
+                    this.game.gameMode = payload.mode;
+                    if (this.game.waveManager) this.game.waveManager.gameMode = payload.mode;
+                    if (this.game.arena && typeof this.game.arena.setGameMode === 'function') this.game.arena.setGameMode(payload.mode);
+                }
+                if (payload.num && this.game.waveManager) this.game.waveManager.wave = payload.num;
             } else if (type === 'GUEST_DROP_EFFECT' && payload) {
                 this.handleDropEffect(payload);
             } else if (type === 'HELIOS_BEAM' && typeof CoopCombatFx !== 'undefined') {

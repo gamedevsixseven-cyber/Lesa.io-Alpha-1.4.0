@@ -154,15 +154,24 @@ class AdminPanelController {
         if (!btn) return;
         btn.addEventListener('click', () => {
             window.AdminCheats[prop] = !window.AdminCheats[prop];
-            this.updateToggleButton(btn, window.AdminCheats[prop], labelOn, labelOff);
-            this.showToast(`${labelOn.replace(': ON', '')}: ${window.AdminCheats[prop] ? 'ENABLED' : 'DISABLED'}`);
+            const val = window.AdminCheats[prop];
+            const g = window.gameInstance;
+            if (g && g.coopSession && !g.coopSession.isHost && g.coopSession.net && g.coopSession.net.connected) {
+                if (prop === 'squadGodMode') g.coopSession.net.send('DEV_COOP_CMD', { cmd: 'squad_god', enabled: val });
+                else if (prop === 'godMode') g.coopSession.net.send('DEV_COOP_CMD', { cmd: 'guest_god', enabled: val });
+            }
+            this.updateToggleButton(btn, val, labelOn, labelOff);
+            this.showToast(`${labelOn.replace(': ON', '')}: ${val ? 'ENABLED' : 'DISABLED'}`);
         });
     }
 
     bindCheatControls() {
         this._bindToggle('admin-toggle-godmode', 'godMode', 'GOD MODE: ON', 'GOD MODE: OFF');
+        this._bindToggle('admin-toggle-squad-god', 'squadGodMode', 'SQUAD GOD: ON', 'SQUAD GOD: OFF');
         this._bindToggle('admin-toggle-inf-dash', 'infiniteDash', 'INF DASH: ON', 'INF DASH: OFF');
         this._bindToggle('admin-toggle-inf-skill', 'noSkillCooldown', '0s SKILL CD: ON', '0s SKILL CD: OFF');
+        this._bindToggle('admin-toggle-inf-ult', 'infiniteUlt', 'INF ULTIMATE: ON', 'INF ULTIMATE: OFF');
+        this._bindToggle('admin-toggle-super-speed', 'superSpeed', '2x SPEED: ON', '2x SPEED: OFF');
         this._bindToggle('admin-toggle-dmg-boost', 'damageBoost', '10x DMG + CRIT: ON', '10x DMG + CRIT: OFF');
         this._bindToggle('admin-toggle-instakill', 'instaKillEnemies', '1-HIT AURA: ON', '1-HIT AURA: OFF');
 
@@ -174,6 +183,22 @@ class AdminPanelController {
         bindBtn('admin-btn-full-heal', () => {
             const ok = window.AdminCheats.fullHeal(window.gameInstance);
             this.showToast(ok ? 'Hero restored to full HP & cooldowns cleared.' : 'Start a run first.', ok ? 'ok' : 'warn');
+        });
+        bindBtn('admin-btn-revive-squad', () => {
+            const ok = window.AdminCheats.reviveAndHealSquad(window.gameInstance);
+            this.showToast(ok ? '🤝 Both Squad Heroes revived & healed to 100%!' : 'Start a run first.', ok ? 'ok' : 'warn');
+        });
+        bindBtn('admin-btn-fill-ult', () => {
+            const ok = window.AdminCheats.fillUltimate(window.gameInstance);
+            this.showToast(ok ? '⚡ Ultimate charged to 100% READY!' : 'Start a run first.', ok ? 'ok' : 'warn');
+        });
+        bindBtn('admin-btn-skip-wave', () => {
+            const ok = window.AdminCheats.clearCurrentWave(window.gameInstance);
+            this.showToast(ok ? '⏭️ Cleared wave & advanced to next wave!' : 'Start a run first.', ok ? 'ok' : 'warn');
+        });
+        bindBtn('admin-btn-squad-coins', () => {
+            const ok = window.AdminCheats.giftSquadMatchCoins(window.gameInstance, 500, 200);
+            this.showToast(ok ? '🎁 Awarded +500 Gold Coins & +200 XP to Squad!' : 'Start a run first.', ok ? 'ok' : 'warn');
         });
         bindBtn('admin-btn-level-up', () => {
             const lvl = window.AdminCheats.levelUpPlayer(window.gameInstance, 1);
@@ -303,42 +328,15 @@ class AdminPanelController {
         });
 
         const simpleActions = [
-            ['admin-btn-add-crests', () => {
-                const count = window.AdminCheats.addAscentCrests(3);
-                this.showToast(`Ascent Crests set to ${count}.`);
-            }],
-            ['admin-btn-add-stones', () => {
-                const total = window.AdminCheats.addStarStones(5);
-                this.showToast(`Olympian Star Stones: ${total}.`);
-            }],
-            ['admin-btn-add-evo-stones', () => {
-                const total = window.AdminCheats.addEvolutionStones(5);
-                this.showToast(`Evolution Stones: ${total}.`);
-            }],
-            ['admin-btn-add-xp', () => {
-                window.AdminCheats.addAccountXP(1000);
-                this.showToast('Added +1,000 Account XP.');
-            }],
-            ['admin-btn-unlock-heroes', () => {
-                const n = window.AdminCheats.unlockAllHeroes();
-                this.showToast(`Unlocked all ${n} heroes!`);
-            }],
-            ['admin-btn-unlock-weapons', () => {
-                const n = window.AdminCheats.unlockAllWeapons();
-                this.showToast(`Unlocked all ${n} weapons!`);
-            }],
-            ['admin-btn-max-skills', () => {
-                const n = window.AdminCheats.maxAllSkills();
-                this.showToast(`Unlocked & maxed all ${n} skills!`);
-            }],
-            ['admin-btn-unlock-gear', () => {
-                const n = window.AdminCheats.unlockAllGear();
-                this.showToast(`Unlocked ${n} armory gear items!`);
-            }],
-            ['admin-btn-unlock-perks', () => {
-                const n = window.AdminCheats.unlockAllPerksAndFeats(true);
-                this.showToast(`Unlocked & maxed all ${n} perks + boss feats!`);
-            }]
+            ['admin-btn-add-crests', () => this.showToast(`Ascent Crests set to ${window.AdminCheats.addAscentCrests(3)}.`)],
+            ['admin-btn-add-stones', () => this.showToast(`Olympian Star Stones: ${window.AdminCheats.addStarStones(5)}.`)],
+            ['admin-btn-add-evo-stones', () => this.showToast(`Evolution Stones: ${window.AdminCheats.addEvolutionStones(5)}.`)],
+            ['admin-btn-add-xp', () => { window.AdminCheats.addAccountXP(1000); this.showToast('Added +1,000 Account XP.'); }],
+            ['admin-btn-unlock-heroes', () => this.showToast(`Unlocked all ${window.AdminCheats.unlockAllHeroes()} heroes!`)],
+            ['admin-btn-unlock-weapons', () => this.showToast(`Unlocked all ${window.AdminCheats.unlockAllWeapons()} weapons!`)],
+            ['admin-btn-max-skills', () => this.showToast(`Unlocked & maxed all ${window.AdminCheats.maxAllSkills()} skills!`)],
+            ['admin-btn-unlock-gear', () => this.showToast(`Unlocked ${window.AdminCheats.unlockAllGear()} armory gear items!`)],
+            ['admin-btn-unlock-perks', () => this.showToast(`Unlocked & maxed all ${window.AdminCheats.unlockAllPerksAndFeats(true)} perks + boss feats!`)]
         ];
         for (const [id, fn] of simpleActions) {
             const el = document.getElementById(id);
@@ -501,8 +499,11 @@ class AdminPanelController {
         const ac = window.AdminCheats;
         const map = [
             ['admin-toggle-godmode', ac.godMode, 'GOD MODE: ON', 'GOD MODE: OFF'],
+            ['admin-toggle-squad-god', ac.squadGodMode, 'SQUAD GOD: ON', 'SQUAD GOD: OFF'],
             ['admin-toggle-inf-dash', ac.infiniteDash, 'INF DASH: ON', 'INF DASH: OFF'],
             ['admin-toggle-inf-skill', ac.noSkillCooldown, '0s SKILL CD: ON', '0s SKILL CD: OFF'],
+            ['admin-toggle-inf-ult', ac.infiniteUlt, 'INF ULTIMATE: ON', 'INF ULTIMATE: OFF'],
+            ['admin-toggle-super-speed', ac.superSpeed, '2x SPEED: ON', '2x SPEED: OFF'],
             ['admin-toggle-dmg-boost', ac.damageBoost, '10x DMG + CRIT: ON', '10x DMG + CRIT: OFF'],
             ['admin-toggle-instakill', ac.instaKillEnemies, '1-HIT AURA: ON', '1-HIT AURA: OFF']
         ];

@@ -370,6 +370,39 @@ class RemotePlayer {
 
         // Custom overhead co-op badge
         this.drawCoopTag(ctx);
+        RemotePlayer.drawChatBubble(ctx, this);
+    }
+
+    static drawChatBubble(ctx, entity) {
+        if (!ctx || !entity || !entity._chatBubble) return;
+        const rem = entity._chatBubble.expiresAt - Date.now();
+        if (rem <= 0) { entity._chatBubble = null; return; }
+        const txt = String(entity._chatBubble.text || '').trim();
+        if (!txt) return;
+        ctx.save();
+        const alpha = rem < 600 ? Math.max(0, rem / 600) : 1;
+        ctx.globalAlpha = alpha;
+        ctx.font = '800 11.5px Fredoka, sans-serif';
+        const padX = 10, h = 24;
+        const w = Math.min(240, Math.max(44, ctx.measureText(txt).width + padX * 2));
+        const bx = entity.x, by = entity.y - (entity.airZ || 0) - (entity.radius || 24) - 38;
+        ctx.translate(bx, by);
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.96)';
+        ctx.strokeStyle = '#1e272e';
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        if (typeof ctx.roundRect === 'function') ctx.roundRect(-w / 2, -h, w, h, 9);
+        else ctx.rect(-w / 2, -h, w, h);
+        ctx.fill();
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(-5, 0); ctx.lineTo(0, 6); ctx.lineTo(5, 0); ctx.closePath();
+        ctx.fill(); ctx.stroke();
+        ctx.fillStyle = '#1e272e';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(txt, 0, -h / 2 + 0.5, w - 12);
+        ctx.restore();
     }
 
     drawDownedHalo(ctx) {

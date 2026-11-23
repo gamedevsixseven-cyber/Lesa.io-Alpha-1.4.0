@@ -67,6 +67,7 @@ class HUDController {
         this._chronoSpan = this.chronoBadge ? this.chronoBadge.querySelector('span') : null;
         this._cachedFallbackSkill = null;
         this._hudFrame = 0;
+        this._initInGameChat();
     }
 
     show() {
@@ -77,6 +78,7 @@ class HUDController {
     }
 
     hide() {
+        this.closeChatInput();
         if (this.hud) this.hud.classList.add('hidden');
     }
 
@@ -304,76 +306,25 @@ class HUDController {
         }
 
         const weaponNames = {
-            'pea': 'Pea Slingshot',
-            'watermelon': 'Melon Cannon',
-            'bubble': 'Bubble Gun',
-            'pepper': 'Chili Blaster',
-            'money_gun': 'Money Gun',
-            'burger': 'Burger Toss',
-            'lightning': 'Lightning Strike',
-            'greek_flag': 'Greek Flag',
-            'm4_carbine': 'M4 Carbine',
-            'spas12': 'SPAS-12',
-            'rusty_smg': 'Street Uzi',
-            'nail_gun': 'Village Nailgun',
-            'plasma_pistol': 'Neon Arc Pistol',
-            'sawnoff_shotgun': 'Sawn-Off DB',
-            'frost_cannon': 'Cryo Vortex',
-            'boomerang_saw': 'Boomerang Sawblade',
-            'chrono_rifle': 'Chrono Stutter Rifle',
-            'symbiote': 'Symbiote Launcher',
-            'carbine': "Kiloumpas's Carbine",
-            'dialtone': 'Dial-Tone Blaster',
-            'zeus_thunderbolt': "Zeus's Thunderbolt",
-            'helios_cannon': 'Helios Omega Cannon'
+            pea: 'Pea Slingshot', watermelon: 'Melon Cannon', bubble: 'Bubble Gun', pepper: 'Chili Blaster',
+            money_gun: 'Money Gun', burger: 'Burger Toss', lightning: 'Lightning Strike', greek_flag: 'Greek Flag',
+            m4_carbine: 'M4 Carbine', spas12: 'SPAS-12', rusty_smg: 'Street Uzi', nail_gun: 'Village Nailgun',
+            plasma_pistol: 'Neon Arc Pistol', sawnoff_shotgun: 'Sawn-Off DB', frost_cannon: 'Cryo Vortex',
+            boomerang_saw: 'Boomerang Sawblade', chrono_rifle: 'Chrono Stutter Rifle', symbiote: 'Symbiote Launcher',
+            carbine: "Kiloumpas's Carbine", dialtone: 'Dial-Tone Blaster', zeus_thunderbolt: "Zeus's Thunderbolt", helios_cannon: 'Helios Omega Cannon'
         };
         const weaponKeys = {
-            'pea': 'weapon_pea',
-            'watermelon': 'weapon_watermelon',
-            'bubble': 'weapon_bubble',
-            'pepper': 'weapon_pepper',
-            'money_gun': 'weapon_money_gun',
-            'burger': 'weapon_burger',
-            'lightning': 'weapon_lightning',
-            'greek_flag': 'weapon_greek_flag',
-            'm4_carbine': 'weapon_m4_carbine',
-            'spas12': 'weapon_spas12',
-            'rusty_smg': 'weapon_rusty_smg',
-            'nail_gun': 'weapon_nail_gun',
-            'plasma_pistol': 'weapon_plasma_pistol',
-            'sawnoff_shotgun': 'weapon_sawnoff_shotgun',
-            'frost_cannon': 'weapon_frost_cannon',
-            'boomerang_saw': 'weapon_boomerang_saw',
-            'chrono_rifle': 'weapon_chrono_rifle',
-            'symbiote': 'weapon_symbiote',
-            'carbine': 'weapon_carbine',
-            'dialtone': 'weapon_dialtone',
-            'zeus_thunderbolt': 'weapon_zeus_thunderbolt',
-            'helios_cannon': 'weapon_helios_cannon'
+            pea: 'weapon_pea', watermelon: 'weapon_watermelon', bubble: 'weapon_bubble', pepper: 'weapon_pepper',
+            money_gun: 'weapon_money_gun', burger: 'weapon_burger', lightning: 'weapon_lightning', greek_flag: 'weapon_greek_flag',
+            m4_carbine: 'weapon_m4_carbine', spas12: 'weapon_spas12', rusty_smg: 'weapon_rusty_smg', nail_gun: 'weapon_nail_gun',
+            plasma_pistol: 'weapon_plasma_pistol', sawnoff_shotgun: 'weapon_sawnoff_shotgun', frost_cannon: 'weapon_frost_cannon',
+            boomerang_saw: 'weapon_boomerang_saw', chrono_rifle: 'weapon_chrono_rifle', symbiote: 'weapon_symbiote',
+            carbine: 'weapon_carbine', dialtone: 'weapon_dialtone', zeus_thunderbolt: 'weapon_zeus_thunderbolt', helios_cannon: 'weapon_helios_cannon'
         };
         const weaponIcons = {
-            'pea': '🌱',
-            'watermelon': '🍉',
-            'bubble': '🫧',
-            'pepper': '🌶️',
-            'money_gun': '💵',
-            'burger': '🍔',
-            'lightning': '⚡',
-            'greek_flag': '🇬🇷',
-            'm4_carbine': '🔫',
-            'spas12': '🔫',
-            'rusty_smg': '🔫',
-            'nail_gun': '🔨',
-            'plasma_pistol': '⚡',
-            'sawnoff_shotgun': '💥',
-            'frost_cannon': '❄️',
-            'boomerang_saw': '🪚',
-            'chrono_rifle': '⏳',
-            'symbiote': '🦠',
-            'carbine': '🔫',
-            'dialtone': '📱',
-            'zeus_thunderbolt': '⚡',
-            'helios_cannon': '☀️'
+            pea: '🌱', watermelon: '🍉', bubble: '🫧', pepper: '🌶️', money_gun: '💵', burger: '🍔', lightning: '⚡', greek_flag: '🇬🇷',
+            m4_carbine: '🔫', spas12: '🔫', rusty_smg: '🔫', nail_gun: '🔨', plasma_pistol: '⚡', sawnoff_shotgun: '💥',
+            frost_cannon: '❄️', boomerang_saw: '🪚', chrono_rifle: '⏳', symbiote: '🦠', carbine: '🔫', dialtone: '📱', zeus_thunderbolt: '⚡', helios_cannon: '☀️'
         };
         if (this.weaponIcon) {
             const wKey = weaponKeys[player.weaponType] || 'weapon_pea';
@@ -443,6 +394,98 @@ class HUDController {
 
     addKillfeed(message) {
         // Disabled for offline cartoon arena focus
+    }
+
+    _initInGameChat() {
+        if (!this.hud || typeof document === 'undefined' || document.getElementById('ingame-chat-wrap')) return;
+        const wrap = document.createElement('div');
+        wrap.id = 'ingame-chat-wrap';
+        wrap.className = 'ingame-chat-wrap';
+        wrap.innerHTML = `
+            <div id="ingame-chat-log" class="ingame-chat-log"></div>
+            <div id="ingame-chat-form" class="ingame-chat-form hidden">
+                <input id="ingame-chat-input" class="ingame-chat-input" type="text" maxlength="90" placeholder="Type message & press Enter..." autocomplete="off" spellcheck="false">
+            </div>
+            <div id="ingame-chat-hint" class="ingame-chat-hint">Press [ENTER] to chat</div>
+        `;
+        this.hud.appendChild(wrap);
+        this.chatLogEl = wrap.querySelector('#ingame-chat-log');
+        this.chatFormEl = wrap.querySelector('#ingame-chat-form');
+        this.chatInputEl = wrap.querySelector('#ingame-chat-input');
+        this.chatHintEl = wrap.querySelector('#ingame-chat-hint');
+        if (this.chatInputEl) {
+            this.chatInputEl.addEventListener('blur', () => {
+                setTimeout(() => {
+                    if (document.activeElement !== this.chatInputEl) this.closeChatInput(false);
+                }, 80);
+            });
+        }
+    }
+
+    handleEnterKey() {
+        const isMobile = (typeof MobilePerf !== 'undefined' && MobilePerf.isMobile) || (window.gameInstance && window.gameInstance.touchInput && window.gameInstance.touchInput.isTouchDevice);
+        if (isMobile) return;
+        if (!this.chatFormEl || !this.chatInputEl) this._initInGameChat();
+        if (!this.chatFormEl || !this.chatInputEl) return;
+        const isOpen = !this.chatFormEl.classList.contains('hidden');
+        if (!isOpen) {
+            this.chatFormEl.classList.remove('hidden');
+            if (this.chatHintEl) this.chatHintEl.classList.add('hidden');
+            this.chatInputEl.value = '';
+            this.chatInputEl.focus();
+        } else {
+            const text = (this.chatInputEl.value || '').trim();
+            if (text) this.sendChatMessage(text);
+            this.closeChatInput(true);
+        }
+    }
+
+    closeChatInput(clear = true) {
+        if (!this.chatFormEl || !this.chatInputEl) return;
+        if (clear) this.chatInputEl.value = '';
+        this.chatInputEl.blur();
+        this.chatFormEl.classList.add('hidden');
+        if (this.chatHintEl) this.chatHintEl.classList.remove('hidden');
+    }
+
+    sendChatMessage(rawText) {
+        const text = String(rawText || '').trim().slice(0, 90);
+        if (!text) return;
+        const g = typeof window !== 'undefined' ? window.gameInstance : null;
+        const myName = (g && g.player && g.player.name) || (window.GameState && window.GameState.player && window.GameState.player.name) || 'Hero';
+        this.receiveChatMessage(myName, text, g ? g.player : null, true);
+        if (g && g.coopSession && g.coopSession.net && g.coopSession.net.connected) {
+            g.coopSession.net.send('COOP_CHAT', { name: myName, text });
+        }
+    }
+
+    receiveChatMessage(senderName, rawText, entity = null, isSelf = false) {
+        const text = String(rawText || '').trim().slice(0, 90);
+        if (!text) return;
+        if (!this.chatLogEl) this._initInGameChat();
+        const name = String(senderName || 'Hero').trim().slice(0, 18);
+        if (entity) entity._chatBubble = { text, expiresAt: Date.now() + 5500 };
+        if (this.chatLogEl) {
+            const row = document.createElement('div');
+            row.className = `ingame-chat-msg ${isSelf ? 'is-self' : 'is-peer'}`;
+            const nameSpan = document.createElement('span');
+            nameSpan.className = 'ingame-chat-author';
+            nameSpan.textContent = `${name}: `;
+            const txtSpan = document.createElement('span');
+            txtSpan.className = 'ingame-chat-text';
+            txtSpan.textContent = text;
+            row.appendChild(nameSpan);
+            row.appendChild(txtSpan);
+            this.chatLogEl.appendChild(row);
+            while (this.chatLogEl.children.length > 5) {
+                this.chatLogEl.removeChild(this.chatLogEl.firstChild);
+            }
+            setTimeout(() => { row.classList.add('is-fading'); }, 7500);
+            setTimeout(() => { if (row.parentNode) row.remove(); }, 8500);
+        }
+        if (window.soundEngine && typeof window.soundEngine.playSelect === 'function') {
+            window.soundEngine.playSelect();
+        }
     }
 
     drawMinimap(player, enemies = [], arena = null) {

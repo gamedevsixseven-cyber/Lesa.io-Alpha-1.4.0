@@ -361,6 +361,7 @@ class EndlessWaveDirector {
             if (!enemy._featRecorded && typeof window !== 'undefined' && window.GameState && typeof window.GameState.recordBossDefeat === 'function') {
                 enemy._featRecorded = true;
                 window.GameState.recordBossDefeat(enemy.isMiniBoss ? 'endless_mini_boss' : 'endless_boss');
+                if (enemy.type === 'mecha_kolossos') window.GameState.recordBossDefeat('mecha_kolossos');
             }
 
             player.score += enemy.scoreValue || 900;

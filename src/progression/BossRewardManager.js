@@ -119,6 +119,12 @@ class BossRewardManager {
             }
         }
 
+        const activeGame = ctxOptions.game || (typeof window !== 'undefined' ? window.gameInstance : null);
+        if (ctxOptions.syncCoop !== false && activeGame && activeGame.coopSession && !activeGame.isCoopGuest && activeGame.coopSession.net && activeGame.coopSession.net.connected) {
+            const eventName = bossId === 'zeus' ? 'ZEUS_REWARD_UNLOCK' : 'BOSS_REWARD_UNLOCK';
+            activeGame.coopSession.net.send(eventName, { bossId, bossName: ctxOptions.bossName || bundle.bossName });
+        }
+
         if (newlyQueued.length === 0) return { queued: [] };
 
         this.savePending(current);
@@ -136,12 +142,6 @@ class BossRewardManager {
         }
         if (typeof window !== 'undefined' && window.BossRewardModalUI && typeof window.BossRewardModalUI.showInGameDrops === 'function') {
             window.BossRewardModalUI.showInGameDrops(newlyQueued, ctxOptions.bossName || bundle.bossName);
-        }
-
-        const activeGame = ctxOptions.game || (typeof window !== 'undefined' ? window.gameInstance : null);
-        if (ctxOptions.syncCoop !== false && activeGame && activeGame.coopSession && !activeGame.isCoopGuest && activeGame.coopSession.net && activeGame.coopSession.net.connected) {
-            const eventName = bossId === 'zeus' ? 'ZEUS_REWARD_UNLOCK' : 'BOSS_REWARD_UNLOCK';
-            activeGame.coopSession.net.send(eventName, { bossId, bossName: ctxOptions.bossName || bundle.bossName });
         }
 
         return { queued: newlyQueued };

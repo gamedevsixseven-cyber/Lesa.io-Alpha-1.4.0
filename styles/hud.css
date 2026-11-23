@@ -380,3 +380,68 @@
     0%, 100% { transform: scale(1); }
     50% { transform: scale(1.07); }
 }
+
+/* ================= IN-GAME TEXT CHAT (PC ENTER TO TYPE, VISIBLE ON PC & MOBILE) ================= */
+.ingame-chat-wrap {
+    position: fixed;
+    left: 16px;
+    bottom: 84px;
+    width: min(330px, 68vw);
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    z-index: 45;
+    pointer-events: none;
+}
+.ingame-chat-log {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.ingame-chat-msg {
+    background: rgba(15, 23, 42, 0.82);
+    border: 2px solid #0f172a;
+    border-radius: 10px;
+    padding: 4px 10px;
+    color: #f8fafc;
+    font-family: 'Fredoka', sans-serif;
+    font-size: 0.78rem;
+    font-weight: 700;
+    line-height: 1.25;
+    width: fit-content;
+    max-width: 100%;
+    word-break: break-word;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.45);
+    transition: opacity 0.6s ease, transform 0.6s ease;
+}
+.ingame-chat-msg.is-fading { opacity: 0; transform: translateY(-4px); }
+.ingame-chat-msg.is-self .ingame-chat-author { color: #fde047; font-weight: 900; }
+.ingame-chat-msg.is-peer .ingame-chat-author { color: #38bdf8; font-weight: 900; }
+.ingame-chat-form { pointer-events: auto; }
+.ingame-chat-input {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 7px 11px;
+    border-radius: 10px;
+    border: 2.5px solid #fde047;
+    background: rgba(15, 23, 42, 0.92);
+    color: #ffffff;
+    font-family: 'Fredoka', sans-serif;
+    font-size: 0.82rem;
+    font-weight: 700;
+    outline: none;
+    box-shadow: 0 3px 0 #0f172a, 0 0 12px rgba(253, 224, 71, 0.35);
+}
+.ingame-chat-hint {
+    font-family: 'Fredoka', sans-serif;
+    font-size: 0.68rem;
+    font-weight: 800;
+    color: rgba(255, 255, 255, 0.62);
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.85);
+    padding-left: 4px;
+}
+@media (pointer: coarse), (max-width: 860px), (max-height: 560px) {
+    .ingame-chat-wrap { left: 12px; top: 68px; bottom: auto; width: min(260px, 58vw); }
+    .ingame-chat-msg { font-size: 0.66rem; padding: 3px 8px; }
+    .ingame-chat-form, .ingame-chat-hint { display: none !important; }
+}
