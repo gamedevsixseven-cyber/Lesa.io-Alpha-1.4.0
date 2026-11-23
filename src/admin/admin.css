@@ -494,26 +494,45 @@
     color: #ced6e0;
 }
 
-.admin-dev-chest-row {
-    display: flex;
-    gap: 6px;
-}
+.admin-dev-chest-row { display: flex; gap: 6px; }
+.admin-dev-qty-input { max-width: 72px; }
+.admin-dev-vip-toggle { display: flex; align-items: center; gap: 8px; font-size: 0.84rem !important; color: #fed330 !important; cursor: pointer; }
+.admin-dev-gift-footer { display: flex; justify-content: flex-end; margin-top: 10px; }
 
-.admin-dev-qty-input {
-    max-width: 72px;
+/* Recipient Developer Gift Claim Pop-Up Modal */
+.dev-gift-modal-overlay { z-index: 9850; }
+.dev-gift-popup-panel {
+    max-width: 480px; width: 94%; padding: 20px 18px; text-align: center;
+    background: linear-gradient(165deg, #1e272e 0%, #141a20 100%);
+    border: 3px solid #fed330;
+    box-shadow: 0 14px 38px rgba(0, 0, 0, 0.75), 0 0 24px rgba(254, 211, 48, 0.25);
 }
-
-.admin-dev-vip-toggle {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 0.84rem !important;
-    color: #fed330 !important;
-    cursor: pointer;
+.dev-gift-eyebrow {
+    display: inline-block; padding: 4px 12px; border-radius: 999px;
+    background: rgba(254, 211, 48, 0.16); border: 1px solid #fed330;
+    color: #fed330; font-size: 0.74rem; font-weight: 900; letter-spacing: 0.8px; margin-bottom: 6px;
 }
-
-.admin-dev-gift-footer {
-    display: flex;
-    justify-content: flex-end;
-    margin-top: 10px;
+.dev-gift-popup-title { color: #fed330 !important; font-size: 1.7rem; margin: 2px 0 4px; }
+.dev-gift-popup-sub { color: #ced6e0; font-size: 0.88rem; margin: 0 0 12px; }
+.dev-gift-message-box {
+    margin: 0 0 14px; padding: 10px 14px; border-radius: 12px;
+    background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(254, 211, 48, 0.4); text-align: left;
 }
+.dev-gift-message-tag { font-size: 0.72rem; font-weight: 900; color: #fed330; letter-spacing: 0.5px; margin-bottom: 4px; }
+.dev-gift-message-text { font-size: 0.94rem; font-weight: 700; color: #ffffff; line-height: 1.45; word-break: break-word; }
+.dev-gift-rewards-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(115px, 1fr)); gap: 10px; margin-bottom: 16px; }
+.dev-gift-reward-card {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 4px; padding: 12px 8px; border-radius: 12px;
+    background: rgba(0, 0, 0, 0.42); border: 2px solid rgba(255, 255, 255, 0.16);
+}
+.dev-gift-reward-card.is-gems { border-color: #00d2d3; background: rgba(0, 210, 211, 0.1); }
+.dev-gift-reward-card.is-coins { border-color: #feb400; background: rgba(254, 180, 0, 0.1); }
+.dev-gift-reward-card.is-vip { border-color: #fed330; background: linear-gradient(135deg, rgba(254, 211, 48, 0.22), rgba(243, 156, 18, 0.08)); }
+.dev-gift-reward-card.is-chest { border-color: #a55eea; background: rgba(165, 94, 234, 0.12); }
+.dev-gift-reward-icon { width: 42px; height: 42px; object-fit: contain; }
+.dev-gift-reward-icon.is-chest-img { width: 52px; height: 52px; }
+.dev-gift-vip-crown { font-size: 2rem; line-height: 42px; }
+.dev-gift-reward-amount { font-family: 'Luckiest Guy', cursive; font-size: 1.2rem; color: #ffffff; letter-spacing: 0.5px; }
+.dev-gift-reward-label { font-size: 0.72rem; font-weight: 900; color: #dfe4ea; }
+.dev-gift-claim-btn { width: 100%; padding: 12px 18px; font-size: 1.15rem; }

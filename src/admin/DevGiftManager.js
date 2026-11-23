@@ -17,9 +17,21 @@ class DevGiftManager {
         legendary: 'Legendary Chest',
         mythic: 'Mythic Chest'
     };
+    static CHEST_ICONS = {
+        common: 'assets/Chests/CommonChest.png',
+        uncommon: 'assets/Chests/UncommonChest.png',
+        rare: 'assets/Chests/RareChest.png',
+        epic: 'assets/Chests/EpicChest.png',
+        legendary: 'assets/Chests/LegendaryChest.png',
+        mythic: 'assets/Chests/MythicChest.png'
+    };
 
     static _retryTimer = null;
+    static _bootWaitTimer = null;
     static _activeTarget = null;
+    static _pendingPopupGifts = [];
+    static _activePopupSignature = '';
+    static _lastCloudSave = null;
 
     static async _requireDev() {
         if (typeof window === 'undefined' || !window.AdminAuth || typeof window.AdminAuth.verifyPrimaryDevAccess !== 'function') {
@@ -380,6 +392,37 @@ class DevGiftManager {
         }
     }
 
+    static _isBootOverlayActive() {
+        if (typeof document === 'undefined') return false;
+        const blockers = ['loading-screen', 'dev-intro-overlay', 'first-time-name-modal', 'mazonakis-tribute-modal'];
+        for (const id of blockers) {
+            const el = document.getElementById(id);
+            if (el && !el.classList.contains('hidden') && el.style.display !== 'none') return true;
+        }
+        return false;
+    }
+
+    static _aggregateGifts(gifts) {
+        let totalCoins = 0;
+        let totalGems = 0;
+        const chestTotals = {};
+        let grantVip = false;
+        const notes = [];
+        for (const gift of gifts) {
+            totalCoins += Math.max(0, Math.floor(Number(gift.coins) || 0));
+            totalGems += Math.max(0, Math.floor(Number(gift.gems) || 0));
+            if (gift.battlePass) grantVip = true;
+            if (gift.chests && typeof gift.chests === 'object') {
+                for (const [k, v] of Object.entries(gift.chests)) {
+                    const qty = Math.min(99, Math.max(0, Math.floor(Number(v) || 0)));
+                    if (this.CHEST_ORDER.includes(k) && qty > 0) chestTotals[k] = (chestTotals[k] || 0) + qty;
+                }
+            }
+            if (gift.note && String(gift.note).trim()) notes.push(String(gift.note).trim());
+        }
+        return { totalCoins, totalGems, chestTotals, grantVip, notes };
+    }
+
     static claimPendingGifts(cloudData, cloudSave) {
         if (!cloudData || !Array.isArray(cloudData.devGifts) || cloudData.devGifts.length === 0) return false;
 
@@ -387,29 +430,111 @@ class DevGiftManager {
         const pending = cloudData.devGifts.filter(g => g && typeof g === 'object' && g.id && !claimedSet.has(g.id));
         if (pending.length === 0) return false;
 
-        // Dedupe first so concurrent onSnapshot deliveries cannot re-apply the same gift
-        this._markClaimedIds(pending.map(g => g.id));
+        this._pendingPopupGifts = pending;
+        if (cloudSave) this._lastCloudSave = cloudSave;
 
-        let totalCoins = 0;
-        let totalGems = 0;
-        const chestTotals = {};
-        let grantVip = false;
-        const notes = [];
-
-        for (const gift of pending) {
-            totalCoins += Math.max(0, Math.floor(Number(gift.coins) || 0));
-            totalGems += Math.max(0, Math.floor(Number(gift.gems) || 0));
-            if (gift.battlePass) grantVip = true;
-            if (gift.chests && typeof gift.chests === 'object') {
-                for (const [k, v] of Object.entries(gift.chests)) {
-                    const qty = Math.min(99, Math.max(0, Math.floor(Number(v) || 0)));
-                    if (this.CHEST_ORDER.includes(k) && qty > 0) {
-                        chestTotals[k] = (chestTotals[k] || 0) + qty;
-                    }
-                }
-            }
-            if (gift.note) notes.push(String(gift.note).trim());
+        if (typeof document === 'undefined') {
+            return this.confirmClaimPendingGifts(pending, cloudSave);
         }
+
+        if (this._isBootOverlayActive()) {
+            if (!this._bootWaitTimer) {
+                this._bootWaitTimer = setTimeout(() => {
+                    this._bootWaitTimer = null;
+                    if (this._pendingPopupGifts.length > 0) {
+                        this.showGiftClaimModal(this._pendingPopupGifts, this._lastCloudSave);
+                    }
+                }, 700);
+            }
+            return true;
+        }
+
+        this.showGiftClaimModal(pending, cloudSave);
+        return true;
+    }
+
+    static showGiftClaimModal(pendingGifts = this._pendingPopupGifts, cloudSave = this._lastCloudSave) {
+        if (typeof document === 'undefined' || !Array.isArray(pendingGifts) || pendingGifts.length === 0) return;
+        if (this._isBootOverlayActive()) {
+            this.claimPendingGifts({ devGifts: pendingGifts }, cloudSave);
+            return;
+        }
+
+        const sig = pendingGifts.map(g => g.id).join('|');
+        let modal = document.getElementById('dev-gift-claim-modal');
+        if (modal && !modal.classList.contains('hidden') && this._activePopupSignature === sig) return;
+        this._activePopupSignature = sig;
+
+        if (!modal) {
+            modal = document.createElement('div');
+            modal.id = 'dev-gift-claim-modal';
+            modal.className = 'modal-overlay dev-gift-modal-overlay hidden';
+            const layer = document.querySelector('.ui-layer') || document.body;
+            layer.appendChild(modal);
+        }
+
+        const { totalCoins, totalGems, chestTotals, grantVip, notes } = this._aggregateGifts(pendingGifts);
+        const cards = [];
+
+        if (totalGems > 0) {
+            cards.push(`<div class="dev-gift-reward-card is-gems"><img src="assets/ui-icons/gem.svg" class="dev-gift-reward-icon" alt="Diamonds"><div class="dev-gift-reward-amount">+${totalGems.toLocaleString()}</div><div class="dev-gift-reward-label">DIAMONDS</div></div>`);
+        }
+        if (totalCoins > 0) {
+            cards.push(`<div class="dev-gift-reward-card is-coins"><img src="assets/ui-icons/coin.svg" class="dev-gift-reward-icon" alt="Gold"><div class="dev-gift-reward-amount">+${totalCoins.toLocaleString()}</div><div class="dev-gift-reward-label">GOLD COINS</div></div>`);
+        }
+        for (const [type, qty] of Object.entries(chestTotals)) {
+            if (qty <= 0) continue;
+            const reg = (typeof CHEST_TYPES !== 'undefined' && CHEST_TYPES && CHEST_TYPES[type]) ? CHEST_TYPES[type] : null;
+            const icon = (reg && reg.icon) ? reg.icon : (this.CHEST_ICONS[type] || 'assets/Chests/CommonChest.png');
+            const label = (reg && reg.name) ? reg.name : (this.CHEST_LABELS[type] || type);
+            cards.push(`<div class="dev-gift-reward-card is-chest rarity-${this._escHtml(type)}"><img src="${this._escHtml(icon)}" class="dev-gift-reward-icon is-chest-img" alt="${this._escHtml(label)}"><div class="dev-gift-reward-amount">&times;${qty}</div><div class="dev-gift-reward-label">${this._escHtml(label.toUpperCase())}</div></div>`);
+        }
+        if (grantVip) {
+            cards.push(`<div class="dev-gift-reward-card is-vip"><div class="dev-gift-vip-crown">👑</div><div class="dev-gift-reward-amount">VIP PASS</div><div class="dev-gift-reward-label">SEASON BATTLE PASS</div></div>`);
+        }
+
+        const noteHtml = notes.length > 0
+            ? `<div class="dev-gift-message-box"><div class="dev-gift-message-tag">💬 MESSAGE FROM DEVELOPER</div><div class="dev-gift-message-text">${notes.map(n => `&ldquo;${this._escHtml(n)}&rdquo;`).join('<br>')}</div></div>`
+            : '';
+
+        modal.innerHTML = `
+            <div class="modal-panel dev-gift-popup-panel">
+                <div class="dev-gift-eyebrow">👑 OFFICIAL DEVELOPER GIFT</div>
+                <h2 class="modal-title dev-gift-popup-title">🎁 GIFT FOR YOU!</h2>
+                <p class="dev-gift-popup-sub">The developer sent special rewards to your account!</p>
+                ${noteHtml}
+                <div class="dev-gift-rewards-grid">${cards.join('')}</div>
+                <div class="dev-gift-popup-actions">
+                    <button type="button" id="dev-gift-claim-btn" class="comic-btn comic-btn-primary dev-gift-claim-btn">CLAIM GIFT 🎁</button>
+                </div>
+            </div>
+        `;
+
+        modal.classList.remove('hidden');
+        if (typeof window !== 'undefined' && window.soundEngine && typeof window.soundEngine.playPickup === 'function') {
+            window.soundEngine.playPickup('star');
+        }
+
+        modal.querySelector('#dev-gift-claim-btn')?.addEventListener('click', () => {
+            this.confirmClaimPendingGifts(pendingGifts, cloudSave);
+        });
+    }
+
+    static hideGiftClaimModal() {
+        this._activePopupSignature = '';
+        const modal = typeof document !== 'undefined' ? document.getElementById('dev-gift-claim-modal') : null;
+        if (modal) modal.classList.add('hidden');
+    }
+
+    static confirmClaimPendingGifts(giftsToClaim = this._pendingPopupGifts, cloudSave = this._lastCloudSave) {
+        const claimedSet = this._getClaimedSet();
+        const pending = (Array.isArray(giftsToClaim) ? giftsToClaim : []).filter(g => g && g.id && !claimedSet.has(g.id));
+        this._pendingPopupGifts = [];
+        this.hideGiftClaimModal();
+        if (pending.length === 0) return false;
+
+        this._markClaimedIds(pending.map(g => g.id));
+        const { totalCoins, totalGems, chestTotals, grantVip } = this._aggregateGifts(pending);
 
         this._grantCurrencies(totalCoins, totalGems, cloudSave);
         this._grantChests(chestTotals);
@@ -428,8 +553,7 @@ class DevGiftManager {
                 else if (typeof window.soundEngine.playPickup === 'function') window.soundEngine.playPickup('star');
             }
             if (summary && window.modalManager && typeof window.modalManager.showQuickToast === 'function') {
-                const noteSuffix = notes.length > 0 ? ` — "${notes[notes.length - 1]}"` : '';
-                window.modalManager.showQuickToast(`🎁 DEV GIFT: ${summary}${noteSuffix}`, 3600);
+                window.modalManager.showQuickToast(`🎁 Claimed: ${summary}!`, 3200);
             }
             if (window.SaveManager && typeof window.SaveManager.saveLocalOnly === 'function') {
                 window.SaveManager.saveLocalOnly();
