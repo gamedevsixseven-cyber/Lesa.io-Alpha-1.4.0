@@ -52,11 +52,14 @@ class NetworkManager {
             debug: 1,
             config: {
                 iceServers: [
+                    { urls: 'stun:stun.relay.metered.ca:80' },
                     { urls: 'stun:stun.l.google.com:19302' },
-                    { urls: 'stun:stun1.l.google.com:19302' },
-                    { urls: 'stun:stun.cloudflare.com:3478' }
+                    { urls: 'turn:global.relay.metered.ca:80', username: 'e8e23423d2382fb60f7a0b29', credential: '6PkUXx4SXx9a4OBG' },
+                    { urls: 'turn:global.relay.metered.ca:80?transport=tcp', username: 'e8e23423d2382fb60f7a0b29', credential: '6PkUXx4SXx9a4OBG' },
+                    { urls: 'turn:global.relay.metered.ca:443', username: 'e8e23423d2382fb60f7a0b29', credential: '6PkUXx4SXx9a4OBG' },
+                    { urls: 'turns:global.relay.metered.ca:443?transport=tcp', username: 'e8e23423d2382fb60f7a0b29', credential: '6PkUXx4SXx9a4OBG' }
                 ],
-                iceCandidatePoolSize: 6
+                iceCandidatePoolSize: 10
             }
         };
     }
