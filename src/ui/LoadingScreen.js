@@ -195,13 +195,13 @@ class LoadingScreen {
         ];
 
         const isMobile = typeof MobilePerf !== 'undefined' && MobilePerf.isMobile;
-        // Minimum cinematic pacing floor for rock-solid stability (~2.2s total)
-        const minLoadingDurationMs = 2100;
+        // Minimum cinematic pacing floor for rock-solid stability
+        const minLoadingDurationMs = isMobile ? 3600 : 2100;
 
-        // Safety fallback timer: guarantees screen completes in max 3.2s desktop / 3.8s mobile
+        // Safety fallback timer: gives mobile extra time to complete staged asset preloading
         const maxSafetyTimer = setTimeout(() => {
             this.targetProgress = 100;
-        }, isMobile ? 3800 : 3200);
+        }, isMobile ? 8500 : 3200);
 
         try {
             // Stage 1: Warm up SoundEngine AudioContext
@@ -213,15 +213,18 @@ class LoadingScreen {
             if (document.fonts && document.fonts.ready) {
                 await Promise.race([
                     document.fonts.ready,
-                    new Promise((r) => setTimeout(r, 300))
+                    new Promise((r) => setTimeout(r, isMobile ? 600 : 300))
                 ]);
             }
-            this.targetProgress = Math.max(this.targetProgress, 20);
+            this.targetProgress = Math.max(this.targetProgress, 18);
 
             // Stage 3: Preload Image Textures into shared caches & Warm up GPU VRAM
             let loadedImageObjects = [];
             let loadedCount = 0;
-            const loadSharedImg = (src) => {
+            const loadSharedImg = (rawSrc) => {
+                const src = (isMobile && typeof MobileAssetGuard !== 'undefined' && MobileAssetGuard.normalizeAssetPath)
+                    ? MobileAssetGuard.normalizeAssetPath(rawSrc)
+                    : rawSrc;
                 if (src.includes('FloorTexture1LesaIO.png') && typeof Arena !== 'undefined') return Arena.getFloorTexture1();
                 if (src.includes('UpdatedTreeLESAIO_transparent.png') && typeof Obstacle !== 'undefined') return Obstacle.getTreeImage();
                 if (typeof CharacterSprites !== 'undefined') return CharacterSprites.get(src);
@@ -229,61 +232,135 @@ class LoadingScreen {
                 el.src = src;
                 return el;
             };
-            const imgPromises = imageAssets.map((src) => {
-                return new Promise((resolve) => {
+
+            if (isMobile) {
+                // MOBILE-ONLY OPTIMIZED STAGED PRELOADER:
+                // Avoids non-existent 404 assets and loads menu, world, heroes, enemies, chests & all gear icons
+                // through a 4-worker concurrency pool so iOS Safari never drops connections.
+                const mobileManifest = [...imageAssets.filter(s => s !== 'assets/casillas.jpg')];
+                const extraMobileAssets = [
+                    'assets/MainMenuChestsUI.png',
+                    'assets/GameWorldModels/FloorTextureGrass2.png',
+                    'assets/GameWorldModels/TreeModelLesa.png',
+                    'assets/HeroesIcons/50balos.png', 'assets/HeroesIcons/50balosCrop.png',
+                    'assets/HeroesIcons/Billias.png', 'assets/HeroesIcons/BilliasAvatar.png',
+                    'assets/HeroesIcons/Kitsos.png', 'assets/HeroesIcons/KitsosAvatar.png',
+                    'assets/HeroesIcons/Psgiannhs.png', 'assets/HeroesIcons/PsgiannhsAvatar.png',
+                    'assets/GearUIIcons/HELMET.png', 'assets/GearUIIcons/ARMOR.png',
+                    'assets/GearUIIcons/Belt.png', 'assets/GearUIIcons/Gloves.png', 'assets/GearUIIcons/BOOTS.png',
+                    'assets/Chests/CommonChest.png', 'assets/Chests/UncommonChest.png', 'assets/Chests/RareChest.png',
+                    'assets/Chests/EpicChest.png', 'assets/Chests/LegendaryChest.png', 'assets/Chests/MythicChest.png'
+                ];
+                if (typeof GEAR_DATA !== 'undefined' && GEAR_DATA) {
+                    for (const item of Object.values(GEAR_DATA)) {
+                        if (item && item.iconImg) extraMobileAssets.push(item.iconImg);
+                    }
+                }
+                const fullMobileQueue = Array.from(new Set([...mobileManifest, ...extraMobileAssets].filter(Boolean)));
+                let qIdx = 0;
+                const totalMobile = Math.max(1, fullMobileQueue.length);
+
+                const loadOneMobile = (src) => new Promise((resolve) => {
                     const img = loadSharedImg(src);
-                    let done = false;
+                    let settled = false;
                     const finishOne = () => {
-                        if (done) return;
-                        done = true;
+                        if (settled) return;
+                        settled = true;
                         loadedCount++;
-                        loadedImageObjects.push(img);
-                        const imgPct = 20 + Math.round((loadedCount / imageAssets.length) * 32);
-                        this.targetProgress = Math.max(this.targetProgress, imgPct);
+                        if (img) loadedImageObjects.push(img);
+                        const pct = 18 + Math.round((loadedCount / totalMobile) * 66);
+                        this.targetProgress = Math.max(this.targetProgress, Math.min(84, pct));
                         resolve();
                     };
                     if (!img || (img.complete && img.naturalWidth > 0)) {
                         finishOne();
                         return;
                     }
-                    img.addEventListener('load', finishOne, { once: true });
+                    img.addEventListener('load', () => {
+                        if (typeof img.decode === 'function') {
+                            img.decode().catch(() => {}).finally(finishOne);
+                        } else {
+                            finishOne();
+                        }
+                    }, { once: true });
                     img.addEventListener('error', finishOne, { once: true });
-                    setTimeout(finishOne, isMobile ? 2200 : 1200);
+                    setTimeout(finishOne, 3200);
                 });
-            });
 
-            await Promise.race([
-                Promise.all(imgPromises),
-                new Promise((r) => setTimeout(r, isMobile ? 2400 : 1200))
-            ]);
+                const mobileWorker = async () => {
+                    while (qIdx < fullMobileQueue.length) {
+                        const nextSrc = fullMobileQueue[qIdx++];
+                        await loadOneMobile(nextSrc);
+                    }
+                };
+                await Promise.race([
+                    Promise.all([mobileWorker(), mobileWorker(), mobileWorker(), mobileWorker()]),
+                    new Promise((r) => setTimeout(r, 6200))
+                ]);
 
-            // Force GPU texture compilation into VRAM
-            this.warmupGPU(loadedImageObjects);
-            this.targetProgress = Math.max(this.targetProgress, 56);
-
-            // Stage 4: Preload Audio Sound Effects
-            let loadedAudioCount = 0;
-            const audioPromises = audioAssets.map((src) => {
-                return new Promise((resolve) => {
-                    const audio = new Audio();
-                    audio.preload = 'auto';
-                    audio.oncanplaythrough = audio.onerror = () => {
-                        loadedAudioCount++;
-                        const audPct = 56 + Math.round((loadedAudioCount / audioAssets.length) * 26);
-                        this.targetProgress = Math.max(this.targetProgress, audPct);
-                        resolve();
-                    };
-                    audio.src = src;
-                    audio.load();
+                // Eagerly decode & heal any existing DOM <img> tags on mobile before revealing menu
+                if (typeof MobileAssetGuard !== 'undefined') {
+                    MobileAssetGuard.sweepBrokenImages(document);
+                }
+                this.warmupGPU(loadedImageObjects.slice(0, 32));
+                this.targetProgress = Math.max(this.targetProgress, 86);
+            } else {
+                const imgPromises = imageAssets.map((src) => {
+                    return new Promise((resolve) => {
+                        const img = loadSharedImg(src);
+                        let done = false;
+                        const finishOne = () => {
+                            if (done) return;
+                            done = true;
+                            loadedCount++;
+                            loadedImageObjects.push(img);
+                            const imgPct = 20 + Math.round((loadedCount / imageAssets.length) * 32);
+                            this.targetProgress = Math.max(this.targetProgress, imgPct);
+                            resolve();
+                        };
+                        if (!img || (img.complete && img.naturalWidth > 0)) {
+                            finishOne();
+                            return;
+                        }
+                        img.addEventListener('load', finishOne, { once: true });
+                        img.addEventListener('error', finishOne, { once: true });
+                        setTimeout(finishOne, 1200);
+                    });
                 });
-            });
 
-            await Promise.race([
-                Promise.all(audioPromises),
-                new Promise((r) => setTimeout(r, 800))
-            ]);
+                await Promise.race([
+                    Promise.all(imgPromises),
+                    new Promise((r) => setTimeout(r, 1200))
+                ]);
 
-            this.targetProgress = Math.max(this.targetProgress, 84);
+                // Force GPU texture compilation into VRAM
+                this.warmupGPU(loadedImageObjects);
+                this.targetProgress = Math.max(this.targetProgress, 56);
+
+                // Stage 4: Preload Audio Sound Effects
+                let loadedAudioCount = 0;
+                const audioPromises = audioAssets.map((src) => {
+                    return new Promise((resolve) => {
+                        const audio = new Audio();
+                        audio.preload = 'auto';
+                        audio.oncanplaythrough = audio.onerror = () => {
+                            loadedAudioCount++;
+                            const audPct = 56 + Math.round((loadedAudioCount / audioAssets.length) * 26);
+                            this.targetProgress = Math.max(this.targetProgress, audPct);
+                            resolve();
+                        };
+                        audio.src = src;
+                        audio.load();
+                    });
+                });
+
+                await Promise.race([
+                    Promise.all(audioPromises),
+                    new Promise((r) => setTimeout(r, 800))
+                ]);
+
+                this.targetProgress = Math.max(this.targetProgress, 84);
+            }
 
             // Stage 5: Cloud profile & quests synchronization window
             await new Promise((r) => setTimeout(r, 350));

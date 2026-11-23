@@ -17,7 +17,7 @@ const ENDGAME_GEAR_DATA = {
         chestOnly: true,
         stats: { critChance: 9, critDamage: 18, maxHp: 30 },
         icon: '🧣',
-        iconImg: 'assets/helmets/YayaBlackScarf.png',
+        iconImg: 'assets/Helmets/YayaBlackScarf.png',
         desc: "Blessed village mourning kerchief woven with a protective Mati charm.",
         passive: {
             id: 'evil_eye_ward',
@@ -34,7 +34,7 @@ const ENDGAME_GEAR_DATA = {
         chestOnly: true,
         stats: { critChance: 10, critDamage: 15, speed: 5 },
         icon: '🧢',
-        iconImg: 'assets/helmets/RebetisWoolFlatcap.png',
+        iconImg: 'assets/Helmets/RebetisWoolFlatcap.png',
         desc: 'Sharp peak and streetwise poise for picking apart tough foes.',
         passive: {
             id: 'sharp_focus',
@@ -51,7 +51,7 @@ const ENDGAME_GEAR_DATA = {
         chestOnly: true,
         stats: { critChance: 14, critDamage: 30, fireRate: 10 },
         icon: '👑',
-        iconImg: 'assets/helmets/LaurelCrownOlympus.png',
+        iconImg: 'assets/Helmets/LaurelCrownOlympus.png',
         desc: 'Gilded olive-leaf diadem sparking with leftover mountain thunder.',
         passive: {
             id: 'bolt_of_criticism',
@@ -89,7 +89,7 @@ const ENDGAME_GEAR_DATA = {
         chestOnly: true,
         stats: { maxHp: 95, damageReduction: 9, bulletDamage: 6 },
         icon: '🦺',
-        iconImg: 'assets/armors/PsistisButcherCoat.png',
+        iconImg: 'assets/Armors/PsistisButcherCoat.png',
         desc: 'Quilted grillmaster apron lined with glowing charcoal embers.',
         passive: {
             id: 'hot_coals',
@@ -161,7 +161,7 @@ const ENDGAME_GEAR_DATA = {
         chestOnly: true,
         stats: { dashCooldown: 14, magnetRadius: 45, fireRate: 6 },
         icon: '📿',
-        iconImg: 'assets/belts/BrassKomboloiSash.png',
+        iconImg: 'assets/Belts/BrassKomboloiSash.png',
         desc: 'Weighted prayer beads strapped tightly to lock in a deadly tempo after every roll.',
         passive: {
             id: 'steady_rhythm',
@@ -178,7 +178,7 @@ const ENDGAME_GEAR_DATA = {
         chestOnly: true,
         stats: { dashCooldown: 11, magnetRadius: 60, maxHp: 35 },
         icon: '👛',
-        iconImg: 'assets/belts/TavernaWaiterPouch.png',
+        iconImg: 'assets/Belts/TavernaWaiterPouch.png',
         desc: 'Heavy leather billfold seasoned by decades of bustling tourist tips.',
         passive: {
             id: 'tip_jar',
@@ -195,7 +195,7 @@ const ENDGAME_GEAR_DATA = {
         chestOnly: true,
         stats: { dashCooldown: 20, magnetRadius: 85, speed: 10 },
         icon: '⚡',
-        iconImg: 'assets/belts/GirdleOfHermes.png',
+        iconImg: 'assets/Belts/GirdleOfHermes.png',
         desc: 'Featherlight sky-messenger belt that turns every evade into a razor gale.',
         passive: {
             id: 'sonic_slipstream',
@@ -233,7 +233,7 @@ const ENDGAME_GEAR_DATA = {
         chestOnly: true,
         stats: { fireRate: 12, bulletDamage: 12, bulletSpeed: 8 },
         icon: '🥢',
-        iconImg: 'assets/gloves/SouvlakiKingTongs.png',
+        iconImg: 'assets/Gloves/SouvlakiKingTongs.png',
         desc: 'Mirror-polished steel grips built to skewer straight through tight packs.',
         passive: {
             id: 'sizzling_skewers',
@@ -250,7 +250,7 @@ const ENDGAME_GEAR_DATA = {
         chestOnly: true,
         stats: { fireRate: 14, bulletSpeed: 10, critChance: 4 },
         icon: '🏍️',
-        iconImg: 'assets/gloves/CarbonMotoGauntlets.png',
+        iconImg: 'assets/Gloves/CarbonMotoGauntlets.png',
         desc: 'Knuckle-armored racing gloves that wind up faster with sustained trigger pull.',
         passive: {
             id: 'throttle_grip',
@@ -267,7 +267,7 @@ const ENDGAME_GEAR_DATA = {
         chestOnly: true,
         stats: { fireRate: 18, bulletDamage: 18, bulletSpeed: 15 },
         icon: '⚡',
-        iconImg: 'assets/gloves/ThunderOlympianGrips.png',
+        iconImg: 'assets/Gloves/ThunderOlympianGrips.png',
         desc: 'Storm-tempered gauntlets that conduct arcing bolts between clustered enemies.',
         passive: {
             id: 'chain_shock',
@@ -284,7 +284,7 @@ const ENDGAME_GEAR_DATA = {
         chestOnly: true,
         stats: { fireRate: 15, bulletDamage: 16, maxHp: 60 },
         icon: '🧤',
-        iconImg: 'assets/gloves/YayaGoldenOvenMitts.png',
+        iconImg: 'assets/Gloves/YayaGoldenOvenMitts.png',
         desc: 'Embroidered heirloom mitts baking every 8th shot into a blistering casserole bomb.',
         passive: {
             id: 'too_hot_to_handle',

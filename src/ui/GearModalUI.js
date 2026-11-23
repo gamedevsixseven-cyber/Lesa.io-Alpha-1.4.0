@@ -418,6 +418,9 @@ class GearModalUI {
 
             gearGrid.appendChild(card);
         });
+        if (typeof MobileAssetGuard !== 'undefined' && MobileAssetGuard.isEnabled()) {
+            MobileAssetGuard.queueSweep(gearGrid, 40);
+        }
     }
 
     static _renderUpgradeToolbar(gearGrid, tabName = '') {

@@ -9,6 +9,7 @@
 
 class TributeManager {
     static STORAGE_KEY = 'lesaio_mazonakis_tribute_claimed';
+    static UPDATE_101_KEY = 'lesaio_update_1_0_1_seen';
     static EXPIRY_DATE = new Date('2026-09-13T23:59:59');
 
     static isEligible() {
@@ -25,12 +26,89 @@ class TributeManager {
     }
 
     static checkAndShow() {
-        if (!this.isEligible()) return;
+        if (this.isEligible()) {
+            setTimeout(() => {
+                this.showModal();
+            }, 320);
+            return;
+        }
+        this.checkAndShowUpdateNotice();
+    }
 
-        // Slight delay so the main menu transition settles smoothly
-        setTimeout(() => {
-            this.showModal();
-        }, 320);
+    static checkAndShowUpdateNotice() {
+        try {
+            if (typeof document === 'undefined') return;
+            if (localStorage.getItem(this.UPDATE_101_KEY) === 'true') return;
+            const firstNameModal = document.getElementById('first-time-name-modal');
+            if (firstNameModal && !firstNameModal.classList.contains('hidden')) return;
+            setTimeout(() => {
+                this.showUpdateNoticeModal();
+            }, 320);
+        } catch (e) {
+            console.warn('[TributeManager] Update notice check failed:', e);
+        }
+    }
+
+    static showUpdateNoticeModal() {
+        if (typeof document === 'undefined') return;
+        try {
+            if (localStorage.getItem(this.UPDATE_101_KEY) === 'true') return;
+            localStorage.setItem(this.UPDATE_101_KEY, 'true');
+        } catch (_) {}
+
+        let modal = document.getElementById('update-101-modal');
+        if (!modal) {
+            modal = document.createElement('div');
+            modal.id = 'update-101-modal';
+            modal.className = 'modal-overlay hidden';
+            const layer = document.querySelector('.ui-layer') || document.body;
+            layer.appendChild(modal);
+        }
+
+        modal.innerHTML = `
+            <div class="modal-panel tribute-modal-panel" style="max-width: 470px !important;">
+                <div class="tribute-header-banner">
+                    <div class="tribute-dove-badge"><img src="assets/ui-icons/gear_cog.svg" class="ui-icon ui-icon-box" alt=""></div>
+                    <h2 class="tribute-title">UPDATE 1.0.1</h2>
+                    <div class="tribute-years">WHAT'S NEW IN LESA.IO</div>
+                </div>
+                <div class="tribute-quote-box" style="text-align: left; padding: 18px 22px;">
+                    <p class="tribute-intro" style="text-align: center; font-style: normal; margin-bottom: 12px;">
+                        Bug fixes, performance improvements, leaderboard UI bug fixed.
+                    </p>
+                    <p class="tribute-body" style="margin: 6px 0;">• <strong>Bug fixes</strong></p>
+                    <p class="tribute-body" style="margin: 6px 0;">• <strong>Performance improvements</strong></p>
+                    <p class="tribute-body" style="margin: 6px 0;">• <strong>Leaderboard UI bug fixed</strong></p>
+                </div>
+                <div class="modal-actions" style="margin-top: 16px;">
+                    <button type="button" id="dismiss-update-101-btn" class="comic-btn tribute-claim-btn">GOT IT!</button>
+                </div>
+            </div>
+        `;
+
+        modal.classList.remove('hidden');
+        if (window.soundEngine && typeof window.soundEngine.playPickup === 'function') {
+            window.soundEngine.playPickup('star');
+        }
+
+        const dismissBtn = modal.querySelector('#dismiss-update-101-btn');
+        if (dismissBtn) {
+            dismissBtn.addEventListener('click', () => this.hideUpdateNoticeModal());
+        }
+    }
+
+    static hideUpdateNoticeModal() {
+        try {
+            localStorage.setItem(this.UPDATE_101_KEY, 'true');
+        } catch (_) {}
+        const modal = typeof document !== 'undefined' ? document.getElementById('update-101-modal') : null;
+        if (modal) modal.classList.add('hidden');
+        if (window.soundEngine && typeof window.soundEngine.playSelect === 'function') {
+            window.soundEngine.playSelect();
+        }
+        if (typeof BossRewardModalUI !== 'undefined') {
+            BossRewardModalUI.checkAndShowPending();
+        }
     }
 
     static showModal() {

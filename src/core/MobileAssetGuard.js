@@ -18,8 +18,23 @@ class MobileAssetGuard {
         return url.replace(/([?&])_mr=\d+_\d+(&?)/g, (_, sep, tail) => (tail ? sep : ''));
     }
 
+    static normalizeAssetPath(url) {
+        if (!url || typeof url !== 'string') return '';
+        return url
+            .replace(/assets\/helmets\//g, 'assets/Helmets/')
+            .replace(/assets\/armors\//g, 'assets/Armors/')
+            .replace(/assets\/belts\//g, 'assets/Belts/')
+            .replace(/assets\/gloves\//g, 'assets/Gloves/')
+            .replace(/assets\/Boots\//g, 'assets/boots/')
+            .replace(/assets\/chests\//g, 'assets/Chests/')
+            .replace(/assets\/heroesicons\//gi, 'assets/HeroesIcons/')
+            .replace(/assets\/weaponicons\//gi, 'assets/WeaponIcons/')
+            .replace(/assets\/skillsicons\//gi, 'assets/SkillsIcons/')
+            .replace(/assets\/gearuicons\//gi, 'assets/GearUIIcons/');
+    }
+
     static _buildRetryUrl(baseUrl, attempt) {
-        const clean = this._stripRetryParam(baseUrl);
+        const clean = this.normalizeAssetPath(this._stripRetryParam(baseUrl));
         if (!clean || clean.startsWith('data:') || clean.startsWith('blob:')) return '';
         const sep = clean.includes('?') ? '&' : '?';
         return `${clean}${sep}_mr=${attempt}_${Date.now()}`;
@@ -110,11 +125,19 @@ class MobileAssetGuard {
         let kicked = 0;
         for (let i = 0; i < imgs.length; i++) {
             const img = imgs[i];
-            const src = img.getAttribute('src') || img.src;
-            if (!src || src.startsWith('data:') || src.startsWith('blob:')) continue;
-            if (img.getAttribute('loading') === 'lazy' && img.closest && img.closest('.hidden')) continue;
+            const rawSrc = img.getAttribute('src') || img.src;
+            if (!rawSrc || rawSrc.startsWith('data:') || rawSrc.startsWith('blob:')) continue;
+            const normSrc = this.normalizeAssetPath(rawSrc);
+            if (normSrc !== rawSrc) {
+                img.setAttribute('src', normSrc);
+                kicked++;
+                continue;
+            }
+            if (img.getAttribute('loading') === 'lazy') {
+                img.removeAttribute('loading');
+            }
             if (img.complete && img.naturalWidth === 0 && !img._mobileRetryPending) {
-                if (this._scheduleRetry(img, src)) kicked++;
+                if (this._scheduleRetry(img, normSrc)) kicked++;
             }
         }
         return kicked;

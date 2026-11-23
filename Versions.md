@@ -8,8 +8,8 @@ This file tracks the total lines of code and game architecture state across ever
 
 | Metric | Current Value |
 |---|---|
-| **Active Version** | **Version 1.0.0 — Launch Release 🚀 (Latest GitHub Push: `d098e9b`)** |
-| **Milestone Banner** | 🔥 **OVER 102,900 LINES OF EXECUTABLE & WEB CODE (`104,400+` WITH DOCS)!** |
+| **Active Version** | **Version 1.0.1 — Patch & Optimization Update 🛠️** |
+| **Milestone Banner** | 🔥 **OVER 103,700 LINES OF EXECUTABLE & WEB CODE (`105,200+` WITH DOCS)!** |
 | **Total Code Lines (`JS+CSS+HTML+PS1+CS`)** | **102,996 lines** across **280 files** (`102,288 lines` core web app `JS+CSS+HTML`) |
 | **Total Project Lines (incl. `.md`)** | **104,488 lines** across **287 files** *(plus `81` `.svg` icons / `587` lines & `manifest.json` / `21` lines)* |
 | **Max Lines Per Source File** | **`235 / 236` `.js` & `37 / 37` `.css` files `< 600 lines`** *(exception: `src/heroes/FiftyBalosHero.js` at `1,119` lines)* |
@@ -59,6 +59,14 @@ This file tracks the total lines of code and game architecture state across ever
 ---
 
 ## 📈 Version Progression Log
+
+### **Version 1.0.1 (Patch & Optimization Update) - Mobile Staged Preloader, Gear Icon Fix, Update Pop-up, Exclusive VF 185 Kolones & Chrono Emerald Rift Banners**
+- **Release Date:** November 23, 2026
+- **Key Additions & Changes:**
+  - **One-Time Version 1.0.1 Update Pop-up (`TributeManager.js`, `index.html`):** Added a one-time `#update-101-modal` announcement shown the first time players enter Version 1.0.1 (*"Bug fixes, performance improvements, leaderboard UI bug fixed."*).
+  - **Mobile Staged Preloader & Missing Gear Icon Fix (`LoadingScreen.js`, `MobileAssetGuard.js`, `GearModalUI.js`, `gearEndgame.js`):** Fixed 11 case-sensitive GitHub Pages `iconImg` paths in `gearEndgame.js` (`assets/Helmets/`, `assets/Armors/`, `assets/Belts/`, `assets/Gloves/`) that showed `?` on mobile Safari, added `MobileAssetGuard.normalizeAssetPath()`, and implemented a 4-worker staged mobile preloader with `img.decode()` and extended mobile loading budget.
+  - **Exclusive `SYM VF 185 Kolones` & `Chrono Emerald Rift` Animated Banners (`profile_cosmetics_ext.js`, `CosmeticEffectsEngine.js`, `CosmeticManager.js`, `ProfileCosmeticsUI.js`, `cosmetics-advanced.css`):** Added Dev-gift-only `EXCLUSIVE` banner `banner_vf185_apex` (*SYM VF 185 Kolones*, hidden unless owned) and replaced `VF185 Street Turbo` with `Chrono Emerald Rift` (`chrono_rift`).
+  - **Primary Dev Gifting, Friend Last-Online & Leaderboard Sync Fixes (`DevGiftManager.js`, `FriendsCardRenderer.js`, `PublicProfileModal.js`, `LeaderboardModal.js`, `ProfileManager.js`, `firebase.js`):** Added Primary Dev gift sending & interactive `#dev-gift-claim-modal` with free-open gifted chests, friend-only *"Last online"* timestamps, rename propagation across `players`/`leaderboards`/`friendships`, and separate-UID leaderboard rendering so phone and PC accounts both appear on leaderboards.
 
 ### **Version 1.0.0 (Launch Release) - Live Events Hub, Co-op Rework, Lil Xas VIP Banner & Launch Polish**
 - **Release Date:** November 22 – November 23, 2026 *(GitHub: `d098e9b`)*

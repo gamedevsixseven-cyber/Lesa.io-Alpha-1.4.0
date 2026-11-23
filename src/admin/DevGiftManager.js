@@ -399,7 +399,7 @@ class DevGiftManager {
 
     static _isBootOverlayActive() {
         if (typeof document === 'undefined') return false;
-        const blockers = ['loading-screen', 'dev-intro-overlay', 'first-time-name-modal', 'mazonakis-tribute-modal'];
+        const blockers = ['loading-screen', 'dev-intro-overlay', 'first-time-name-modal', 'mazonakis-tribute-modal', 'update-101-modal'];
         for (const id of blockers) {
             const el = document.getElementById(id);
             if (el && !el.classList.contains('hidden') && el.style.display !== 'none') return true;
