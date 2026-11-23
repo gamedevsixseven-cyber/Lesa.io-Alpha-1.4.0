@@ -353,6 +353,35 @@
     pointer-events: none;
 }
 
+.clan-menu-new-pill {
+    position: absolute;
+    top: -9px;
+    left: -7px;
+    z-index: 6;
+    background: linear-gradient(180deg, #ff5e57 0%, #ff3f34 100%);
+    color: #ffffff;
+    border: 2px solid var(--dark-outline);
+    border-radius: 999px;
+    padding: 1px 6px;
+    font-family: 'Luckiest Guy', cursive;
+    font-size: 0.58rem;
+    letter-spacing: 0.5px;
+    line-height: 1.15;
+    box-shadow: 0 2px 0 var(--dark-outline);
+    text-shadow: 1px 1px 0 #1e272e;
+    pointer-events: none;
+}
+
+@media (pointer: coarse), (max-height: 540px) {
+    .clan-menu-new-pill {
+        top: -6px;
+        left: -5px;
+        padding: 1px 4px;
+        font-size: 0.46rem;
+        border-width: 1.5px;
+    }
+}
+
 #btn-friends.has-notif {
     box-shadow: 0 0 0 2px #ff4757, var(--shadow-solid);
     animation: friendBtnNotifyPulse 1.5s infinite;
