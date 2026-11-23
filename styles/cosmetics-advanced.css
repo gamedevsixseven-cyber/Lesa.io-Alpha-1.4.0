@@ -134,15 +134,33 @@
     border-color: #fb7185 !important;
 }
 
-.cos-banner-vf185-turbo {
-    background: linear-gradient(112deg, transparent 28%, rgba(255, 46, 126, 0.48) 46%, rgba(0, 245, 255, 0.42) 54%, transparent 72%),
-                repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.05) 0 4px, transparent 4px 10px),
-                radial-gradient(circle at 84% 50%, rgba(255, 46, 126, 0.55), transparent 56%),
-                linear-gradient(135deg, #07080d 0%, #151926 46%, #4c0519 82%, #1e1b4b 100%) !important;
-    background-size: 210% 100%, 100% 100%, 100% 100%, 160% 160% !important;
-    animation: cosGleamTrack 2.6s linear infinite, cosVfPulse 2.4s ease-in-out infinite;
-    border-color: #ff2e7e !important;
+.cos-banner-chrono-rift {
+    background: linear-gradient(112deg, transparent 26%, rgba(52, 211, 153, 0.42) 45%, rgba(163, 230, 53, 0.48) 53%, transparent 72%),
+                repeating-linear-gradient(-45deg, rgba(16, 185, 129, 0.08) 0 4px, transparent 4px 11px),
+                radial-gradient(circle at 78% 50%, rgba(16, 185, 129, 0.62), rgba(163, 230, 53, 0.22) 38%, transparent 64%),
+                linear-gradient(135deg, #02100d 0%, #06372c 42%, #065f46 74%, #022c22 100%) !important;
+    background-size: 215% 100%, 100% 100%, 100% 100%, 165% 165% !important;
+    animation: cosGleamTrack 3.1s ease-in-out infinite, cosCrPulse 2.5s ease-in-out infinite;
+    border-color: #34d399 !important;
 }
+
+@keyframes cosCrPulse {
+    0%, 100% { box-shadow: 0 0 0 2px #021812, 0 0 15px rgba(16, 185, 129, 0.8), inset 0 0 14px rgba(163, 230, 53, 0.22); border-color: #10b981 !important; }
+    50% { box-shadow: 0 0 0 2px #021812, 0 0 22px rgba(163, 230, 53, 0.92), inset 0 0 18px rgba(45, 212, 191, 0.34); border-color: #a3e635 !important; }
+}
+@keyframes cosCrSpinCW { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+@keyframes cosCrSpinCCW { 0% { transform: rotate(360deg); } 100% { transform: rotate(0deg); } }
+@keyframes cosCrWaveSlide { 0%, 100% { transform: translateX(-18px) scaleY(0.92); } 50% { transform: translateX(18px) scaleY(1.08); } }
+@keyframes cosCrShardFloat { 0%, 100% { transform: translateY(0) scale(0.9); opacity: 0.55; } 50% { transform: translateY(-7px) scale(1.18); opacity: 1; filter: drop-shadow(0 0 5px #a3e635); } }
+
+.cos-cr-ring-outer { animation: cosCrSpinCW 7s linear infinite; }
+.cos-cr-ring-inner { animation: cosCrSpinCCW 4.4s linear infinite; }
+.cos-cr-core { animation: cosCrSpinCW 3.2s ease-in-out infinite; }
+.cos-cr-wave.w1 { animation: cosCrWaveSlide 2.8s ease-in-out infinite; }
+.cos-cr-wave.w2 { animation: cosCrWaveSlide 3.4s ease-in-out infinite reverse; }
+.cos-cr-shard { transform-box: fill-box; transform-origin: center; animation: cosCrShardFloat 2.2s ease-in-out infinite; }
+.cos-cr-shard.s2 { animation-delay: 0.7s; }
+.cos-cr-shard.s3 { animation-delay: 1.4s; }
 
 .cos-banner-vf185-apex {
     background: linear-gradient(110deg, transparent 24%, rgba(0, 245, 255, 0.45) 42%, rgba(255, 46, 126, 0.55) 50%, rgba(254, 211, 48, 0.48) 58%, transparent 76%),

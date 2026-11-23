@@ -70,6 +70,52 @@ class CosmeticEffectsEngine {
                 <polyline class="cos-bolt b2" points="262,8 244,36 256,42 232,84" fill="none" stroke="#38bdf8" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>`;
         }
+        if (theme === 'chrono_rift') {
+            return `<svg viewBox="0 0 300 90" preserveAspectRatio="none" class="cos-fx-svg cos-chrono-svg">
+                <defs>
+                    <linearGradient id="crWaveGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" stop-color="#10b981" stop-opacity="0"/>
+                        <stop offset="35%" stop-color="#34d399" stop-opacity="0.75"/>
+                        <stop offset="70%" stop-color="#a3e635" stop-opacity="0.9"/>
+                        <stop offset="100%" stop-color="#10b981" stop-opacity="0"/>
+                    </linearGradient>
+                    <radialGradient id="crVortexCore" cx="50%" cy="50%" r="50%">
+                        <stop offset="0%" stop-color="#ecfccb" stop-opacity="0.95"/>
+                        <stop offset="45%" stop-color="#10b981" stop-opacity="0.65"/>
+                        <stop offset="100%" stop-color="#022c22" stop-opacity="0"/>
+                    </radialGradient>
+                </defs>
+                <!-- Bio-Quantum Sine Waves & Hex Grid Lines -->
+                <path class="cos-cr-wave w1" d="M-40 58 Q 35 18, 110 54 T 260 46 T 360 52" fill="none" stroke="url(#crWaveGrad)" stroke-width="2.2"/>
+                <path class="cos-cr-wave w2" d="M-40 34 Q 45 72, 125 36 T 275 50 T 360 34" fill="none" stroke="#2dd4bf" stroke-width="1.4" stroke-dasharray="10 8" opacity="0.65"/>
+                <!-- Floating Quantum Emerald Crystals -->
+                <polygon class="cos-cr-shard s1" points="48,18 53,26 48,34 43,26" fill="#a3e635" opacity="0.85"/>
+                <polygon class="cos-cr-shard s2" points="118,62 122,69 118,76 114,69" fill="#34d399" opacity="0.8"/>
+                <polygon class="cos-cr-shard s3" points="164,16 169,23 164,30 159,23" fill="#bef264" opacity="0.9"/>
+                <circle class="cos-ember p1" cx="76" cy="76" r="2.2" fill="#a3e635"/>
+                <circle class="cos-ember p3" cx="146" cy="78" r="2.5" fill="#34d399"/>
+                <!-- Counter-Rotating Chrono Portal Vortex (Right Showcase) -->
+                <g transform="translate(232, 45)">
+                    <circle r="34" fill="url(#crVortexCore)"/>
+                    <g class="cos-cr-ring-outer">
+                        <circle r="31" fill="none" stroke="#34d399" stroke-width="2" stroke-dasharray="14 8 4 8"/>
+                        <polygon points="0,-35 -4,-28 4,-28" fill="#a3e635"/>
+                        <polygon points="0,35 -4,28 4,28" fill="#a3e635"/>
+                        <polygon points="-35,0 -28,-4 -28,4" fill="#2dd4bf"/>
+                        <polygon points="35,0 28,-4 28,4" fill="#2dd4bf"/>
+                    </g>
+                    <g class="cos-cr-ring-inner">
+                        <circle r="21" fill="none" stroke="#a3e635" stroke-width="1.8" stroke-dasharray="8 6"/>
+                        <rect x="-14" y="-14" width="28" height="28" fill="none" stroke="#10b981" stroke-width="1.3" opacity="0.7" transform="rotate(45)"/>
+                    </g>
+                    <!-- Spinning Chrono Hourglass / Singularity Diamond Core -->
+                    <g class="cos-cr-core">
+                        <polygon points="0,-11 9,0 0,11 -9,0" fill="#a3e635" stroke="#ffffff" stroke-width="1.2"/>
+                        <circle r="3.2" fill="#ffffff"/>
+                    </g>
+                </g>
+            </svg>`;
+        }
         if (theme === 'vf185_overdrive') {
             return `<svg viewBox="0 0 300 90" preserveAspectRatio="none" class="cos-fx-svg cos-vf185-svg">
                 <defs>
