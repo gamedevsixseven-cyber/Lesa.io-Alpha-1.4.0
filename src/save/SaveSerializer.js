@@ -563,8 +563,11 @@ class SaveSerializer {
                 accountXp: pXp,
                 skillLevels: pSkills
             },
-            ...(user && user.email ? { email: user.email } : {})
+            ...(user && user.email && !(typeof PlayerIdentity !== 'undefined' && PlayerIdentity.isGuestUid && PlayerIdentity.isGuestUid(user.uid)) ? { email: user.email } : {})
         };
+        if (user && user.uid && typeof PlayerIdentity !== 'undefined' && PlayerIdentity.isGuestUid && PlayerIdentity.isGuestUid(user.uid)) {
+            delete result.email;
+        }
         if (cloudBaseline && typeof SaveMigration !== 'undefined' && typeof SaveMigration.mergeMonotonicCloudPayload === 'function') {
             result = SaveMigration.mergeMonotonicCloudPayload(result, cloudBaseline);
         }

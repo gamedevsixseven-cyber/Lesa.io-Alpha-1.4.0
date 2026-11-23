@@ -147,25 +147,16 @@ class LeaderboardModal {
 
         const byUid = new Map();
         const selfEntry = this._buildLocalEntry();
-        const cs = window.cloudSave;
-        const selfIds = new Set([
-            selfEntry.uid,
-            typeof localStorage !== 'undefined' ? localStorage.getItem('lesaio_player_uid') : '',
-            typeof localStorage !== 'undefined' ? localStorage.getItem('lesaio_google_uid') : '',
-            (cs && cs.currentUser && cs.currentUser.uid) ? cs.currentUser.uid : ''
-        ].filter(Boolean));
-        const selfEmail = (cs && typeof cs.getEffectivePlayerEmail === 'function')
-            ? String(cs.getEffectivePlayerEmail() || '').trim().toLowerCase()
-            : '';
+        const isPrimaryDev = !!(window.AdminAuth && typeof window.AdminAuth.isPrimaryDevUser === 'function' && window.AdminAuth.isPrimaryDevUser());
         byUid.set(selfEntry.uid, selfEntry);
 
         if (db) {
             try {
                 const queries = [
-                    db.collection('players').orderBy('lbHighScore', 'desc').limit(30).get().catch(() => null),
-                    db.collection('players').orderBy('lbEndlessWave', 'desc').limit(30).get().catch(() => null),
-                    db.collection('players').orderBy('lbTotalKills', 'desc').limit(30).get().catch(() => null),
-                    db.collection('players').orderBy('lastSeenAt', 'desc').limit(35).get().catch(() => null)
+                    db.collection('players').orderBy('lbHighScore', 'desc').limit(35).get().catch(() => null),
+                    db.collection('players').orderBy('lbEndlessWave', 'desc').limit(35).get().catch(() => null),
+                    db.collection('players').orderBy('lbTotalKills', 'desc').limit(35).get().catch(() => null),
+                    db.collection('players').orderBy('lastSeenAt', 'desc').limit(40).get().catch(() => null)
                 ];
                 const snaps = await Promise.all(queries);
                 if (seq !== this._fetchSeq) return;
@@ -173,12 +164,28 @@ class LeaderboardModal {
                     if (!snap || typeof snap.forEach !== 'function') return;
                     snap.forEach((doc) => {
                         const raw = doc.data() || {};
+                        const isGuestDoc = /^(phone|player|user|playtest)_/.test(doc.id);
+
+                        // Auto-heal guest device documents that were locked by a legacy 'email' field in Firestore
+                        if (isPrimaryDev && isGuestDoc && ('email' in raw || (doc.id === 'phone_aabwjk_mwrtealt' && raw.playerName === 'Popo'))) {
+                            const fixPayload = {};
+                            if ('email' in raw && typeof firebase !== 'undefined' && firebase.firestore && firebase.firestore.FieldValue) {
+                                fixPayload.email = firebase.firestore.FieldValue.delete();
+                            }
+                            if (doc.id === 'phone_aabwjk_mwrtealt' && (!raw.playerName || raw.playerName === 'Popo')) {
+                                fixPayload.playerName = 'PsanasIphone';
+                                fixPayload.playerNameLower = 'psanasiphone';
+                                fixPayload['player.name'] = 'PsanasIphone';
+                                raw.playerName = 'PsanasIphone';
+                                if (raw.player && typeof raw.player === 'object') raw.player.name = 'PsanasIphone';
+                            }
+                            if (Object.keys(fixPayload).length > 0) {
+                                doc.ref.update(fixPayload).catch(() => {});
+                            }
+                        }
+
                         const formatted = fs._formatPlayerDoc(raw.uid || doc.id, raw);
-                        const docEmail = String(raw.email || '').trim().toLowerCase();
-                        const isSelfDoc = selfIds.has(doc.id)
-                            || selfIds.has(formatted.uid)
-                            || (selfEntry.tag && formatted.tag === selfEntry.tag)
-                            || (selfEmail && docEmail && docEmail === selfEmail);
+                        const isSelfDoc = (doc.id === selfEntry.uid) || (formatted.uid === selfEntry.uid);
 
                         if (isSelfDoc) {
                             const curSelf = byUid.get(selfEntry.uid) || selfEntry;

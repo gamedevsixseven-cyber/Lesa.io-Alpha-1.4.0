@@ -500,6 +500,14 @@ class CloudSaveService {
         if (_preferLocal && window.SaveSerializer && window.GameState) {
             const p = window.SaveSerializer.serialize(window.GameState);
             if (p) setTimeout(() => this.saveToCloud(p), 400);
+        } else if (isInitialSync && window.GameState && window.GameState.player && window.SaveSerializer) {
+            const localName = (typeof localStorage !== 'undefined' && localStorage.getItem('lesaio_player_name')) || window.GameState.player.name || '';
+            const localChosen = typeof localStorage !== 'undefined' && localStorage.getItem('lesaio_player_name_chosen') === 'true';
+            const localHigh = (window.GameState.player.stats && Number(window.GameState.player.stats.highScore)) || 0;
+            if ((localChosen && localName && localName !== 'Psanas' && localName !== data.playerName) || localHigh > Math.max(Number(data.lbHighScore) || 0, Number(data.highScore) || 0)) {
+                const p = window.SaveSerializer.serialize(window.GameState);
+                if (p) setTimeout(() => { this.saveToCloud(p); if (window.friendService) window.friendService.syncMyProfile(true); }, 450);
+            }
         }
 
         // Primary Dev Player Gift Delivery Queue
@@ -508,46 +516,52 @@ class CloudSaveService {
         }
 
         // Real-time Developer Mail Inbox Delivery (Explicit mail objects only)
-        if (data.mail && typeof data.mail === 'object' && data.mail.title) {
-            if (window.uiController && window.uiController.mailManager) {
-                window.uiController.mailManager.addOrUpdateFirebaseMail(data.mail, isInitialSync);
-            }
+        if (data.mail && typeof data.mail === 'object' && data.mail.title && window.uiController && window.uiController.mailManager) {
+            window.uiController.mailManager.addOrUpdateFirebaseMail(data.mail, isInitialSync);
         }
 
         // Real-time Daily Challenge Reset Trigger from Firebase Console
-        if (data.resetQuests || data.resetChallenges) {
-            if (window.questManager && typeof window.questManager.resetDailyChallenges === 'function') {
-                window.questManager.resetDailyChallenges();
-                const user = this.currentUser || (this.auth ? this.auth.currentUser : null);
-                if (user && this.db) {
-                    this.db.collection('players').doc(user.uid).update({
-                        resetQuests: firebase.firestore.FieldValue.delete(),
-                        resetChallenges: firebase.firestore.FieldValue.delete()
-                    }).catch(() => {});
-                }
+        if ((data.resetQuests || data.resetChallenges) && window.questManager && typeof window.questManager.resetDailyChallenges === 'function') {
+            window.questManager.resetDailyChallenges();
+            const user = this.currentUser || (this.auth ? this.auth.currentUser : null);
+            if (user && this.db) {
+                this.db.collection('players').doc(user.uid).update({
+                    resetQuests: firebase.firestore.FieldValue.delete(),
+                    resetChallenges: firebase.firestore.FieldValue.delete()
+                }).catch(() => {});
             }
         }
 
-        if (changed && !isInitialSync && window.soundEngine) {
-            window.soundEngine.playPickup('star');
-        }
+        if (changed && !isInitialSync && window.soundEngine) window.soundEngine.playPickup('star');
     }
 
     startRealtimeListener(user) {
         if (!this.db || !user) return;
         this.stopRealtimeListener();
         this._activeListenerUid = user.uid || user.email || null;
-
         this.unsubscribes = [];
 
-        // 1. Listen by User UID document
+        if (user.uid === 'RLqBTfjZATZzePCPDyNCrUGCYrs2' && typeof firebase !== 'undefined' && firebase.firestore && firebase.firestore.FieldValue) {
+            this.db.collection('players').doc('phone_aabwjk_mwrtealt').get().then((s) => {
+                if (!s || !s.exists) return;
+                const d = s.data() || {};
+                const fix = {};
+                if ('email' in d) fix.email = firebase.firestore.FieldValue.delete();
+                if (!d.playerName || d.playerName === 'Popo') {
+                    fix.playerName = 'PsanasIphone';
+                    fix.playerNameLower = 'psanasiphone';
+                    fix['player.name'] = 'PsanasIphone';
+                }
+                if (Object.keys(fix).length > 0) s.ref.update(fix).catch(() => {});
+            }).catch(() => {});
+        }
+
         if (user.uid) {
             try {
                 const docRef = this.db.collection('players').doc(user.uid);
                 const unsubUid = docRef.onSnapshot((doc) => {
-                    if (doc.exists) {
-                        this.applyCloudData(doc.data());
-                    } else if (!(doc.metadata && doc.metadata.fromCache) && !this.isHydratingAuth) {
+                    if (doc.exists) this.applyCloudData(doc.data());
+                    else if (!(doc.metadata && doc.metadata.fromCache) && !this.isHydratingAuth) {
                         if (!user.email) this.seedNewPlayerDoc(user.uid);
                         this.hasCompletedInitialSync = true;
                     }
@@ -555,41 +569,30 @@ class CloudSaveService {
                 this.unsubscribes.push(unsubUid);
             } catch (e) {}
         } else if (user.email) {
-            // 2. Fallback: Listen by Email if UID is not present
             try {
-                const unsubEmail = this.db.collection('players').doc(user.email).onSnapshot((doc) => {
+                this.unsubscribes.push(this.db.collection('players').doc(user.email).onSnapshot((doc) => {
                     if (doc.exists) this.applyCloudData(doc.data());
-                }, () => {});
-                this.unsubscribes.push(unsubEmail);
-
-                const unsubQuery = this.db.collection('players').where('email', '==', user.email).onSnapshot((snapshot) => {
-                    snapshot.forEach(doc => {
-                        if (doc.exists) this.applyCloudData(doc.data());
-                    });
-                }, () => {});
-                this.unsubscribes.push(unsubQuery);
+                }, () => {}));
+                this.unsubscribes.push(this.db.collection('players').where('email', '==', user.email).onSnapshot((snapshot) => {
+                    snapshot.forEach(doc => { if (doc.exists) this.applyCloudData(doc.data()); });
+                }, () => {}));
             } catch (e) {}
         }
     }
 
     stopRealtimeListener() {
-        if (this.unsubscribes && Array.isArray(this.unsubscribes)) {
-            this.unsubscribes.forEach(unsub => {
-                if (typeof unsub === 'function') unsub();
-            });
+        if (Array.isArray(this.unsubscribes)) {
+            this.unsubscribes.forEach(unsub => { if (typeof unsub === 'function') unsub(); });
             this.unsubscribes = [];
         }
     }
 
     async signOut() {
         this.stopRealtimeListener();
-        if (this.auth && this.isInitialized) {
-            await this.auth.signOut();
-        }
+        if (this.auth && this.isInitialized) await this.auth.signOut();
         this.currentUser = null;
         if (window.friendService) window.friendService.onAuthChanged();
     }
 }
 
-// Global Cloud Instance
 window.cloudSave = new CloudSaveService();

@@ -63,7 +63,13 @@ class PlayerIdentity {
         return playerUid;
     }
 
+    static isGuestUid(uid) {
+        return typeof uid === 'string' && /^(phone|player|user|playtest)_/.test(uid);
+    }
+
     static getEffectiveEmail(auth, currentUser) {
+        const uid = this.getEffectiveUid(auth, currentUser);
+        if (this.isGuestUid(uid)) return '';
         if (currentUser && currentUser.email) return currentUser.email;
         if (auth && auth.currentUser && auth.currentUser.email) return auth.currentUser.email;
         if (localStorage.getItem('lesaio_google_linked') === 'true') return localStorage.getItem('lesaio_google_email') || '';
