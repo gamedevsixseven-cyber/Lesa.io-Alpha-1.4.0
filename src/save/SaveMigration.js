@@ -419,7 +419,7 @@ class SaveMigration {
         const maxWave = Math.max(1, Number(s.maxWave) || 1, Number(data.maxWave) || 1, Number(data.lbEndlessWave) || 1, Number(social.maxWave) || 1);
         return {
             ...p,
-            name: p.name || p.playerName || data.playerName || undefined,
+            name: data.playerName || p.name || p.playerName || undefined,
             accountLevel: lvl,
             accountXp: xpCandidates.length ? Math.max(...xpCandidates) : undefined,
             stats: {

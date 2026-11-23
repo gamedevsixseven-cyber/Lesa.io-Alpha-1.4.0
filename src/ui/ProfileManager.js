@@ -294,10 +294,7 @@ class ProfileManager {
         if (window.soundEngine) window.soundEngine.playLevelUp();
         this.hideFirstTimeNameModal();
         this.updateProfileUI();
-        if (window.cloudSave && typeof window.cloudSave.saveToCloud === 'function') {
-            window.cloudSave.saveToCloud({ name: val, playerName: val, playerNameLower: val.toLowerCase() });
-        }
-        if (window.friendService) window.friendService.syncMyProfile(true);
+        this._syncRenameAndStatsEverywhere(val, '');
         if (typeof TributeManager !== 'undefined') TributeManager.checkAndShow();
     }
 
@@ -330,17 +327,133 @@ class ProfileManager {
         });
         if (!ok) return;
 
-        this.gameState.spendGems(100);
         this.gameState.player.name = val;
         localStorage.setItem('lesaio_player_name', val);
+        localStorage.setItem('lesaio_player_name_chosen', 'true');
+        this.gameState.spendGems(100);
 
         if (window.soundEngine) window.soundEngine.playLevelUp();
         this.hideRenameModal();
         this.updateProfileUI();
-        if (window.cloudSave && typeof window.cloudSave.saveToCloud === 'function') {
-            window.cloudSave.saveToCloud({ name: val, playerName: val, playerNameLower: val.toLowerCase() });
+        this._syncRenameAndStatsEverywhere(val, prevName);
+    }
+
+    async _syncRenameAndStatsEverywhere(newName, prevName = '') {
+        const cleanName = String(newName || '').trim();
+        if (!cleanName) return;
+        const lowerName = cleanName.toLowerCase();
+
+        const cs = (typeof window !== 'undefined') ? window.cloudSave : null;
+        if (cs && cs.lastCloudData && typeof cs.lastCloudData === 'object') {
+            cs.lastCloudData.playerName = cleanName;
+            cs.lastCloudData.playerNameLower = lowerName;
+            if (cs.lastCloudData.player && typeof cs.lastCloudData.player === 'object') {
+                cs.lastCloudData.player.name = cleanName;
+            }
         }
-        if (window.friendService) window.friendService.syncMyProfile(true);
+
+        let serialized = null;
+        if (typeof window !== 'undefined' && window.SaveManager && typeof window.SaveManager.saveLocalOnly === 'function') {
+            if (window.SaveManager.saveDebounceTimer) {
+                clearTimeout(window.SaveManager.saveDebounceTimer);
+                window.SaveManager.saveDebounceTimer = null;
+            }
+            serialized = window.SaveManager.saveLocalOnly();
+        }
+        if (cs && typeof cs.saveToCloud === 'function') {
+            await cs.saveToCloud({
+                ...(serialized || {}),
+                name: cleanName,
+                playerName: cleanName,
+                playerNameLower: lowerName
+            }).catch(() => false);
+        }
+
+        const fs = (typeof window !== 'undefined') ? window.friendService : null;
+        if (fs && typeof fs.syncMyProfile === 'function') {
+            await fs.syncMyProfile(true).catch(() => false);
+        }
+
+        // Propagate new name & latest leaderboard stats to any sibling/legacy player docs and friendships
+        const db = (fs && typeof fs.getDb === 'function' && fs.getDb()) || (cs && cs.db) || null;
+        if (db) {
+            const me = (fs && typeof fs.getMySummary === 'function') ? fs.getMySummary() : null;
+            const myUid = (me && me.uid) || (cs && typeof cs.getEffectivePlayerUid === 'function' ? cs.getEffectivePlayerUid() : '');
+            const selfIds = new Set([
+                myUid,
+                typeof localStorage !== 'undefined' ? localStorage.getItem('lesaio_player_uid') : '',
+                typeof localStorage !== 'undefined' ? localStorage.getItem('lesaio_google_uid') : '',
+                (cs && cs.currentUser && cs.currentUser.uid) ? cs.currentUser.uid : ''
+            ].filter(Boolean));
+
+            const syncFields = {
+                playerName: cleanName,
+                playerNameLower: lowerName,
+                'player.name': cleanName
+            };
+            if (me) {
+                Object.assign(syncFields, {
+                    accountLevel: me.level,
+                    level: me.level,
+                    selectedHero: me.selectedHero,
+                    socialStats: {
+                        highScore: me.highScore,
+                        maxWave: me.maxWave,
+                        totalKills: me.totalKills,
+                        endlessMaxWave: me.endlessMaxWave,
+                        olympusMaxFloor: me.olympusMaxFloor
+                    },
+                    lbHighScore: me.highScore,
+                    lbEndlessWave: Math.max(me.endlessMaxWave || 0, me.maxWave || 1),
+                    lbTotalKills: me.totalKills
+                });
+            }
+
+            for (const sid of selfIds) {
+                db.collection('players').doc(sid).update(syncFields).catch(() => {});
+            }
+
+            if (myUid && me && me.tagClean) {
+                Promise.all([
+                    db.collection('players').where('uid', '==', myUid).limit(5).get().catch(() => null),
+                    db.collection('players').where('friendTagClean', '==', me.tagClean).limit(5).get().catch(() => null)
+                ]).then((snaps) => {
+                    snaps.forEach((s) => {
+                        if (!s || typeof s.forEach !== 'function') return;
+                        s.forEach((d) => {
+                            if (d && d.exists) d.ref.update(syncFields).catch(() => {});
+                        });
+                    });
+                }).catch(() => {});
+            }
+
+            if (myUid && me) {
+                db.collection('friendships').where('users', 'array-contains', myUid).get().then((snap) => {
+                    if (!snap) return;
+                    snap.forEach((doc) => {
+                        doc.ref.update({
+                            [`profiles.${myUid}.name`]: cleanName,
+                            [`profiles.${myUid}.level`]: me.level,
+                            [`profiles.${myUid}.hero`]: me.selectedHero,
+                            [`profiles.${myUid}.tag`]: me.tag
+                        }).catch(() => {});
+                    });
+                }).catch(() => {});
+            }
+        }
+
+        if (typeof window !== 'undefined' && window.leaderboardModal) {
+            const lb = window.leaderboardModal;
+            if (Array.isArray(lb._rows)) {
+                lb._rows.forEach((r) => {
+                    if (r && (r.isSelf || ( prevName && r.name === prevName ))) r.name = cleanName;
+                });
+            }
+            const lbEl = document.getElementById('leaderboard-modal');
+            if (lbEl && !lbEl.classList.contains('hidden') && typeof lb.refresh === 'function') {
+                lb.refresh();
+            }
+        }
     }
 
     updateProfileUI() {

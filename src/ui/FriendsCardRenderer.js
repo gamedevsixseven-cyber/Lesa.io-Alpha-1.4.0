@@ -29,6 +29,21 @@ class FriendsCardRenderer {
         return (typeof UiIcons !== 'undefined') ? UiIcons.i(name, 'ui-icon-sm') : fallback;
     }
 
+    static formatLastOnline(ts) {
+        const ms = Number(ts) || 0;
+        if (ms <= 0) return '';
+        const diffSec = Math.max(0, Math.floor((Date.now() - ms) / 1000));
+        if (diffSec < 60) return 'Last online just now';
+        if (diffSec < 3600) return `Last online ${Math.floor(diffSec / 60)}m ago`;
+        if (diffSec < 86400) return `Last online ${Math.floor(diffSec / 3600)}h ago`;
+        if (diffSec < 2592000) return `Last online ${Math.floor(diffSec / 86400)}d ago`;
+        try {
+            return `Last online ${new Date(ms).toLocaleDateString()}`;
+        } catch (_) {
+            return '';
+        }
+    }
+
     static buildModalMarkup() {
         const pplIcon = typeof UiIcons !== 'undefined' ? UiIcons.i('people', 'ui-icon-title') : '👥';
         const pplSm = typeof UiIcons !== 'undefined' ? UiIcons.i('people', 'ui-icon-sm') : '👥';
@@ -146,9 +161,11 @@ class FriendsCardRenderer {
             </div>
         ` : '';
 
+        const lastOnlineTxt = (!f.isOnline && !f.coopRoomCode) ? this.formatLastOnline(f.lastSeenAt) : '';
+        const offlineLabel = lastOnlineTxt ? `${this.esc(f.status)} · ${this.esc(lastOnlineTxt)}` : this.esc(f.status);
         const statusBadge = f.coopRoomCode
             ? `<span class="friend-room-pill">🎮 ROOM ${this.esc(f.coopRoomCode)}</span>`
-            : `<span class="friend-status-text">${this._ico(f.isOnline ? 'orb_green' : 'orb_dark', f.isOnline ? '🟢' : '⚫')} ${this.esc(f.status)}</span>`;
+            : `<span class="friend-status-text">${this._ico(f.isOnline ? 'orb_green' : 'orb_dark', f.isOnline ? '🟢' : '⚫')} ${f.isOnline ? this.esc(f.status) : offlineLabel}</span>`;
 
         const joinOrInviteBtn = f.coopRoomCode
             ? `<button class="friend-btn friend-btn-join" data-action="join-room" data-code="${this.esc(f.coopRoomCode)}">${this._ico('rocket', '🚀')} JOIN</button>`

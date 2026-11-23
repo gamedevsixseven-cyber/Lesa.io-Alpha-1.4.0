@@ -191,10 +191,20 @@ class CloudSaveService {
             this.lastKnownRootCoins = payload.coins;
             this.lastCloudData = payload;
 
-            await userDocRef.set({
+            const writePayload = {
                 ...payload,
                 lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
-            }, { merge: true });
+            };
+            try {
+                await userDocRef.set(writePayload, { merge: true });
+            } catch (writeErr) {
+                if (writeErr && writeErr.code === 'permission-denied') {
+                    const { uid: _u, email: _e, isAdmin: _a, wipedByDevAt: _w, ...safePayload } = writePayload;
+                    await userDocRef.set(safePayload, { merge: true });
+                } else {
+                    throw writeErr;
+                }
+            }
 
             if ((this._localMutationVersion || 0) === saveVer) {
                 this.hasUnflushedLocalMutation = false;

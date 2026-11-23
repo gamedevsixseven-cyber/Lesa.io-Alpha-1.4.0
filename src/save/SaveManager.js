@@ -144,7 +144,7 @@ class SaveManager {
 
         try {
             // Notify cloud sync if available (skip if hydrating auth or applying cloud data)
-            if (typeof window !== 'undefined' && window.cloudSave && window.cloudSave.currentUser) {
+            if (typeof window !== 'undefined' && window.cloudSave && window.cloudSave.isInitialized) {
                 if (window.cloudSave.isSyncingFromCloud || window.cloudSave.isHydratingAuth) {
                     return true;
                 }
@@ -153,6 +153,9 @@ class SaveManager {
                 } else if (typeof window.cloudSave.saveToCloud === 'function') {
                     window.cloudSave.saveToCloud(serialized);
                 }
+            }
+            if (typeof window !== 'undefined' && window.friendService && typeof window.friendService.syncMyProfile === 'function') {
+                window.friendService.syncMyProfile(true);
             }
 
             return true;

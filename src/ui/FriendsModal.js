@@ -187,6 +187,7 @@ class FriendsModal {
                 name: live.name || f.profile.name, tag: live.tag || f.profile.tag,
                 hero: live.hero || f.profile.hero, level: live.level || f.profile.level,
                 isOnline: Boolean(live.isOnline), status: live.currentStatus || (live.isOnline ? 'In Lobby' : 'Offline'),
+                lastSeenAt: Number(live.lastSeenAt || (f.profile && f.profile.lastSeenAt) || 0),
                 coopRoomCode: live.coopRoomCode || null,
                 highScore: live.highScore || 0, maxWave: live.maxWave || 1, totalKills: live.totalKills || 0,
                 endlessMaxWave: live.endlessMaxWave || 0, olympusMaxFloor: live.olympusMaxFloor || 0,

@@ -172,7 +172,17 @@ class FriendService {
         }
 
         try {
-            await db.collection('players').doc(me.uid).set(baseDoc, { merge: true });
+            await db.collection('players').doc(me.uid).set(baseDoc, { merge: true }).catch(async (firstErr) => {
+                if (firstErr && firstErr.code === 'permission-denied') {
+                    const { uid: _omitUid, ...safeDoc } = baseDoc;
+                    await db.collection('players').doc(me.uid).set(safeDoc, { merge: true });
+                } else throw firstErr;
+            });
+            if (cs && cs.lastCloudData && typeof cs.lastCloudData === 'object') {
+                cs.lastCloudData.playerName = me.name;
+                cs.lastCloudData.playerNameLower = me.nameLower;
+                if (cs.lastCloudData.player && typeof cs.lastCloudData.player === 'object') cs.lastCloudData.player.name = me.name;
+            }
             this.lastError = null;
             return true;
         } catch (err) {
@@ -183,15 +193,10 @@ class FriendService {
 
     markOfflineBeacon() {
         if (typeof window !== 'undefined' && window._lesaioSuppressUnloadSave) return;
-        const db = this.getDb();
-        const uid = this.getMyUid();
+        const db = this.getDb(), uid = this.getMyUid();
         if (!db || !uid) return;
         try {
-            db.collection('players').doc(uid).set({
-                online: false,
-                coopRoomCode: null,
-                lastSeenAt: Date.now()
-            }, { merge: true }).catch(() => {});
+            db.collection('players').doc(uid).set({ online: false, coopRoomCode: null, lastSeenAt: Date.now() }, { merge: true }).catch(() => {});
         } catch (_) {}
     }
 
@@ -317,8 +322,9 @@ class FriendService {
         const tag = data.friendTag || (typeof PlayerIdentity !== 'undefined' ? PlayerIdentity.getOnlineTag(uid) : '#HERO00');
         const level = parseInt(data.level || data.accountLevel || p.accountLevel || 1, 10) || 1;
         const hero = data.selectedHero || p.selectedHero || 'psanas';
-        const lastSeenAt = data.lastSeenAt || 0;
-        const isOnline = Boolean(data.online && lastSeenAt && (Date.now() - lastSeenAt < 120000));
+        const updMs = data.lastUpdated ? (typeof data.lastUpdated.toMillis === 'function' ? data.lastUpdated.toMillis() : (Number(data.lastUpdated.seconds) * 1000 || 0)) : 0;
+        const lastSeenAt = FriendService._maxNum(data.lastSeenAt, updMs, data.timestamp);
+        const isOnline = Boolean(data.online && data.lastSeenAt && (Date.now() - data.lastSeenAt < 120000));
         const maxWave = FriendService._maxNum(1, social.maxWave, pStats.maxWave, rStats.maxWave, data.maxWave);
         const endlessMaxWave = FriendService._maxNum(1, social.endlessMaxWave, pFeats.endlessMaxWave, cosRaw.endlessMaxWave, data.lbEndlessWave, maxWave);
 
@@ -416,16 +422,9 @@ class FriendService {
 
             // 2. Search by Name prefix (case-insensitive) + legacy exact/title-case name fallbacks
             if (!q.startsWith('#') && lowerName.length >= 2) {
-                queries.push(
-                    db.collection('players')
-                        .where('playerNameLower', '>=', lowerName)
-                        .where('playerNameLower', '<=', lowerName + '\uf8ff')
-                        .limit(10)
-                        .get()
-                );
+                queries.push(db.collection('players').where('playerNameLower', '>=', lowerName).where('playerNameLower', '<=', lowerName + '\uf8ff').limit(10).get());
                 const titleName = lowerName.charAt(0).toUpperCase() + lowerName.slice(1);
-                const variants = Array.from(new Set([q, lowerName, titleName]));
-                variants.forEach((v) => {
+                Array.from(new Set([q, lowerName, titleName])).forEach((v) => {
                     queries.push(db.collection('players').where('playerName', '==', v).limit(5).get());
                 });
                 queries.push(db.collection('players').where('player.name', '==', q).limit(5).get());
@@ -433,9 +432,7 @@ class FriendService {
 
             const results = await Promise.allSettled(queries);
             results.forEach((res) => {
-                if (res.status === 'fulfilled' && res.value && typeof res.value.forEach === 'function') {
-                    collect(res.value);
-                }
+                if (res.status === 'fulfilled' && res.value && typeof res.value.forEach === 'function') collect(res.value);
             });
 
             if (candidates.size === 0 && results.length > 0 && results.every(r => r.status === 'rejected')) {

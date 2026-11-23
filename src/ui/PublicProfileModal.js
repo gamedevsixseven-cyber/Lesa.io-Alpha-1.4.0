@@ -117,6 +117,13 @@ class PublicProfileModal {
             ? `<div class="pub-cosmetic-tags"><span class="pub-vip-pass-tag">👑 VIP PASS</span></div>`
             : '';
         const rel = (fs && p.uid && !p.isLocalStub) ? fs.getRelationState(p.uid) : { state: 'self' };
+        const isFriend = rel.state === 'accepted';
+        const friendLastOnline = (!p.isOnline && isFriend && typeof FriendsCardRenderer !== 'undefined' && typeof FriendsCardRenderer.formatLastOnline === 'function')
+            ? FriendsCardRenderer.formatLastOnline(p.lastSeenAt)
+            : '';
+        const statusChipText = p.isOnline
+            ? `● ${this._esc(p.currentStatus || 'Online')}`
+            : (friendLastOnline ? `● Offline · ${this._esc(friendLastOnline)}` : '● Offline');
         let socialBtnHtml = '';
         if (rel.state === 'none') {
             socialBtnHtml = `<button type="button" id="pub-prof-add-friend" class="comic-btn comic-btn-primary pub-social-btn">+ ADD FRIEND</button>`;
@@ -144,7 +151,7 @@ class PublicProfileModal {
                         </div>
                         <div class="pub-meta-row">
                             <span class="pub-tag-chip">${this._esc(p.tag || '#HERO00')}</span>
-                            <span class="pub-status-chip ${p.isOnline ? 'online' : ''}">${p.isOnline ? '● ' + this._esc(p.currentStatus || 'Online') : '● Offline'}</span>
+                            <span class="pub-status-chip ${p.isOnline ? 'online' : ''}">${statusChipText}</span>
                         </div>
                         ${vipTagHtml}
                     </div>

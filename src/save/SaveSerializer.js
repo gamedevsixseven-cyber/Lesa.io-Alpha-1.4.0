@@ -119,9 +119,9 @@ class SaveSerializer {
                 quests: questsData ? { date: questsDate, data: questsData } : null,
                 flags: this._readFlagsSnapshot(),
                 stats: {
-                    totalKills: state.player.stats.totalKills || 0,
-                    maxWave: state.player.stats.maxWave || 1,
-                    highScore: state.player.stats.highScore || 0,
+                    totalKills: Math.max(Number(state.player.stats.totalKills) || 0, ls ? (parseInt(ls.getItem('lesaio_total_kills') || '0', 10) || 0) : 0),
+                    maxWave: Math.max(Number(state.player.stats.maxWave) || 1, ls ? (parseInt(ls.getItem('lesaio_max_wave') || '1', 10) || 1) : 1),
+                    highScore: Math.max(Number(state.player.stats.highScore) || 0, ls ? (parseInt(ls.getItem('lesaio_highscore') || '0', 10) || 0) : 0),
                     totalFatmirs: state.player.stats.totalFatmirs || 0,
                     totalCasillas: state.player.stats.totalCasillas || 0,
                     totalSkarmogyftos: state.player.stats.totalSkarmogyftos || 0,
@@ -525,9 +525,11 @@ class SaveSerializer {
         const fTagClean = identity.friendTagClean || 'HERO00';
 
         const statsObj = inputPlayer.stats || basePlayer.stats || {};
-        const statsHigh = Math.max(0, Number(statsObj.highScore) || 0, Number(input.highScore) || 0);
-        const statsKills = Math.max(0, Number(statsObj.totalKills) || 0);
-        const statsWave = Math.max(1, Number(statsObj.maxWave) || 1, Number(input.maxWave) || 1);
+        const statsHigh = Math.max(0, Number(statsObj.highScore) || 0, Number(input.highScore) || 0, ls ? (parseInt(ls.getItem('lesaio_highscore') || '0', 10) || 0) : 0);
+        const statsKills = Math.max(0, Number(statsObj.totalKills) || 0, ls ? (parseInt(ls.getItem('lesaio_total_kills') || '0', 10) || 0) : 0);
+        const statsWave = Math.max(1, Number(statsObj.maxWave) || 1, Number(input.maxWave) || 1, ls ? (parseInt(ls.getItem('lesaio_max_wave') || '1', 10) || 1) : 1);
+        const endlessWave = Math.max(statsWave, Number((basePlayer.combatFeats && basePlayer.combatFeats.endlessMaxWave) || 0), Number((inputPlayer.combatFeats && inputPlayer.combatFeats.endlessMaxWave) || 0));
+        const olympusFloor = Math.max(0, Number((basePlayer.combatFeats && basePlayer.combatFeats.olympusMaxFloor) || 0), Number((inputPlayer.combatFeats && inputPlayer.combatFeats.olympusMaxFloor) || 0));
 
         let result = {
             ...cleanRoot,
@@ -544,8 +546,9 @@ class SaveSerializer {
             highScore: statsHigh,
             maxWave: statsWave,
             lbHighScore: statsHigh,
-            lbEndlessWave: Math.max(statsWave, Number((basePlayer.combatFeats && basePlayer.combatFeats.endlessMaxWave) || 0)),
+            lbEndlessWave: endlessWave,
             lbTotalKills: statsKills,
+            socialStats: { highScore: statsHigh, maxWave: statsWave, totalKills: statsKills, endlessMaxWave: endlessWave, olympusMaxFloor: olympusFloor },
             skillLevels: pSkills,
             player: {
                 ...basePlayer,

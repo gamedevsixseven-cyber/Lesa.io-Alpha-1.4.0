@@ -147,6 +147,16 @@ class LeaderboardModal {
 
         const byUid = new Map();
         const selfEntry = this._buildLocalEntry();
+        const cs = window.cloudSave;
+        const selfIds = new Set([
+            selfEntry.uid,
+            typeof localStorage !== 'undefined' ? localStorage.getItem('lesaio_player_uid') : '',
+            typeof localStorage !== 'undefined' ? localStorage.getItem('lesaio_google_uid') : '',
+            (cs && cs.currentUser && cs.currentUser.uid) ? cs.currentUser.uid : ''
+        ].filter(Boolean));
+        const selfEmail = (cs && typeof cs.getEffectivePlayerEmail === 'function')
+            ? String(cs.getEffectivePlayerEmail() || '').trim().toLowerCase()
+            : '';
         byUid.set(selfEntry.uid, selfEntry);
 
         if (db) {
@@ -162,21 +172,48 @@ class LeaderboardModal {
                 snaps.forEach((snap) => {
                     if (!snap || typeof snap.forEach !== 'function') return;
                     snap.forEach((doc) => {
-                        const formatted = fs._formatPlayerDoc(doc.id, doc.data() || {});
-                        if (formatted.uid === selfEntry.uid) {
-                            byUid.set(formatted.uid, {
+                        const raw = doc.data() || {};
+                        const formatted = fs._formatPlayerDoc(raw.uid || doc.id, raw);
+                        const docEmail = String(raw.email || '').trim().toLowerCase();
+                        const isSelfDoc = selfIds.has(doc.id)
+                            || selfIds.has(formatted.uid)
+                            || (selfEntry.tag && formatted.tag === selfEntry.tag)
+                            || (selfEmail && docEmail && docEmail === selfEmail);
+
+                        if (isSelfDoc) {
+                            const curSelf = byUid.get(selfEntry.uid) || selfEntry;
+                            byUid.set(selfEntry.uid, {
                                 ...formatted,
-                                ...selfEntry,
-                                level: Math.max(Number(formatted.level) || 1, Number(selfEntry.level) || 1),
-                                highScore: Math.max(Number(formatted.highScore) || 0, Number(selfEntry.highScore) || 0),
-                                maxWave: Math.max(Number(formatted.maxWave) || 1, Number(selfEntry.maxWave) || 1),
-                                endlessMaxWave: Math.max(Number(formatted.endlessMaxWave) || 0, Number(selfEntry.endlessMaxWave) || 0, Number(formatted.maxWave) || 1, Number(selfEntry.maxWave) || 1),
-                                olympusMaxFloor: Math.max(Number(formatted.olympusMaxFloor) || 0, Number(selfEntry.olympusMaxFloor) || 0),
-                                totalKills: Math.max(Number(formatted.totalKills) || 0, Number(selfEntry.totalKills) || 0),
+                                ...curSelf,
+                                uid: selfEntry.uid,
+                                name: selfEntry.name,
+                                tag: selfEntry.tag,
+                                level: Math.max(Number(formatted.level) || 1, Number(curSelf.level) || 1),
+                                highScore: Math.max(Number(formatted.highScore) || 0, Number(curSelf.highScore) || 0),
+                                maxWave: Math.max(Number(formatted.maxWave) || 1, Number(curSelf.maxWave) || 1),
+                                endlessMaxWave: Math.max(Number(formatted.endlessMaxWave) || 0, Number(curSelf.endlessMaxWave) || 0, Number(formatted.maxWave) || 1, Number(curSelf.maxWave) || 1),
+                                olympusMaxFloor: Math.max(Number(formatted.olympusMaxFloor) || 0, Number(curSelf.olympusMaxFloor) || 0),
+                                totalKills: Math.max(Number(formatted.totalKills) || 0, Number(curSelf.totalKills) || 0),
+                                isSelf: true,
                                 isLocalStub: false
                             });
                         } else {
-                            byUid.set(formatted.uid, formatted);
+                            const existing = byUid.get(formatted.uid);
+                            if (existing) {
+                                const newer = (Number(formatted.lastSeenAt) || 0) >= (Number(existing.lastSeenAt) || 0);
+                                byUid.set(formatted.uid, {
+                                    ...(newer ? existing : formatted),
+                                    ...(newer ? formatted : existing),
+                                    level: Math.max(Number(formatted.level) || 1, Number(existing.level) || 1),
+                                    highScore: Math.max(Number(formatted.highScore) || 0, Number(existing.highScore) || 0),
+                                    maxWave: Math.max(Number(formatted.maxWave) || 1, Number(existing.maxWave) || 1),
+                                    endlessMaxWave: Math.max(Number(formatted.endlessMaxWave) || 0, Number(existing.endlessMaxWave) || 0),
+                                    olympusMaxFloor: Math.max(Number(formatted.olympusMaxFloor) || 0, Number(existing.olympusMaxFloor) || 0),
+                                    totalKills: Math.max(Number(formatted.totalKills) || 0, Number(existing.totalKills) || 0)
+                                });
+                            } else {
+                                byUid.set(formatted.uid, formatted);
+                            }
                         }
                     });
                 });
