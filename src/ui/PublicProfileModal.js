@@ -65,7 +65,7 @@ class PublicProfileModal {
                         level: Math.max(Number(merged.level) || 1, Number(formatted.level) || 1),
                         highScore: Math.max(Number(merged.highScore) || 0, Number(formatted.highScore) || 0),
                         maxWave: Math.max(Number(merged.maxWave) || 1, Number(formatted.maxWave) || 1),
-                        endlessMaxWave: Math.max(Number(merged.endlessMaxWave) || 0, Number(formatted.endlessMaxWave) || 0, Number(merged.maxWave) || 1, Number(formatted.maxWave) || 1),
+                        endlessMaxWave: Math.max(Number(merged.endlessMaxWave) || 0, Number(formatted.endlessMaxWave) || 0),
                         olympusMaxFloor: Math.max(Number(merged.olympusMaxFloor) || 0, Number(formatted.olympusMaxFloor) || 0),
                         totalKills: Math.max(Number(merged.totalKills) || 0, Number(formatted.totalKills) || 0)
                     };
@@ -162,7 +162,7 @@ class PublicProfileModal {
 
                 <div class="pub-stats-grid">
                     <div class="pub-stat-pill"><span>🏆 High Score</span><strong>${Number(p.highScore || 0).toLocaleString()}</strong></div>
-                    <div class="pub-stat-pill"><span>🔥 Endless Best</span><strong>Wave ${Math.max(Number(p.endlessMaxWave) || 0, Number(p.maxWave) || 0, 1)}</strong></div>
+                    <div class="pub-stat-pill"><span>🔥 Endless Best</span><strong>Wave ${Math.max(0, Number(p.endlessMaxWave) || 0)}</strong></div>
                     <div class="pub-stat-pill"><span>⚔️ Total Kills</span><strong>${Number(p.totalKills || 0).toLocaleString()}</strong></div>
                     <div class="pub-stat-pill"><span>⚡ Olympus Peak</span><strong>Floor ${Number(p.olympusMaxFloor || 0)}/5</strong></div>
                 </div>

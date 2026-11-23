@@ -404,7 +404,7 @@ class ProfileManager {
                         olympusMaxFloor: me.olympusMaxFloor
                     },
                     lbHighScore: me.highScore,
-                    lbEndlessWave: Math.max(me.endlessMaxWave || 0, me.maxWave || 1),
+                    lbEndlessWave: Math.max(0, Number(me.endlessMaxWave) || 0),
                     lbTotalKills: me.totalKills
                 });
             }

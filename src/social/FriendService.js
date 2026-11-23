@@ -159,7 +159,8 @@ class FriendService {
             const lvl = FriendService._maxNum(1, me.level, !wiped && cp && (cp.accountLevel || cp.level), !wiped && c && (c.accountLevel || c.level));
             const hs = FriendService._maxNum(0, me.highScore, csStats.highScore, cSocial.highScore, !wiped && c && (c.lbHighScore || c.highScore));
             const mw = FriendService._maxNum(1, me.maxWave, csStats.maxWave, cSocial.maxWave, !wiped && c && c.maxWave);
-            const ew = FriendService._maxNum(0, me.endlessMaxWave, cSocial.endlessMaxWave, !wiped && c && c.lbEndlessWave);
+            const cpEndless = (!wiped && cp && cp.combatFeats && typeof cp.combatFeats.endlessMaxWave === 'number') ? cp.combatFeats.endlessMaxWave : 0;
+            const ew = FriendService._maxNum(0, me.endlessMaxWave, cpEndless, mw > 20 ? mw : 0);
             const tk = FriendService._maxNum(0, me.totalKills, csStats.totalKills, cSocial.totalKills, !wiped && c && c.lbTotalKills);
             Object.assign(baseDoc, {
                 friendTag: me.tag, friendTagClean: me.tagClean,
@@ -167,7 +168,7 @@ class FriendService {
                 accountLevel: lvl, level: lvl, selectedHero: me.selectedHero,
                 socialStats: { highScore: hs, maxWave: mw, totalKills: tk, endlessMaxWave: ew, olympusMaxFloor: me.olympusMaxFloor },
                 cosmetics: me.cosmetics, lbHighScore: hs,
-                lbEndlessWave: Math.max(ew || 0, mw || 1), lbTotalKills: tk
+                lbEndlessWave: ew, lbTotalKills: tk
             });
         }
 
@@ -326,7 +327,10 @@ class FriendService {
         const lastSeenAt = FriendService._maxNum(data.lastSeenAt, updMs, data.timestamp);
         const isOnline = Boolean(data.online && data.lastSeenAt && (Date.now() - data.lastSeenAt < 120000));
         const maxWave = FriendService._maxNum(1, social.maxWave, pStats.maxWave, rStats.maxWave, data.maxWave);
-        const endlessMaxWave = FriendService._maxNum(1, social.endlessMaxWave, pFeats.endlessMaxWave, cosRaw.endlessMaxWave, data.lbEndlessWave, maxWave);
+        const hasAuthFeats = Boolean(p.combatFeats && typeof p.combatFeats.endlessMaxWave === 'number');
+        const endlessMaxWave = hasAuthFeats
+            ? FriendService._maxNum(0, pFeats.endlessMaxWave, maxWave > 20 ? maxWave : 0)
+            : FriendService._maxNum(0, (social.endlessMaxWave !== maxWave || maxWave > 20) ? social.endlessMaxWave : 0, (data.lbEndlessWave !== maxWave || maxWave > 20) ? data.lbEndlessWave : 0, maxWave > 20 ? maxWave : 0);
 
         return {
             uid, name, tag, tagClean: (data.friendTagClean || tag.replace(/[^A-Z0-9]/g, '')).toUpperCase(),

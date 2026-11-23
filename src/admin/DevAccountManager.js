@@ -37,7 +37,7 @@ class DevAccountManager {
             coins: parseInt(p.coins ?? data.coins ?? data.gold ?? 0, 10) || 0,
             gems: parseInt(p.gems ?? data.diamonds ?? data.gems ?? 0, 10) || 0,
             highScore: Math.max(Number(data.lbHighScore) || 0, Number(s.highScore) || 0, Number(social.highScore) || 0, Number(data.highScore) || 0),
-            endlessWave: Math.max(Number(data.lbEndlessWave) || 0, Number(social.endlessMaxWave) || 0, Number(s.maxWave) || 0, Number(data.maxWave) || 1),
+            endlessWave: Math.max(0, Number(p.combatFeats && p.combatFeats.endlessMaxWave) || 0, Number(s.maxWave) > 20 ? Number(s.maxWave) : 0),
             totalKills: Math.max(Number(data.lbTotalKills) || 0, Number(s.totalKills) || 0, Number(social.totalKills) || 0),
             hasVipPass: Boolean((p.battlePass && p.battlePass.hasPremium) || (data.battlePass && data.battlePass.hasPremium)),
             pendingDevGiftsCount: Array.isArray(data.devGifts) ? data.devGifts.length : 0,

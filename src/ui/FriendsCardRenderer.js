@@ -151,7 +151,7 @@ class FriendsCardRenderer {
         const stateCls = f.coopRoomCode ? 'is-in-room' : (f.isOnline ? 'is-online' : 'is-offline');
         card.className = `friend-card ${stateCls} ${opts.isExpanded ? 'is-expanded' : ''}`;
 
-        const endlessBest = Math.max(Number(f.endlessMaxWave) || 0, Number(f.maxWave) || 0, 1);
+        const endlessBest = Math.max(0, Number(f.endlessMaxWave) || 0);
         const statsHtml = opts.isExpanded ? `
             <div class="friend-stats-grid">
                 <div class="friend-stat-pill"><span>${this._ico('trophy', '🏆')} Best Score</span><strong>${Number(f.highScore || 0).toLocaleString()}</strong></div>
@@ -307,7 +307,7 @@ class FriendsCardRenderer {
                         <div class="friend-sub">
                             ${this._ico(u.isOnline ? 'orb_green' : 'orb_dark', u.isOnline ? '🟢' : '⚫')} ${u.isOnline ? 'Online' : 'Offline'}
                             · 🏆 ${Number(u.highScore || 0).toLocaleString()}
-                            · 🔥 W${Math.max(Number(u.endlessMaxWave) || 0, Number(u.maxWave) || 0, 1)}
+                            · 🔥 W${Math.max(0, Number(u.endlessMaxWave) || 0)}
                         </div>
                     </div>
                 </div>

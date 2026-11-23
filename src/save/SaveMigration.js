@@ -503,7 +503,7 @@ class SaveMigration {
             highScore: Math.max(Number(payload.highScore) || 0, mergedStats.highScore),
             maxWave: Math.max(Number(payload.maxWave) || 1, mergedStats.maxWave),
             lbHighScore: Math.max(Number(payload.lbHighScore) || 0, mergedStats.highScore),
-            lbEndlessWave: Math.max(Number(payload.lbEndlessWave) || 1, mergedStats.maxWave),
+            lbEndlessWave: Math.max(0, Number(mergedPlayer.combatFeats && mergedPlayer.combatFeats.endlessMaxWave) || 0, mergedStats.maxWave > 20 ? mergedStats.maxWave : 0),
             lbTotalKills: Math.max(Number(payload.lbTotalKills) || 0, mergedStats.totalKills),
             player: mergedPlayer
         };

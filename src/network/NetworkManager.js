@@ -130,9 +130,12 @@ class NetworkManager {
                     return;
                 }
                 const matchInProgress = (typeof window !== 'undefined' && window.gameInstance && window.gameInstance.coopSession && window.gameInstance.state === 'PLAYING');
-                if ((this.conn && this.conn.open) || matchInProgress) {
+                if (matchInProgress || (this.conn && this.conn.open && this.connected)) {
                     connection.close();
                     return;
+                }
+                if (this.conn && this.conn !== connection) {
+                    try { this.conn.close(); } catch (_) {}
                 }
                 this.conn = connection;
                 this.setupConnectionHandlers();
@@ -223,7 +226,7 @@ class NetworkManager {
                             if (this.onErrorCallback) this.onErrorCallback('Room not found or connection timed out');
                         }
                     }
-                }, 5000);
+                }, 8500);
             };
 
             this.peer.on('open', () => {

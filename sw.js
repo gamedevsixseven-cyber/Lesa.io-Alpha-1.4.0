@@ -4,8 +4,8 @@
  * from GitHub Pages instead of stale cached app files, while keeping offline fallback.
  */
 
-const CACHE_NAME = 'lesaio-shell-v1.0.3';
-const ASSET_CACHE = 'lesaio-assets-v1.0.3';
+const CACHE_NAME = 'lesaio-shell-v1.0.5';
+const ASSET_CACHE = 'lesaio-assets-v1';
 
 self.addEventListener('install', (event) => {
     event.waitUntil(self.skipWaiting());
@@ -47,7 +47,7 @@ self.addEventListener('fetch', (event) => {
             caches.open(ASSET_CACHE).then((cache) => {
                 const netFetch = () => fetch(req).then((res) => {
                     if (res && res.status === 200 && res.type === 'basic') {
-                        cache.put(isRetry ? cleanReq : req, res.clone()).catch(() => {});
+                        cache.put(isRetry ? cleanReq : req, res.clone()).catch(() => { });
                     }
                     return res;
                 });
@@ -56,7 +56,7 @@ self.addEventListener('fetch', (event) => {
                 }
                 return cache.match(req).then((cached) => {
                     if (cached) {
-                        netFetch().catch(() => {});
+                        netFetch().catch(() => { });
                         return cached;
                     }
                     return netFetch();
@@ -73,7 +73,7 @@ self.addEventListener('fetch', (event) => {
             .then((res) => {
                 if (res && res.status === 200 && res.type === 'basic') {
                     const copy = res.clone();
-                    caches.open(CACHE_NAME).then((c) => c.put(req, copy)).catch(() => {});
+                    caches.open(CACHE_NAME).then((c) => c.put(req, copy)).catch(() => { });
                 }
                 return res;
             })

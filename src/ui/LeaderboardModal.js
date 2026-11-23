@@ -186,6 +186,9 @@ class LeaderboardModal {
 
                         const formatted = fs._formatPlayerDoc(raw.uid || doc.id, raw);
                         const isSelfDoc = (doc.id === selfEntry.uid) || (formatted.uid === selfEntry.uid);
+                        if ((isSelfDoc || (isPrimaryDev && isGuestDoc)) && typeof raw.lbEndlessWave === 'number' && raw.lbEndlessWave !== formatted.endlessMaxWave) {
+                            doc.ref.update({ lbEndlessWave: formatted.endlessMaxWave, 'socialStats.endlessMaxWave': formatted.endlessMaxWave }).catch(() => {});
+                        }
 
                         if (isSelfDoc) {
                             const curSelf = byUid.get(selfEntry.uid) || selfEntry;
@@ -198,7 +201,7 @@ class LeaderboardModal {
                                 level: Math.max(Number(formatted.level) || 1, Number(curSelf.level) || 1),
                                 highScore: Math.max(Number(formatted.highScore) || 0, Number(curSelf.highScore) || 0),
                                 maxWave: Math.max(Number(formatted.maxWave) || 1, Number(curSelf.maxWave) || 1),
-                                endlessMaxWave: Math.max(Number(formatted.endlessMaxWave) || 0, Number(curSelf.endlessMaxWave) || 0, Number(formatted.maxWave) || 1, Number(curSelf.maxWave) || 1),
+                                endlessMaxWave: Math.max(Number(formatted.endlessMaxWave) || 0, Number(curSelf.endlessMaxWave) || 0),
                                 olympusMaxFloor: Math.max(Number(formatted.olympusMaxFloor) || 0, Number(curSelf.olympusMaxFloor) || 0),
                                 totalKills: Math.max(Number(formatted.totalKills) || 0, Number(curSelf.totalKills) || 0),
                                 isSelf: true,
@@ -238,7 +241,7 @@ class LeaderboardModal {
     _getMetricValue(entry) {
         if (!entry) return 0;
         if (this._activeTab === 'endless') {
-            return Math.max(Number(entry.endlessMaxWave) || 0, Number(entry.maxWave) || 0, 1);
+            return Math.max(0, Number(entry.endlessMaxWave) || 0);
         }
         if (this._activeTab === 'kills') {
             return Number(entry.totalKills) || 0;
