@@ -13,6 +13,7 @@ class ClansModal {
         this.confirmLeave = false;
         this.confirmTransferUid = null;
         this.draft = { name: '', tag: '', motto: '', emblemId: 'spartan_shield', colorId: 'crimson', joinMode: 'open' };
+        this._lastRenderedTab = null;
         this.modal = null;
 
         if (typeof ChatService !== 'undefined') ChatService.boot();
@@ -166,14 +167,18 @@ class ClansModal {
 
         const body = document.getElementById('clans-body');
         if (!body) return;
-        const prevScroll = body.scrollTop;
+        const tabChanged = this._lastRenderedTab !== this.activeTab;
+        this._lastRenderedTab = this.activeTab;
+        const prevScroll = tabChanged ? 0 : body.scrollTop;
+        const isChatTab = Boolean(clan && this.activeTab === 'chat' && typeof ClanChatView !== 'undefined');
+        body.classList.toggle('is-chat-tab', isChatTab);
 
         if (!clan) {
             if (this.activeTab === 'create') body.innerHTML = ClanCardRenderer.renderCreateTab(this.draft);
             else if (this.activeTab === 'bounties_preview') body.innerHTML = ClanCardRenderer.renderBountiesTab(null, this.service, true);
             else body.innerHTML = ClanCardRenderer.renderBrowseTab(this.service.browseList, this.browseQuery, false, this.activeTab === 'top_clans');
         } else {
-            if (this.activeTab === 'chat' && typeof ClanChatView !== 'undefined') { ClanChatView.render(body, clan, window.chatService, this); return; }
+            if (isChatTab) { ClanChatView.render(body, clan, window.chatService, this); return; }
             if (this.activeTab === 'vault') body.innerHTML = ClanCardRenderer.renderVaultTab(clan, this.service);
             else if (this.activeTab === 'bounties') body.innerHTML = ClanCardRenderer.renderBountiesTab(clan, this.service, false);
             else if (this.activeTab === 'shop') body.innerHTML = ClanCardRenderer.renderShopTab(this.service);

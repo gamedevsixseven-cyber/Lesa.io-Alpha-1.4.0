@@ -43,6 +43,7 @@ class ClanChatView {
         const input = document.getElementById('clan-chat-input');
         const sendBtn = document.getElementById('clan-chat-send-btn');
         if (form && input) {
+            const isTouchDevice = typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
             form.addEventListener('submit', async (e) => {
                 e.preventDefault();
                 if (!chatService) return;
@@ -61,9 +62,9 @@ class ClanChatView {
                 input.value = '';
                 if (window.soundEngine) window.soundEngine.playSelect();
                 this.paintMessages(chatService, true);
-                input.focus();
+                if (!isTouchDevice) input.focus();
             });
-            setTimeout(() => input.focus(), 35);
+            if (!isTouchDevice) setTimeout(() => input.focus(), 35);
         }
     }
 

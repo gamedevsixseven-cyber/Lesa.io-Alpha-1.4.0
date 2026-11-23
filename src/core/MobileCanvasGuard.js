@@ -91,6 +91,7 @@ class MobileCanvasGuard {
             if (!g) return;
             this.ensureContextAlive(g);
             if (g.arena && typeof g.arena.renderGroundCache === 'function') g.arena.renderGroundCache();
+            if (g.state === 'PLAYING' && this._wakeLockWanted) this.requestWakeLock();
         };
         document.addEventListener('visibilitychange', recoverSurfaces);
         window.addEventListener('pageshow', recoverSurfaces);
@@ -182,6 +183,54 @@ class MobileCanvasGuard {
         this.bindRecoveryListeners(game);
         if (typeof MobilePerf !== 'undefined') MobilePerf.applyCanvasSettings(game, true);
         return !!game.ctx;
+    }
+
+    /**
+     * Keep mobile display awake during active gameplay using the Screen Wake Lock API,
+     * safely guarding against hidden tabs, race toggles, and unsupported WebViews.
+     */
+    static async requestWakeLock() {
+        if (typeof navigator === 'undefined' || !navigator.wakeLock || typeof navigator.wakeLock.request !== 'function') return false;
+        if (typeof document !== 'undefined' && document.visibilityState && document.visibilityState !== 'visible') return false;
+        if (this._wakeLock && !this._wakeLock.released) return true;
+        if (this._wakeLockPending) return false;
+        this._wakeLockPending = true;
+        try {
+            const sentinel = await navigator.wakeLock.request('screen');
+            if (!this._wakeLockWanted) {
+                if (sentinel && typeof sentinel.release === 'function') sentinel.release().catch(() => {});
+                return false;
+            }
+            this._wakeLock = sentinel;
+            if (sentinel && typeof sentinel.addEventListener === 'function') {
+                sentinel.addEventListener('release', () => {
+                    if (this._wakeLock === sentinel) this._wakeLock = null;
+                });
+            }
+            return true;
+        } catch {
+            return false;
+        } finally {
+            this._wakeLockPending = false;
+        }
+    }
+
+    static releaseWakeLock() {
+        this._wakeLockWanted = false;
+        const sentinel = this._wakeLock;
+        this._wakeLock = null;
+        if (sentinel && typeof sentinel.release === 'function') {
+            try { sentinel.release().catch(() => {}); } catch {}
+        }
+    }
+
+    static syncWakeLock(shouldKeepAwake) {
+        if (shouldKeepAwake) {
+            this._wakeLockWanted = true;
+            this.requestWakeLock();
+        } else {
+            this.releaseWakeLock();
+        }
     }
 }
 

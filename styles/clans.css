@@ -7,6 +7,7 @@
 #clans-modal.modal-overlay {
     position: fixed; inset: 0; background: rgba(15, 23, 42, 0.78); backdrop-filter: blur(6px);
     display: flex; align-items: center; justify-content: center; z-index: 9996; padding: 12px;
+    touch-action: pan-y; overscroll-behavior: contain;
 }
 #clans-modal.hidden { display: none !important; }
 
@@ -17,6 +18,7 @@
     width: 96vw; max-width: 840px; max-height: 90vh; max-height: 90dvh;
     display: flex; flex-direction: column; padding: 16px 18px; color: #1e272e;
     font-family: 'Fredoka', 'Outfit', sans-serif; position: relative; box-sizing: border-box; overflow: hidden;
+    touch-action: pan-y; overscroll-behavior: contain;
 }
 
 .clans-header {
@@ -110,7 +112,14 @@
 .clans-feedback.is-error { background: #fee2e2; color: #7f1d1d; }
 .clans-feedback.hidden { display: none; }
 
-.clans-body { flex: 1 1 auto; min-height: 220px; overflow-y: auto; padding: 2px 4px 6px 2px; touch-action: pan-y; }
+.clans-body {
+    flex: 1 1 auto; min-height: 220px; overflow-y: auto; overflow-x: hidden;
+    padding: 2px 4px 6px 2px; touch-action: pan-y; overscroll-behavior-y: contain;
+    -webkit-overflow-scrolling: touch;
+}
+.clans-body.is-chat-tab {
+    overflow: hidden; display: flex; flex-direction: column; padding-bottom: 2px;
+}
 .clans-body::-webkit-scrollbar { width: 8px; }
 .clans-body::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 8px; border: 2px solid #1e272e; }
 
@@ -237,22 +246,25 @@
 .clan-chat-wrap {
     display: flex; flex-direction: column; gap: 8px; height: 100%; min-height: 290px;
 }
+.clans-body.is-chat-tab .clan-chat-wrap { flex: 1 1 auto; min-height: 0; }
 .clan-chat-pinned {
     display: flex; align-items: center; justify-content: space-between; gap: 8px;
     background: #fff7d6; border: 2.5px solid #1e272e; border-radius: 13px; padding: 7px 11px;
     font-size: 12px; font-weight: 800; color: #1e272e; box-shadow: 0 3px 0 #1e272e; flex-shrink: 0;
 }
-.clan-chat-pinned-left { display: flex; align-items: center; gap: 7px; min-width: 0; }
+.clan-chat-pinned-left { display: flex; align-items: center; gap: 7px; min-width: 0; flex: 1; }
 .clan-chat-pinned-left span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .clan-chat-count-pill {
     display: inline-flex; align-items: center; gap: 4px; background: #1e272e; color: #fed330;
     border-radius: 999px; padding: 2px 9px; font-size: 11px; font-weight: 900; flex-shrink: 0;
 }
 .clan-chat-stream {
-    flex: 1 1 auto; min-height: 170px; max-height: 310px; overflow-y: auto;
+    flex: 1 1 auto; min-height: 170px; max-height: 310px; overflow-y: auto; overflow-x: hidden;
+    touch-action: pan-y; overscroll-behavior-y: contain; -webkit-overflow-scrolling: touch;
     background: #f9efd4; border: 3px solid #1e272e; border-radius: 16px; padding: 10px;
     display: flex; flex-direction: column; gap: 8px; box-shadow: inset 0 2px 6px rgba(30,39,46,0.1);
 }
+.clans-body.is-chat-tab .clan-chat-stream { min-height: 110px; max-height: none; }
 .clan-chat-empty {
     margin: auto; text-align: center; color: #475569; font-size: 13.5px; font-weight: 700;
     display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 20px;
@@ -282,8 +294,165 @@
 .clan-chat-input { flex: 1; }
 .clan-chat-send-btn { display: inline-flex; align-items: center; gap: 5px; flex-shrink: 0; padding: 8px 14px; }
 
-@media (max-width: 720px) {
+@media (pointer: coarse), (max-width: 720px), (max-height: 540px) {
+    #clans-modal.modal-overlay {
+        padding: 4px; touch-action: pan-y; overscroll-behavior: contain;
+        backdrop-filter: none; -webkit-backdrop-filter: none;
+    }
+    .clans-panel {
+        width: min(96vw, 680px); max-width: 96vw;
+        max-height: 94vh; max-height: 94dvh;
+        padding: 8px 10px; border-width: 2.5px; border-radius: 15px;
+        box-shadow: 4px 4px 0 #1e272e, 0 14px 32px rgba(0, 0, 0, 0.55);
+        touch-action: pan-y; overscroll-behavior: contain;
+    }
+
+    .clans-header {
+        padding: 5px 40px 5px 10px; margin-bottom: 6px;
+        border-width: 2.5px; border-radius: 12px; box-shadow: 0 2.5px 0 #1e272e; gap: 6px;
+    }
+    .clans-title-row { gap: 6px; }
+    .clans-title {
+        font-size: 1.02rem; -webkit-text-stroke: 1.1px #1e272e;
+        text-shadow: 1.5px 1.5px 0 #1e272e; gap: 5px;
+    }
+    .clans-crest-pill { font-size: 10px; padding: 2px 7px; border-width: 1.5px; }
+    .clans-sync-btn {
+        padding: 3px 8px; font-size: 0.72rem; border-width: 2px;
+        border-radius: 8px; box-shadow: 0 2px 0 #1e272e;
+    }
+    #clans-close-btn.modal-close-x-btn {
+        width: 28px; height: 28px; top: 4px; right: 5px; font-size: 0.9rem;
+    }
+
+    .clan-hero-banner {
+        padding: 6px 9px; margin-bottom: 6px; gap: 8px;
+        border-width: 2.5px; border-radius: 12px; box-shadow: 0 2.5px 0 #1e272e;
+    }
+    .clan-hero-left { gap: 8px; flex: 1 1 180px; }
+    .clan-emblem-badge {
+        width: 36px; height: 36px; border-radius: 10px; border-width: 2px;
+        box-shadow: 0 2px 0 #1e272e;
+    }
+    .clan-emblem-badge img { width: 21px; height: 21px; }
+    .clan-tag-badge {
+        font-size: 0.72rem; padding: 1px 5px; border-width: 1.5px; border-radius: 6px;
+    }
+    .clan-hero-name {
+        font-size: 0.95rem; -webkit-text-stroke: 0.85px #1e272e;
+        text-shadow: 1.5px 1.5px 0 #1e272e;
+    }
+    .clan-lvl-pill { font-size: 0.66rem; padding: 1px 6px; border-width: 1.5px; }
+    .clan-motto-line {
+        font-size: 10.5px; margin-top: 1px; white-space: nowrap;
+        overflow: hidden; text-overflow: ellipsis;
+    }
+    .clan-xp-wrap { margin-top: 3px; max-width: 240px; }
+    .clan-xp-bar-bg { height: 8px; border-width: 1.5px; }
+    .clan-xp-text { font-size: 9.5px; margin-top: 1px; }
+    .clan-hero-stats { gap: 4px; }
+    .clan-mini-stat {
+        padding: 2px 6px; min-width: 48px; border-width: 2px;
+        border-radius: 8px; box-shadow: 0 2px 0 #1e272e;
+    }
+    .clan-mini-stat small { font-size: 7.5px; }
+    .clan-mini-stat strong { font-size: 0.78rem; }
+    .clan-cost-chip { font-size: 10.5px; padding: 2px 7px; border-width: 1.5px; border-radius: 8px; }
+
+    /* Single-row horizontally swipeable tabs prevent multi-row vertical crowding */
+    .clans-tabs {
+        flex-wrap: nowrap; overflow-x: auto; overflow-y: hidden;
+        gap: 5px; margin-bottom: 6px; padding: 1px 1px 4px 1px;
+        touch-action: pan-x pan-y; overscroll-behavior-x: contain;
+        -webkit-overflow-scrolling: touch; scrollbar-width: none;
+    }
+    .clans-tabs::-webkit-scrollbar { display: none; }
+    .clan-tab-btn {
+        flex: 0 0 auto; white-space: nowrap; padding: 5px 9px; font-size: 0.72rem;
+        border-width: 2px; border-radius: 9px; box-shadow: 0 2px 0 #1e272e; gap: 4px;
+        touch-action: pan-x pan-y;
+    }
+    .clan-tab-badge { min-width: 15px; height: 15px; font-size: 9px; border-width: 1.5px; }
+
+    .clans-feedback {
+        font-size: 11px; padding: 5px 8px; margin-bottom: 6px;
+        border-width: 2px; border-radius: 9px; box-shadow: 0 2px 0 #1e272e;
+    }
+
+    /* CRITICAL mobile fix: min-height: 0 + pan-y on all descendants prevents flex/scroll lock */
+    .clans-body {
+        flex: 1 1 auto; min-height: 0 !important;
+        overflow-y: auto; overflow-x: hidden;
+        touch-action: pan-y; overscroll-behavior-y: contain; -webkit-overflow-scrolling: touch;
+        padding: 1px 4px 16px 2px;
+    }
+    .clans-body::-webkit-scrollbar { width: 5px; }
+    .clans-body * { touch-action: pan-y; }
+    .clans-body.is-chat-tab { overflow: hidden; padding-bottom: 2px; }
+    #clans-modal button { touch-action: manipulation; }
+    #clans-modal .clans-tabs button { touch-action: pan-x pan-y; }
+
+    /* >= 16px font-size prevents iOS Safari forced viewport auto-zoom on focus */
+    .clan-input {
+        font-size: 16px; min-width: 0; max-width: 100%;
+        padding: 6px 9px; border-width: 2px;
+        border-radius: 9px; touch-action: manipulation;
+    }
+    #clan-browse-search, #clan-motto-edit, .clan-chat-input {
+        flex: 1 1 0%; width: auto; min-width: 0;
+    }
+
+    .clan-section-head { font-size: 0.78rem; margin: 2px 0 6px; flex-wrap: wrap; gap: 4px; }
+    .clan-section-sub { font-size: 10.5px; }
+    .clan-grid-2, .clan-create-grid { gap: 7px; }
+    .clan-card, .donate-card, .bounty-card, .clan-shop-card, .clan-member-row {
+        border-width: 2px; border-radius: 12px; padding: 8px 10px;
+        box-shadow: 0 2.5px 0 #1e272e;
+    }
+    .bounty-card, .clan-member-row { margin-bottom: 6px; }
+    .bounty-title { font-size: 0.88rem; }
+    .bounty-reward-pill { font-size: 10px; padding: 2px 7px; }
+    .bounty-foot { font-size: 10.5px; flex-wrap: wrap; gap: 4px; }
+    .clan-btn-green, .clan-btn-gold, .clan-btn-blue, .clan-btn-red {
+        padding: 5px 9px; font-size: 0.74rem; border-width: 2px;
+        border-radius: 9px; box-shadow: 0 2px 0 #1e272e;
+    }
+    .donate-name { font-size: 12.5px; }
+    .donate-wallet { font-size: 10px; }
+    .vault-pool-bar { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; margin-bottom: 8px; }
+    .vault-pool-tile { padding: 6px; border-width: 2px; border-radius: 10px; box-shadow: 0 2.5px 0 #1e272e; }
+    .vault-pool-tile strong { font-size: 0.88rem; }
+    .vault-pool-tile span { font-size: 9.5px; }
+    .clan-shop-img { width: 34px; height: 34px; }
+    .clan-mem-avatar { width: 34px; height: 34px; border-radius: 8px; border-width: 2px; }
+    .clan-role-badge { font-size: 9px; padding: 1.5px 5px; border-width: 1.5px; }
+
+    .clan-chat-wrap { min-height: 0; gap: 6px; }
+    .clan-chat-pinned { padding: 5px 8px; border-width: 2px; border-radius: 10px; font-size: 11px; }
+    .clan-chat-stream { min-height: 90px; max-height: 220px; padding: 7px; border-width: 2px; border-radius: 12px; gap: 6px; }
+    .clans-body.is-chat-tab .clan-chat-stream { min-height: 90px; max-height: none; }
+    .clan-chat-bubble { padding: 5px 8px; border-width: 2px; border-radius: 11px; }
+    .clan-chat-avatar { width: 28px; height: 28px; border-radius: 8px; }
+    .clan-chat-sender { font-size: 11.5px; }
+    .clan-chat-text { font-size: 12.5px; }
+    .clan-chat-send-btn { padding: 7px 11px; }
+}
+
+@media (max-width: 560px) {
     .clan-grid-2, .clan-create-grid { grid-template-columns: 1fr; }
-    .vault-pool-bar { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    .clan-chat-stream { max-height: 220px; }
+    .clan-shop-card { flex-wrap: wrap; gap: 7px; }
+}
+
+@media (max-height: 460px) {
+    .clans-panel { max-height: 96dvh; padding: 6px 9px; }
+    .clans-header { margin-bottom: 4px; padding: 4px 36px 4px 8px; }
+    .clan-hero-banner { padding: 4px 8px; margin-bottom: 4px; gap: 6px; row-gap: 4px; flex-wrap: wrap; }
+    .clan-motto-line, .clan-xp-text { display: none; }
+    .clan-xp-wrap { margin-top: 2px; }
+    .clan-mini-stat { padding: 1px 5px; min-width: 42px; }
+    .clans-tabs { margin-bottom: 4px; }
+}
+
+@media (max-height: 310px) {
+    #clans-hero-banner-slot { display: none; }
 }

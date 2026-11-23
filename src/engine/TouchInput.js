@@ -129,14 +129,6 @@ class TouchInput {
     }
 
     bindEvents() {
-        // Fullscreen Toggle Button in Menu
-        const fsBtn = document.getElementById('menu-fullscreen-btn');
-        if (fsBtn) {
-            fsBtn.addEventListener('click', () => {
-                this.toggleFullscreen();
-            });
-        }
-
         // Auto Fullscreen on Play / Mode selection for mobile
         ['start-btn', 'mode-select-story-btn', 'mode-select-endless-btn', 'mode-select-dungeons-btn', 'open-coop-btn'].forEach((id) => {
             const btn = document.getElementById(id);
@@ -158,6 +150,10 @@ class TouchInput {
                 this.resetActiveTouches();
                 const autoPause = (typeof MobilePerf === 'undefined') || MobilePerf.shouldAutoPauseOnBlur();
                 if (this.game && this.game.state === 'PLAYING' && autoPause && typeof this.game.pauseGame === 'function') this.game.pauseGame();
+            } else if (document.visibilityState === 'visible') {
+                if (this.isTouchDevice && this.game && this.game.state === 'PLAYING' && typeof MobileCanvasGuard !== 'undefined') {
+                    MobileCanvasGuard.syncWakeLock(true);
+                }
             }
         });
         window.addEventListener('blur', () => this.resetActiveTouches());
@@ -181,6 +177,9 @@ class TouchInput {
         this.joystickZone.addEventListener('pointerdown', (e) => {
             if (e.pointerType === 'mouse' && !this.isTouchDevice) return;
             if (!this.isTouchDevice) return;
+            if (this.game && this.game.state === 'PLAYING' && typeof MobileCanvasGuard !== 'undefined' && !MobileCanvasGuard._wakeLock) {
+                MobileCanvasGuard.syncWakeLock(true);
+            }
             if (this.joystickPointerId !== null) return;
             this.joystickPointerId = e.pointerId;
             try { this.joystickZone.setPointerCapture(e.pointerId); } catch {}
@@ -542,16 +541,6 @@ class TouchInput {
         } catch {}
     }
 
-    toggleFullscreen() {
-        const fsDoc = document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement;
-        if (!fsDoc) {
-            this.requestFullscreen();
-        } else {
-            const exit = document.exitFullscreen || document.webkitExitFullscreen || document.mozCancelFullScreen || document.msExitFullscreen;
-            if (exit) exit.call(document).catch(() => {});
-        }
-    }
-
     show() {
         // STRICT: Never show on desktop PC!
         if (!this.isTouchDevice) {
@@ -559,6 +548,7 @@ class TouchInput {
             return;
         }
         if (this.container) this.container.classList.remove('hidden');
+        if (typeof MobileCanvasGuard !== 'undefined') MobileCanvasGuard.syncWakeLock(true);
     }
 
     resetActiveTouches() {
@@ -592,6 +582,7 @@ class TouchInput {
     hide() {
         if (this.container) this.container.classList.add('hidden');
         this.resetActiveTouches();
+        if (typeof MobileCanvasGuard !== 'undefined') MobileCanvasGuard.syncWakeLock(false);
     }
 }
 

@@ -76,10 +76,8 @@ html, body {
     .rotate-tip { font-family: 'Fredoka', sans-serif; font-size: 0.78rem; color: #74b9ff; background: rgba(0, 0, 0, 0.35); border-radius: 10px; padding: 5px 10px; line-height: 1.3; }
 }
 
-/* Mobile Controls Layer & Fullscreen - STRICTLY HIDDEN ON PC / DESKTOP */
+/* Mobile Controls Layer - STRICTLY HIDDEN ON PC / DESKTOP */
 #mobile-controls-container,
-#menu-fullscreen-btn,
-.fullscreen-pill-btn,
 .setting-mobile-only,
 #setting-row-autofire {
     display: none !important;
@@ -103,16 +101,6 @@ html, body {
     #mobile-controls-container.cutscene-hidden {
         opacity: 0 !important;
         pointer-events: none !important;
-    }
-
-    /* Show Fullscreen Toggle strictly on mobile */
-    #menu-fullscreen-btn,
-    .fullscreen-pill-btn {
-        display: flex !important;
-        padding: 4px 10px !important;
-        background: #0984e3 !important;
-        border-color: #0c2461 !important;
-        cursor: pointer !important;
     }
 
     /* Show Mobile-Only Settings strictly on touch devices */
