@@ -22,6 +22,7 @@ class InventoryManager {
             legendary: 0,
             mythic: 0
         };
+        this.freeChests = { common: 0, uncommon: 0, rare: 0, epic: 0, legendary: 0, mythic: 0 };
         this.materials = (typeof MaterialRegistry !== 'undefined')
             ? MaterialRegistry.createEmptyMap()
             : { armory_shards: 0, mati_crystal: 0, olympian_bronze: 0, ambrosia_spark: 0 };
@@ -47,6 +48,17 @@ class InventoryManager {
                         }
                     }
                 }
+                if (parsed && typeof parsed.freeChests === 'object') {
+                    for (const [key, val] of Object.entries(parsed.freeChests)) {
+                        if (typeof val === 'number') {
+                            this.freeChests[key] = Math.max(0, Math.floor(val));
+                        }
+                    }
+                } else if (parsed && typeof parsed.chests === 'object') {
+                    for (const [key, val] of Object.entries(this.chests)) {
+                        if (val > 0) this.freeChests[key] = val;
+                    }
+                }
                 if (parsed && typeof parsed.materials === 'object') {
                     for (const key of Object.keys(this.materials)) {
                         const val = Number(parsed.materials[key]);
@@ -70,6 +82,7 @@ class InventoryManager {
                 updatedAt: Date.now(),
                 crates: { ...this.crates },
                 chests: { ...this.chests },
+                freeChests: { ...this.freeChests },
                 materials: { ...this.materials }
             };
             localStorage.setItem(this.storageKey, JSON.stringify(payload));
@@ -98,6 +111,10 @@ class InventoryManager {
 
     getStoredChestCount(chestType) {
         return this.chests[chestType] || 0;
+    }
+
+    getFreeStoredChestCount(chestType) {
+        return Math.min(this.chests[chestType] || 0, (this.freeChests && this.freeChests[chestType]) || 0);
     }
 
     getTotalStoredChestsCount() {
@@ -204,12 +221,15 @@ class InventoryManager {
     /**
      * Stores an overflow chest directly in inventory when main-menu chest slots are full.
      */
-    addChestToInventory(chestType, count = 1) {
+    addChestToInventory(chestType, count = 1, options = {}) {
         if (!chestType || count <= 0) return false;
         const validDef = (typeof CHEST_TYPES !== 'undefined') ? CHEST_TYPES[chestType] : null;
         if (!validDef) return false;
 
         this.chests[chestType] = (this.chests[chestType] || 0) + count;
+        if (options && options.freeOpen) {
+            this.freeChests[chestType] = (this.freeChests[chestType] || 0) + count;
+        }
         this.save();
 
         if (window.soundEngine && typeof window.soundEngine.playPickup === 'function') {
@@ -228,24 +248,27 @@ class InventoryManager {
         if (typeof window === 'undefined' || !window.chestManager) return false;
         if (window.chestManager.getFirstEmptySlot() === -1) return false;
 
-        const moved = window.chestManager.addChest(chestType, { slotOnly: true });
+        const isFree = this.getFreeStoredChestCount(chestType) > 0;
+        const moved = window.chestManager.addChest(chestType, { slotOnly: true, ready: isFree });
         if (moved !== true) return false;
 
         this.chests[chestType] = Math.max(0, this.chests[chestType] - 1);
+        if (isFree) this.freeChests[chestType] = Math.max(0, (this.freeChests[chestType] || 0) - 1);
         this.save();
         this._notifyInventoryUpdated({ chestType, movedToSlot: true, total: this.chests[chestType] });
         return true;
     }
 
     /**
-     * Opens one stored overflow chest immediately using gems (matches ChestManager gemSpeedCost).
+     * Opens one stored overflow chest immediately (free if gifted, otherwise uses gemSpeedCost).
      */
     openStoredChestWithGems(chestType) {
         if (!chestType || this.getStoredChestCount(chestType) <= 0) return null;
         const def = (typeof CHEST_TYPES !== 'undefined') ? CHEST_TYPES[chestType] : null;
         if (!def) return null;
 
-        const gemCost = Math.max(0, def.gemSpeedCost || 0);
+        const isFree = this.getFreeStoredChestCount(chestType) > 0;
+        const gemCost = isFree ? 0 : Math.max(0, def.gemSpeedCost || 0);
         const playerGems = (window.GameState && window.GameState.player) ? (window.GameState.player.gems || 0) : 0;
         if (gemCost > 0) {
             if (playerGems < gemCost || !window.GameState || typeof window.GameState.addCurrency !== 'function') {
@@ -261,6 +284,7 @@ class InventoryManager {
         }
 
         this.chests[chestType] = Math.max(0, this.chests[chestType] - 1);
+        if (isFree) this.freeChests[chestType] = Math.max(0, (this.freeChests[chestType] || 0) - 1);
         this.save();
 
         let loot = null;

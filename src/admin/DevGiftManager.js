@@ -166,9 +166,12 @@ class DevGiftManager {
         this._activeTarget = targetInfo;
         container.classList.remove('hidden');
 
-        const chestOpts = this.getChestOptions()
-            .map(c => `<option value="${this._escHtml(c.id)}">${this._escHtml(c.name)}</option>`)
-            .join('');
+        const chestRowsHtml = this.getChestOptions().map(c => {
+            const shortName = c.name.replace(/\s*Chest$/i, '');
+            const icon = this.CHEST_ICONS[c.id] || 'assets/Chests/CommonChest.png';
+            const inputId = `admin-gift-chest-${this._escHtml(c.id)}`;
+            return `<div class="admin-dev-chest-item"><img src="${this._escHtml(icon)}" class="admin-dev-chest-mini-icon" alt=""><span>${this._escHtml(shortName)}</span><input type="number" id="${inputId}" data-chest-type="${this._escHtml(c.id)}" class="admin-text-input admin-dev-qty-input" min="0" max="99" value="0"><button type="button" class="admin-gift-chip" data-target="${inputId}" data-add="1">+1</button><button type="button" class="admin-gift-chip is-clear" data-target="${inputId}" data-clear="1">0</button></div>`;
+        }).join('');
         const vipStatus = targetInfo.hasVipPass
             ? '<span style="color:#fed330;font-weight:800;">👑 Already VIP</span>'
             : '<span style="color:#a4b0be;">Free Pass</span>';
@@ -205,20 +208,6 @@ class DevGiftManager {
                     </div>
                 </div>
                 <div class="admin-dev-gift-field">
-                    <label for="admin-gift-chest-type">📦 Chests</label>
-                    <div class="admin-dev-chest-row">
-                        <select id="admin-gift-chest-type" class="admin-text-input">${chestOpts}</select>
-                        <input type="number" id="admin-gift-chest-qty" class="admin-text-input admin-dev-qty-input" min="0" max="99" value="0">
-                    </div>
-                    <div class="admin-dev-gift-presets">
-                        <button type="button" class="admin-gift-chip" data-target="admin-gift-chest-qty" data-add="1">+1</button>
-                        <button type="button" class="admin-gift-chip" data-target="admin-gift-chest-qty" data-add="3">+3</button>
-                        <button type="button" class="admin-gift-chip" data-target="admin-gift-chest-qty" data-add="5">+5</button>
-                        <button type="button" class="admin-gift-chip" data-target="admin-gift-chest-qty" data-add="10">+10</button>
-                        <button type="button" class="admin-gift-chip is-clear" data-target="admin-gift-chest-qty" data-clear="1">0</button>
-                    </div>
-                </div>
-                <div class="admin-dev-gift-field">
                     <label for="admin-gift-note-input">👑 Battle Pass VIP &amp; Note</label>
                     <label class="admin-dev-vip-toggle">
                         <input type="checkbox" id="admin-gift-bp-check">
@@ -227,13 +216,23 @@ class DevGiftManager {
                     <input type="text" id="admin-gift-note-input" class="admin-text-input" maxlength="120" placeholder="Optional message shown to player...">
                 </div>
             </div>
+            <div class="admin-dev-gift-field" style="margin-top:10px;">
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+                    <label>📦 Chests (Mix &amp; Match Any Tiers)</label>
+                    <button type="button" id="admin-gift-clear-chests-btn" class="admin-gift-chip is-clear">Clear All Chests</button>
+                </div>
+                <div class="admin-dev-multi-chest-grid">${chestRowsHtml}</div>
+            </div>
             <div class="admin-dev-gift-footer">
                 <button type="button" id="admin-gift-send-btn" class="admin-control-btn btn-success">SEND DEV GIFT 🎁</button>
             </div>
         `;
 
         container.querySelector('#admin-gift-close-btn')?.addEventListener('click', () => this.closeComposer());
-        container.querySelectorAll('.admin-gift-chip').forEach(btn => {
+        container.querySelector('#admin-gift-clear-chests-btn')?.addEventListener('click', () => {
+            container.querySelectorAll('input[data-chest-type]').forEach(inp => { inp.value = '0'; });
+        });
+        container.querySelectorAll('.admin-gift-chip[data-target]').forEach(btn => {
             btn.addEventListener('click', () => {
                 const input = document.getElementById(btn.getAttribute('data-target'));
                 if (!input) return;
@@ -250,11 +249,16 @@ class DevGiftManager {
 
         const sendBtn = container.querySelector('#admin-gift-send-btn');
         sendBtn?.addEventListener('click', async () => {
+            const chests = {};
+            container.querySelectorAll('input[data-chest-type]').forEach(inp => {
+                const cType = inp.getAttribute('data-chest-type');
+                const qty = parseInt(inp.value || '0', 10) || 0;
+                if (cType && qty > 0) chests[cType] = qty;
+            });
             const spec = {
                 gems: document.getElementById('admin-gift-gems-input')?.value,
                 coins: document.getElementById('admin-gift-coins-input')?.value,
-                chestType: document.getElementById('admin-gift-chest-type')?.value,
-                chestCount: document.getElementById('admin-gift-chest-qty')?.value,
+                chests,
                 battlePass: Boolean(document.getElementById('admin-gift-bp-check')?.checked),
                 note: document.getElementById('admin-gift-note-input')?.value
             };
@@ -347,14 +351,16 @@ class DevGiftManager {
 
         for (const [type, qty] of entries) {
             if (cm && typeof cm.addChest === 'function') {
-                for (let i = 0; i < qty; i++) cm.addChest(type);
+                for (let i = 0; i < qty; i++) cm.addChest(type, { ready: true });
             } else if (im && typeof im.addChestToInventory === 'function') {
-                im.addChestToInventory(type, qty);
+                im.addChestToInventory(type, qty, { freeOpen: true });
             } else if (typeof localStorage !== 'undefined') {
                 try {
                     const inv = JSON.parse(localStorage.getItem('lesaio_inventory') || '{}') || {};
                     if (!inv.chests || typeof inv.chests !== 'object') inv.chests = {};
+                    if (!inv.freeChests || typeof inv.freeChests !== 'object') inv.freeChests = {};
                     inv.chests[type] = (inv.chests[type] || 0) + qty;
+                    inv.freeChests[type] = (inv.freeChests[type] || 0) + qty;
                     localStorage.setItem('lesaio_inventory', JSON.stringify(inv));
                 } catch (_) {}
             }

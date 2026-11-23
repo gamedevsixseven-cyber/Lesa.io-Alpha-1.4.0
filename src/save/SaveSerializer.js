@@ -22,6 +22,7 @@ class SaveSerializer {
             return {
                 crates: { ...(im.crates || {}) },
                 chests: { ...(im.chests || {}) },
+                freeChests: { ...(im.freeChests || {}) },
                 materials: (typeof im.getMaterials === 'function') ? im.getMaterials() : { ...(im.materials || {}) }
             };
         }
@@ -32,6 +33,7 @@ class SaveSerializer {
         return {
             crates: (rawInv.crates && typeof rawInv.crates === 'object') ? { ...rawInv.crates } : {},
             chests: (rawInv.chests && typeof rawInv.chests === 'object') ? { ...rawInv.chests } : {},
+            freeChests: (rawInv.freeChests && typeof rawInv.freeChests === 'object') ? { ...rawInv.freeChests } : {},
             materials: mats
         };
     }
@@ -341,11 +343,13 @@ class SaveSerializer {
             for (const [k, v] of Object.entries(p.inventory.crates || {})) mergedCrates[k] = Math.max(mergedCrates[k] || 0, Math.floor(Number(v) || 0));
             const mergedChests = { ...(curInv.chests || {}) };
             for (const [k, v] of Object.entries(p.inventory.chests || {})) mergedChests[k] = Math.max(mergedChests[k] || 0, Math.floor(Number(v) || 0));
+            const mergedFreeChests = { ...((curInv.freeChests && typeof curInv.freeChests === 'object') ? curInv.freeChests : (curInv.chests || {})) };
+            for (const [k, v] of Object.entries(p.inventory.freeChests || {})) mergedFreeChests[k] = Math.min(mergedChests[k] || 0, Math.max(mergedFreeChests[k] || 0, Math.floor(Number(v) || 0)));
             const rawMats = { ...(curInv.materials || {}) };
             for (const [k, v] of Object.entries(p.inventory.materials || p.materials || {})) rawMats[k] = Math.max(rawMats[k] || 0, Math.floor(Number(v) || 0));
             const normMats = (typeof MaterialRegistry !== 'undefined') ? MaterialRegistry.normalizeMap(rawMats) : rawMats;
             state.player.materials = normMats;
-            if (ls) ls.setItem('lesaio_inventory', JSON.stringify({ version: 2, updatedAt: Date.now(), crates: mergedCrates, chests: mergedChests, materials: normMats }));
+            if (ls) ls.setItem('lesaio_inventory', JSON.stringify({ version: 2, updatedAt: Date.now(), crates: mergedCrates, chests: mergedChests, freeChests: mergedFreeChests, materials: normMats }));
             if (typeof window !== 'undefined' && window.inventoryManager && typeof window.inventoryManager.load === 'function') window.inventoryManager.load();
         } else if (p.materials && typeof p.materials === 'object') {
             const normMats = (typeof MaterialRegistry !== 'undefined') ? MaterialRegistry.normalizeMap(p.materials) : { ...p.materials };

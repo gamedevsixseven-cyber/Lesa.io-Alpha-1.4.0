@@ -494,8 +494,15 @@
     color: #ced6e0;
 }
 
-.admin-dev-chest-row { display: flex; gap: 6px; }
-.admin-dev-qty-input { max-width: 72px; }
+.admin-dev-multi-chest-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(175px, 1fr)); gap: 7px; }
+.admin-dev-chest-item {
+    display: flex; align-items: center; gap: 6px; padding: 6px 8px;
+    border-radius: 8px; background: rgba(0, 0, 0, 0.36); border: 1px solid rgba(255, 255, 255, 0.14);
+    font-size: 0.78rem; font-weight: 800; color: #ffffff;
+}
+.admin-dev-chest-item span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.admin-dev-chest-mini-icon { width: 22px; height: 22px; object-fit: contain; flex-shrink: 0; }
+.admin-dev-qty-input { max-width: 58px; padding: 4px 6px !important; text-align: center; }
 .admin-dev-vip-toggle { display: flex; align-items: center; gap: 8px; font-size: 0.84rem !important; color: #fed330 !important; cursor: pointer; }
 .admin-dev-gift-footer { display: flex; justify-content: flex-end; margin-top: 10px; }
 

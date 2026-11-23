@@ -103,7 +103,7 @@ class ChestManager {
         const emptyIdx = this.getFirstEmptySlot();
         if (emptyIdx === -1) {
             if (!options.slotOnly && typeof window !== 'undefined' && window.inventoryManager && typeof window.inventoryManager.addChestToInventory === 'function') {
-                if (window.inventoryManager.addChestToInventory(type, 1)) {
+                if (window.inventoryManager.addChestToInventory(type, 1, { freeOpen: Boolean(options.ready) })) {
                     return 'inventory';
                 }
             }
@@ -113,7 +113,7 @@ class ChestManager {
         this.slots[emptyIdx] = {
             id: 'chest_' + Date.now() + '_' + Math.floor(Math.random() * 1000),
             type: type,
-            state: 'LOCKED',
+            state: options.ready ? 'READY' : 'LOCKED',
             unlockStartTime: null,
             unlockDurationSec: def.unlockTimeSec
         };

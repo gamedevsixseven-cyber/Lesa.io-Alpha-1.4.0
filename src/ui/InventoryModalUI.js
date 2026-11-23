@@ -119,9 +119,14 @@ class InventoryModalUI {
             for (const chestType of ownedChestKeys) {
                 const def = chestDefinitions[chestType];
                 const count = storedChests[chestType] || 0;
+                const freeCount = (manager && typeof manager.getFreeStoredChestCount === 'function') ? manager.getFreeStoredChestCount(chestType) : 0;
+                const isFreeOpen = freeCount > 0;
                 const borderCol = def.color || '#fed330';
-                const gemCost = Math.max(0, def.gemSpeedCost || 0);
-                const canAffordGems = gems >= gemCost;
+                const gemCost = isFreeOpen ? 0 : Math.max(0, def.gemSpeedCost || 0);
+                const canAffordGems = isFreeOpen || gems >= gemCost;
+                const openLabel = isFreeOpen
+                    ? `🎁 OPEN FREE${freeCount > 1 ? ` (${freeCount})` : ''}`
+                    : `${typeof UiIcons !== 'undefined' ? UiIcons.i('gem', 'ui-icon-sm') : ''} OPEN (${gemCost})`;
 
                 html += `
                     <div class="inv-crate-card crate-available tier-${def.rarity}" style="--crate-color: ${borderCol};">
@@ -146,7 +151,7 @@ class InventoryModalUI {
                                 </button>
                                 <button class="comic-btn inv-open-btn inv-chest-btn ${canAffordGems ? 'btn-gem-active btn-open-chest-gem' : 'btn-open-disabled'}"
                                         data-chest-type="${chestType}" ${canAffordGems ? '' : 'disabled'}>
-                                    <span>${typeof UiIcons !== 'undefined' ? UiIcons.i('gem', 'ui-icon-sm') : ''} OPEN (${gemCost})</span>
+                                    <span>${openLabel}</span>
                                 </button>
                             </div>
                         </div>
