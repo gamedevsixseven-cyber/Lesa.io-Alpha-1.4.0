@@ -261,7 +261,7 @@ class LeaderboardModal {
                 <button type="button" class="lb-item cos-banner-surface ${bannerDef.cssClass} ${entry.isSelf ? 'is-self' : ''}" data-lb-idx="${idx}" title="Inspect ${this._esc(entry.name)}'s Profile">
                     <div class="lb-rank-badge ${rankClass}">#${rank}</div>
                     <div class="lb-avatar-wrap ${frameDef.cssClass}">
-                        <img src="${this._getHeroAvatar(entry.hero)}" alt="Hero">
+                        <img src="${this._getHeroAvatar(entry.hero)}" alt="Hero" loading="lazy" decoding="async">
                         ${entry.isOnline ? '<span class="lb-online-dot"></span>' : ''}
                     </div>
                     <div class="lb-main-info">

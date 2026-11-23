@@ -288,19 +288,48 @@
 
     #settings-modal .settings-controls-list { gap: 8px !important; margin-bottom: 12px !important; }
 
-    /* 8. Mail, Clans & Friends Modals */
+    /* 8. Mail, Clans, Friends & Leaderboard Modals */
     #mail-modal .modal-panel,
     #clans-modal .modal-panel,
-    #friends-modal .modal-panel,
-    #leaderboard-modal .modal-panel {
+    #friends-modal .modal-panel {
         max-height: 94vh !important; max-width: min(92vw, 640px) !important; padding: 10px 14px !important;
     }
 
-    .mail-list-box, .clans-list-box, .friends-list-box, .leaderboard-list-box {
+    .mail-list-box, .clans-list-box, .friends-list-box {
         max-height: 52vh !important; overflow-y: auto !important;
     }
 
-    .mail-item, .clan-item, .friend-item, .lb-item { padding: 6px 10px !important; font-size: 0.8rem !important; }
+    .mail-item, .clan-item, .friend-item { padding: 6px 10px !important; font-size: 0.8rem !important; }
+
+    /* Dedicated roomy scrollable layout for Global Leaderboards on mobile */
+    #leaderboard-modal .modal-panel.lb-modal-panel {
+        display: flex !important; flex-direction: column !important;
+        width: 96vw !important; max-width: min(96vw, 720px) !important;
+        height: 92vh !important; height: 92dvh !important; max-height: 92dvh !important;
+        padding: 8px 12px !important; overflow: hidden !important;
+    }
+    #leaderboard-modal .lb-modal-title { font-size: 1.15rem !important; margin: 0 0 2px !important; }
+    #leaderboard-modal .lb-modal-sub { font-size: 0.64rem !important; margin: 0 0 5px !important; line-height: 1.15 !important; }
+    #leaderboard-modal .lb-tabs-row { gap: 5px !important; margin-bottom: 6px !important; flex-shrink: 0 !important; }
+    #leaderboard-modal .lb-tab-btn { padding: 5px 4px !important; font-size: 0.68rem !important; }
+    #leaderboard-modal .leaderboard-list-box {
+        flex: 1 1 auto !important; min-height: 0 !important; max-height: none !important;
+        overflow-y: auto !important; -webkit-overflow-scrolling: touch !important; touch-action: pan-y !important;
+        gap: 6px !important; padding: 2px 4px !important;
+    }
+    #leaderboard-modal .lb-item {
+        flex: 0 0 auto !important; min-height: 52px !important; padding: 7px 10px !important; gap: 8px !important;
+    }
+    #leaderboard-modal .lb-rank-badge { min-width: 26px !important; font-size: 0.82rem !important; }
+    #leaderboard-modal .lb-avatar-wrap { width: 34px !important; height: 34px !important; }
+    #leaderboard-modal .lb-player-name { font-size: 0.84rem !important; }
+    #leaderboard-modal .lb-you-pill,
+    #leaderboard-modal .lb-tag-chip,
+    #leaderboard-modal .lb-lvl-chip { font-size: 0.58rem !important; padding: 1px 4px !important; }
+    #leaderboard-modal .lb-score-col { min-width: 62px !important; }
+    #leaderboard-modal .lb-score-val { font-size: 0.85rem !important; }
+    #leaderboard-modal .lb-inspect-hint { display: none !important; }
+    #leaderboard-modal .lb-actions-row { margin-top: 6px !important; flex-shrink: 0 !important; }
 
     /* 9. Skill Button Image & Water Theme (Nerobalonaki) */
     #mobile-skill-btn .btn-skill-img-icon {
