@@ -550,46 +550,45 @@
     line-height: 1.2;
 }
 
-/* Mobile Responsiveness */
-@media (max-width: 600px) {
-    .inv-crates-grid {
-        grid-template-columns: repeat(2, 1fr);
-        gap: 8px;
-    }
-    .inv-materials-grid {
-        grid-template-columns: repeat(2, 1fr);
-        gap: 8px;
-    }
-    .inv-mat-card {
-        padding: 9px 7px 8px;
-    }
-    .inv-mat-icon-wrap {
-        width: 54px;
-        height: 54px;
-    }
-    .inv-mat-icon-wrap .inv-mat-img,
-    .inv-mat-img {
-        width: 42px;
-        height: 42px;
-    }
-    .inv-crate-card {
-        padding: 8px 6px;
-    }
-    .inv-crate-img-wrap {
-        width: 65px;
-        height: 60px;
-    }
-    .inv-crate-name {
-        font-size: 0.82rem;
-    }
-    .inv-crate-loot-preview {
-        padding: 4px;
-    }
-    .loot-preview-item {
-        font-size: 0.65rem;
-    }
-    .inv-open-btn {
-        padding: 6px;
-        font-size: 0.8rem;
-    }
+/* Mobile Responsiveness (Zoomed-Out Compact 3-Column Layout for Phones) */
+@media (max-width: 860px), (max-height: 560px), (pointer: coarse) and (max-height: 720px) {
+    #inventory-modal .modal-panel { max-width: min(95vw, 720px) !important; width: 95vw !important; padding: 6px 10px !important; }
+    #inventory-content-mount { padding: 3px 4px 6px 2px !important; }
+    .inv-summary-bar { gap: 5px !important; margin-bottom: 6px !important; }
+    .inv-summary-pill { padding: 2px 8px !important; border-radius: 12px !important; border-width: 2px !important; gap: 4px !important; }
+    .inv-pill-icon { font-size: 0.76rem !important; }
+    .inv-pill-label { font-size: 0.58rem !important; }
+    .inv-pill-val { font-size: 0.7rem !important; }
+    .inv-section-header { margin: 4px 2px 4px 2px !important; }
+    .inv-section-title { font-size: 0.8rem !important; gap: 5px !important; }
+    .inv-section-subtitle { font-size: 0.58rem !important; margin-top: 1px !important; }
+    .inv-crates-grid, .inv-materials-grid { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; gap: 6px !important; margin-bottom: 8px !important; }
+    .inv-resources-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 6px !important; }
+    .inv-crate-card, .inv-mat-card { padding: 6px 6px !important; border-radius: 11px !important; border-width: 2px !important; box-shadow: 0 2px 0 #1e272e !important; }
+    .inv-crate-badge, .inv-mat-badge { font-size: 0.5rem !important; padding: 1px 6px !important; margin-bottom: 3px !important; border-width: 1.5px !important; }
+    .inv-mat-top { margin-bottom: 3px !important; }
+    .inv-mat-qty { font-size: 0.7rem !important; padding: 1px 5px !important; border-radius: 6px !important; border-width: 1.5px !important; }
+    .inv-crate-img-wrap { width: 42px !important; height: 40px !important; margin-bottom: 2px !important; }
+    .inv-crate-glow { width: 34px !important; height: 34px !important; }
+    .inv-mat-icon-wrap { width: 38px !important; height: 38px !important; margin: 1px 0 3px !important; border-radius: 9px !important; }
+    .inv-mat-icon-wrap .inv-mat-img, .inv-mat-img { width: 28px !important; height: 28px !important; }
+    .inv-mat-emoji { font-size: 1.25rem !important; }
+    .inv-crate-name, .inv-mat-name { font-size: 0.66rem !important; margin-bottom: 1px !important; line-height: 1.15 !important; }
+    .inv-crate-boss-source { font-size: 0.52rem !important; margin-bottom: 3px !important; }
+    .inv-crate-loot-preview { padding: 3px 5px !important; margin-bottom: 4px !important; border-radius: 7px !important; gap: 1px !important; border-width: 1.5px !important; }
+    .loot-preview-item { font-size: 0.52rem !important; gap: 4px !important; }
+    .inv-crate-footer { gap: 3px !important; }
+    .inv-crate-qty { font-size: 0.58rem !important; }
+    .inv-open-btn, .inv-chest-btn { padding: 4px 6px !important; font-size: 0.6rem !important; border-radius: 7px !important; }
+    .inv-empty-chests-banner { padding: 6px 10px !important; font-size: 0.62rem !important; border-radius: 10px !important; margin-bottom: 6px !important; }
+    .inv-mat-desc { font-size: 0.54rem !important; line-height: 1.15 !important; margin-bottom: 3px !important; }
+    .inv-mat-used { font-size: 0.52rem !important; padding: 2px 4px !important; margin-bottom: 3px !important; border-radius: 6px !important; }
+    .inv-mat-src-chip { font-size: 0.48rem !important; padding: 1px 5px !important; }
+    .inv-resource-slot { padding: 5px 8px !important; border-radius: 10px !important; border-width: 2px !important; gap: 7px !important; }
+    .res-slot-icon { font-size: 1.15rem !important; }
+    .res-slot-name { font-size: 0.68rem !important; }
+    .res-slot-desc { font-size: 0.54rem !important; }
+}
+@media (max-width: 480px) {
+    .inv-crates-grid, .inv-materials-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
 }

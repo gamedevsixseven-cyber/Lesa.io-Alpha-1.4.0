@@ -506,3 +506,46 @@
 .perk-upgrade-btn.cannot-buy { opacity: 0.62; background: #dfe4ea; color: #57606f; }
 .perk-upgrade-btn:hover.can-buy { transform: scale(1.04); background: #0ea5e9; color: #fff; text-shadow: 1px 1px 0 #000; }
 .perk-upgrade-btn.is-maxed { background: #ffd32a; color: #1e272e; cursor: default; opacity: 0.92; }
+
+/* --- 5. MOBILE ZOOMED-OUT COMPACT PERKS & UPGRADES UI --- */
+@media (max-width: 860px), (max-height: 560px), (pointer: coarse) and (max-height: 720px) {
+    #upgrades-modal .modal-panel { max-width: min(95vw, 720px) !important; width: 95vw !important; padding: 6px 10px !important; }
+    .perks-loadout-slots { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; gap: 5px !important; margin: 2px 0 5px 0 !important; }
+    .perk-slot-card { padding: 4px 5px !important; border-radius: 10px !important; border-width: 2px !important; }
+    .perk-slot-badge { font-size: 0.52rem !important; padding: 1px 5px !important; margin-bottom: 2px !important; border-radius: 7px !important; border-width: 1.5px !important; }
+    .perk-empty-frame, .perk-icon-frame { width: 28px !important; height: 28px !important; border-radius: 7px !important; border-width: 1.5px !important; margin-bottom: 2px !important; }
+    .perk-empty-icon, .perk-active-icon { font-size: 0.95rem !important; }
+    .perk-slot-title { font-size: 0.62rem !important; margin-bottom: 1px !important; }
+    .perk-slot-meta-row { margin-bottom: 1px !important; }
+    .perk-slot-rank-badge { font-size: 0.48rem !important; padding: 0 4px !important; }
+    .perk-slot-status { font-size: 0.48rem !important; }
+    .perk-slot-unequip-btn { font-size: 0.5rem !important; padding: 1px 5px !important; margin-top: 2px !important; border-radius: 6px !important; }
+    .perks-search-wrap { margin: 4px 0 !important; gap: 4px !important; }
+    .perks-search-input-box { border-radius: 9px !important; border-width: 2px !important; padding: 0 8px !important; }
+    .perks-search-icon { font-size: 0.82rem !important; margin-right: 5px !important; }
+    .perks-search-input { font-size: 0.68rem !important; padding: 4px 0 !important; }
+    .perks-filter-chips { gap: 3px !important; }
+    .perk-filter-chip { font-size: 0.55rem !important; padding: 2px 7px !important; border-radius: 8px !important; border-width: 1.5px !important; }
+    .perks-material-stash { gap: 3px !important; margin-bottom: 4px !important; }
+    .perk-stash-chip { font-size: 0.53rem !important; padding: 1px 5px !important; border-radius: 7px !important; }
+    .perk-mat-icon { width: 11px !important; height: 11px !important; }
+    .perks-vault-section { max-height: none !important; overflow: visible !important; padding: 6px 8px !important; border-radius: 11px !important; }
+    .perks-vault-header { font-size: 0.68rem !important; margin-bottom: 4px !important; padding-bottom: 3px !important; }
+    .perks-vault-wallet { font-size: 0.68rem !important; }
+    .perks-vault-grid { display: grid !important; grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 5px !important; }
+    .perk-vault-item { padding: 5px 7px !important; gap: 6px !important; border-radius: 10px !important; border-width: 2px !important; align-items: flex-start !important; }
+    .perk-vault-icon { width: 28px !important; height: 28px !important; font-size: 0.95rem !important; border-radius: 7px !important; border-width: 1.5px !important; }
+    .perk-vault-title-row { gap: 3px !important; margin-bottom: 2px !important; }
+    .perk-vault-name { font-size: 0.68rem !important; }
+    .perk-vault-category, .perk-rarity-pill, .perk-rank-pill, .perk-vault-tag { font-size: 0.48rem !important; padding: 1px 4px !important; border-radius: 5px !important; }
+    .perk-vault-desc { font-size: 0.55rem !important; line-height: 1.15 !important; }
+    .perk-active-rank-line, .perk-drawback-line { font-size: 0.52rem !important; margin-top: 1px !important; }
+    .perk-req-strip, .perk-cost-strip, .perk-next-rank-strip { font-size: 0.52rem !important; margin-top: 2px !important; gap: 3px !important; }
+    .perk-strip-label { font-size: 0.48rem !important; }
+    .perk-req-chip, .perk-cost-pill { font-size: 0.5rem !important; padding: 1px 4px !important; border-radius: 5px !important; }
+    .perk-vault-action-col { min-width: 66px !important; gap: 3px !important; }
+    .perk-buy-btn, .perk-equip-action-btn, .perk-equipped-tag, .perk-upgrade-btn { font-size: 0.58rem !important; padding: 3px 6px !important; border-radius: 7px !important; border-width: 1.5px !important; }
+}
+@media (max-width: 480px) {
+    .perks-vault-grid { grid-template-columns: 1fr !important; }
+}
