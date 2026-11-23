@@ -316,7 +316,8 @@ class SaveSerializer {
                 displayedCoins: curC.displayedCoins && curC.displayedCoins.length ? curC.displayedCoins : (Array.isArray(p.cosmetics.displayedCoins) ? p.cosmetics.displayedCoins : []),
                 unlockedBanners: [...curC.unlockedBanners, ...(p.cosmetics.unlockedBanners || [])],
                 unlockedFrames: [...curC.unlockedFrames, ...(p.cosmetics.unlockedFrames || [])],
-                unlockedCoins: [...curC.unlockedCoins, ...(p.cosmetics.unlockedCoins || [])]
+                unlockedCoins: [...curC.unlockedCoins, ...(p.cosmetics.unlockedCoins || [])],
+                devGiftedBanners: [...(curC.devGiftedBanners || []), ...(p.cosmetics.devGiftedBanners || [])]
             }, false);
         }
         if (p.heroSkins && typeof p.heroSkins === 'object' && typeof HeroSkinSystem !== 'undefined') {

@@ -165,8 +165,10 @@ class ProfileCosmeticsUI {
     }
 
     static _renderBannersGrid(container, st, snap) {
-        const list = typeof PROFILE_BANNERS !== 'undefined' ? PROFILE_BANNERS : [];
-        const header = `<div class="cos-sub-note">Unlocked: <strong>${st.unlockedBanners.length} / ${list.length}</strong> Banners • Displayed at Top-Left Lobby, Friends & Global Leaderboards</div>`;
+        const rawList = typeof PROFILE_BANNERS !== 'undefined' ? PROFILE_BANNERS : [];
+        const list = rawList.filter(b => !b.hiddenUntilUnlocked || st.unlockedBanners.includes(b.id));
+        const unlockedVisibleCount = list.filter(b => st.unlockedBanners.includes(b.id)).length;
+        const header = `<div class="cos-sub-note">Unlocked: <strong>${unlockedVisibleCount} / ${list.length}</strong> Banners • Displayed at Top-Left Lobby, Friends & Global Leaderboards</div>`;
         const cards = list.map((b) => {
             const unlocked = st.unlockedBanners.includes(b.id);
             const equipped = st.equippedBanner === b.id;

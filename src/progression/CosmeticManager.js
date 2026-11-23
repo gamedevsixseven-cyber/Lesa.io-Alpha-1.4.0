@@ -11,7 +11,8 @@ class CosmeticManager {
         displayedCoins: 'lesaio_displayed_coins',
         unlockedBanners: 'lesaio_unlocked_banners',
         unlockedFrames: 'lesaio_unlocked_frames',
-        unlockedCoins: 'lesaio_unlocked_coins'
+        unlockedCoins: 'lesaio_unlocked_coins',
+        devGiftedBanners: 'lesaio_dev_gifted_banners'
     };
 
     static MAX_DISPLAY_COINS = 3;
@@ -58,20 +59,28 @@ class CosmeticManager {
 
     static _writeJson(key, val) {
         if (typeof localStorage === 'undefined') return;
-        try { localStorage.setItem(key, JSON.stringify(val)); } catch (_) {}
+        try { localStorage.setItem(key, JSON.stringify(val)); } catch (_) { }
     }
 
     static getState() {
         const gs = (typeof window !== 'undefined' && window.GameState && window.GameState.player) ? window.GameState.player : null;
         const c = (gs && gs.cosmetics) || {};
-        const validBannerIds = new Set((typeof PROFILE_BANNERS !== 'undefined' ? PROFILE_BANNERS : []).map(b => b.id));
+        const bannerCatalog = typeof PROFILE_BANNERS !== 'undefined' ? PROFILE_BANNERS : [];
+        const validBannerIds = new Set(bannerCatalog.map(b => b.id));
+        const devOnlyBannerIds = new Set(bannerCatalog.filter(b => b && b.devGiftOnly).map(b => b.id));
         const validFrameIds = new Set((typeof PROFILE_FRAMES !== 'undefined' ? PROFILE_FRAMES : []).map(f => f.id));
         const validCoinIds = new Set((typeof MILESTONE_COINS !== 'undefined' ? MILESTONE_COINS : []).map(x => x.id));
 
+        const devGiftedBanners = Array.from(new Set([
+            ...(Array.isArray(c.devGiftedBanners) ? c.devGiftedBanners : []),
+            ...this._readJson(this.STORAGE_KEYS.devGiftedBanners, [])
+        ])).filter(id => validBannerIds.has(id));
+
         const unlockedBanners = Array.from(new Set([
             this.DEFAULT_BANNER,
-            ...(Array.isArray(c.unlockedBanners) ? c.unlockedBanners : this._readJson(this.STORAGE_KEYS.unlockedBanners, []))
-        ])).filter(id => validBannerIds.has(id));
+            ...(Array.isArray(c.unlockedBanners) ? c.unlockedBanners : this._readJson(this.STORAGE_KEYS.unlockedBanners, [])),
+            ...devGiftedBanners
+        ])).filter(id => validBannerIds.has(id) && (!devOnlyBannerIds.has(id) || devGiftedBanners.includes(id)));
 
         const unlockedFrames = Array.from(new Set([
             this.DEFAULT_FRAME,
@@ -93,17 +102,20 @@ class CosmeticManager {
             .filter(id => unlockedCoins.includes(id))
             .slice(0, this.MAX_DISPLAY_COINS);
 
-        return { equippedBanner, equippedFrame, displayedCoins, unlockedBanners, unlockedFrames, unlockedCoins };
+        return { equippedBanner, equippedFrame, displayedCoins, unlockedBanners, unlockedFrames, unlockedCoins, devGiftedBanners };
     }
 
     static saveState(nextState, syncRemote = false) {
+        const prevGifted = this._readJson(this.STORAGE_KEYS.devGiftedBanners, []);
+        const devGiftedBanners = Array.from(new Set([...(Array.isArray(prevGifted) ? prevGifted : []), ...(nextState.devGiftedBanners || [])]));
         const clean = {
             equippedBanner: nextState.equippedBanner || this.DEFAULT_BANNER,
             equippedFrame: nextState.equippedFrame || this.DEFAULT_FRAME,
             displayedCoins: Array.isArray(nextState.displayedCoins) ? nextState.displayedCoins.slice(0, this.MAX_DISPLAY_COINS) : [],
-            unlockedBanners: Array.from(new Set([this.DEFAULT_BANNER, ...(nextState.unlockedBanners || [])])),
+            unlockedBanners: Array.from(new Set([this.DEFAULT_BANNER, ...(nextState.unlockedBanners || []), ...devGiftedBanners])),
             unlockedFrames: Array.from(new Set([this.DEFAULT_FRAME, ...(nextState.unlockedFrames || [])])),
-            unlockedCoins: Array.from(new Set(nextState.unlockedCoins || []))
+            unlockedCoins: Array.from(new Set(nextState.unlockedCoins || [])),
+            devGiftedBanners
         };
         if (typeof window !== 'undefined' && window.GameState && window.GameState.player) {
             window.GameState.player.cosmetics = clean;
@@ -116,6 +128,7 @@ class CosmeticManager {
         this._writeJson(this.STORAGE_KEYS.unlockedBanners, clean.unlockedBanners);
         this._writeJson(this.STORAGE_KEYS.unlockedFrames, clean.unlockedFrames);
         this._writeJson(this.STORAGE_KEYS.unlockedCoins, clean.unlockedCoins);
+        this._writeJson(this.STORAGE_KEYS.devGiftedBanners, clean.devGiftedBanners);
 
         if (typeof window !== 'undefined' && window.EventBus) {
             window.EventBus.emit('cosmeticsUpdated', { cosmetics: clean });
@@ -218,6 +231,23 @@ class CosmeticManager {
         return true;
     }
 
+    static unlockDevExclusiveBanner(bannerId, autoEquip = true) {
+        if (!bannerId) return false;
+        const st = this.getState();
+        const devGiftedBanners = Array.from(new Set([...(st.devGiftedBanners || []), bannerId]));
+        const unlockedBanners = Array.from(new Set([...(st.unlockedBanners || []), bannerId]));
+        this.saveState({
+            ...st,
+            unlockedBanners,
+            devGiftedBanners,
+            equippedBanner: autoEquip ? bannerId : st.equippedBanner
+        }, true);
+        if (typeof ProfileCosmeticsUI !== 'undefined' && typeof ProfileCosmeticsUI.refreshHeaderPreview === 'function') {
+            ProfileCosmeticsUI.refreshHeaderPreview();
+        }
+        return true;
+    }
+
     static equipFrame(frameId) {
         const st = this.getState();
         if (!st.unlockedFrames.includes(frameId)) return false;
@@ -255,7 +285,7 @@ class CosmeticManager {
                     if (parsed && parsed.hasPremium) return true;
                 }
             }
-        } catch (_) {}
+        } catch (_) { }
         return false;
     }
 

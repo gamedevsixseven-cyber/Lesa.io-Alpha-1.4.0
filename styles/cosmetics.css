@@ -28,6 +28,13 @@
     color: #0f172a;
     border-color: #fef08a;
 }
+.cos-rarity-pill.rarity-exclusive {
+    background: linear-gradient(135deg, #ff2e7e, #00f5ff, #fde047);
+    background-size: 200% 200%;
+    animation: cosShimmerSweep 2.4s ease infinite;
+    color: #090b10;
+    border-color: #ffffff;
+}
 
 /* ==================== MILESTONE COINS ==================== */
 .cos-coin {

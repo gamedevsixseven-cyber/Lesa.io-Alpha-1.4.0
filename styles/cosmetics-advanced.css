@@ -135,13 +135,72 @@
 }
 
 .cos-banner-vf185-turbo {
-    background: linear-gradient(112deg, transparent 32%, rgba(255, 71, 133, 0.42) 48%, rgba(34, 211, 238, 0.34) 55%, transparent 70%),
+    background: linear-gradient(112deg, transparent 28%, rgba(255, 46, 126, 0.48) 46%, rgba(0, 245, 255, 0.42) 54%, transparent 72%),
                 repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.05) 0 4px, transparent 4px 10px),
-                linear-gradient(135deg, #090b10 0%, #161820 55%, #3b0764 100%) !important;
-    background-size: 205% 100%, 100% 100%, 150% 150% !important;
-    animation: cosGleamTrack 2.9s linear infinite;
-    border-color: #ff4785 !important;
+                radial-gradient(circle at 84% 50%, rgba(255, 46, 126, 0.55), transparent 56%),
+                linear-gradient(135deg, #07080d 0%, #151926 46%, #4c0519 82%, #1e1b4b 100%) !important;
+    background-size: 210% 100%, 100% 100%, 100% 100%, 160% 160% !important;
+    animation: cosGleamTrack 2.6s linear infinite, cosVfPulse 2.4s ease-in-out infinite;
+    border-color: #ff2e7e !important;
 }
+
+.cos-banner-vf185-apex {
+    background: linear-gradient(110deg, transparent 24%, rgba(0, 245, 255, 0.45) 42%, rgba(255, 46, 126, 0.55) 50%, rgba(254, 211, 48, 0.48) 58%, transparent 76%),
+                repeating-linear-gradient(-38deg, rgba(255, 255, 255, 0.055) 0 3px, transparent 3px 8px),
+                radial-gradient(circle at 84% 50%, rgba(255, 46, 126, 0.72), rgba(0, 245, 255, 0.28) 38%, transparent 62%),
+                linear-gradient(135deg, #05060a 0%, #131726 36%, #500724 68%, #0f172a 100%) !important;
+    background-size: 220% 100%, 100% 100%, 100% 100%, 175% 175% !important;
+    animation: cosGleamTrack 2.2s linear infinite, cosVfPulse 1.9s ease-in-out infinite;
+    border-color: #00f5ff !important;
+}
+
+@keyframes cosVfPulse {
+    0%, 100% { box-shadow: 0 0 0 2px #090b12, 0 0 16px rgba(255, 46, 126, 0.85), inset 0 0 14px rgba(0, 245, 255, 0.25); border-color: #ff2e7e !important; }
+    50% { box-shadow: 0 0 0 2px #090b12, 0 0 24px rgba(0, 245, 255, 0.95), inset 0 0 18px rgba(254, 211, 48, 0.32); border-color: #00f5ff !important; }
+}
+@keyframes cosVfSpeedStreak {
+    0% { stroke-dashoffset: 0; }
+    100% { stroke-dashoffset: -224; }
+}
+@keyframes cosVfNeedleRev {
+    0%, 100% { transform: rotate(-42deg); }
+    35% { transform: rotate(48deg); }
+    55% { transform: rotate(32deg); }
+    78% { transform: rotate(56deg); }
+}
+@keyframes cosVfWheelSpin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+@keyframes cosVfFlameBlast {
+    0%, 100% { transform: scaleX(0.75) scaleY(0.88); opacity: 0.75; }
+    50% { transform: scaleX(1.32) scaleY(1.14); opacity: 1; filter: drop-shadow(0 0 6px #00f5ff); }
+}
+@keyframes cosVfBikeRide {
+    0%, 100% { transform: translate(182px, 10px) scale(0.76) rotate(0deg); }
+    50% { transform: translate(184px, 8px) scale(0.76) rotate(-2.4deg); }
+}
+
+.cos-vf-streak { animation: cosVfSpeedStreak 1.15s linear infinite; }
+.cos-vf-streak.s2 { animation-duration: 0.85s; }
+.cos-vf-streak.s3 { animation-duration: 1.4s; }
+.cos-vf-streak.s4 { animation-duration: 0.95s; }
+.cos-vf-needle { transform-origin: 0px 0px; animation: cosVfNeedleRev 1.35s cubic-bezier(0.4, 0, 0.2, 1) infinite; }
+.cos-vf-wheel { transform-origin: 0px 0px; animation: cosVfWheelSpin 0.48s linear infinite; }
+.cos-vf-flame { transform-origin: 20px 66px; animation: cosVfFlameBlast 0.22s ease-in-out infinite; }
+.cos-vf-bike { animation: cosVfBikeRide 0.85s ease-in-out infinite; }
+
+.cos-vf185-tag-pill {
+    position: absolute; right: 10px; bottom: 5px;
+    padding: 1px 7px; border-radius: 999px;
+    background: linear-gradient(90deg, #ff2e7e, #7e22ce);
+    border: 1px solid #fde047; color: #ffffff;
+    font-family: 'Luckiest Guy', cursive; font-size: 0.62rem; letter-spacing: 0.8px;
+    box-shadow: 0 0 8px rgba(255, 46, 126, 0.8); pointer-events: none;
+}
+.friend-card .cos-vf185-tag-pill,
+.friends-id-banner .cos-vf185-tag-pill,
+.lb-item .cos-vf185-tag-pill { display: none; }
 
 .cos-banner-olympus-lightning {
     background: linear-gradient(115deg, transparent 32%, rgba(224, 242, 254, 0.45) 50%, transparent 68%),

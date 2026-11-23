@@ -4,12 +4,13 @@
  */
 
 const COSMETIC_RARITIES = {
-    common:    { key: 'common',    label: 'STARTER',    rank: 1, color: '#94a3b8', bg: '#334155', glow: 'rgba(148,163,184,0.28)' },
-    rare:      { key: 'rare',      label: 'RARE',       rank: 2, color: '#38bdf8', bg: '#0c4a6e', glow: 'rgba(56,189,248,0.38)' },
-    epic:      { key: 'epic',      label: 'EPIC',       rank: 3, color: '#c084fc', bg: '#4c1d95', glow: 'rgba(192,132,252,0.45)' },
-    legendary: { key: 'legendary', label: 'LEGENDARY',  rank: 4, color: '#fbbf24', bg: '#78350f', glow: 'rgba(251,191,36,0.52)' },
-    mythic:    { key: 'mythic',    label: 'MYTHIC',     rank: 5, color: '#fb7185', bg: '#881337', glow: 'rgba(244,63,94,0.58)' },
-    celestial: { key: 'celestial', label: 'ULTRA RARE', rank: 6, color: '#fde047', bg: '#311042', glow: 'rgba(56,189,248,0.75)' }
+    common: { key: 'common', label: 'STARTER', rank: 1, color: '#94a3b8', bg: '#334155', glow: 'rgba(148,163,184,0.28)' },
+    rare: { key: 'rare', label: 'RARE', rank: 2, color: '#38bdf8', bg: '#0c4a6e', glow: 'rgba(56,189,248,0.38)' },
+    epic: { key: 'epic', label: 'EPIC', rank: 3, color: '#c084fc', bg: '#4c1d95', glow: 'rgba(192,132,252,0.45)' },
+    legendary: { key: 'legendary', label: 'LEGENDARY', rank: 4, color: '#fbbf24', bg: '#78350f', glow: 'rgba(251,191,36,0.52)' },
+    mythic: { key: 'mythic', label: 'MYTHIC', rank: 5, color: '#fb7185', bg: '#881337', glow: 'rgba(244,63,94,0.58)' },
+    celestial: { key: 'celestial', label: 'ULTRA RARE', rank: 6, color: '#fde047', bg: '#311042', glow: 'rgba(56,189,248,0.75)' },
+    exclusive: { key: 'exclusive', label: 'EXCLUSIVE', rank: 7, color: '#ff2e7e', bg: '#3b0764', glow: 'rgba(0,245,255,0.85)' }
 };
 
 const PROFILE_BANNERS = [

@@ -51,12 +51,26 @@
             name: 'VF185 Street Turbo',
             rarity: 'legendary',
             cssClass: 'cos-banner-vf185-turbo',
-            fxTheme: 'cyber_speed',
+            fxTheme: 'vf185_overdrive',
             desc: 'Gloss obsidian carbon weave streaked with pulsing magenta & cyan nitro lines.',
             unlockHint: 'Complete 40 Matches or Defeat 5 Endless Mini-Bosses',
             targetVal: () => 40,
             currentVal: (s) => (s.endlessMiniBossKills >= 5) ? 40 : Math.min(40, s.matchesPlayed),
             isUnlocked: (s) => s.matchesPlayed >= 40 || s.endlessMiniBossKills >= 5
+        },
+        {
+            id: 'banner_vf185_apex',
+            name: 'SYM VF 185 Kolones',
+            rarity: 'exclusive',
+            cssClass: 'cos-banner-vf185-apex',
+            fxTheme: 'vf185_overdrive',
+            hiddenUntilUnlocked: true,
+            devGiftOnly: true,
+            desc: 'EXCLUSIVE: Live 12,000 RPM Kolones redline tachometer, spinning 17" rims, exhaust flames & LED headlight overdrive.',
+            unlockHint: 'Exclusive Developer Gift Only',
+            targetVal: () => 1,
+            currentVal: () => 0,
+            isUnlocked: () => false
         },
         {
             id: 'banner_olympus_lightning',

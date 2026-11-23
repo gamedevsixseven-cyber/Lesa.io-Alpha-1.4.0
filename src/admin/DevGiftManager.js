@@ -65,6 +65,7 @@ class DevGiftManager {
         const gems = Math.min(100000000, Math.max(0, Math.floor(Number(raw.gems) || 0)));
         const coins = Math.min(1000000000, Math.max(0, Math.floor(Number(raw.coins) || 0)));
         const battlePass = Boolean(raw.battlePass);
+        const exclusiveBanner = (raw.exclusiveBanner === 'banner_vf185_apex' || raw.vf185Banner === true) ? 'banner_vf185_apex' : '';
         const note = String(raw.note || '').trim().slice(0, 120);
 
         const chests = {};
@@ -82,8 +83,8 @@ class DevGiftManager {
         }
 
         const hasChests = Object.keys(chests).length > 0;
-        const isEmpty = gems <= 0 && coins <= 0 && !hasChests && !battlePass;
-        return { gems, coins, chests, battlePass, note, isEmpty };
+        const isEmpty = gems <= 0 && coins <= 0 && !hasChests && !battlePass && !exclusiveBanner;
+        return { gems, coins, chests, battlePass, exclusiveBanner, note, isEmpty };
     }
 
     static formatGiftSummary(spec) {
@@ -96,6 +97,7 @@ class DevGiftManager {
             }
         }
         if (spec.battlePass) parts.push('👑 Battle Pass VIP');
+        if (spec.exclusiveBanner === 'banner_vf185_apex') parts.push('🏍️ SYM VF 185 Kolones Banner');
         return parts.join(' • ');
     }
 
@@ -106,23 +108,14 @@ class DevGiftManager {
         if (!db || !targetInfo || !targetInfo.uid) throw new Error('Invalid target account.');
 
         const clean = this.sanitizeGiftSpec(rawSpec);
-        if (clean.isEmpty) {
-            throw new Error('Select at least one gift (Diamonds, Gold, Chests, or Battle Pass VIP).');
-        }
+        if (clean.isEmpty) throw new Error('Select at least one gift item.');
 
-        const candidateDocIds = Array.from(new Set([
-            targetInfo.uid,
-            ...(Array.isArray(targetInfo.altDocIds) ? targetInfo.altDocIds : [])
-        ].filter(Boolean)));
-
+        const candidateDocIds = Array.from(new Set([targetInfo.uid, ...(Array.isArray(targetInfo.altDocIds) ? targetInfo.altDocIds : [])].filter(Boolean)));
         let targetRef = null;
         for (const docId of candidateDocIds) {
             const ref = db.collection('players').doc(docId);
             const snap = await ref.get().catch(() => null);
-            if (snap && snap.exists) {
-                targetRef = ref;
-                break;
-            }
+            if (snap && snap.exists) { targetRef = ref; break; }
         }
         if (!targetRef) throw new Error('Target player document not found in Firestore.');
 
@@ -132,6 +125,7 @@ class DevGiftManager {
             coins: clean.coins,
             chests: clean.chests,
             battlePass: clean.battlePass,
+            exclusiveBanner: clean.exclusiveBanner || '',
             note: clean.note,
             sentAt: Date.now()
         };
@@ -208,10 +202,14 @@ class DevGiftManager {
                     </div>
                 </div>
                 <div class="admin-dev-gift-field">
-                    <label for="admin-gift-note-input">👑 Battle Pass VIP &amp; Note</label>
+                    <label for="admin-gift-note-input">👑 VIP, Exclusive Banner &amp; Note</label>
                     <label class="admin-dev-vip-toggle">
                         <input type="checkbox" id="admin-gift-bp-check">
                         <span>Gift Season Battle Pass (VIP)</span>
+                    </label>
+                    <label class="admin-dev-vip-toggle">
+                        <input type="checkbox" id="admin-gift-vf185-check">
+                        <span>🏍️ Exclusive Banner: SYM VF 185 Kolones</span>
                     </label>
                     <input type="text" id="admin-gift-note-input" class="admin-text-input" maxlength="120" placeholder="Optional message shown to player...">
                 </div>
@@ -260,6 +258,7 @@ class DevGiftManager {
                 coins: document.getElementById('admin-gift-coins-input')?.value,
                 chests,
                 battlePass: Boolean(document.getElementById('admin-gift-bp-check')?.checked),
+                vf185Banner: Boolean(document.getElementById('admin-gift-vf185-check')?.checked),
                 note: document.getElementById('admin-gift-note-input')?.value
             };
             const clean = this.sanitizeGiftSpec(spec);
@@ -305,7 +304,7 @@ class DevGiftManager {
             if (id && !arr.includes(id)) arr.push(id);
         }
         const trimmed = arr.slice(-this.MAX_CLAIMED_HISTORY);
-        try { localStorage.setItem(this.CLAIMED_STORAGE_KEY, JSON.stringify(trimmed)); } catch (_) {}
+        try { localStorage.setItem(this.CLAIMED_STORAGE_KEY, JSON.stringify(trimmed)); } catch (_) { }
     }
 
     static scheduleClaimRetry(cloudData, cloudSave) {
@@ -362,7 +361,7 @@ class DevGiftManager {
                     inv.chests[type] = (inv.chests[type] || 0) + qty;
                     inv.freeChests[type] = (inv.freeChests[type] || 0) + qty;
                     localStorage.setItem('lesaio_inventory', JSON.stringify(inv));
-                } catch (_) {}
+                } catch (_) { }
             }
         }
     }
@@ -383,7 +382,7 @@ class DevGiftManager {
                 if (typeof window !== 'undefined' && window.GameState && window.GameState.player) {
                     window.GameState.player.battlePass = cur;
                 }
-            } catch (_) {}
+            } catch (_) { }
         }
         if (typeof window !== 'undefined') {
             if (window.battlePassModalUI && typeof window.battlePassModalUI.render === 'function') {
@@ -409,15 +408,13 @@ class DevGiftManager {
     }
 
     static _aggregateGifts(gifts) {
-        let totalCoins = 0;
-        let totalGems = 0;
-        const chestTotals = {};
-        let grantVip = false;
-        const notes = [];
+        let totalCoins = 0, totalGems = 0, grantVip = false, exclusiveBanner = '';
+        const chestTotals = {}, notes = [];
         for (const gift of gifts) {
             totalCoins += Math.max(0, Math.floor(Number(gift.coins) || 0));
             totalGems += Math.max(0, Math.floor(Number(gift.gems) || 0));
             if (gift.battlePass) grantVip = true;
+            if (gift.exclusiveBanner === 'banner_vf185_apex') exclusiveBanner = 'banner_vf185_apex';
             if (gift.chests && typeof gift.chests === 'object') {
                 for (const [k, v] of Object.entries(gift.chests)) {
                     const qty = Math.min(99, Math.max(0, Math.floor(Number(v) || 0)));
@@ -426,7 +423,7 @@ class DevGiftManager {
             }
             if (gift.note && String(gift.note).trim()) notes.push(String(gift.note).trim());
         }
-        return { totalCoins, totalGems, chestTotals, grantVip, notes };
+        return { totalCoins, totalGems, chestTotals, grantVip, exclusiveBanner, notes };
     }
 
     static claimPendingGifts(cloudData, cloudSave) {
@@ -479,7 +476,7 @@ class DevGiftManager {
             layer.appendChild(modal);
         }
 
-        const { totalCoins, totalGems, chestTotals, grantVip, notes } = this._aggregateGifts(pendingGifts);
+        const { totalCoins, totalGems, chestTotals, grantVip, exclusiveBanner, notes } = this._aggregateGifts(pendingGifts);
         const cards = [];
 
         if (totalGems > 0) {
@@ -497,6 +494,9 @@ class DevGiftManager {
         }
         if (grantVip) {
             cards.push(`<div class="dev-gift-reward-card is-vip"><div class="dev-gift-vip-crown">👑</div><div class="dev-gift-reward-amount">VIP PASS</div><div class="dev-gift-reward-label">SEASON BATTLE PASS</div></div>`);
+        }
+        if (exclusiveBanner === 'banner_vf185_apex') {
+            cards.push(`<div class="dev-gift-reward-card is-vip" style="grid-column:1 / -1;"><div class="cos-banner-preview cos-banner-vf185-apex" style="width:100%;min-height:54px;border-radius:10px;"><span class="cos-rarity-pill rarity-exclusive">EXCLUSIVE</span><span class="cos-preview-name">SYM VF 185 Kolones</span></div><div class="dev-gift-reward-label">EXCLUSIVE PROFILE BANNER</div></div>`);
         }
 
         const noteHtml = notes.length > 0
@@ -517,6 +517,7 @@ class DevGiftManager {
         `;
 
         modal.classList.remove('hidden');
+        if (typeof CosmeticEffectsEngine !== 'undefined') CosmeticEffectsEngine.decorateContainer(modal);
         if (typeof window !== 'undefined' && window.soundEngine && typeof window.soundEngine.playPickup === 'function') {
             window.soundEngine.playPickup('star');
         }
@@ -540,17 +541,21 @@ class DevGiftManager {
         if (pending.length === 0) return false;
 
         this._markClaimedIds(pending.map(g => g.id));
-        const { totalCoins, totalGems, chestTotals, grantVip } = this._aggregateGifts(pending);
+        const { totalCoins, totalGems, chestTotals, grantVip, exclusiveBanner } = this._aggregateGifts(pending);
 
         this._grantCurrencies(totalCoins, totalGems, cloudSave);
         this._grantChests(chestTotals);
         if (grantVip) this._grantBattlePassVip();
+        if (exclusiveBanner && typeof CosmeticManager !== 'undefined' && typeof CosmeticManager.unlockDevExclusiveBanner === 'function') {
+            CosmeticManager.unlockDevExclusiveBanner(exclusiveBanner, true);
+        }
 
         const summary = this.formatGiftSummary({
             gems: totalGems,
             coins: totalCoins,
             chests: chestTotals,
-            battlePass: grantVip
+            battlePass: grantVip,
+            exclusiveBanner
         });
 
         if (typeof window !== 'undefined') {
@@ -569,7 +574,7 @@ class DevGiftManager {
                 if (uid && typeof firebase !== 'undefined' && firebase.firestore && firebase.firestore.FieldValue) {
                     cloudSave.db.collection('players').doc(uid).update({
                         devGifts: firebase.firestore.FieldValue.arrayRemove(...pending)
-                    }).catch(() => {});
+                    }).catch(() => { });
                 }
                 setTimeout(() => {
                     if (window.SaveSerializer && window.GameState) {

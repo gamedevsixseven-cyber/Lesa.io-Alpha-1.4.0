@@ -70,6 +70,89 @@ class CosmeticEffectsEngine {
                 <polyline class="cos-bolt b2" points="262,8 244,36 256,42 232,84" fill="none" stroke="#38bdf8" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>`;
         }
+        if (theme === 'vf185_overdrive') {
+            return `<svg viewBox="0 0 300 90" preserveAspectRatio="none" class="cos-fx-svg cos-vf185-svg">
+                <defs>
+                    <linearGradient id="vfNitBeam" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" stop-color="#ff2e7e" stop-opacity="0"/>
+                        <stop offset="45%" stop-color="#ff2e7e" stop-opacity="0.85"/>
+                        <stop offset="80%" stop-color="#00f5ff" stop-opacity="0.95"/>
+                        <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+                    </linearGradient>
+                    <linearGradient id="vfHeadCone" x1="0%" y1="50%" x2="100%" y2="50%">
+                        <stop offset="0%" stop-color="#00f5ff" stop-opacity="0.78"/>
+                        <stop offset="45%" stop-color="#e0f2fe" stop-opacity="0.32"/>
+                        <stop offset="100%" stop-color="#00f5ff" stop-opacity="0"/>
+                    </linearGradient>
+                    <linearGradient id="vfFlameGrad" x1="100%" y1="50%" x2="0%" y2="50%">
+                        <stop offset="0%" stop-color="#ffffff"/>
+                        <stop offset="30%" stop-color="#00f5ff"/>
+                        <stop offset="65%" stop-color="#ff2e7e"/>
+                        <stop offset="100%" stop-color="#fde047" stop-opacity="0"/>
+                    </linearGradient>
+                </defs>
+                <!-- High-Velocity Asphalt & Nitro Speedlines -->
+                <line class="cos-vf-streak s1" x1="-60" y1="16" x2="340" y2="16" stroke="url(#vfNitBeam)" stroke-width="2.2" stroke-dasharray="48 64"/>
+                <line class="cos-vf-streak s2" x1="-40" y1="78" x2="350" y2="78" stroke="url(#vfNitBeam)" stroke-width="2.6" stroke-dasharray="62 52"/>
+                <line class="cos-vf-streak s3" x1="-80" y1="44" x2="330" y2="44" stroke="#fde047" stroke-width="1.3" stroke-dasharray="26 90" opacity="0.75"/>
+                <line class="cos-vf-streak s4" x1="-30" y1="64" x2="340" y2="64" stroke="#00f5ff" stroke-width="1.6" stroke-dasharray="36 78" opacity="0.8"/>
+
+                <!-- Live 12,000 RPM Redline Tachometer HUD (Shifted Right) -->
+                <g class="cos-vf-tach" transform="translate(140, 47)">
+                    <path d="M-24 14 A 27 27 0 1 1 24 14" fill="none" stroke="rgba(255,255,255,0.16)" stroke-width="4.2" stroke-linecap="round"/>
+                    <path d="M-24 14 A 27 27 0 0 1 10 -25" fill="none" stroke="#00f5ff" stroke-width="4.2" stroke-dasharray="5 3" stroke-linecap="round"/>
+                    <path class="cos-vf-redline" d="M10 -25 A 27 27 0 0 1 24 14" fill="none" stroke="#ff2e7e" stroke-width="4.8" stroke-linecap="round"/>
+                    <g class="cos-vf-needle">
+                        <polygon points="-1.8,4 0,-23 1.8,4" fill="#fde047"/>
+                        <circle cx="0" cy="0" r="3.6" fill="#ff2e7e" stroke="#ffffff" stroke-width="1"/>
+                    </g>
+                    <text x="0" y="17" font-family="sans-serif" font-weight="900" font-size="7.5" fill="#fde047" text-anchor="middle" letter-spacing="0.6">KOLONES</text>
+                </g>
+
+                <!-- Animated SYM VF 185 Super-Moped Silhouette with Spinning 17" Rims & Exhaust Backfire (Shifted Right) -->
+                <g class="cos-vf-bike" transform="translate(182, 10) scale(0.76)">
+                    <!-- Sweeping LED Headlight Cone -->
+                    <polygon class="cos-vf-headlight" points="94,45 185,22 185,68" fill="url(#vfHeadCone)"/>
+                    <!-- Twin Exhaust Nitro Backfire Flame -->
+                    <polygon class="cos-vf-flame" points="20,64 -26,51 -12,63 -32,68 -10,71 -22,78 21,71" fill="url(#vfFlameGrad)"/>
+                    <!-- Rear 17" Wheel -->
+                    <g transform="translate(31, 80)">
+                        <circle r="16.5" fill="#0d0f14" stroke="#ff2e7e" stroke-width="2.2"/>
+                        <g class="cos-vf-wheel">
+                            <circle r="12.5" fill="none" stroke="#f8fafc" stroke-width="1.5" stroke-dasharray="11 7"/>
+                            <line x1="0" y1="-12" x2="0" y2="12" stroke="#94a3b8" stroke-width="2.2"/>
+                            <line x1="-11" y1="-4" x2="11" y2="4" stroke="#94a3b8" stroke-width="2.2"/>
+                            <line x1="-8" y1="9" x2="8" y2="-9" stroke="#94a3b8" stroke-width="2.2"/>
+                        </g>
+                        <circle r="5.5" fill="#cbd5e1"/><rect x="1" y="-7" width="5" height="4" rx="1" fill="#fde047"/>
+                    </g>
+                    <!-- Front 17" Wheel -->
+                    <g transform="translate(95, 80)">
+                        <circle r="16" fill="#0d0f14" stroke="#00f5ff" stroke-width="2.2"/>
+                        <g class="cos-vf-wheel">
+                            <circle r="12" fill="none" stroke="#f8fafc" stroke-width="1.5" stroke-dasharray="11 7"/>
+                            <line x1="0" y1="-11.5" x2="0" y2="11.5" stroke="#94a3b8" stroke-width="2.2"/>
+                            <line x1="-11" y1="4" x2="11" y2="-4" stroke="#94a3b8" stroke-width="2.2"/>
+                            <line x1="-8" y1="-8" x2="8" y2="8" stroke="#94a3b8" stroke-width="2.2"/>
+                        </g>
+                        <circle r="6.2" fill="#e2e8f0"/><rect x="-7" y="-7" width="5" height="4" rx="1" fill="#fde047"/>
+                    </g>
+                    <!-- Swept Muffler, Forks & Sharp Underbone Body -->
+                    <path d="M50 82 L20 69 L19 61 L54 75 Z" fill="#1e222d" stroke="#00f5ff" stroke-width="1.4"/>
+                    <line x1="84" y1="48" x2="95" y2="80" stroke="#e2e8f0" stroke-width="3.6" stroke-linecap="round"/>
+                    <path d="M18 52 L54 48 L67 57 L84 39 L94 45 L86 73 L68 78 L54 77 L42 62 L20 60 Z" fill="#12151f" stroke="#ff2e7e" stroke-width="2" stroke-linejoin="round"/>
+                    <path d="M68 58 L82 47 L85 52 L71 64 Z" fill="#ff2e7e"/>
+                    <path d="M70 61 L83 51 L84 54 L72 64 Z" fill="#00f5ff"/>
+                    <polygon points="88,42 96,45 91,50 86,46" fill="#00f5ff"/>
+                    <path d="M71 34 L86 29 L90 37 L75 40 Z" fill="#1e2433" stroke="#fde047" stroke-width="1.5"/>
+                </g>
+
+                <!-- Neon Sparks & Speed Stars -->
+                <path class="cos-star cos-lx-flash f1" d="M36 22l2.4 6.5 6.5 2.4-6.5 2.4-2.4 6.5-2.4-6.5-6.5-2.4 6.5-2.4z" fill="#00f5ff"/>
+                <path class="cos-star cos-lx-flash f2" d="M174 18l2.2 6 6 2.2-6 2.2-2.2 6-2.2-6-6-2.2 6-2.2z" fill="#ff2e7e"/>
+            </svg>
+            <div class="cos-vf185-tag-pill" aria-hidden="true"><span>VF 185</span></div>`;
+        }
         if (theme === 'lil_xas') {
             return `<svg viewBox="0 0 300 90" preserveAspectRatio="none" class="cos-fx-svg cos-lilxas-svg">
                 <g class="cos-lx-beam b1"><polygon points="56,90 12,-10 74,-10" fill="rgba(0, 245, 255, 0.22)"/></g>
