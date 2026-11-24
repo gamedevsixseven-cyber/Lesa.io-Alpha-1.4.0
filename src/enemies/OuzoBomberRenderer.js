@@ -7,7 +7,9 @@
 
 class OuzoBomberRenderer {
     static draw(ctx, e) {
-        OuzoBomberRenderer.drawFireZones(ctx, e.fireZones, e.age || 0);
+        if (typeof EnemyBatchRenderer === 'undefined' || !EnemyBatchRenderer.active) {
+            OuzoBomberRenderer.drawFireZones(ctx, e.fireZones, e.age || 0);
+        }
 
         const r = e.radius || 25;
         const flash = e.hitFlash > 0;
@@ -17,21 +19,21 @@ class OuzoBomberRenderer {
         const isBack = Math.sin(aimAngle) < -0.68;
         const bob = Math.sin(e.walkCycle || age * 0.18) * 3;
 
-        ctx.save();
         EndlessEnemyRenderer.drawShadow(ctx, e.x, e.y, r, 0.98, 0.38);
-        ctx.translate(e.x, e.y + bob);
 
         if (typeof SpriteAtlasCache !== 'undefined') {
+            const bins = SpriteAtlasCache.getWalkBins(8);
             const rKey = Math.round(r * 2);
-            const walkBin = SpriteAtlasCache.quantizePhase(e.walkCycle || age * 0.18, 8);
-            const qCycle = SpriteAtlasCache.binAngle(walkBin, 8);
-            const bandBin = walkBin >> 1;
+            const walkBin = SpriteAtlasCache.quantizePhase(e.walkCycle || age * 0.18, bins);
+            const qCycle = SpriteAtlasCache.binAngle(walkBin, bins);
+            const bandBin = Math.min(3, Math.floor((walkBin / bins) * 4));
             const qBandAge = SpriteAtlasCache.binAngle(bandBin, 4) / 0.22;
             const bodyKey = `ouzo_b:${rKey}:${walkBin}:${isBack ? 1 : 0}:${flash ? 1 : 0}`;
             const bw = Math.ceil(r * 3.8);
             const bh = Math.ceil(r * 3.8);
+            const wy = e.y + bob;
 
-            SpriteAtlasCache.drawCached(ctx, bodyKey, bw, bh, bw * 0.5, bh * 0.5, (bctx) => {
+            SpriteAtlasCache.drawCachedAt(ctx, e.x, wy, bodyKey, bw, bh, bw * 0.5, bh * 0.5, (bctx) => {
                 bctx.lineWidth = 2.6;
                 bctx.strokeStyle = '#141418';
                 EndlessEnemyRenderer.drawLimbs(bctx, r, qCycle, '#222f3e', '#d63031', flash);
@@ -43,7 +45,7 @@ class OuzoBomberRenderer {
             const qFlickAge = SpriteAtlasCache.binAngle(flickBin, 4) / 0.35;
             const lighterKey = `ouzo_l:${rKey}:${flickBin}:${flash ? 1 : 0}`;
             const lw = Math.ceil(r * 3.4);
-            SpriteAtlasCache.drawCached(ctx, lighterKey, lw, lw, lw * 0.5, lw * 0.5, (lctx) => {
+            SpriteAtlasCache.drawCachedAt(ctx, e.x, wy, lighterKey, lw, lw, lw * 0.5, lw * 0.5, (lctx) => {
                 lctx.lineWidth = 2.6;
                 lctx.strokeStyle = '#141418';
                 OuzoBomberRenderer.drawLighterOffHand(lctx, r, qFlickAge, flash);
@@ -51,7 +53,7 @@ class OuzoBomberRenderer {
 
             const anchorX = facingLeft ? -r * 0.22 : r * 0.22;
             const lobSwing = Math.sin(age * 0.18) * 0.24;
-            EndlessEnemyRenderer.drawAimedLayer(ctx, aimAngle + lobSwing, anchorX, r * 0.02, () => {
+            EndlessEnemyRenderer.drawAimedLayer(ctx, aimAngle + lobSwing, e.x + anchorX, wy + r * 0.02, () => {
                 const bottleKey = `ouzo_m:${rKey}:${flickBin}:${flash ? 1 : 0}`;
                 const mw = Math.ceil(r * 3.2);
                 const mh = Math.ceil(r * 3.2);
@@ -60,8 +62,14 @@ class OuzoBomberRenderer {
                     mctx.strokeStyle = '#141418';
                     OuzoBomberRenderer.drawLitOuzoBottle(mctx, r, qFlickAge, flash);
                 });
-            });
-        } else {
+            }, true);
+            if (typeof e.drawOverheadHUD === 'function') e.drawOverheadHUD(ctx);
+            return;
+        }
+
+        ctx.save();
+        ctx.translate(e.x, e.y + bob);
+        {
             ctx.lineWidth = 2.6;
             ctx.strokeStyle = '#141418';
 

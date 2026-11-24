@@ -112,27 +112,41 @@ class Astynomos extends EnemyBase {
     }
 
     draw(ctx) {
-        ctx.save();
         const flash = this.hitFlash > 0;
-        const groundY = this.y;
         const bob = Math.sin(this.walkCycle) * 2.2;
+        const facingLeft = Math.cos(this.angle) < 0;
 
         // 1. Ground Shadow
-        ctx.save();
-        ctx.translate(this.x, groundY);
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.28)';
-        ctx.beginPath();
-        ctx.ellipse(0, this.radius * 0.75, this.radius * 0.9, this.radius * 0.35, 0, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.restore();
+        if (typeof EnemyBatchRenderer === 'undefined' || !EnemyBatchRenderer.active) {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.28)';
+            ctx.beginPath();
+            ctx.ellipse(this.x, this.y + this.radius * 0.75, this.radius * 0.9, this.radius * 0.35, 0, 0, Math.PI * 2);
+            ctx.fill();
+        }
 
-        // 2. Character Model
+        if (this.swingAnimTimer <= 0 && typeof SpriteAtlasCache !== 'undefined') {
+            const r = this.radius || 24;
+            const rKey = Math.round(r * 2);
+            const bw = Math.ceil(r * 3.4);
+            const bh = Math.ceil(r * 3.4);
+            const key = `astynomos_b:${rKey}:${this.isMAT ? 1 : 0}:${flash ? 1 : 0}`;
+            SpriteAtlasCache.drawCachedAt(ctx, this.x, this.y + bob, key, bw, bh, bw * 0.5, bh * 0.5, (bctx) => {
+                this._drawAstynomosModel(bctx, flash);
+            }, { flipX: facingLeft });
+            this.drawHUD(ctx);
+            return;
+        }
+
         ctx.save();
         ctx.translate(this.x, this.y + bob);
-
-        const facingLeft = Math.cos(this.angle) < 0;
         if (facingLeft) ctx.scale(-1, 1);
+        this._drawAstynomosModel(ctx, flash);
+        ctx.restore();
 
+        this.drawHUD(ctx);
+    }
+
+    _drawAstynomosModel(ctx, flash) {
         ctx.lineWidth = 2.4;
         ctx.strokeStyle = '#1e272e';
 
@@ -252,14 +266,10 @@ class Astynomos extends EnemyBase {
         ctx.fill();
         ctx.stroke();
         ctx.restore();
-
-        ctx.restore(); // Character
-        ctx.restore(); // Total
-
-        this.drawHUD(ctx);
     }
 
     drawHUD(ctx) {
+        if (typeof EnemyBatchRenderer !== 'undefined' && EnemyBatchRenderer.active) return;
         if (this.hp >= this.maxHp) return;
         const bw = this.radius * 1.8;
         const bh = 5;

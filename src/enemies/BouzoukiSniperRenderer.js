@@ -20,19 +20,19 @@ class BouzoukiSniperRenderer {
             BouzoukiSniperRenderer.drawLaserTelegraph(ctx, e);
         }
 
-        ctx.save();
         EndlessEnemyRenderer.drawShadow(ctx, e.x, e.y, r, 0.96, 0.38);
-        ctx.translate(e.x, e.y + bob);
 
         if (!isAiming && typeof SpriteAtlasCache !== 'undefined') {
+            const bins = SpriteAtlasCache.getWalkBins(8);
             const rKey = Math.round(r * 2);
-            const walkBin = SpriteAtlasCache.quantizePhase(e.walkCycle || age * 0.16, 8);
-            const qCycle = SpriteAtlasCache.binAngle(walkBin, 8);
+            const walkBin = SpriteAtlasCache.quantizePhase(e.walkCycle || age * 0.16, bins);
+            const qCycle = SpriteAtlasCache.binAngle(walkBin, bins);
             const bodyKey = `sniper_b:${rKey}:${walkBin}:${isBack ? 1 : 0}:${flash ? 1 : 0}`;
             const bw = Math.ceil(r * 4.0);
             const bh = Math.ceil(r * 4.2);
+            const wy = e.y + bob;
 
-            SpriteAtlasCache.drawCached(ctx, bodyKey, bw, bh, bw * 0.5, bh * 0.5, (bctx) => {
+            SpriteAtlasCache.drawCachedAt(ctx, e.x, wy, bodyKey, bw, bh, bw * 0.5, bh * 0.5, (bctx) => {
                 bctx.lineWidth = 2.6;
                 bctx.strokeStyle = '#141418';
                 EndlessEnemyRenderer.drawLimbs(bctx, r, qCycle, '#2f3640', '#141418', flash);
@@ -41,7 +41,7 @@ class BouzoukiSniperRenderer {
             }, { flipX: facingLeft });
 
             const anchorX = facingLeft ? -r * 0.14 : r * 0.14;
-            EndlessEnemyRenderer.drawAimedLayer(ctx, aimAngle, anchorX, r * 0.04, () => {
+            EndlessEnemyRenderer.drawAimedLayer(ctx, aimAngle, e.x + anchorX, wy + r * 0.04, () => {
                 const gunKey = `sniper_g:${rKey}:${flash ? 1 : 0}`;
                 const gw = Math.ceil(r * 5.2);
                 const gh = Math.ceil(r * 2.8);
@@ -50,8 +50,14 @@ class BouzoukiSniperRenderer {
                     gctx.strokeStyle = '#141418';
                     BouzoukiSniperRenderer.drawBouzoukiRifle(gctx, r, 0, false, flash);
                 });
-            });
-        } else {
+            }, true);
+            if (typeof e.drawOverheadHUD === 'function') e.drawOverheadHUD(ctx);
+            return;
+        }
+
+        ctx.save();
+        ctx.translate(e.x, e.y + bob);
+        {
             ctx.lineWidth = 2.6;
             ctx.strokeStyle = '#141418';
 

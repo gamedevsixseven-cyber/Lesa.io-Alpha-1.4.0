@@ -316,31 +316,31 @@ class Psaltis extends EnemyBase {
             ctx.restore();
         }
 
-        ctx.save();
         const shadowBob = Math.sin(this.walkCycle) * 2.4;
 
         // Ground Shadow
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.26)';
-        ctx.beginPath();
-        ctx.ellipse(this.x, this.y + this.radius * 0.78, this.radius * 0.92, this.radius * 0.36, 0, 0, Math.PI * 2);
-        ctx.fill();
-
-        ctx.translate(this.x, this.y + shadowBob);
+        if (typeof EnemyBatchRenderer === 'undefined' || !EnemyBatchRenderer.active) {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.26)';
+            ctx.beginPath();
+            ctx.ellipse(this.x, this.y + this.radius * 0.78, this.radius * 0.92, this.radius * 0.36, 0, 0, Math.PI * 2);
+            ctx.fill();
+        }
 
         const facingLeft = Math.cos(this.angle) < 0;
         const flash = this.hitFlash > 0;
         if (typeof SpriteAtlasCache !== 'undefined') {
+            const bins = SpriteAtlasCache.getWalkBins(8);
             const r = this.radius || 22;
             const rKey = Math.round(r * 2);
             const singing = !!this.isSinging;
-            const singBin = singing ? SpriteAtlasCache.quantizePhase(this.age * 0.35, 8) : -1;
+            const singBin = singing ? SpriteAtlasCache.quantizePhase(this.age * 0.35, bins) : -1;
             const bodyKey = `psaltis_b:${rKey}:${singing ? 's' + singBin : 'idle'}:${flash ? 1 : 0}`;
             const bw = Math.ceil(r * 4.4);
             const bh = Math.ceil(r * 5.6);
-            SpriteAtlasCache.drawCached(ctx, bodyKey, bw, bh, bw * 0.5, bh * 0.62, (bctx) => {
+            SpriteAtlasCache.drawCachedAt(ctx, this.x, this.y + shadowBob, bodyKey, bw, bh, bw * 0.5, bh * 0.62, (bctx) => {
                 const origAge = this.age;
                 if (singing) {
-                    this.age = SpriteAtlasCache.binAngle(singBin, 8) / 0.35;
+                    this.age = SpriteAtlasCache.binAngle(singBin, bins) / 0.35;
                 }
                 try {
                     this.drawPsaltisBody(bctx, flash);
@@ -349,11 +349,12 @@ class Psaltis extends EnemyBase {
                 }
             }, { flipX: facingLeft });
         } else {
+            ctx.save();
+            ctx.translate(this.x, this.y + shadowBob);
             if (facingLeft) ctx.scale(-1, 1);
             this.drawPsaltisBody(ctx, flash);
+            ctx.restore();
         }
-
-        ctx.restore();
 
         // Music-note markers above currently buffed allies
         this.drawBuffedAllyNotes(ctx);

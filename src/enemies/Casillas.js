@@ -164,16 +164,43 @@ class Casillas extends EnemyBase {
     }
 
     draw(ctx) {
+        if (typeof EnemyBatchRenderer === 'undefined' || !EnemyBatchRenderer.active) {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.28)';
+            ctx.beginPath();
+            ctx.ellipse(this.x, this.y + this.radius * 0.88, this.radius * 0.85, this.radius * 0.34, 0, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        const bob = Math.abs(Math.sin(this.walkCycle)) * -2.6;
+        const facingLeft = Math.cos(this.angle) < 0;
+        const isBack = Math.sin(this.angle) < -0.25;
+
+        if (!this.isDodging && (this.kickAnimTimer || 0) <= 0 && typeof SpriteAtlasCache !== 'undefined') {
+            const bins = SpriteAtlasCache.getWalkBins(8);
+            const r = this.radius || 20;
+            const rKey = Math.round(r * 2);
+            const walkBin = SpriteAtlasCache.quantizePhase(this.walkCycle || 0, bins);
+            const qCycle = SpriteAtlasCache.binAngle(walkBin, bins);
+            const flash = this.hitFlash > 0;
+            const dirKey = isBack ? 'b' : (facingLeft ? 'fl' : 'fr');
+            const bodyKey = `casillas_b:${rKey}:${walkBin}:${dirKey}:${flash ? 1 : 0}`;
+            const bw = Math.ceil(r * 4.4);
+            const bh = Math.ceil(r * 4.4);
+            SpriteAtlasCache.drawCachedAt(ctx, this.x, this.y + bob, bodyKey, bw, bh, bw * 0.5, bh * 0.5, (bctx) => {
+                const origCycle = this.walkCycle;
+                this.walkCycle = qCycle;
+                try {
+                    this.drawCasillasBody(bctx, flash, facingLeft, isBack);
+                } finally {
+                    this.walkCycle = origCycle;
+                }
+            });
+            this.drawOverheadHUD(ctx);
+            return;
+        }
+
         ctx.save();
         ctx.translate(this.x, this.y);
-
-        // Ground shadow under shoes
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.28)';
-        ctx.beginPath();
-        ctx.ellipse(0, this.radius * 0.88, this.radius * 0.85, this.radius * 0.34, 0, 0, Math.PI * 2);
-        ctx.fill();
-
-        // Dive / dodge motion streak
         if (this.isDodging) {
             ctx.strokeStyle = 'rgba(46, 213, 115, 0.55)';
             ctx.lineWidth = 3;
@@ -184,35 +211,8 @@ class Casillas extends EnemyBase {
                 ctx.stroke();
             }
         }
-
-        const bob = Math.abs(Math.sin(this.walkCycle)) * -2.6;
         ctx.translate(0, bob);
-
-        const facingLeft = Math.cos(this.angle) < 0;
-        const isBack = Math.sin(this.angle) < -0.25;
-        if (!this.isDodging && (this.kickAnimTimer || 0) <= 0 && typeof SpriteAtlasCache !== 'undefined') {
-            const r = this.radius || 20;
-            const rKey = Math.round(r * 2);
-            const walkBin = SpriteAtlasCache.quantizePhase(this.walkCycle || 0, 8);
-            const qCycle = SpriteAtlasCache.binAngle(walkBin, 8);
-            const flash = this.hitFlash > 0;
-            const dirKey = isBack ? 'b' : (facingLeft ? 'fl' : 'fr');
-            const bodyKey = `casillas_b:${rKey}:${walkBin}:${dirKey}:${flash ? 1 : 0}`;
-            const bw = Math.ceil(r * 4.4);
-            const bh = Math.ceil(r * 4.4);
-            SpriteAtlasCache.drawCached(ctx, bodyKey, bw, bh, bw * 0.5, bh * 0.5, (bctx) => {
-                const origCycle = this.walkCycle;
-                this.walkCycle = qCycle;
-                try {
-                    this.drawCasillasBody(bctx, flash, facingLeft, isBack);
-                } finally {
-                    this.walkCycle = origCycle;
-                }
-            });
-        } else {
-            this.drawCasillasBody(ctx, this.hitFlash > 0, facingLeft, isBack);
-        }
-
+        this.drawCasillasBody(ctx, this.hitFlash > 0, facingLeft, isBack);
         ctx.restore();
         this.drawOverheadHUD(ctx);
     }

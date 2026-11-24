@@ -6,6 +6,7 @@
 
 class EndlessEnemyRenderer {
     static drawShadow(ctx, x, y, r, scaleX = 1.0, scaleY = 0.38) {
+        if (typeof EnemyBatchRenderer !== 'undefined' && EnemyBatchRenderer.active) return;
         ctx.fillStyle = 'rgba(0, 0, 0, 0.34)';
         ctx.beginPath();
         ctx.ellipse(x, y + r * 0.88, r * scaleX, r * scaleY, 0, 0, Math.PI * 2);
@@ -35,9 +36,20 @@ class EndlessEnemyRenderer {
         drawLeg(r * 0.24, swing);
     }
 
-    static drawAimedLayer(ctx, angle, anchorX, anchorY, drawFn) {
+    static drawAimedLayer(ctx, angle, anchorX, anchorY, drawFn, worldSpace = false) {
         const a = angle || 0;
-        const flipY = Math.cos(a) < 0;
+        const cosA = Math.cos(a);
+        const flipY = cosA < 0;
+        if (worldSpace && typeof EnemyBatchRenderer !== 'undefined' && EnemyBatchRenderer.canDirectTransform) {
+            const S = EnemyBatchRenderer.camScale;
+            const c = cosA * S;
+            const s = Math.sin(a) * S;
+            const fy = flipY ? -1 : 1;
+            ctx.setTransform(c, s, -s * fy, c * fy, EnemyBatchRenderer.camTx + S * anchorX, EnemyBatchRenderer.camTy + S * anchorY);
+            drawFn(ctx);
+            ctx.setTransform(S, 0, 0, S, EnemyBatchRenderer.camTx, EnemyBatchRenderer.camTy);
+            return;
+        }
         ctx.save();
         ctx.translate(anchorX, anchorY);
         ctx.rotate(a);

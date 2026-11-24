@@ -37,18 +37,18 @@ class MobilePerf {
         low: {
             pixelBudget: 850000, minDpr: 0.85, maxDpr: 1.0, smoothing: 'low',
             groundScale: 0.5, tileSupScale: 1.0,
-            atlas: { pageSize: 1024, maxPages: 4, dprCap: 1.0 },
+            atlas: { pageSize: 1024, maxPages: 6, dprCap: 1.0 },
             glows: false, ambientLighting: false, treeSize: 224,
             maxParticles: 12, maxPopups: 7, maxMuzzles: 6, maxSplats: 6, maxPoofs: 6,
-            maxComic: 3, maxDamage: 6, cacheMaxEntries: 50, snowCap: 24, fogCap: 6, emberCap: 8
+            maxComic: 3, maxDamage: 6, cacheMaxEntries: 160, snowCap: 24, fogCap: 6, emberCap: 8
         },
         medium: {
             pixelBudget: 1250000, minDpr: 1.0, maxDpr: 1.45, smoothing: 'medium',
             groundScale: 0.75, tileSupScale: 1.5,
-            atlas: { pageSize: 1024, maxPages: 3, dprCap: 1.25 },
+            atlas: { pageSize: 1024, maxPages: 6, dprCap: 1.25 },
             glows: false, ambientLighting: false, treeSize: 288,
             maxParticles: 24, maxPopups: 11, maxMuzzles: 10, maxSplats: 12, maxPoofs: 10,
-            maxComic: 4, maxDamage: 8, cacheMaxEntries: 48, snowCap: 42, fogCap: 10, emberCap: 12
+            maxComic: 4, maxDamage: 8, cacheMaxEntries: 160, snowCap: 42, fogCap: 10, emberCap: 12
         },
         high: {
             pixelBudget: 2800000, minDpr: 1.75, maxDpr: 2.5, smoothing: 'high',
@@ -148,7 +148,7 @@ class MobilePerf {
     static getAtlasConfig() {
         if (!this.isMobile) return { pageSize: 2048, maxPages: 8, dprCap: 2.0 };
         const a = this.getPreset().atlas;
-        return this.isIOS ? { pageSize: Math.min(a.pageSize, 1024), maxPages: Math.min(a.maxPages, 3), dprCap: Math.min(a.dprCap, 1.35) } : a;
+        return this.isIOS ? { pageSize: Math.min(a.pageSize, 1024), maxPages: Math.min(a.maxPages, 6), dprCap: Math.min(a.dprCap, 1.35) } : a;
     }
 
     static createContext(canvas) {

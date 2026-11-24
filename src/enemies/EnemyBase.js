@@ -276,82 +276,73 @@ class EnemyBase {
         return true;
     }
 
-    drawOverheadHUD(ctx) {
-        const offset = this.type === 'fatmir' ? 94 : (this.hudOffsetY || (this.radius + 14));
-        const hudY = this.y - offset;
-
-        const isMobile = typeof MobilePerf !== 'undefined' && MobilePerf.isMobile;
+    getOverheadLabelSprite(isMobile) {
+        const hasDebuff = this.stunTimer > 0 || this.fearTimer > 0 || this.iceSlowTimer > 0
+            || this.sonicSlowTimer > 0 || this.chronoSlowTimer > 0 || this.waterDrenchedTimer > 0 || this.shockedTimer > 0;
+        const epoch = (typeof SpriteAtlasCache !== 'undefined') ? SpriteAtlasCache._epoch : 1;
+        if (!hasDebuff) {
+            if (this._idleLbl && this._idleLbl.canvas && this._idleLbl.canvas.width > 0 && this._idleLblEpoch === epoch) {
+                return this._idleLbl;
+            }
+            const nameColor = this.type === 'fatmir' ? '#ff6b6b' : '#2ed573';
+            this._idleLbl = EnemyBase.getLabelSprite(this.name, '800 12px "Luckiest Guy", "Fredoka", sans-serif', nameColor, '#1e272e', 3, 0, 'bottom');
+            this._idleLblEpoch = epoch;
+            return this._idleLbl;
+        }
         let displayName = this.name;
         let nameColor = this.type === 'fatmir' ? '#ff6b6b' : '#2ed573';
         if (this.stunTimer > 0) {
-            const stunSec = isMobile ? Math.ceil(this.stunTimer / 60) : (this.stunTimer / 60).toFixed(1);
-            displayName = `💫 ${stunSec}s`;
+            displayName = `💫 ${isMobile ? Math.ceil(this.stunTimer / 60) : (this.stunTimer / 60).toFixed(1)}s`;
             nameColor = '#f1c40f';
         } else if (this.fearTimer > 0) {
-            const fearSec = isMobile ? Math.ceil(this.fearTimer / 60) : (this.fearTimer / 60).toFixed(1);
-            displayName = `😱 FLEEING (${fearSec}s)`;
+            displayName = `😱 FLEEING (${isMobile ? Math.ceil(this.fearTimer / 60) : (this.fearTimer / 60).toFixed(1)}s)`;
             nameColor = '#74b9ff';
         } else if (this.iceSlowTimer > 0) {
             displayName = `${this.name} 🧊 -50%`;
             nameColor = '#00cec9';
         } else if (this.sonicSlowTimer > 0) {
-            const pct = Math.round((1 - (this.sonicSlowMultiplier || 0.70)) * 100);
-            displayName = `${this.name} 📡 -${pct}%`;
+            displayName = `${this.name} 📡 -${Math.round((1 - (this.sonicSlowMultiplier || 0.70)) * 100)}%`;
             nameColor = '#fed330';
         } else if (this.chronoSlowTimer > 0) {
-            const pct = Math.round((1 - (this.chronoSlowMultiplier || 0.50)) * 100);
-            displayName = `${this.name} ⏳ -${pct}%`;
+            displayName = `${this.name} ⏳ -${Math.round((1 - (this.chronoSlowMultiplier || 0.50)) * 100)}%`;
             nameColor = '#00cec9';
         } else if (this.waterDrenchedTimer > 0) {
             displayName = `${this.name} 💧 -45%`;
         } else if (this.shockedTimer > 0) {
-            const pct = Math.round(((this.shockVulnerabilityMultiplier || 1.12) - 1) * 100);
-            displayName = `${this.name} ⚡ +${pct}%`;
+            displayName = `${this.name} ⚡ +${Math.round(((this.shockVulnerabilityMultiplier || 1.12) - 1) * 100)}%`;
             nameColor = '#fed330';
         }
+        return EnemyBase.getLabelSprite(displayName, '800 12px "Luckiest Guy", "Fredoka", sans-serif', nameColor, '#1e272e', 3, 0, 'bottom');
+    }
 
-        const lbl = EnemyBase.getLabelSprite(
-            displayName,
-            '800 12px "Luckiest Guy", "Fredoka", sans-serif',
-            nameColor,
-            '#1e272e',
-            3,
-            0,
-            'bottom'
-        );
-        EnemyBase.drawLabel(ctx, lbl, this.x, hudY - 3);
+    drawOverheadHUD(ctx) {
+        if (typeof EnemyBatchRenderer !== 'undefined' && EnemyBatchRenderer.active) return;
+        const offset = this.type === 'fatmir' ? 94 : (this.hudOffsetY || (this.radius + 14));
+        const hudY = this.y - offset;
+        const isMobile = typeof MobilePerf !== 'undefined' && MobilePerf.isMobile;
+        EnemyBase.drawLabel(ctx, this.getOverheadLabelSprite(isMobile), this.x, hudY - 3);
 
-        // Health Bar
+        // Health Bar (fast fillRect border + fill without strokeRect tessellation)
         const barW = this.type === 'fatmir' ? 46 : 36;
         const barH = 5;
         const hpRatio = Math.max(0, this.hp / this.maxHp);
+        const bx = isMobile ? Math.round(this.x - barW * 0.5) : (this.x - barW * 0.5);
+        const by = isMobile ? Math.round(hudY) : hudY;
 
-        ctx.save();
-        ctx.lineWidth = 2;
-        ctx.strokeStyle = '#1e272e';
-        ctx.fillStyle = '#2f3542';
-        ctx.fillRect(this.x - barW / 2, hudY, barW, barH);
-        ctx.strokeRect(this.x - barW / 2, hudY, barW, barH);
-
+        ctx.fillStyle = '#1e272e';
+        ctx.fillRect(bx - 1, by - 1, barW + 2, barH + 2);
+        if (hpRatio < 1) {
+            ctx.fillStyle = '#2f3542';
+            ctx.fillRect(bx, by, barW, barH);
+        }
         ctx.fillStyle = this.type === 'fatmir' ? '#eb4d4b' : '#20bf6b';
-        ctx.fillRect(this.x - barW / 2, hudY, barW * hpRatio, barH);
+        ctx.fillRect(bx, by, barW * hpRatio, barH);
 
-        // Trapped in Bubble Indicator Tag
         if (this.bubbleTrappedTimer > 0) {
             const timeLeftSec = isMobile ? Math.ceil(this.bubbleTrappedTimer / 60) : (this.bubbleTrappedTimer / 60).toFixed(1);
-            const trapLbl = EnemyBase.getLabelSprite(
-                `🫧 TRAPPED (${timeLeftSec}s)`,
-                '800 11px "Luckiest Guy", cursive',
-                '#00d2d3',
-                '#1e272e',
-                2,
-                0,
-                'bottom'
-            );
+            const trapLbl = EnemyBase.getLabelSprite(`🫧 TRAPPED (${timeLeftSec}s)`, '800 11px "Luckiest Guy", cursive', '#00d2d3', '#1e272e', 2, 0, 'bottom');
             EnemyBase.drawLabel(ctx, trapLbl, this.x, hudY - 14);
         }
-
-        ctx.restore();
     }
 
     trapInBubble(durationSeconds = 2.0, popDamage = 25) {
@@ -406,9 +397,9 @@ class EnemyBase {
         if (hit && hit.canvas && hit.canvas.width > 0 && hit.canvas.height > 0) return hit;
 
         const isMob = typeof MobilePerf !== 'undefined' && MobilePerf.isMobile;
-        const maxCache = isMob ? 48 : 480;
+        const maxCache = isMob ? 160 : 480;
         if (cache.size >= maxCache) {
-            const evictLimit = isMob ? 16 : 80;
+            const evictLimit = isMob ? 32 : 80;
             let count = 0;
             for (const k of cache.keys()) {
                 cache.delete(k);
@@ -509,10 +500,13 @@ class EnemyBase {
 
     static drawLabel(ctx, lbl, x, y) {
         if (!lbl || !lbl.canvas || lbl.canvas.width === 0 || lbl.canvas.height === 0) return;
+        const isMob = typeof MobilePerf !== 'undefined' && MobilePerf.isMobile;
+        const dx = isMob ? Math.round(x - lbl.anchorX) : (x - lbl.anchorX);
+        const dy = isMob ? Math.round(y - lbl.anchorY) : (y - lbl.anchorY);
         ctx.drawImage(
             lbl.canvas,
             lbl.sx, lbl.sy, lbl.sw, lbl.sh,
-            x - lbl.anchorX, y - lbl.anchorY, lbl.logicalW, lbl.logicalH
+            dx, dy, lbl.logicalW, lbl.logicalH
         );
     }
 

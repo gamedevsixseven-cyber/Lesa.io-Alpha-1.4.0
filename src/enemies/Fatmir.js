@@ -132,20 +132,45 @@ class Fatmir extends EnemyBase {
     }
 
     draw(ctx) {
-        ctx.save();
-        ctx.translate(this.x, this.y);
-
-        // Ground Shadow
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.26)';
-        ctx.beginPath();
-        ctx.ellipse(0, this.radius * 0.75, this.radius * 0.9, this.radius * 0.35, 0, 0, Math.PI * 2);
-        ctx.fill();
-
         const bob = Math.sin(this.walkCycle) * 4;
-        ctx.translate(0, bob);
+        const flash = this.hitFlash > 0;
+        const isBack = Math.sin(this.angle) < -0.25;
+        const spriteSrc = isBack ? this.backSpriteSrc : this.frontSpriteSrc;
+        const sprites = typeof window !== 'undefined' ? window.CharacterSprites : null;
 
-        this.drawFatmirBody(ctx, bob, this.hitFlash > 0);
+        if (typeof EnemyBatchRenderer === 'undefined' || !EnemyBatchRenderer.active) {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.26)';
+            ctx.beginPath();
+            ctx.ellipse(this.x, this.y + this.radius * 0.75, this.radius * 0.9, this.radius * 0.35, 0, 0, Math.PI * 2);
+            ctx.fill();
+        }
 
+        if (!this.isCharging && sprites && sprites.isReady(spriteSrc) && typeof SpriteAtlasCache !== 'undefined') {
+            const img = sprites.get(spriteSrc);
+            const spriteH = 100;
+            const aspect = (img.naturalWidth && img.naturalHeight) ? (img.naturalWidth / img.naturalHeight) : 0.44;
+            const spriteW = spriteH * aspect;
+            const feetY = this.radius * 0.65;
+            const fKey = `fatmir:${isBack ? 'b' : 'f'}:${flash ? 1 : 0}`;
+            const fw = Math.ceil(spriteW + 4);
+            const fh = Math.ceil(spriteH + 4);
+            const ax = fw * 0.5;
+            const ay = Math.ceil(spriteH - feetY + 2);
+            SpriteAtlasCache.drawCachedAt(ctx, this.x, this.y + bob, fKey, fw, fh, ax, ay, (fctx) => {
+                if (flash) {
+                    const cached = CharacterSprites.getFiltered(img, 'flash_25', 'brightness(2.5)', 0);
+                    fctx.drawImage(cached ? cached.canvas : img, -spriteW / 2, feetY - spriteH, spriteW, spriteH);
+                } else {
+                    fctx.drawImage(img, -spriteW / 2, feetY - spriteH, spriteW, spriteH);
+                }
+            });
+            this.drawOverheadHUD(ctx);
+            return;
+        }
+
+        ctx.save();
+        ctx.translate(this.x, this.y + bob);
+        this.drawFatmirBody(ctx, bob, flash);
         ctx.restore();
 
         // Overhead HUD

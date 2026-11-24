@@ -23,14 +23,31 @@ class OlympusIceRenderer {
         const stride = Math.sin(wolf.walkCycle || 0);
         const bob = wolf.isLunging ? -4 : Math.abs(stride) * -2.2;
 
+        // Ground shadow
+        if (typeof EnemyBatchRenderer === 'undefined' || !EnemyBatchRenderer.active) {
+            ctx.fillStyle = 'rgba(10, 22, 38, 0.36)';
+            ctx.beginPath();
+            ctx.ellipse(wolf.x, wolf.y + r * 0.72, r * 1.08, r * 0.36, 0, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        if (!wolf.isLunging && typeof SpriteAtlasCache !== 'undefined') {
+            const bins = SpriteAtlasCache.getWalkBins(8);
+            const rKey = Math.round(r * 2);
+            const walkBin = SpriteAtlasCache.quantizePhase(wolf.walkCycle || 0, bins);
+            const qStride = Math.sin(SpriteAtlasCache.binAngle(walkBin, bins));
+            const qAge = SpriteAtlasCache.binAngle(walkBin, bins) / 0.14;
+            const key = `frost_wolf_b:${rKey}:${walkBin}:${flash ? 1 : 0}`;
+            const bw = Math.ceil(r * 4.2);
+            const bh = Math.ceil(r * 3.6);
+            SpriteAtlasCache.drawCachedAt(ctx, wolf.x, wolf.y + bob, key, bw, bh, bw * 0.5, bh * 0.5, (bctx) => {
+                this._drawFrostWolfModel(bctx, r, qStride, qAge, flash);
+            }, { flipX: facingLeft });
+            return;
+        }
+
         ctx.save();
         ctx.translate(wolf.x, wolf.y);
-
-        // Ground shadow
-        ctx.fillStyle = 'rgba(10, 22, 38, 0.36)';
-        ctx.beginPath();
-        ctx.ellipse(0, r * 0.72, r * 1.08, r * 0.36, 0, 0, Math.PI * 2);
-        ctx.fill();
 
         // Lunge speed blur trail
         if (wolf.isLunging) {
@@ -47,6 +64,11 @@ class OlympusIceRenderer {
         ctx.translate(0, bob);
         if (facingLeft) ctx.scale(-1, 1);
         if (wolf.isLunging) ctx.rotate(0.14);
+        this._drawFrostWolfModel(ctx, r, stride, wolf.age || 0, flash);
+        ctx.restore();
+    }
+
+    static _drawFrostWolfModel(ctx, r, stride, ageVal, flash) {
 
         const coat = flash ? '#ffffff' : '#dfe6e9';
         const coatDark = flash ? '#ffffff' : '#8da2b5';
@@ -77,7 +99,7 @@ class OlympusIceRenderer {
         // 2. Bushy frost-tipped wolf tail
         ctx.save();
         ctx.translate(-r * 0.72, -r * 0.08);
-        ctx.rotate(-0.35 + Math.sin((wolf.age || 0) * 0.14) * 0.2);
+        ctx.rotate(-0.35 + Math.sin(ageVal * 0.14) * 0.2);
         this.drawCrystal(ctx, [[0, 0], [-14, -10], [-22, -4], [-13, 5]], coat, '#141e28', flash);
         this.drawCrystal(ctx, [[-14, -7], [-24, -5], [-16, 2]], frost, '#0d2b45', flash);
         ctx.restore();
@@ -161,7 +183,6 @@ class OlympusIceRenderer {
             ctx.stroke();
         }
         ctx.restore();
-        ctx.restore();
     }
 
     static drawIceGolem(golem, ctx) {
@@ -172,14 +193,31 @@ class OlympusIceRenderer {
         const slamRatio = golem.isSlamming ? Math.max(0, Math.min(1, 1 - (golem.slamTimer / 35))) : 0;
         const bob = golem.isSlamming ? -Math.sin(slamRatio * Math.PI) * 6 : Math.abs(stride) * -2.5;
 
+        // Ground shadow
+        if (typeof EnemyBatchRenderer === 'undefined' || !EnemyBatchRenderer.active) {
+            ctx.fillStyle = 'rgba(8, 20, 36, 0.42)';
+            ctx.beginPath();
+            ctx.ellipse(golem.x, golem.y + r * 0.92, r * 1.15, r * 0.42, 0, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        if (!golem.isSlamming && typeof SpriteAtlasCache !== 'undefined') {
+            const bins = SpriteAtlasCache.getWalkBins(8);
+            const rKey = Math.round(r * 2);
+            const walkBin = SpriteAtlasCache.quantizePhase(golem.walkCycle || 0, bins);
+            const qStride = Math.sin(SpriteAtlasCache.binAngle(walkBin, bins));
+            const qAge = SpriteAtlasCache.binAngle(walkBin, bins) / 0.04;
+            const key = `ice_golem_b:${rKey}:${walkBin}:${flash ? 1 : 0}`;
+            const bw = Math.ceil(r * 3.8);
+            const bh = Math.ceil(r * 3.8);
+            SpriteAtlasCache.drawCachedAt(ctx, golem.x, golem.y + bob, key, bw, bh, bw * 0.5, bh * 0.52, (bctx) => {
+                this._drawIceGolemModel(bctx, r, qStride, false, 0, qAge, flash);
+            }, { flipX: facingLeft });
+            return;
+        }
+
         ctx.save();
         ctx.translate(golem.x, golem.y);
-
-        // Ground shadow
-        ctx.fillStyle = 'rgba(8, 20, 36, 0.42)';
-        ctx.beginPath();
-        ctx.ellipse(0, r * 0.92, r * 1.15, r * 0.42, 0, 0, Math.PI * 2);
-        ctx.fill();
 
         // Slam windup cryo telegraph ring
         if (golem.isSlamming) {
@@ -196,6 +234,11 @@ class OlympusIceRenderer {
 
         ctx.translate(0, bob);
         if (facingLeft) ctx.scale(-1, 1);
+        this._drawIceGolemModel(ctx, r, stride, golem.isSlamming, slamRatio, golem.age || 0, flash);
+        ctx.restore();
+    }
+
+    static _drawIceGolemModel(ctx, r, stride, isSlamming, slamRatio, ageVal, flash) {
 
         const rock = flash ? '#ffffff' : '#4a607a';
         const rockDark = flash ? '#ffffff' : '#2d3c4e';
@@ -221,7 +264,7 @@ class OlympusIceRenderer {
         this.drawCrystal(ctx, [[r * 0.42, -r * 0.55], [r * 0.88, -r * 0.95], [r * 0.72, -r * 0.15]], iceBright, '#0d3b4c', flash);
 
         // 3. Far Craggy Arm (lifts during slam windup)
-        const armRaise = golem.isSlamming ? (-1.2 * Math.sin(slamRatio * Math.PI * 0.65)) : (-stride * 0.25);
+        const armRaise = isSlamming ? (-1.2 * Math.sin(slamRatio * Math.PI * 0.65)) : (-stride * 0.25);
         ctx.save();
         ctx.translate(-r * 0.72, -r * 0.26);
         ctx.rotate(armRaise);
@@ -253,7 +296,7 @@ class OlympusIceRenderer {
             // Rotating Glowing Cryo Core in chest
             ctx.save();
             ctx.translate(0, -r * 0.08);
-            ctx.rotate((golem.age || 0) * 0.04);
+            ctx.rotate(ageVal * 0.04);
             if (typeof MobilePerf === 'undefined' || MobilePerf.shouldUseGlows()) {
                 ctx.shadowColor = '#00f5ff';
                 ctx.shadowBlur = 10;
@@ -287,11 +330,9 @@ class OlympusIceRenderer {
         // 6. Near Massive Gauntlet Fist (raises overhead during slam!)
         ctx.save();
         ctx.translate(r * 0.74, -r * 0.24);
-        ctx.rotate(golem.isSlamming ? (-1.35 * Math.sin(slamRatio * Math.PI * 0.65)) : (stride * 0.28));
+        ctx.rotate(isSlamming ? (-1.35 * Math.sin(slamRatio * Math.PI * 0.65)) : (stride * 0.28));
         this.drawCrystal(ctx, [[-8, -4], [9, -4], [12, r * 0.74], [-9, r * 0.74]], rock, '#111a24', flash);
         this.drawCrystal(ctx, [[-12, r * 0.56], [13, r * 0.56], [10, r * 0.9], [-10, r * 0.9]], iceBright, '#0d3b4c', flash);
-        ctx.restore();
-
         ctx.restore();
     }
 }

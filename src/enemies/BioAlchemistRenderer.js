@@ -19,8 +19,49 @@ class BioAlchemistRenderer {
         BioAlchemistRenderer.drawSupportAuras(ctx, e, r, age);
 
         // 2. Character body
-        ctx.save();
         EndlessEnemyRenderer.drawShadow(ctx, e.x, e.y, r, 1.05, 0.40);
+
+        if (typeof SpriteAtlasCache !== 'undefined') {
+            const bins = SpriteAtlasCache.getWalkBins(8);
+            const rKey = Math.round(r * 2);
+            const walkBin = SpriteAtlasCache.quantizePhase(e.walkCycle || age * 0.16, bins);
+            const qCycle = SpriteAtlasCache.binAngle(walkBin, bins);
+            const qAge = ((walkBin + 0.5) / bins) * ((r * 0.22) / 0.35);
+            const bodyKey = `bio_b:${rKey}:${walkBin}:${isBack ? 1 : 0}:${flash ? 1 : 0}`;
+            const bw = Math.ceil(r * 3.8);
+            const bh = Math.ceil(r * 3.8);
+            const wy = e.y + bob;
+
+            SpriteAtlasCache.drawCachedAt(ctx, e.x, wy, bodyKey, bw, bh, bw * 0.5, bh * 0.5, (bctx) => {
+                bctx.lineWidth = 2.6;
+                bctx.lineJoin = 'round';
+                bctx.lineCap = 'round';
+                bctx.strokeStyle = '#141418';
+                EndlessEnemyRenderer.drawLimbs(bctx, r, qCycle, '#1e272e', '#0f172a', flash);
+                if (!isBack) BioAlchemistRenderer.drawTankPack(bctx, r, qAge, flash);
+                BioAlchemistRenderer.drawMedicCoat(bctx, r, isBack, flash);
+                if (isBack) BioAlchemistRenderer.drawTankPack(bctx, r, qAge, flash);
+                BioAlchemistRenderer.drawMedicHead(bctx, r, isBack, flash);
+            }, { flipX: facingLeft });
+
+            const anchorX = facingLeft ? -r * 0.18 : r * 0.18;
+            EndlessEnemyRenderer.drawAimedLayer(ctx, aimAngle, e.x + anchorX, wy + r * 0.04, () => {
+                const staffKey = `bio_s:${rKey}:${flash ? 1 : 0}`;
+                const sw = Math.ceil(r * 3.6);
+                const sh = Math.ceil(r * 2.0);
+                SpriteAtlasCache.drawCached(ctx, staffKey, sw, sh, Math.ceil(r * 0.4), sh * 0.5, (sctx) => {
+                    sctx.lineWidth = 2.6;
+                    sctx.lineJoin = 'round';
+                    sctx.lineCap = 'round';
+                    sctx.strokeStyle = '#141418';
+                    BioAlchemistRenderer.drawStaff(sctx, r, 0, flash);
+                });
+            }, true);
+            if (typeof e.drawOverheadHUD === 'function') e.drawOverheadHUD(ctx);
+            return;
+        }
+
+        ctx.save();
         ctx.translate(e.x, e.y + bob);
         ctx.lineWidth = 2.6;
         ctx.lineJoin = 'round';

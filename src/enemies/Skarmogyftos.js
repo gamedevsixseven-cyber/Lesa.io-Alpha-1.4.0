@@ -285,9 +285,29 @@ class Skarmogyftos extends EnemyBase {
     }
 
     draw(ctx) {
-        // Draw active ground smoke clouds first
-        for (let i = 0; i < this.smokeHazards.length; i++) {
-            this.smokeHazards[i].draw(ctx);
+        const batched = typeof EnemyBatchRenderer !== 'undefined' && EnemyBatchRenderer.active;
+        if (!batched) {
+            for (let i = 0; i < this.smokeHazards.length; i++) {
+                this.smokeHazards[i].draw(ctx);
+            }
+        }
+
+        const flash = this.hitFlash > 0;
+        if (batched && typeof SpriteAtlasCache !== 'undefined' && this.shieldHp <= 0 && !flash && EnemyBatchRenderer.canDirectTransform) {
+            const r = this.radius || 26;
+            const rKey = Math.round(r * 2);
+            const sw = Math.ceil(r * 2.8);
+            const sh = Math.ceil(r * 2.8);
+            const key = `skarmo_b:${rKey}:0`;
+            const S = EnemyBatchRenderer.camScale;
+            const c = Math.cos(this.angle) * S;
+            const s = Math.sin(this.angle) * S;
+            ctx.setTransform(c, s, -s, c, EnemyBatchRenderer.camTx + S * this.x, EnemyBatchRenderer.camTy + S * this.y);
+            SpriteAtlasCache.drawCached(ctx, key, sw, sh, sw * 0.5, sh * 0.5, (sctx) => {
+                this._drawSkarmogyftosVectorBody(sctx, false);
+            });
+            ctx.setTransform(S, 0, 0, S, EnemyBatchRenderer.camTx, EnemyBatchRenderer.camTy);
+            return;
         }
 
         ctx.save();
@@ -305,7 +325,7 @@ class Skarmogyftos extends EnemyBase {
         }
 
         // Hit flash
-        if (this.hitFlash > 0) {
+        if (flash) {
             ctx.fillStyle = '#ffffff';
             ctx.beginPath();
             ctx.arc(0, 0, this.radius + 3, 0, Math.PI * 2);
@@ -313,15 +333,16 @@ class Skarmogyftos extends EnemyBase {
         }
 
         // Shadow
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.28)';
-        ctx.beginPath();
-        ctx.ellipse(0, this.radius * 0.75, this.radius * 0.95, this.radius * 0.45, 0, 0, Math.PI * 2);
-        ctx.fill();
+        if (!batched) {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.28)';
+            ctx.beginPath();
+            ctx.ellipse(0, this.radius * 0.75, this.radius * 0.95, this.radius * 0.45, 0, 0, Math.PI * 2);
+            ctx.fill();
+        }
 
         // Rotate facing direction
         ctx.rotate(this.angle);
 
-        const flash = this.hitFlash > 0;
         if (typeof SpriteAtlasCache !== 'undefined') {
             const r = this.radius || 26;
             const rKey = Math.round(r * 2);

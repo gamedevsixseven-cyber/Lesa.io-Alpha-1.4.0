@@ -20,20 +20,20 @@ class KafeneioTankRenderer {
             KafeneioTankRenderer.drawSlamTelegraph(ctx, e);
         }
 
-        ctx.save();
         EndlessEnemyRenderer.drawShadow(ctx, e.x, e.y, r, 1.16, 0.44);
-        ctx.translate(e.x, e.y + bob);
 
         if (!isWindup && typeof SpriteAtlasCache !== 'undefined') {
+            const bins = SpriteAtlasCache.getWalkBins(8);
             const rKey = Math.round(r * 2);
-            const walkBin = SpriteAtlasCache.quantizePhase(e.walkCycle || age * 0.13, 8);
-            const qCycle = SpriteAtlasCache.binAngle(walkBin, 8);
+            const walkBin = SpriteAtlasCache.quantizePhase(e.walkCycle || age * 0.13, bins);
+            const qCycle = SpriteAtlasCache.binAngle(walkBin, bins);
             const dirKey = isBack ? 'b' : (facingLeft ? 'fl' : 'fr');
             const bodyKey = `kafeneio_b:${rKey}:${walkBin}:${dirKey}:${flash ? 1 : 0}`;
             const bw = Math.ceil(r * 3.6);
             const bh = Math.ceil(r * 3.6);
+            const wy = e.y + bob;
 
-            SpriteAtlasCache.drawCached(ctx, bodyKey, bw, bh, bw * 0.5, bh * 0.5, (bctx) => {
+            SpriteAtlasCache.drawCachedAt(ctx, e.x, wy, bodyKey, bw, bh, bw * 0.5, bh * 0.5, (bctx) => {
                 bctx.lineWidth = 3;
                 bctx.strokeStyle = '#141418';
                 if (facingLeft) bctx.scale(-1, 1);
@@ -46,14 +46,14 @@ class KafeneioTankRenderer {
             const qSteamAge = ((steamBin + 0.5) / 4) / 0.08;
             const brikiKey = `kafeneio_briki:${rKey}:${facingLeft ? 1 : 0}:${steamBin}:${flash ? 1 : 0}`;
             const kw = Math.ceil(r * 3.2);
-            SpriteAtlasCache.drawCached(ctx, brikiKey, kw, kw, kw * 0.5, kw * 0.5, (kctx) => {
+            SpriteAtlasCache.drawCachedAt(ctx, e.x, wy, brikiKey, kw, kw, kw * 0.5, kw * 0.5, (kctx) => {
                 kctx.lineWidth = 3;
                 kctx.strokeStyle = '#141418';
                 if (facingLeft) kctx.scale(-1, 1);
                 KafeneioTankRenderer.drawBrikiOffHand(kctx, r, qSteamAge, false, flash);
             });
 
-            EndlessEnemyRenderer.drawAimedLayer(ctx, aimAngle, 0, 0, () => {
+            EndlessEnemyRenderer.drawAimedLayer(ctx, aimAngle, e.x, wy, () => {
                 const shieldKey = `kafeneio_s:${rKey}:${flash ? 1 : 0}`;
                 const sw = Math.ceil(r * 3.8);
                 const sh = Math.ceil(r * 3.8);
@@ -62,8 +62,14 @@ class KafeneioTankRenderer {
                     sctx.strokeStyle = '#141418';
                     KafeneioTankRenderer.drawTableShield(sctx, r, false, flash);
                 });
-            });
-        } else {
+            }, true);
+            if (typeof e.drawOverheadHUD === 'function') e.drawOverheadHUD(ctx);
+            return;
+        }
+
+        ctx.save();
+        ctx.translate(e.x, e.y + bob);
+        {
             ctx.lineWidth = 3;
             ctx.strokeStyle = '#141418';
 

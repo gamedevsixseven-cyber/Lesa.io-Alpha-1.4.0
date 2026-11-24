@@ -21,15 +21,14 @@ class DimotikiEnforcerRenderer {
             DimotikiEnforcerRenderer.drawDashAura(ctx, e, r, age, isDashing, charging);
         }
 
-        ctx.save();
         EndlessEnemyRenderer.drawShadow(ctx, e.x, e.y, r, isDashing ? 1.18 : 1.04, 0.40);
-        ctx.translate(e.x, e.y + bob);
 
         const canCache = !isDashing && !charging && typeof SpriteAtlasCache !== 'undefined';
         if (canCache) {
+            const bins = SpriteAtlasCache.getWalkBins(8);
             const rKey = Math.round(r * 2);
-            const walkBin = SpriteAtlasCache.quantizePhase(e.walkCycle || age * 0.22, 8);
-            const qCycle = SpriteAtlasCache.binAngle(walkBin, 8);
+            const walkBin = SpriteAtlasCache.quantizePhase(e.walkCycle || age * 0.22, bins);
+            const qCycle = SpriteAtlasCache.binAngle(walkBin, bins);
             const dirKey = (facingLeft ? 'l' : 'r') + (isBack ? 'b' : 'f');
             const blink = walkBin & 1;
             const qAge = isBack
@@ -38,8 +37,9 @@ class DimotikiEnforcerRenderer {
             const bodyKey = `enforcer_b:${rKey}:${walkBin}:${dirKey}:${flash ? 1 : 0}`;
             const bw = Math.ceil(r * 3.8);
             const bh = Math.ceil(r * 3.8);
+            const wy = e.y + bob;
 
-            SpriteAtlasCache.drawCached(ctx, bodyKey, bw, bh, bw * 0.5, bh * 0.5, (bctx) => {
+            SpriteAtlasCache.drawCachedAt(ctx, e.x, wy, bodyKey, bw, bh, bw * 0.5, bh * 0.5, (bctx) => {
                 bctx.lineWidth = 2.6;
                 bctx.strokeStyle = '#141418';
                 if (facingLeft) bctx.scale(-1, 1);
@@ -51,7 +51,7 @@ class DimotikiEnforcerRenderer {
             });
 
             const anchorX = facingLeft ? -r * 0.16 : r * 0.16;
-            EndlessEnemyRenderer.drawAimedLayer(ctx, aimAngle, anchorX, r * 0.04, () => {
+            EndlessEnemyRenderer.drawAimedLayer(ctx, aimAngle, e.x + anchorX, wy + r * 0.04, () => {
                 const gunKey = `enforcer_g:${rKey}:${flash ? 1 : 0}`;
                 const gw = Math.ceil(r * 4.8);
                 const gh = Math.ceil(r * 3.0);
@@ -60,8 +60,14 @@ class DimotikiEnforcerRenderer {
                     gctx.strokeStyle = '#141418';
                     DimotikiEnforcerRenderer.drawPulseCarbine(gctx, r, 0, false, flash);
                 });
-            });
-        } else {
+            }, true);
+            if (typeof e.drawOverheadHUD === 'function') e.drawOverheadHUD(ctx);
+            return;
+        }
+
+        ctx.save();
+        ctx.translate(e.x, e.y + bob);
+        {
             ctx.lineWidth = 2.6;
             ctx.strokeStyle = '#141418';
 

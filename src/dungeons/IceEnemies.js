@@ -126,6 +126,7 @@ class IceGolem extends EnemyBase {
         super(x, y, 'ice_golem', waveMultiplier);
         this.name = 'Ice Golem';
         this.radius = 34;
+        this.hudOffsetY = 58;
 
         // Heavy armor & HP
         this.maxHp = Math.round(780 * Math.max(1.0, waveMultiplier));
@@ -233,10 +234,7 @@ class IceGolem extends EnemyBase {
         if (typeof OlympusIceRenderer !== 'undefined') {
             OlympusIceRenderer.drawIceGolem(this, ctx);
         }
-        ctx.save();
-        ctx.translate(0, -10);
         this.drawOverheadHUD(ctx);
-        ctx.restore();
     }
 }
 

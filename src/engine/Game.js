@@ -509,21 +509,25 @@ class Game {
             if (this.camera.isVisible(obs.x, obs.y, (obs.cullRadius || obs.radius) + 120)) obs.draw(ctx);
         }
 
-        // 3.5. Endless Wave Skipper, Lil Xas Stage/Limo & 4. Enemies (Viewport Culled)
+        // 3.5. Endless Wave Skipper, Lil Xas Stage/Limo & 4. Enemies (AAA 4-Pass Batched & Viewport Culled)
         if (typeof LilXasEvent !== 'undefined') LilXasEvent.drawWorld(ctx, this.camera, this.arena);
         if (this.waveSkipper) this.waveSkipper.draw(ctx, this.camera);
-        for (let i = 0; i < this.enemies.length; i++) {
-            const enemy = this.enemies[i];
-            if (enemy.dead) continue;
-            const visPad = (enemy.isBoss || enemy.isMiniBoss || enemy.policeCar) ? 450 : 50;
-            if (this.camera.isVisible(enemy.x, enemy.y, enemy.radius + visPad)) {
-                const hitSquashed = (typeof CombatRenderFX !== 'undefined') && CombatRenderFX.beginEnemyTransform(ctx, enemy);
-                enemy.draw(ctx);
-                if (hitSquashed) CombatRenderFX.endEnemyTransform(ctx, hitSquashed);
-                if (enemy._lilXasFleeing && typeof LilXasCutsceneFX !== 'undefined') {
-                    LilXasCutsceneFX.drawFleeingEnemyOverlay(ctx, enemy);
+        if (typeof EnemyBatchRenderer !== 'undefined') {
+            EnemyBatchRenderer.render(ctx, this.camera, this.enemies);
+        } else {
+            for (let i = 0; i < this.enemies.length; i++) {
+                const enemy = this.enemies[i];
+                if (enemy.dead) continue;
+                const visPad = (enemy.isBoss || enemy.isMiniBoss || enemy.policeCar) ? 450 : 50;
+                if (this.camera.isVisible(enemy.x, enemy.y, enemy.radius + visPad)) {
+                    const hitSquashed = (typeof CombatRenderFX !== 'undefined') && CombatRenderFX.beginEnemyTransform(ctx, enemy);
+                    enemy.draw(ctx);
+                    if (hitSquashed) CombatRenderFX.endEnemyTransform(ctx, hitSquashed);
+                    if (enemy._lilXasFleeing && typeof LilXasCutsceneFX !== 'undefined') {
+                        LilXasCutsceneFX.drawFleeingEnemyOverlay(ctx, enemy);
+                    }
+                    if (enemy.drawBubbleTrap) enemy.drawBubbleTrap(ctx);
                 }
-                if (enemy.drawBubbleTrap) enemy.drawBubbleTrap(ctx);
             }
         }
 

@@ -12,7 +12,9 @@ class SpriteAtlasCache {
     static _entries = new Map();
     static _fontKeys = new Set();
     static _standaloneEntries = [];
+    static _canvasPool = [];
     static _fontHooked = false;
+    static _epoch = 1;
 
     static _ensureFontHook() {
         if (SpriteAtlasCache._fontHooked) return;
@@ -29,6 +31,7 @@ class SpriteAtlasCache {
             SpriteAtlasCache._entries.delete(key);
         }
         SpriteAtlasCache._fontKeys.clear();
+        SpriteAtlasCache._epoch++;
     }
 
     static _createPage() {
@@ -112,6 +115,8 @@ class SpriteAtlasCache {
 
         const rect = SpriteAtlasCache._allocateRect(sw, sh);
         const isMobile = typeof MobilePerf !== 'undefined' && MobilePerf.isMobile;
+        const flipBake = !!(opts && opts.flipBake);
+        const effAnchorX = flipBake ? (logicalW - anchorX) : anchorX;
         let targetCanvas, targetCtx, sx, sy;
         let isStandalone = false;
         if (rect) {
@@ -122,15 +127,21 @@ class SpriteAtlasCache {
         } else {
             isStandalone = true;
             if (isMobile) {
-                while (SpriteAtlasCache._standaloneEntries.length >= 28) {
+                while (SpriteAtlasCache._standaloneEntries.length >= 96) {
                     const old = SpriteAtlasCache._standaloneEntries.shift();
                     if (old && SpriteAtlasCache._entries.get(old.key) === old.entry) {
                         SpriteAtlasCache._entries.delete(old.key);
                     }
-                    if (old && old.canvas) MobilePerf.releaseCanvas(old.canvas);
+                    if (old && old.canvas) {
+                        if (SpriteAtlasCache._canvasPool.length < 32) {
+                            SpriteAtlasCache._canvasPool.push(old.canvas);
+                        } else {
+                            MobilePerf.releaseCanvas(old.canvas);
+                        }
+                    }
                 }
             }
-            targetCanvas = document.createElement('canvas');
+            targetCanvas = SpriteAtlasCache._canvasPool.pop() || document.createElement('canvas');
             targetCanvas.width = sw;
             targetCanvas.height = sh;
             targetCtx = targetCanvas.getContext('2d');
@@ -144,11 +155,13 @@ class SpriteAtlasCache {
                     sh,
                     logicalW: actualW,
                     logicalH: actualH,
-                    anchorX,
+                    anchorX: effAnchorX,
                     anchorY,
                     drawDirect: drawFn
                 };
             }
+            targetCtx.setTransform(1, 0, 0, 1, 0, 0);
+            targetCtx.clearRect(0, 0, sw, sh);
             sx = 0;
             sy = 0;
         }
@@ -158,8 +171,9 @@ class SpriteAtlasCache {
             targetCtx.beginPath();
             targetCtx.rect(sx, sy, sw, sh);
             targetCtx.clip();
-            targetCtx.translate(sx + anchorX * dpr, sy + anchorY * dpr);
-            targetCtx.scale(dpr, dpr);
+            targetCtx.translate(sx + effAnchorX * dpr, sy + anchorY * dpr);
+            if (flipBake) targetCtx.scale(-dpr, dpr);
+            else targetCtx.scale(dpr, dpr);
             drawFn(targetCtx);
         } finally {
             targetCtx.restore();
@@ -173,7 +187,7 @@ class SpriteAtlasCache {
             sh,
             logicalW: actualW,
             logicalH: actualH,
-            anchorX,
+            anchorX: effAnchorX,
             anchorY
         };
         SpriteAtlasCache._entries.set(key, entry);
@@ -188,15 +202,26 @@ class SpriteAtlasCache {
 
     /**
      * Draw an atlas-cached sprite centered at its local (0, 0) anchor.
+     * Flipped variants are baked once onto the atlas (:fx) to avoid per-frame save/scale/restore.
      */
     static drawCached(ctx, key, logicalW, logicalH, anchorX, anchorY, drawFn, opts) {
-        const entry = SpriteAtlasCache.getOrBake(key, logicalW, logicalH, anchorX, anchorY, drawFn, opts);
+        return SpriteAtlasCache.drawCachedAt(ctx, 0, 0, key, logicalW, logicalH, anchorX, anchorY, drawFn, opts);
+    }
+
+    /**
+     * Direct world/local coordinate blit without requiring caller ctx.save()/translate()/restore().
+     */
+    static drawCachedAt(ctx, wx, wy, key, logicalW, logicalH, anchorX, anchorY, drawFn, opts) {
         const flipX = !!(opts && opts.flipX);
+        const effKey = flipX ? `${key}:fx` : key;
+        const bakeOpts = flipX ? Object.assign({}, opts, { flipBake: true }) : opts;
+        const entry = SpriteAtlasCache.getOrBake(effKey, logicalW, logicalH, anchorX, anchorY, drawFn, bakeOpts);
         if (!entry || !entry.canvas || entry.canvas.width === 0 || entry.canvas.height === 0) {
             const directFn = (entry && entry.drawDirect) || drawFn;
             if (typeof directFn === 'function') {
                 ctx.save();
                 try {
+                    if (wx !== 0 || wy !== 0) ctx.translate(wx, wy);
                     if (flipX) ctx.scale(-1, 1);
                     directFn(ctx);
                 } finally {
@@ -205,22 +230,14 @@ class SpriteAtlasCache {
             }
             return entry;
         }
-        if (flipX) {
-            ctx.save();
-            ctx.scale(-1, 1);
-            ctx.drawImage(
-                entry.canvas,
-                entry.sx, entry.sy, entry.sw, entry.sh,
-                -entry.anchorX, -entry.anchorY, entry.logicalW, entry.logicalH
-            );
-            ctx.restore();
-        } else {
-            ctx.drawImage(
-                entry.canvas,
-                entry.sx, entry.sy, entry.sw, entry.sh,
-                -entry.anchorX, -entry.anchorY, entry.logicalW, entry.logicalH
-            );
-        }
+        const isMob = typeof MobilePerf !== 'undefined' && MobilePerf.isMobile;
+        const dx = isMob ? Math.round(wx - entry.anchorX) : (wx - entry.anchorX);
+        const dy = isMob ? Math.round(wy - entry.anchorY) : (wy - entry.anchorY);
+        ctx.drawImage(
+            entry.canvas,
+            entry.sx, entry.sy, entry.sw, entry.sh,
+            dx, dy, entry.logicalW, entry.logicalH
+        );
         return entry;
     }
 
@@ -232,6 +249,10 @@ class SpriteAtlasCache {
             dpr,
             fontDependent
         });
+    }
+
+    static getWalkBins(defaultBins = 8) {
+        return (typeof MobilePerf !== 'undefined' && MobilePerf.isMobile && defaultBins >= 8) ? 6 : defaultBins;
     }
 
     static quantizePhase(phase, bins = 8) {
@@ -259,11 +280,16 @@ class SpriteAtlasCache {
             for (const s of SpriteAtlasCache._standaloneEntries) {
                 if (s && s.canvas) MobilePerf.releaseCanvas(s.canvas);
             }
+            for (const c of SpriteAtlasCache._canvasPool) {
+                if (c) MobilePerf.releaseCanvas(c);
+            }
         }
         SpriteAtlasCache._pages.length = 0;
         SpriteAtlasCache._standaloneEntries.length = 0;
+        SpriteAtlasCache._canvasPool.length = 0;
         SpriteAtlasCache._entries.clear();
         SpriteAtlasCache._fontKeys.clear();
+        SpriteAtlasCache._epoch++;
         if (typeof EnemyBase !== 'undefined' && EnemyBase._labelCache) {
             EnemyBase._labelCache.clear();
         }
