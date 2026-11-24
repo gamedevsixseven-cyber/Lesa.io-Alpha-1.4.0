@@ -154,9 +154,6 @@ class SaveManager {
                     window.cloudSave.saveToCloud(serialized);
                 }
             }
-            if (typeof window !== 'undefined' && window.friendService && typeof window.friendService.syncMyProfile === 'function') {
-                window.friendService.syncMyProfile(true);
-            }
 
             return true;
         } catch (err) {

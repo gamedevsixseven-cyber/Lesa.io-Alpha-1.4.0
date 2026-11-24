@@ -22,6 +22,9 @@ class FriendService {
         this._seenRequestIds = new Set();
         this._friendshipsErrored = false;
         this._initialized = false;
+        this._presenceBound = false;
+        this._lastSocialHash = '';
+        this._lastFriendsLoadedAt = 0;
         this.lastError = null;
     }
 
@@ -40,6 +43,10 @@ class FriendService {
         return (typeof window !== 'undefined' && window.cloudSave && window.cloudSave.isInitialized)
             ? window.cloudSave.db
             : null;
+    }
+
+    getPresence() {
+        return (typeof window !== 'undefined' && window.presenceService) ? window.presenceService : null;
     }
 
     getMyUid() {
@@ -101,19 +108,37 @@ class FriendService {
         if (this._initialized) return;
         this._initialized = true;
 
+        const ps = this.getPresence();
+        if (ps && !this._presenceBound) {
+            this._presenceBound = true;
+            ps.onChange(() => this.emitUpdate());
+        }
+        if (ps) ps.start(this.getMyUid(), this._currentStatus, this._activeRoomCode);
+
         this.attachListeners();
         this.syncMyProfile(true);
 
-        // Heartbeat presence & fallback request poll every 45 seconds
+        // Low-frequency fallback recovery (live presence & friendships use RTDB + Firestore snapshots)
         this._presenceTimer = setInterval(() => {
-            this.syncMyProfile(false);
-            this.pollFriendships();
-        }, 45000);
+            const rt = this.getPresence();
+            if (!(rt && rt.isReady())) this.syncMyProfile(false);
+            if (this._friendshipsErrored || !this._unsubFriendships) this.pollFriendships();
+        }, 180000);
 
         if (typeof window !== 'undefined') {
             const markOffline = () => this.markOfflineBeacon();
             window.addEventListener('pagehide', markOffline);
             window.addEventListener('beforeunload', markOffline);
+            if (typeof document !== 'undefined') {
+                document.addEventListener('visibilitychange', () => {
+                    if (document.visibilityState === 'hidden') markOffline();
+                    else if (document.visibilityState === 'visible') {
+                        const rt = this.getPresence();
+                        if (rt && rt.isReady()) rt.start(this.getMyUid(), this._currentStatus, this._activeRoomCode);
+                        else this.syncMyProfile(true);
+                    }
+                });
+            }
         }
     }
 
@@ -121,6 +146,10 @@ class FriendService {
         this._seenInviteIds.clear();
         this._seenRequestIds.clear();
         this._friendshipsErrored = false;
+        this._lastSocialHash = '';
+        this._lastFriendsLoadedAt = 0;
+        const ps = this.getPresence();
+        if (ps) ps.start(this.getMyUid(), this._currentStatus, this._activeRoomCode);
         this.attachListeners();
         this.syncMyProfile(true);
         this.emitUpdate();
@@ -129,6 +158,12 @@ class FriendService {
     setPresenceStatus(statusText = 'In Lobby', roomCode = null) {
         this._currentStatus = statusText;
         this._activeRoomCode = roomCode;
+        const ps = this.getPresence();
+        if (ps && ps.isReady()) {
+            ps.setStatus(this.getMyUid(), statusText, roomCode);
+            this.emitUpdate();
+            return;
+        }
         this.syncMyProfile(true);
     }
 
@@ -138,19 +173,27 @@ class FriendService {
         if (!db || !me.uid) return false;
 
         const cs = (typeof window !== 'undefined') ? window.cloudSave : null;
-        if (cs && (cs.isHydratingAuth || cs.isSyncingFromCloud)) return false;
+        if (cs && (cs.isHydratingAuth || cs.isSyncingFromCloud)) {
+            if (!this._deferredSyncTimer) this._deferredSyncTimer = setTimeout(() => { this._deferredSyncTimer = null; this.syncMyProfile(true); }, 1500);
+            return false;
+        }
+
+        const ps = this.getPresence();
+        const rtdbReady = Boolean(ps && ps.isReady());
+        if (rtdbReady) ps.start(me.uid, this._currentStatus, this._activeRoomCode);
 
         const now = Date.now();
-        if (!force && now - this._lastPresenceSync < 15000) return true;
-        this._lastPresenceSync = now;
+        if (!force && now - this._lastPresenceSync < (rtdbReady ? 30000 : 15000)) return true;
 
         // Before initial cloud hydration completes, push ONLY presence fields so unhydrated Lv.1 defaults never clobber cloud progress
         const statsReady = !cs || cs.hasCompletedInitialSync || (typeof SaveMigration !== 'undefined' && SaveMigration.hasEstablishedProgress());
+        if (rtdbReady && !statsReady) return true;
         const baseDoc = {
             uid: me.uid, online: true,
             currentStatus: this._currentStatus || 'In Lobby',
             coopRoomCode: this._activeRoomCode || null, lastSeenAt: now
         };
+        let socialSig = '';
         if (statsReady) {
             const c = (cs && cs.lastCloudData && typeof cs.lastCloudData === 'object') ? cs.lastCloudData : null;
             const wiped = c && typeof SaveMigration !== 'undefined' && SaveMigration.wasWipedByDev(c, now);
@@ -174,7 +217,13 @@ class FriendService {
                 baseDoc.publicLoadout = PlayerLoadoutExtractor.serializeForPublicCloud();
                 baseDoc.privateLoadout = PlayerLoadoutExtractor.isLocalPrivate();
             }
+            socialSig = JSON.stringify([me.uid, me.name, lvl, me.selectedHero, hs, mw, ew, tk, me.olympusMaxFloor, me.clanId, me.clanTag, me.cosmetics, baseDoc.privateLoadout, baseDoc.publicLoadout && baseDoc.publicLoadout.weapon]);
+            if (rtdbReady && this._lastSocialHash === socialSig) {
+                this._lastPresenceSync = now;
+                return true;
+            }
         }
+        this._lastPresenceSync = now;
 
         try {
             await db.collection('players').doc(me.uid).set(baseDoc, { merge: true }).catch(async (firstErr) => {
@@ -183,6 +232,7 @@ class FriendService {
                     await db.collection('players').doc(me.uid).set(safeDoc, { merge: true });
                 } else throw firstErr;
             });
+            if (socialSig) this._lastSocialHash = socialSig;
             if (cs && cs.lastCloudData && typeof cs.lastCloudData === 'object') {
                 cs.lastCloudData.playerName = me.name;
                 cs.lastCloudData.playerNameLower = me.nameLower;
@@ -198,11 +248,13 @@ class FriendService {
 
     markOfflineBeacon() {
         if (typeof window !== 'undefined' && window._lesaioSuppressUnloadSave) return;
-        const db = this.getDb(), uid = this.getMyUid();
+        const uid = this.getMyUid();
+        this._lastPresenceSync = 0;
+        const ps = this.getPresence();
+        if (ps && ps.isReady() && uid) { ps.markOffline(uid); return; }
+        const db = this.getDb();
         if (!db || !uid) return;
-        try {
-            db.collection('players').doc(uid).set({ online: false, coopRoomCode: null, lastSeenAt: Date.now() }, { merge: true }).catch(() => {});
-        } catch (_) {}
+        try { db.collection('players').doc(uid).set({ online: false, coopRoomCode: null, lastSeenAt: Date.now() }, { merge: true }).catch(() => {}); } catch (_) {}
     }
 
     attachListeners() {
@@ -279,8 +331,14 @@ class FriendService {
         });
         for (const k of [...this._seenRequestIds]) if (!activeReqKeys.has(k)) this._seenRequestIds.delete(k);
         this.friends = accepted; this.incomingRequests = incoming; this.outgoingRequests = outgoing;
+        const ps = this.getPresence();
+        if (ps) ps.watchUids(accepted.map(f => f.otherUid));
         this.emitUpdate();
-        if (uidsToRefresh.length > 0) this.refreshFriendStatuses(uidsToRefresh);
+        const missingProfile = uidsToRefresh.some(u => !this.friendProfiles[u]);
+        if (uidsToRefresh.length > 0 && (missingProfile || Date.now() - this._lastFriendsLoadedAt > 120000)) {
+            this._lastFriendsLoadedAt = Date.now();
+            this.refreshFriendStatuses(uidsToRefresh);
+        }
         if (newestUnseenReq && typeof window !== 'undefined' && window.EventBus) window.EventBus.emit('friendRequestReceived', newestUnseenReq);
     }
 
@@ -300,36 +358,36 @@ class FriendService {
 
     async refreshFriendStatuses(uids = null) {
         const db = this.getDb();
-        if (!db) return;
+        const ps = this.getPresence();
         const list = uids || this.friends.map(f => f.otherUid);
         if (!list.length) return;
-
         try {
-            const docs = await Promise.all(list.map(uid => db.collection('players').doc(uid).get().catch(() => null)));
+            const [docs] = await Promise.all([
+                db ? Promise.all(list.map(uid => db.collection('players').doc(uid).get().catch(() => null))) : Promise.resolve([]),
+                ps ? ps.fetchOnce(list).catch(() => {}) : Promise.resolve()
+            ]);
+            this._lastFriendsLoadedAt = Date.now();
             docs.forEach((doc) => {
-                if (doc && doc.exists) {
-                    const data = doc.data() || {};
-                    this.friendProfiles[doc.id] = this._formatPlayerDoc(doc.id, data);
-                }
+                if (doc && doc.exists) this.friendProfiles[doc.id] = this._formatPlayerDoc(doc.id, doc.data() || {});
             });
             this.emitUpdate();
         } catch (_) {}
     }
 
     _formatPlayerDoc(uid, data) {
-        const p = data.player || {};
-        const social = data.socialStats || {};
-        const pStats = p.stats || {};
-        const rStats = data.stats || {};
-        const pFeats = p.combatFeats || {};
-        const cosRaw = data.cosmetics || {};
+        const p = data.player || {}, social = data.socialStats || {}, pStats = p.stats || {}, rStats = data.stats || {}, pFeats = p.combatFeats || {}, cosRaw = data.cosmetics || {};
         const name = data.playerName || p.name || 'Hero';
         const tag = data.friendTag || (typeof PlayerIdentity !== 'undefined' ? PlayerIdentity.getOnlineTag(uid) : '#HERO00');
         const level = parseInt(data.level || data.accountLevel || p.accountLevel || 1, 10) || 1;
         const hero = data.selectedHero || p.selectedHero || 'psanas';
-        const updMs = data.lastUpdated ? (typeof data.lastUpdated.toMillis === 'function' ? data.lastUpdated.toMillis() : (Number(data.lastUpdated.seconds) * 1000 || 0)) : 0;
-        const lastSeenAt = FriendService._maxNum(data.lastSeenAt, updMs, data.timestamp);
-        const isOnline = Boolean(data.online && data.lastSeenAt && (Date.now() - data.lastSeenAt < 120000));
+        const ps = this.getPresence();
+        const pres = (typeof PresenceService !== 'undefined') ? PresenceService.resolve(uid, data, ps ? ps.cache : null) : (() => {
+            const updMs = data.lastUpdated ? (typeof data.lastUpdated.toMillis === 'function' ? data.lastUpdated.toMillis() : (Number(data.lastUpdated.seconds) * 1000 || 0)) : 0;
+            const lastSeenAt = FriendService._maxNum(data.lastSeenAt, updMs, data.timestamp);
+            const isOnline = Boolean(data.online && lastSeenAt && (Date.now() - lastSeenAt < 120000));
+            return { isOnline, lastSeenAt, currentStatus: isOnline ? (data.currentStatus || 'In Lobby') : 'Offline', coopRoomCode: isOnline ? (data.coopRoomCode || null) : null };
+        })();
+        const { isOnline, lastSeenAt, currentStatus, coopRoomCode } = pres;
         const maxWave = FriendService._maxNum(1, social.maxWave, pStats.maxWave, rStats.maxWave, data.maxWave);
         const hasAuthFeats = Boolean(p.combatFeats && typeof p.combatFeats.endlessMaxWave === 'number');
         const endlessMaxWave = hasAuthFeats
@@ -339,9 +397,7 @@ class FriendService {
         return {
             uid, name, tag, tagClean: (data.friendTagClean || tag.replace(/[^A-Z0-9]/g, '')).toUpperCase(),
             clanId: data.clanId || null, clanTag: data.clanTag || null, clanName: data.clanName || null,
-            level, hero, isOnline, lastSeenAt,
-            currentStatus: isOnline ? (data.currentStatus || 'In Lobby') : 'Offline',
-            coopRoomCode: isOnline ? (data.coopRoomCode || null) : null,
+            level, hero, isOnline, lastSeenAt, currentStatus, coopRoomCode,
             highScore: FriendService._maxNum(social.highScore, pStats.highScore, rStats.highScore, data.highScore, data.lbHighScore),
             maxWave, totalKills: FriendService._maxNum(social.totalKills, pStats.totalKills, rStats.totalKills, data.totalKills, data.lbTotalKills),
             endlessMaxWave, olympusMaxFloor: FriendService._maxNum(social.olympusMaxFloor, pFeats.olympusMaxFloor, cosRaw.olympusMaxFloor),
@@ -362,124 +418,80 @@ class FriendService {
     }
 
     async fetchDiscoverablePlayers(maxCount = 8) {
-        const db = this.getDb();
+        const db = this.getDb(), ps = this.getPresence();
         if (!db) return { ok: false, error: 'Offline mode: Connect to internet/cloud to find friends.', results: [] };
         const myUid = this.getMyUid();
         try {
             const snap = await db.collection('players').orderBy('lastSeenAt', 'desc').limit(maxCount + 3).get();
-            const list = [];
-            snap.forEach((doc) => {
-                if (!doc.exists || doc.id === myUid) return;
-                const entry = this._formatPlayerDoc(doc.id, doc.data() || {});
-                list.push({ ...entry, relation: this.getRelationState(entry.uid) });
-            });
+            const rawDocs = [];
+            snap.forEach((doc) => { if (doc.exists && doc.id !== myUid) rawDocs.push({ id: doc.id, data: doc.data() || {} }); });
+            if (ps && rawDocs.length) await ps.fetchOnce(rawDocs.map(d => d.id)).catch(() => {});
+            const list = rawDocs.map((d) => { const e = this._formatPlayerDoc(d.id, d.data); return { ...e, relation: this.getRelationState(e.uid) }; });
             return { ok: true, results: list.slice(0, maxCount) };
-        } catch (err) {
-            return { ok: false, error: this._describeDbError(err), results: [] };
-        }
+        } catch (err) { return { ok: false, error: this._describeDbError(err), results: [] }; }
     }
 
     /**
      * Search players across Firestore by either Online ID (#XXXXXX) or Player Name.
      */
     async searchPlayers(rawQuery) {
-        const db = this.getDb();
-        if (!db) {
-            return { ok: false, error: 'Offline mode: Connect to internet/cloud to find friends.', results: [] };
-        }
-
+        const db = this.getDb(), ps = this.getPresence();
+        if (!db) return { ok: false, error: 'Offline mode: Connect to internet/cloud to find friends.', results: [] };
         const q = (rawQuery || '').trim();
-        if (q.length < 2) {
-            return { ok: false, error: 'Type at least 2 characters (Name or #OnlineID).', results: [] };
-        }
-
+        if (q.length < 2) return { ok: false, error: 'Type at least 2 characters (Name or #OnlineID).', results: [] };
         await this.syncMyProfile(false);
 
         const myUid = this.getMyUid();
-        const cleanTag = (typeof PlayerIdentity !== 'undefined' && PlayerIdentity.normalizeTag)
-            ? PlayerIdentity.normalizeTag(q)
-            : q.toUpperCase().replace(/[^A-Z0-9]/g, '');
+        const cleanTag = (typeof PlayerIdentity !== 'undefined' && PlayerIdentity.normalizeTag) ? PlayerIdentity.normalizeTag(q) : q.toUpperCase().replace(/[^A-Z0-9]/g, '');
         const lowerName = q.replace(/^#/, '').trim().toLowerCase();
-
-        const candidates = new Map();
+        const rawMap = new Map();
         const collect = (snap) => {
             if (!snap || snap.empty) return;
-            snap.forEach((doc) => {
-                if (!doc.exists || doc.id === myUid) return;
-                if (!candidates.has(doc.id)) {
-                    candidates.set(doc.id, this._formatPlayerDoc(doc.id, doc.data() || {}));
-                }
-            });
+            snap.forEach((doc) => { if (doc.exists && doc.id !== myUid && !rawMap.has(doc.id)) rawMap.set(doc.id, doc.data() || {}); });
         };
 
         try {
             const queries = [];
-
-            // 1. Search by Online ID (exact friendTagClean match OR direct uid lookup)
             if (cleanTag.length >= 4 && cleanTag.length <= 10) {
                 queries.push(db.collection('players').where('friendTagClean', '==', cleanTag).limit(6).get());
                 queries.push(db.collection('players').where('friendTag', '==', `#${cleanTag}`).limit(6).get());
             }
             if (q.length >= 12 && !q.includes(' ')) {
-                queries.push(db.collection('players').doc(q).get().then(doc => {
-                    if (doc.exists && doc.id !== myUid && !candidates.has(doc.id)) {
-                        candidates.set(doc.id, this._formatPlayerDoc(doc.id, doc.data() || {}));
-                    }
-                }).catch(() => {}));
+                queries.push(db.collection('players').doc(q).get().then(doc => { if (doc.exists && doc.id !== myUid && !rawMap.has(doc.id)) rawMap.set(doc.id, doc.data() || {}); }).catch(() => {}));
             }
-
-            // 2. Search by Name prefix (case-insensitive) + legacy exact/title-case name fallbacks
             if (!q.startsWith('#') && lowerName.length >= 2) {
                 queries.push(db.collection('players').where('playerNameLower', '>=', lowerName).where('playerNameLower', '<=', lowerName + '\uf8ff').limit(10).get());
                 const titleName = lowerName.charAt(0).toUpperCase() + lowerName.slice(1);
-                Array.from(new Set([q, lowerName, titleName])).forEach((v) => {
-                    queries.push(db.collection('players').where('playerName', '==', v).limit(5).get());
-                });
+                Array.from(new Set([q, lowerName, titleName])).forEach(v => queries.push(db.collection('players').where('playerName', '==', v).limit(5).get()));
                 queries.push(db.collection('players').where('player.name', '==', q).limit(5).get());
             }
-
             const results = await Promise.allSettled(queries);
-            results.forEach((res) => {
-                if (res.status === 'fulfilled' && res.value && typeof res.value.forEach === 'function') collect(res.value);
+            results.forEach(r => { if (r.status === 'fulfilled' && r.value && typeof r.value.forEach === 'function') collect(r.value); });
+            if (rawMap.size === 0 && results.length > 0 && results.every(r => r.status === 'rejected')) return { ok: false, error: this._describeDbError(results[0].reason), results: [] };
+            if (ps && rawMap.size > 0) await ps.fetchOnce(Array.from(rawMap.keys())).catch(() => {});
+
+            const list = Array.from(rawMap.entries()).map(([id, d]) => {
+                const entry = this._formatPlayerDoc(id, d);
+                return { ...entry, relation: this.getRelationState(entry.uid) };
             });
-
-            if (candidates.size === 0 && results.length > 0 && results.every(r => r.status === 'rejected')) {
-                const firstErr = results[0].reason;
-                return { ok: false, error: this._describeDbError(firstErr), results: [] };
-            }
-
-            const list = Array.from(candidates.values()).map((entry) => ({
-                ...entry,
-                relation: this.getRelationState(entry.uid)
-            }));
-
-            // Sort exact tag matches & online players first
             list.sort((a, b) => {
                 const aExact = (a.tagClean === cleanTag || a.name.toLowerCase() === lowerName) ? 1 : 0;
                 const bExact = (b.tagClean === cleanTag || b.name.toLowerCase() === lowerName) ? 1 : 0;
                 if (aExact !== bExact) return bExact - aExact;
                 return (b.isOnline ? 1 : 0) - (a.isOnline ? 1 : 0);
             });
-
             return { ok: true, results: list };
         } catch (err) {
             console.warn('[FriendService] Search warning:', err);
             return { ok: false, error: 'Search unavailable right now. Check connection.', results: [] };
         }
     }
-
-    getRelationshipDocId(uidA, uidB) {
-        return [uidA, uidB].sort().join('__');
-    }
-
+    getRelationshipDocId(uidA, uidB) { return [uidA, uidB].sort().join('__'); }
     async sendFriendRequest(targetProfile) {
         const db = this.getDb(), me = this.getMySummary();
         if (!db || !me.uid || !targetProfile || !targetProfile.uid) return { ok: false, message: 'Cloud unavailable.' };
         if (targetProfile.uid === me.uid) return { ok: false, message: 'You cannot add yourself!' };
-
-        const relId = this.getRelationshipDocId(me.uid, targetProfile.uid);
-        const docRef = db.collection('friendships').doc(relId);
-
+        const relId = this.getRelationshipDocId(me.uid, targetProfile.uid), docRef = db.collection('friendships').doc(relId);
         try {
             const snap = await docRef.get();
             if (snap.exists) {
@@ -491,14 +503,8 @@ class FriendService {
                 }
                 return { ok: true, status: 'pending_outgoing', message: 'Friend request already sent!' };
             }
-
-            const now = Date.now();
-            const targetObj = { name: targetProfile.name, tag: targetProfile.tag, hero: targetProfile.hero, level: targetProfile.level };
-            await docRef.set({
-                users: [me.uid, targetProfile.uid].sort(), status: 'pending', requestedBy: me.uid,
-                profiles: { [me.uid]: { name: me.name, tag: me.tag, hero: me.selectedHero, level: me.level }, [targetProfile.uid]: targetObj },
-                createdAt: now, updatedAt: now
-            });
+            const now = Date.now(), targetObj = { name: targetProfile.name, tag: targetProfile.tag, hero: targetProfile.hero, level: targetProfile.level };
+            await docRef.set({ users: [me.uid, targetProfile.uid].sort(), status: 'pending', requestedBy: me.uid, profiles: { [me.uid]: { name: me.name, tag: me.tag, hero: me.selectedHero, level: me.level }, [targetProfile.uid]: targetObj }, createdAt: now, updatedAt: now });
             if (!this.outgoingRequests.some(r => r.id === relId)) {
                 this.outgoingRequests.push({ id: relId, otherUid: targetProfile.uid, status: 'pending', requestedBy: me.uid, createdAt: now, updatedAt: now, profile: { uid: targetProfile.uid, ...targetObj } });
                 this.emitUpdate();
@@ -525,12 +531,8 @@ class FriendService {
                 this.emitUpdate();
             }
             return true;
-        } catch (err) {
-            this.lastError = this._describeDbError(err);
-            return false;
-        }
+        } catch (err) { this.lastError = this._describeDbError(err); return false; }
     }
-
     async removeOrDeclineFriendship(relId) {
         const db = this.getDb();
         if (!db || !relId) return false;
@@ -541,15 +543,11 @@ class FriendService {
             this.outgoingRequests = this.outgoingRequests.filter(r => r.id !== relId);
             this.emitUpdate();
             return true;
-        } catch (err) {
-            this.lastError = this._describeDbError(err);
-            return false;
-        }
+        } catch (err) { this.lastError = this._describeDbError(err); return false; }
     }
 
     async sendCoopInvite(targetUid, roomCode, gameMode = 'story') {
-        const db = this.getDb();
-        const me = this.getMySummary();
+        const db = this.getDb(), me = this.getMySummary();
         if (!db || !me.uid || !targetUid || !roomCode) return false;
         const now = Date.now();
         try {
@@ -558,21 +556,14 @@ class FriendService {
                 roomCode: String(roomCode).trim().toUpperCase(), gameMode, createdAt: now, expiresAt: now + 600000
             });
             return true;
-        } catch (_) {
-            return false;
-        }
+        } catch (_) { return false; }
     }
-
-    setPendingInvite(inviteId) {
-        this._pendingAcceptedInviteId = inviteId || null;
-    }
-
+    setPendingInvite(inviteId) { this._pendingAcceptedInviteId = inviteId || null; }
     dismissPendingInvite() {
         const id = this._pendingAcceptedInviteId;
         this._pendingAcceptedInviteId = null;
         if (id) return this.dismissInvite(id);
     }
-
     async dismissInvite(inviteId) {
         const db = this.getDb();
         if (!db || !inviteId) return;

@@ -1,0 +1,11 @@
+{
+  "rules": {
+    "presence": {
+      "$uid": {
+        ".read": true,
+        ".write": "(auth != null && auth.uid == $uid) || $uid.matches(/^(phone|player|user|playtest)_[a-zA-Z0-9_]{4,80}$/)",
+        ".validate": "newData.hasChildren(['online', 'lastSeenAt']) && newData.child('online').isBoolean() && newData.child('lastSeenAt').isNumber() && (!newData.child('currentStatus').exists() || (newData.child('currentStatus').isString() && newData.child('currentStatus').val().length <= 40)) && (!newData.child('coopRoomCode').exists() || (newData.child('coopRoomCode').isString() && newData.child('coopRoomCode').val().length <= 16))"
+      }
+    }
+  }
+}

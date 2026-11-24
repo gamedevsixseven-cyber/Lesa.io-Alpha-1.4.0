@@ -26,9 +26,12 @@ class DirectMessageView {
         const roomAction = friend.coopRoomCode
             ? `<button type="button" class="friend-btn friend-btn-join" data-dm-act="join" data-code="${this.esc(friend.coopRoomCode)}">${this.ico('rocket')} JOIN ROOM</button>`
             : `<button type="button" class="friend-btn friend-btn-primary" data-dm-act="invite" ${friend.isOnline ? '' : 'disabled title="Friend is offline"'}>${this.ico('swords')} INVITE</button>`;
+        const lastOnlineTxt = (!friend.isOnline && !friend.coopRoomCode && typeof FriendsCardRenderer !== 'undefined' && typeof FriendsCardRenderer.formatLastOnline === 'function')
+            ? FriendsCardRenderer.formatLastOnline(friend.lastSeenAt) : '';
+        const statusText = friend.isOnline ? (friend.status || 'In Lobby') : (lastOnlineTxt || 'Offline');
         const statusHtml = friend.coopRoomCode
             ? `<span class="friend-room-pill">${this.ico('gamepad')} ROOM ${this.esc(friend.coopRoomCode)}</span>`
-            : `<span class="dm-sub-status">${this.ico(friend.isOnline ? 'orb_green' : 'orb_dark')} ${this.esc(friend.status || (friend.isOnline ? 'In Lobby' : 'Offline'))}</span>`;
+            : `<span class="dm-sub-status">${this.ico(friend.isOnline ? 'orb_green' : 'orb_dark')} ${this.esc(statusText)}</span>`;
 
         container.innerHTML = `
             <div class="dm-view" data-dm-rel="${this.esc(friend.relId)}">

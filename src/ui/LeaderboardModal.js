@@ -9,6 +9,8 @@ class LeaderboardModal {
         this._modal = null;
         this._activeTab = 'score';
         this._rows = [];
+        this._cachedRows = null;
+        this._cacheAt = 0;
         this._loading = false;
         this._error = '';
         this._fetchSeq = 0;
@@ -72,7 +74,7 @@ class LeaderboardModal {
         });
         el.querySelector('#lb-refresh-btn')?.addEventListener('click', () => {
             if (window.soundEngine) window.soundEngine.playSelect();
-            this.refresh();
+            this.refresh(true);
         });
         el.querySelectorAll('[data-lb-tab]').forEach((btn) => {
             btn.addEventListener('click', () => {
@@ -92,7 +94,7 @@ class LeaderboardModal {
             CosmeticManager.syncUnlocks({ silent: true, syncRemote: false });
         }
         el.classList.remove('hidden');
-        this.refresh();
+        this.refresh(false);
     }
 
     hide() {
@@ -132,8 +134,26 @@ class LeaderboardModal {
         };
     }
 
-    async refresh() {
+    async refresh(force = false) {
         const seq = ++this._fetchSeq;
+        const ps = (typeof window !== 'undefined') ? window.presenceService : null;
+        const selfEntry = this._buildLocalEntry();
+        if (!force && this._cachedRows && (Date.now() - this._cacheAt < 300000)) {
+            this._loading = false;
+            this._error = '';
+            if (ps) await ps.fetchOnce(this._cachedRows.map(r => r.uid).filter(Boolean)).catch(() => {});
+            if (seq !== this._fetchSeq) return;
+            this._rows = this._cachedRows.map((r) => {
+                if (r.isSelf) return { ...r, ...selfEntry, isSelf: true, isLocalStub: false };
+                if (ps && typeof PresenceService !== 'undefined') {
+                    const p = PresenceService.resolve(r.uid, r, ps.cache);
+                    return { ...r, isOnline: p.isOnline, lastSeenAt: Math.max(Number(r.lastSeenAt) || 0, p.lastSeenAt || 0), currentStatus: p.currentStatus };
+                }
+                return r;
+            });
+            this.render();
+            return;
+        }
         this._loading = true;
         this._error = '';
         this.render();
@@ -142,14 +162,13 @@ class LeaderboardModal {
         const db = (fs && typeof fs.getDb === 'function') ? fs.getDb() : null;
         if (db && fs && typeof fs.syncMyProfile === 'function') {
             await Promise.race([
-                fs.syncMyProfile(true).catch(() => false),
+                fs.syncMyProfile(false).catch(() => false),
                 new Promise((resolve) => setTimeout(resolve, 900))
             ]);
             if (seq !== this._fetchSeq) return;
         }
 
         const byUid = new Map();
-        const selfEntry = this._buildLocalEntry();
         const isPrimaryDev = !!(window.AdminAuth && typeof window.AdminAuth.isPrimaryDevUser === 'function' && window.AdminAuth.isPrimaryDevUser());
         byUid.set(selfEntry.uid, selfEntry);
 
@@ -236,7 +255,21 @@ class LeaderboardModal {
         }
 
         if (seq !== this._fetchSeq) return;
-        this._rows = Array.from(byUid.values());
+        const rows = Array.from(byUid.values());
+        if (ps && typeof PresenceService !== 'undefined') {
+            await ps.fetchOnce(rows.map(r => r.uid).filter(Boolean)).catch(() => {});
+            if (seq !== this._fetchSeq) return;
+            rows.forEach((r) => {
+                if (r.isSelf) return;
+                const p = PresenceService.resolve(r.uid, r, ps.cache);
+                r.isOnline = p.isOnline;
+                r.lastSeenAt = Math.max(Number(r.lastSeenAt) || 0, p.lastSeenAt || 0);
+                r.currentStatus = p.currentStatus;
+            });
+        }
+        this._rows = rows;
+        this._cachedRows = rows;
+        this._cacheAt = Date.now();
         this._loading = false;
         this.render();
     }

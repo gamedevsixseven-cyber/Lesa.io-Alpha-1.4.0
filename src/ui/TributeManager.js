@@ -11,6 +11,7 @@ class TributeManager {
     static STORAGE_KEY = 'lesaio_mazonakis_tribute_claimed';
     static UPDATE_101_KEY = 'lesaio_update_1_0_1_seen';
     static UPDATE_110_KEY = 'lesaio_update_1_1_0_seen';
+    static UPDATE_111_KEY = 'lesaio_update_1_1_1_seen';
     static EXPIRY_DATE = new Date('2026-09-13T23:59:59');
 
     static isEligible() {
@@ -39,7 +40,7 @@ class TributeManager {
     static checkAndShowUpdateNotice() {
         try {
             if (typeof document === 'undefined') return;
-            if (localStorage.getItem(this.UPDATE_110_KEY) === 'true') return;
+            if (localStorage.getItem(this.UPDATE_111_KEY) === 'true') return;
             const firstNameModal = document.getElementById('first-time-name-modal');
             if (firstNameModal && !firstNameModal.classList.contains('hidden')) return;
             setTimeout(() => {
@@ -53,14 +54,14 @@ class TributeManager {
     static showUpdateNoticeModal() {
         if (typeof document === 'undefined') return;
         try {
-            if (localStorage.getItem(this.UPDATE_110_KEY) === 'true') return;
-            localStorage.setItem(this.UPDATE_110_KEY, 'true');
+            if (localStorage.getItem(this.UPDATE_111_KEY) === 'true') return;
+            localStorage.setItem(this.UPDATE_111_KEY, 'true');
         } catch (_) {}
 
-        let modal = document.getElementById('update-110-modal');
+        let modal = document.getElementById('update-111-modal');
         if (!modal) {
             modal = document.createElement('div');
-            modal.id = 'update-110-modal';
+            modal.id = 'update-111-modal';
             modal.className = 'modal-overlay hidden';
             const layer = document.querySelector('.ui-layer') || document.body;
             layer.appendChild(modal);
@@ -70,22 +71,22 @@ class TributeManager {
         modal.innerHTML = `
             <div class="modal-panel tribute-modal-panel" style="max-width: 520px !important;">
                 <div class="tribute-header-banner">
-                    <div class="tribute-dove-badge"><img src="assets/GearUIIcons/DEF.png" class="ui-icon ui-icon-box" alt=""></div>
-                    <h2 class="tribute-title">UPDATE 1.1.0</h2>
-                    <div class="tribute-years">THE CLANS UPDATE</div>
+                    <div class="tribute-dove-badge"><img src="assets/ui-icons/rocket.svg" class="ui-icon ui-icon-box" alt=""></div>
+                    <h2 class="tribute-title">UPDATE 1.1.1</h2>
+                    <div class="tribute-years">HUGE PERFORMANCE UPDATE!</div>
                 </div>
                 <div class="tribute-quote-box" style="text-align: left; padding: 16px 20px;">
                     <p class="tribute-intro" style="text-align: center; font-style: normal; margin-bottom: 10px;">
-                        Squad up with your Clan, wield 4 new weapons &amp; inspect rivals!
+                        Massively smoother FPS in 120+ enemy waves on iOS, Android &amp; PC!
                     </p>
-                    <p class="tribute-body" style="margin: 6px 0;">${ico('shield')} <strong>Clans System:</strong> Guild Hall perks, Tax Vault, Weekly Bounties, Honor Crest Shop, Role Promotions &amp; Live Clan Chat</p>
-                    <p class="tribute-body" style="margin: 6px 0;">${ico('swords')} <strong>4 New Weapons:</strong> Skewer Charcoal Rifle, Hephaestus Vulcan Minigun, Hades Oblivion Railgun &amp; Medusa&apos;s Gorgon Gaze</p>
-                    <p class="tribute-body" style="margin: 6px 0;">${ico('hero_card')} <strong>View Players&apos; Gear &amp; Weapons:</strong> Inspect Equipped Gear &amp; Weapon Collections (with Privacy toggles in Settings)</p>
-                    <p class="tribute-body" style="margin: 6px 0;">${ico('chat')} <strong>QoL &amp; Social Polish:</strong> Direct Messages in Friends List, unread badges &amp; crisp SVG Friends UI overhaul</p>
-                    <p class="tribute-body" style="margin: 6px 0;">${ico('bolt')} <strong>Performance &amp; Fixes:</strong> Spatial Hash Grid collision &amp; off-screen swarm optimization, mobile FPS boosts &amp; bug fixes</p>
+                    <p class="tribute-body" style="margin: 6px 0;">${ico('rocket')} <strong>4-Pass Batched Enemy Rendering:</strong> Pre-baked atlas shadows, type-grouped enemies &amp; batched HP bars slash GPU overhead</p>
+                    <p class="tribute-body" style="margin: 6px 0;">${ico('sparkle')} <strong>Zero Mid-Frame Atlas Stutters:</strong> Expanded mobile atlas (6 pages), cached more horde enemies &amp; direct matrix transforms</p>
+                    <p class="tribute-body" style="margin: 6px 0;">${ico('phone_rotate')} <strong>Mobile Clans UI Fixed:</strong> Smooth vertical scrolling, compact mobile sizing &amp; fixed iOS input auto-zoom</p>
+                    <p class="tribute-body" style="margin: 6px 0;">${ico('bolt')} <strong>Screen Stay-Awake &amp; Menu Polish:</strong> Phone screen now stays awake during gameplay &amp; removed extra fullscreen button</p>
+                    <p class="tribute-body" style="margin: 6px 0;">${ico('shield')} <strong>Clans Spotlight:</strong> Added a NEW badge pill on the main menu Clans button</p>
                 </div>
                 <div class="modal-actions" style="margin-top: 14px;">
-                    <button type="button" id="dismiss-update-110-btn" class="comic-btn tribute-claim-btn">LET&apos;S GO!</button>
+                    <button type="button" id="dismiss-update-111-btn" class="comic-btn tribute-claim-btn">AWESOME!</button>
                 </div>
             </div>
         `;
@@ -95,7 +96,7 @@ class TributeManager {
             window.soundEngine.playPickup('star');
         }
 
-        const dismissBtn = modal.querySelector('#dismiss-update-110-btn');
+        const dismissBtn = modal.querySelector('#dismiss-update-111-btn');
         if (dismissBtn) {
             dismissBtn.addEventListener('click', () => this.hideUpdateNoticeModal());
         }
@@ -103,9 +104,9 @@ class TributeManager {
 
     static hideUpdateNoticeModal() {
         try {
-            localStorage.setItem(this.UPDATE_110_KEY, 'true');
+            localStorage.setItem(this.UPDATE_111_KEY, 'true');
         } catch (_) {}
-        const modal = typeof document !== 'undefined' ? document.getElementById('update-110-modal') : null;
+        const modal = typeof document !== 'undefined' ? document.getElementById('update-111-modal') : null;
         if (modal) modal.classList.add('hidden');
         if (window.soundEngine && typeof window.soundEngine.playSelect === 'function') {
             window.soundEngine.playSelect();

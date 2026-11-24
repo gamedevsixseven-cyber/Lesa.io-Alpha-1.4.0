@@ -7,6 +7,7 @@
 const firebaseConfig = {
     apiKey: "AIzaSyDetPvSSZ4MlO_-5OD1XivtSK23xSK4TqA",
     authDomain: "lesaio.firebaseapp.com",
+    databaseURL: "https://lesaio-default-rtdb.europe-west1.firebasedatabase.app",
     projectId: "lesaio",
     storageBucket: "lesaio.firebasestorage.app",
     messagingSenderId: "1020787391398",
@@ -19,6 +20,7 @@ class CloudSaveService {
         this.isInitialized = false;
         this.auth = null;
         this.db = null;
+        this.rtdb = null;
         this.currentUser = null;
         this.hasCompletedInitialSync = false;
         this.isHydratingAuth = false;
@@ -26,6 +28,10 @@ class CloudSaveService {
         this.lastLocalMutationDirtyAt = 0;
         this._localMutationVersion = 0;
         this._activeListenerUid = null;
+        this._cloudSyncCooldownMs = 45000;
+        this._lastCloudSyncAt = 0;
+        this._cloudSyncTimer = null;
+        this._pendingCloudSyncData = null;
 
         this.init();
     }
@@ -45,7 +51,13 @@ class CloudSaveService {
                     firebase.initializeApp(firebaseConfig);
                     this.auth = firebase.auth();
                     this.db = firebase.firestore();
+                    this.rtdb = (typeof firebase.database === 'function') ? firebase.database() : null;
                     this.isInitialized = true;
+                    if (typeof window !== 'undefined' && !this._flushBound) {
+                        this._flushBound = true;
+                        window.addEventListener('pagehide', () => this.flushPendingCloudSync());
+                        if (typeof document !== 'undefined') document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') this.flushPendingCloudSync(); });
+                    }
 
                     // Start live listener for distinct device or authenticated player
                     const uid = this.getEffectivePlayerUid();
@@ -150,11 +162,35 @@ class CloudSaveService {
         }
     }
 
+    _clearPendingCloudSync() {
+        if (this._cloudSyncTimer) { clearTimeout(this._cloudSyncTimer); this._cloudSyncTimer = null; }
+        this._pendingCloudSyncData = null;
+    }
+
+    flushPendingCloudSync() {
+        if (!this._pendingCloudSyncData || this.isHydratingAuth || this.isSyncingFromCloud) return false;
+        if (typeof window !== 'undefined' && window._lesaioSuppressUnloadSave) return false;
+        const payload = this._pendingCloudSyncData;
+        this._clearPendingCloudSync();
+        return this.saveToCloud(payload);
+    }
+
     async triggerCloudSync(saveData) {
-        return this.saveToCloud(saveData);
+        const elapsed = Date.now() - (this._lastCloudSyncAt || 0);
+        if (elapsed >= this._cloudSyncCooldownMs) {
+            this._clearPendingCloudSync();
+            return this.saveToCloud(saveData);
+        }
+        this._pendingCloudSyncData = saveData;
+        if (!this._cloudSyncTimer) {
+            this._cloudSyncTimer = setTimeout(() => this.flushPendingCloudSync(), Math.max(1000, this._cloudSyncCooldownMs - elapsed));
+        }
+        return true;
     }
 
     async saveToCloud(saveData = {}) {
+        this._clearPendingCloudSync();
+        this._lastCloudSyncAt = Date.now();
         if (!this.isInitialized || !this.db) return false;
         if (this.isSyncingFromCloud || this.isHydratingAuth) {
             return false;
@@ -467,37 +503,22 @@ class CloudSaveService {
             }
 
             const strSkills = JSON.stringify(parsedSkills);
-            let skillsChanged = false;
             if (this.lastSeenSkillLevels === undefined || this.lastSeenSkillLevels !== strSkills) {
-                skillsChanged = true;
-            }
-
-            if (skillsChanged) {
                 this.lastSeenSkillLevels = strSkills;
                 localStorage.setItem('lesaio_skill_levels', strSkills);
-
-                if (window.GameState && typeof window.GameState.setSkillLevels === 'function') {
-                    window.GameState.setSkillLevels(parsedSkills);
-                } else if (window.GameState && window.GameState.player) {
-                    window.GameState.player.skillLevels = parsedSkills;
-                }
-
+                if (window.GameState && typeof window.GameState.setSkillLevels === 'function') window.GameState.setSkillLevels(parsedSkills);
+                else if (window.GameState && window.GameState.player) window.GameState.player.skillLevels = parsedSkills;
                 if (window.uiController && window.uiController.skillManager) {
                     window.uiController.skillManager.skillLevels = parsedSkills;
                     window.uiController.skillManager.renderSkillCards();
                     window.uiController.skillManager.updateHUDIcon();
                 }
-
                 changed = true;
                 this._reconcileDoc({ skillLevels: parsedSkills, 'player.skillLevels': parsedSkills });
             }
         }
-        } finally {
-            this.isSyncingFromCloud = false;
-        }
-        if (changed && window.SaveManager && typeof window.SaveManager.saveLocalOnly === 'function') {
-            window.SaveManager.saveLocalOnly();
-        }
+        } finally { this.isSyncingFromCloud = false; }
+        if (changed && window.SaveManager && typeof window.SaveManager.saveLocalOnly === 'function') window.SaveManager.saveLocalOnly();
         if (_preferLocal && window.SaveSerializer && window.GameState) {
             const p = window.SaveSerializer.serialize(window.GameState);
             if (p) setTimeout(() => this.saveToCloud(p), 400);
@@ -510,29 +531,13 @@ class CloudSaveService {
                 if (p) setTimeout(() => { this.saveToCloud(p); if (window.friendService) window.friendService.syncMyProfile(true); }, 450);
             }
         }
-
-        // Primary Dev Player Gift Delivery Queue
-        if (Array.isArray(data.devGifts) && data.devGifts.length > 0 && typeof DevGiftManager !== 'undefined') {
-            DevGiftManager.claimPendingGifts(data, this);
-        }
-
-        // Real-time Developer Mail Inbox Delivery (Explicit mail objects only)
-        if (data.mail && typeof data.mail === 'object' && data.mail.title && window.uiController && window.uiController.mailManager) {
-            window.uiController.mailManager.addOrUpdateFirebaseMail(data.mail, isInitialSync);
-        }
-
-        // Real-time Daily Challenge Reset Trigger from Firebase Console
+        if (Array.isArray(data.devGifts) && data.devGifts.length > 0 && typeof DevGiftManager !== 'undefined') DevGiftManager.claimPendingGifts(data, this);
+        if (data.mail && typeof data.mail === 'object' && data.mail.title && window.uiController && window.uiController.mailManager) window.uiController.mailManager.addOrUpdateFirebaseMail(data.mail, isInitialSync);
         if ((data.resetQuests || data.resetChallenges) && window.questManager && typeof window.questManager.resetDailyChallenges === 'function') {
             window.questManager.resetDailyChallenges();
             const user = this.currentUser || (this.auth ? this.auth.currentUser : null);
-            if (user && this.db) {
-                this.db.collection('players').doc(user.uid).update({
-                    resetQuests: firebase.firestore.FieldValue.delete(),
-                    resetChallenges: firebase.firestore.FieldValue.delete()
-                }).catch(() => {});
-            }
+            if (user && this.db) this.db.collection('players').doc(user.uid).update({ resetQuests: firebase.firestore.FieldValue.delete(), resetChallenges: firebase.firestore.FieldValue.delete() }).catch(() => {});
         }
-
         if (changed && !isInitialSync && window.soundEngine) window.soundEngine.playPickup('star');
     }
 
@@ -558,36 +563,20 @@ class CloudSaveService {
         }
 
         if (user.uid) {
-            try {
-                const docRef = this.db.collection('players').doc(user.uid);
-                const unsubUid = docRef.onSnapshot((doc) => {
-                    if (doc.exists) this.applyCloudData(doc.data());
-                    else if (!(doc.metadata && doc.metadata.fromCache) && !this.isHydratingAuth) {
-                        if (!user.email) this.seedNewPlayerDoc(user.uid);
-                        this.hasCompletedInitialSync = true;
-                    }
-                }, (err) => console.warn('UID listener warning:', err));
-                this.unsubscribes.push(unsubUid);
-            } catch (e) {}
+            try { const unsubUid = this.db.collection('players').doc(user.uid).onSnapshot((doc) => {
+                if (doc.exists) this.applyCloudData(doc.data());
+                else if (!(doc.metadata && doc.metadata.fromCache) && !this.isHydratingAuth) { if (!user.email) this.seedNewPlayerDoc(user.uid); this.hasCompletedInitialSync = true; }
+            }, (err) => console.warn('UID listener warning:', err)); this.unsubscribes.push(unsubUid); } catch (e) {}
         } else if (user.email) {
             try {
-                this.unsubscribes.push(this.db.collection('players').doc(user.email).onSnapshot((doc) => {
-                    if (doc.exists) this.applyCloudData(doc.data());
-                }, () => {}));
-                this.unsubscribes.push(this.db.collection('players').where('email', '==', user.email).onSnapshot((snapshot) => {
-                    snapshot.forEach(doc => { if (doc.exists) this.applyCloudData(doc.data()); });
-                }, () => {}));
+                this.unsubscribes.push(this.db.collection('players').doc(user.email).onSnapshot((doc) => { if (doc.exists) this.applyCloudData(doc.data()); }, () => {}));
+                this.unsubscribes.push(this.db.collection('players').where('email', '==', user.email).onSnapshot((snapshot) => { snapshot.forEach(doc => { if (doc.exists) this.applyCloudData(doc.data()); }); }, () => {}));
             } catch (e) {}
         }
     }
-
     stopRealtimeListener() {
-        if (Array.isArray(this.unsubscribes)) {
-            this.unsubscribes.forEach(unsub => { if (typeof unsub === 'function') unsub(); });
-            this.unsubscribes = [];
-        }
+        if (Array.isArray(this.unsubscribes)) { this.unsubscribes.forEach(u => { if (typeof u === 'function') u(); }); this.unsubscribes = []; }
     }
-
     async signOut() {
         this.stopRealtimeListener();
         if (this.auth && this.isInitialized) await this.auth.signOut();
@@ -595,5 +584,4 @@ class CloudSaveService {
         if (window.friendService) window.friendService.onAuthChanged();
     }
 }
-
 window.cloudSave = new CloudSaveService();

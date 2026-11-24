@@ -64,9 +64,13 @@ class PublicProfileModal {
 
         const fs = (typeof window !== 'undefined') ? window.friendService : null;
         const db = fs && typeof fs.getDb === 'function' ? fs.getDb() : null;
+        const ps = (typeof window !== 'undefined') ? window.presenceService : null;
         if (db && merged.uid && !merged.isLocalStub) {
             try {
-                const snap = await db.collection('players').doc(merged.uid).get();
+                const [snap] = await Promise.all([
+                    db.collection('players').doc(merged.uid).get(),
+                    ps ? ps.fetchOnce([merged.uid]).catch(() => {}) : Promise.resolve()
+                ]);
                 if (snap && snap.exists && this._currentProfile && this._currentProfile.uid === merged.uid) {
                     const formatted = fs._formatPlayerDoc(snap.id, snap.data() || {});
                     merged = {

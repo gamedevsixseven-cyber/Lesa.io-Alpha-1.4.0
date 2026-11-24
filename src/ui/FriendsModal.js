@@ -136,23 +136,27 @@ class FriendsModal {
         this.closeDm(false);
         if (this.activeTab === 'requests' && this.reqToastEl) this.reqToastEl.classList.add('hidden');
         if (this.service) {
-            this.service.syncMyProfile(true);
-            this.service.pollFriendships();
-            this.service.refreshFriendStatuses();
+            this.service.syncMyProfile(false);
+            if (!this._lastFriendsSyncAt || Date.now() - this._lastFriendsSyncAt > 120000) {
+                this._lastFriendsSyncAt = Date.now();
+                this.service.pollFriendships();
+                this.service.refreshFriendStatuses();
+            } else if (typeof window !== 'undefined' && window.presenceService) {
+                window.presenceService.fetchOnce(this.service.friends.map(f => f.otherUid)).then(() => this.render());
+            }
         }
         if (window.chatService) window.chatService.syncSubscriptions();
         this.render();
         if (this.modal) this.modal.classList.remove('hidden');
-
         if (this._refreshInterval) clearInterval(this._refreshInterval);
         this._refreshInterval = setInterval(() => {
-            if (this.service && this.modal && !this.modal.classList.contains('hidden')) {
-                this.service.pollFriendships();
-                this.service.refreshFriendStatuses();
-            }
-        }, 20000);
+            if (!this.service || !this.modal || this.modal.classList.contains('hidden')) return;
+            const now = Date.now();
+            if (this.service._friendshipsErrored || !this.service._unsubFriendships) this.service.pollFriendships();
+            if (!this._lastFriendsSyncAt || now - this._lastFriendsSyncAt >= 120000) { this._lastFriendsSyncAt = now; this.service.refreshFriendStatuses(); }
+            else this.render();
+        }, 60000);
     }
-
     hide() {
         this.closeDm(false);
         if (this.modal) this.modal.classList.add('hidden');
