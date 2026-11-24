@@ -47,6 +47,7 @@ class UiIcons {
         weapon_vulcan_minigun: 'assets/WeaponIcons/HephaestusVulcanMinigun.png',
         weapon_hades_railgun: 'assets/WeaponIcons/HadesOblivionRailgun.png',
         weapon_medusa_gaze: 'assets/WeaponIcons/MedusasGorgonGaze.png',
+        weapon_hyperion_glaive: 'assets/WeaponIcons/HyperionCelestialGlaive.png',
 
         // Custom Comic SVG Icons
         coin: 'assets/ui-icons/coin.svg',

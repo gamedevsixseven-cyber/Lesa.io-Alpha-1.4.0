@@ -351,6 +351,8 @@ class ModalManager {
             card.style.display = '';
             card.classList.toggle('weapon-locked', !unlocked);
             card.classList.toggle('rarity-apex', (wData.rarity || '').toLowerCase() === 'apex');
+            card.classList.toggle('rarity-exotic', (wData.rarity || '').toLowerCase() === 'exotic');
+            card.classList.toggle('rarity-celestial', (wData.rarity || '').toLowerCase() === 'celestial');
             if (unlocked) visibleCount++;
 
             const badge = card.querySelector('.weapon-badge');

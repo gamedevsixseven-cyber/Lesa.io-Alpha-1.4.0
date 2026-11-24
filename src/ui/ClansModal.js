@@ -244,6 +244,15 @@ class ClansModal {
             this.activeTab = 'overview'; this.render(); return;
         }
 
+        const boostBtn = t.closest('[data-activate-booster]');
+        if (boostBtn && !boostBtn.disabled) {
+            const res = await this.service.activateVaultBooster(boostBtn.dataset.activateBooster);
+            if (!res.ok) return this.setFeedback(res.error, true);
+            if (window.soundEngine) window.soundEngine.playLevelUp();
+            this.setFeedback(`⚡ Activated ${res.booster.name} (${res.booster.summary}) for all Clan members!`, false);
+            this.render(); return;
+        }
+
         const donateBtn = t.closest('[data-donate-res]');
         if (donateBtn && !donateBtn.disabled) {
             const resId = donateBtn.dataset.donateRes;

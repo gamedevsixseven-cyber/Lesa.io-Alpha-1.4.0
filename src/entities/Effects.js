@@ -433,6 +433,7 @@ class EffectsManager {
         if (typeof HephaestusVulcanMinigun !== 'undefined') HephaestusVulcanMinigun.update(dt, gameRef);
         if (typeof HadesOblivionRailgun !== 'undefined') HadesOblivionRailgun.update(dt);
         if (typeof MedusaGorgonGaze !== 'undefined') MedusaGorgonGaze.update(dt);
+        if (typeof HyperionCelestialGlaive !== 'undefined') HyperionCelestialGlaive.update(dt, gameRef);
         if (typeof EndlessMapEvolution !== 'undefined') {
             EndlessMapEvolution.update(dt, gameRef);
         }
@@ -486,6 +487,7 @@ class EffectsManager {
         if (typeof SkewerCharcoalRifle !== 'undefined') SkewerCharcoalRifle.drawWorld(ctx, cam);
         if (typeof HadesOblivionRailgun !== 'undefined') HadesOblivionRailgun.drawWorld(ctx, cam);
         if (typeof MedusaGorgonGaze !== 'undefined') MedusaGorgonGaze.drawWorld(ctx, cam);
+        if (typeof HyperionCelestialGlaive !== 'undefined') HyperionCelestialGlaive.drawWorld(ctx, cam);
 
         if (typeof EndlessMapEvolution !== 'undefined') {
             EndlessMapEvolution.drawWorldForeground(ctx, cam);
@@ -528,6 +530,7 @@ class EffectsManager {
         if (typeof SkewerCharcoalRifle !== 'undefined') SkewerCharcoalRifle.clear();
         if (typeof HadesOblivionRailgun !== 'undefined') HadesOblivionRailgun.clear();
         if (typeof MedusaGorgonGaze !== 'undefined') MedusaGorgonGaze.clear();
+        if (typeof HyperionCelestialGlaive !== 'undefined') HyperionCelestialGlaive.clear();
         if (typeof EndlessMapEvolution !== 'undefined') {
             EndlessMapEvolution.reset();
         }

@@ -184,10 +184,19 @@ class CoopCombatFx {
         }, { droppable: true });
     }
 
+    static relayGlaiveSwing(net, player, aim, isEvolved, isRiftSwing) {
+        if (!net || !net.connected || !player || !this._canSendFx()) return;
+        net.send('COOP_FX', {
+            t: 'glaive', a: Number((aim || 0).toFixed(3)), e: !!isEvolved, r: !!isRiftSwing
+        }, { droppable: true });
+    }
+
     static handleRemoteFx(session, data) {
         const fx = session && session.game && session.game.effects;
         if (!fx || !data) return;
-        if (data.t === 'chain' && typeof fx.addLightningChain === 'function') {
+        if (data.t === 'glaive' && session.remotePlayer && typeof HyperionCelestialGlaive !== 'undefined') {
+            HyperionCelestialGlaive.spawnRemoteSwing(session.remotePlayer, Number(data.a) || 0, !!data.e, !!data.r, fx);
+        } else if (data.t === 'chain' && typeof fx.addLightningChain === 'function') {
             fx.addLightningChain(data.x1, data.y1, data.x2, data.y2, data.c || '#00d2d3');
         } else if (data.t === 'ring') {
             fx.addShockwave(data.x, data.y, Math.min(350, Number(data.r) || 90), data.c || 'rgba(255,255,255,0.8)');

@@ -215,6 +215,79 @@
     color: #f8fafc;
 }
 
+/* EXOTIC Endgame Animated Card Look */
+@keyframes exoticBadgeFlow {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+}
+@keyframes exoticCardGlow {
+    0%, 100% { box-shadow: 0 0 0 2px #2ed573, 0 5px 0 #071917, 0 10px 22px rgba(0, 206, 201, 0.45); background-position: 0% 50%; }
+    50% { box-shadow: 0 0 0 2px #55efc4, 0 5px 0 #071917, 0 12px 30px rgba(85, 239, 196, 0.78); background-position: 100% 50%; }
+}
+@keyframes exoticShimmerSweep {
+    0% { transform: translateX(-140%) rotate(22deg); opacity: 0; }
+    25% { opacity: 0.55; }
+    55% { opacity: 0.45; }
+    100% { transform: translateX(270%) rotate(22deg); opacity: 0; }
+}
+@keyframes exoticIconFloat {
+    0%, 100% { transform: translateY(0) scale(1); filter: drop-shadow(0 0 8px rgba(0, 206, 201, 0.65)); }
+    50% { transform: translateY(-3px) scale(1.06); filter: drop-shadow(0 0 14px rgba(85, 239, 196, 0.95)); }
+}
+.weapon-card.rarity-exotic {
+    position: relative;
+    overflow: hidden;
+    background: linear-gradient(135deg, #071e22 0%, #0f423d 36%, #0b2c38 68%, #071b1c 100%);
+    background-size: 220% 220%;
+    border-color: #55efc4;
+    animation: exoticCardGlow 3.2s ease-in-out infinite;
+}
+.weapon-card.rarity-exotic::after {
+    content: '';
+    position: absolute;
+    top: -40%;
+    left: -30%;
+    width: 42%;
+    height: 185%;
+    background: linear-gradient(90deg, transparent 0%, rgba(167, 243, 208, 0.24) 45%, rgba(254, 240, 138, 0.30) 52%, transparent 100%);
+    pointer-events: none;
+    animation: exoticShimmerSweep 3.8s ease-in-out infinite;
+}
+.weapon-card.rarity-exotic.active-weapon { border-color: #fed330; box-shadow: 0 0 0 2px #55efc4, 0 5px 0 #071917, 0 12px 28px rgba(254, 211, 48, 0.55); }
+.weapon-card.rarity-exotic.is-evolved-card { background: linear-gradient(135deg, #0b2928 0%, #115e59 42%, #1b3a4b 72%, #091d1c 100%); background-size: 220% 220%; border-color: #ffffff; box-shadow: 0 0 0 2px #fed330, 0 0 24px rgba(0, 206, 201, 0.78), 0 5px 0 #071917; }
+.weapon-card.rarity-exotic .weapon-name { color: #55efc4; text-shadow: 0 0 10px rgba(0, 206, 201, 0.55), 0 2px 4px rgba(0, 0, 0, 0.75); }
+.weapon-card.rarity-exotic .weapon-icon-wrap { border-radius: 14px; background: radial-gradient(circle, rgba(0, 206, 201, 0.45) 0%, rgba(85, 239, 196, 0.16) 60%, transparent 100%); box-shadow: 0 0 14px rgba(0, 206, 201, 0.35); }
+.weapon-card.rarity-exotic .weapon-card-img { animation: exoticIconFloat 2.8s ease-in-out infinite; }
+.weapon-card.rarity-exotic .weapon-stat-row { background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(85, 239, 196, 0.28); color: #f8fafc; }
+.weapon-card.rarity-exotic .weapon-stat-row .stat-key { color: #99f6e4; }
+.weapon-card.rarity-exotic .weapon-stat-row .stat-val { color: #ffffff; }
+.weapon-card.rarity-exotic .gear-upgrade-box { border-top-color: rgba(85, 239, 196, 0.32); }
+.weapon-card.rarity-exotic .gear-upgrade-cost-line { color: #55efc4; }
+.weapon-card.rarity-exotic .gear-cost-chip { background: rgba(6, 28, 28, 0.88); border-color: rgba(85, 239, 196, 0.42); color: #ecfeff; }
+
+/* CELESTIAL Pinnacle Animated Prismatic Card Look */
+@keyframes celestialAura {
+    0%, 100% { box-shadow: 0 0 0 2px #c084fc, 0 5px 0 #140b2e, 0 10px 26px rgba(56, 189, 248, 0.55); background-position: 0% 50%; }
+    50% { box-shadow: 0 0 0 2px #fef08a, 0 5px 0 #140b2e, 0 14px 34px rgba(240, 171, 252, 0.85); background-position: 100% 50%; }
+}
+@keyframes celestialIconOrbit {
+    0%, 100% { transform: translateY(0) rotate(-1.5deg) scale(1); filter: drop-shadow(0 0 9px rgba(56, 189, 248, 0.75)); }
+    50% { transform: translateY(-4px) rotate(1.5deg) scale(1.07); filter: drop-shadow(0 0 16px rgba(254, 240, 138, 0.95)); }
+}
+.weapon-card.rarity-celestial { position: relative; overflow: hidden; background: linear-gradient(135deg, #0d0824 0%, #24124d 34%, #102a4c 68%, #09061a 100%); background-size: 240% 240%; border-color: #f0abfc; animation: celestialAura 2.9s ease-in-out infinite; }
+.weapon-card.rarity-celestial::after { content: ''; position: absolute; top: -40%; left: -30%; width: 44%; height: 185%; background: linear-gradient(90deg, transparent 0%, rgba(56, 189, 248, 0.25) 38%, rgba(254, 240, 138, 0.36) 55%, rgba(240, 171, 252, 0.24) 72%, transparent 100%); pointer-events: none; animation: exoticShimmerSweep 3.2s ease-in-out infinite; }
+.weapon-card.rarity-celestial.active-weapon { border-color: #2ed573; box-shadow: 0 0 0 2px #fef08a, 0 5px 0 #140b2e, 0 12px 30px rgba(46, 213, 115, 0.62); }
+.weapon-card.rarity-celestial.is-evolved-card { background: linear-gradient(135deg, #1b0b3a 0%, #3b1766 42%, #173a5e 74%, #0f0724 100%); background-size: 240% 240%; border-color: #ffffff; box-shadow: 0 0 0 2px #fef08a, 0 0 28px rgba(192, 132, 252, 0.85), 0 5px 0 #140b2e; }
+.weapon-card.rarity-celestial .weapon-name { color: #f5d0fe; text-shadow: 0 0 12px rgba(56, 189, 248, 0.65), 0 2px 4px rgba(0, 0, 0, 0.8); }
+.weapon-card.rarity-celestial .weapon-icon-wrap { border-radius: 14px; background: radial-gradient(circle, rgba(192, 132, 252, 0.48) 0%, rgba(56, 189, 248, 0.22) 60%, transparent 100%); box-shadow: 0 0 16px rgba(56, 189, 248, 0.42); }
+.weapon-card.rarity-celestial .weapon-card-img { animation: celestialIconOrbit 2.6s ease-in-out infinite; }
+.weapon-card.rarity-celestial .weapon-stat-row { background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(240, 171, 252, 0.30); color: #f8fafc; }
+.weapon-card.rarity-celestial .weapon-stat-row .stat-key { color: #bae6fd; }
+.weapon-card.rarity-celestial .weapon-stat-row .stat-val { color: #ffffff; }
+.weapon-card.rarity-celestial .gear-upgrade-box { border-top-color: rgba(240, 171, 252, 0.35); }
+.weapon-card.rarity-celestial .gear-upgrade-cost-line { color: #f0abfc; }
+.weapon-card.rarity-celestial .gear-cost-chip { background: rgba(16, 10, 42, 0.90); border-color: rgba(240, 171, 252, 0.45); color: #f5f3ff; }
+
 .gear-slot-card.is-evolved-card {
     border-color: #f59e0b !important;
     box-shadow: 0 0 12px rgba(245, 158, 11, 0.65), 0 3px 0 #991b1b;

@@ -119,6 +119,39 @@ const CLAN_WEEKLY_CHEST_TIERS = [
     { minBounties: 0, name: 'Rare Clan Supply Chest', chestType: 'rare', crestsBonus: 25, gemsBonus: 3, minWeeklyPts: 50 }
 ];
 
+const CLAN_VAULT_BOOSTERS = [
+    {
+        id: 'golden_feast', name: 'Golden Feast', desc: '+25% Match Gold & Account XP for all members (2h)',
+        summary: '+25% Gold & XP', iconKey: 'coin', fallback: '🪙', color: '#e67e22',
+        durationMs: 2 * 60 * 60 * 1000,
+        cost: { coins: 250000, armory_shards: 15 },
+        effects: { goldPct: 25, xpPct: 25 }
+    },
+    {
+        id: 'forge_overdrive', name: 'Forge Overdrive', desc: '+25% Chest Coins & Material Drops for all members (2h)',
+        summary: '+25% Chests & Drops', iconKey: 'crate', fallback: '📦', color: '#0984e3',
+        durationMs: 2 * 60 * 60 * 1000,
+        cost: { coins: 150000, armory_shards: 20, mati_crystal: 5 },
+        effects: { chestCoinsPct: 25, matLuckPct: 25 }
+    },
+    {
+        id: 'godslayer_horn', name: 'Godslayer Horn', desc: '+15% Damage & +10% Max HP for all members (2h)',
+        summary: '+15% DMG & +10% HP', iconKey: 'bolt', fallback: '⚡', color: '#ff4757',
+        durationMs: 2 * 60 * 60 * 1000,
+        cost: { coins: 300000, mati_crystal: 8, olympian_bronze: 4 },
+        effects: { damagePct: 15, hpPct: 10 }
+    }
+];
+
+const CLAN_PLAYTIME_REWARDS = {
+    perWavePts: 1,
+    perWaveXp: 2,
+    runFinishPts: 2,
+    runFinishXp: 4,
+    playtimeStepSec: 120,
+    playtimeMaxPtsPerRun: 8
+};
+
 class ClanConfigHelper {
     static getRoleMeta(roleId) {
         return CLAN_ROLES[roleId] || CLAN_ROLES.member;

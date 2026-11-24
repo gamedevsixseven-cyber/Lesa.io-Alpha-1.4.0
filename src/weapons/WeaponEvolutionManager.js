@@ -35,7 +35,7 @@ class WeaponEvolutionManager {
     static isEvolvableWeapon(weaponOrId) {
         const w = this._resolveWeapon(weaponOrId);
         const r = w ? this.normalizeRarity(w.rarity) : '';
-        return r === 'mythic' || r === 'apex';
+        return r === 'mythic' || r === 'apex' || r === 'celestial';
     }
 
     static _sanitizeList(raw) {
@@ -275,17 +275,19 @@ class WeaponEvolutionManager {
             this._updateMythicCardStats(card, wMeta, isEvolved);
             if (!unlocked) return;
 
-            const isApex = this.normalizeRarity(wMeta && wMeta.rarity) === 'apex';
+            const rKey = this.normalizeRarity(wMeta && wMeta.rarity);
+            const isApex = rKey === 'apex';
+            const isCelestial = rKey === 'celestial';
             const evoRow = document.createElement('div');
             evoRow.className = 'weapon-evo-row';
             evoRow.innerHTML = isEvolved
-                ? `<span class="gear-lvl-pill is-evolved">${isApex ? '★ APEX AWAKENED' : '★ EVOLVED AWAKENED'}</span>`
-                : `<span class="gear-lvl-pill is-max">${isApex ? 'APEX EVOLUTION (1x ★)' : 'MYTHIC EVOLUTION (1x ★)'}</span>`;
+                ? `<span class="gear-lvl-pill is-evolved">${isCelestial ? '★ CELESTIAL AWAKENED' : (isApex ? '★ APEX AWAKENED' : '★ EVOLVED AWAKENED')}</span>`
+                : `<span class="gear-lvl-pill is-max">${isCelestial ? 'CELESTIAL EVO (1x ★)' : (isApex ? 'APEX EVOLUTION (1x ★)' : 'MYTHIC EVOLUTION (1x ★)')}</span>`;
 
             const evoBox = document.createElement('div');
             evoBox.className = 'gear-upgrade-box weapon-evo-box';
             if (isEvolved) {
-                evoBox.innerHTML = `<div class="gear-upgrade-cost-line" style="color:#b45309;">★ AWAKENED MYTHIC WEAPON ★</div>`;
+                evoBox.innerHTML = `<div class="gear-upgrade-cost-line" style="color:${isCelestial ? '#fef08a' : '#b45309'};">${isCelestial ? '★ AWAKENED CELESTIAL RELIC ★' : '★ AWAKENED MYTHIC WEAPON ★'}</div>`;
             } else {
                 const cost = this.getEvolveCost(wt);
                 const coinShort = coins < cost.coins;

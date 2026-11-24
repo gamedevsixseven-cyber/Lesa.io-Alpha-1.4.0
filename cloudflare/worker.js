@@ -40,7 +40,7 @@ function getIsoWeekKey() {
 }
 
 function clanLevelFromXp(xp) {
-  const caps = [0, 500, 1500, 3500, 7000, 12000, 20000, 32000, 50000, 75000];
+  const caps = [0, 2500, 6500, 13000, 22000, 35000, 52000, 75000, 105000, 145000];
   let lvl = 1;
   for (let i = 0; i < caps.length; i++) {
     if (xp >= caps[i]) lvl = i + 1;
@@ -133,7 +133,7 @@ async function handlePlayers(method, segs, url, body, db) {
     for (const res of [hs, ew, tk, seen]) {
       for (const r of (res.results || [])) {
         if (!map.has(r.uid)) {
-          try { map.set(r.uid, { id: r.uid, ...JSON.parse(r.dataJson || '{}') }); } catch (_) {}
+          try { map.set(r.uid, { id: r.uid, ...JSON.parse(r.dataJson || '{}') }); } catch (_) { }
         }
       }
     }
@@ -156,7 +156,7 @@ async function handlePlayers(method, segs, url, body, db) {
       for (const r of (rows || [])) {
         if (!seen.has(r.uid)) {
           seen.add(r.uid);
-          try { out.push({ id: r.uid, ...JSON.parse(r.dataJson || '{}') }); } catch (_) {}
+          try { out.push({ id: r.uid, ...JSON.parse(r.dataJson || '{}') }); } catch (_) { }
         }
       }
     };
@@ -182,7 +182,7 @@ async function handlePlayers(method, segs, url, body, db) {
       const row = await db.prepare('SELECT uid, dataJson, updatedAt FROM players WHERE uid = ?1').bind(uid).first();
       if (!row) return json({ ok: false, error: 'Not found' }, 404);
       let doc = {};
-      try { doc = JSON.parse(row.dataJson || '{}'); } catch (_) {}
+      try { doc = JSON.parse(row.dataJson || '{}'); } catch (_) { }
       return json({ ok: true, doc: { uid: row.uid, ...doc, updatedAt: row.updatedAt } });
     }
     if (method === 'POST') {
@@ -192,7 +192,7 @@ async function handlePlayers(method, segs, url, body, db) {
       const existingRow = await db.prepare('SELECT dataJson FROM players WHERE uid = ?1').bind(uid).first();
       let prev = {};
       if (existingRow && existingRow.dataJson) {
-        try { prev = JSON.parse(existingRow.dataJson); } catch (_) {}
+        try { prev = JSON.parse(existingRow.dataJson); } catch (_) { }
       }
       const merged = { ...prev, ...incoming, uid };
       if (prev.player && incoming.player) merged.player = { ...prev.player, ...incoming.player };
@@ -407,12 +407,41 @@ async function handleClans(method, segs, body, db) {
     return json({ ok: true, clan: data });
   }
 
+  if (act === 'activate-booster') {
+    const actor = members[myUid];
+    if (!actor || roleRank(actor.role) < 2) return json({ ok: false, error: 'Only Officers, Co-Leaders, or Leaders can activate Vault Boosters.' }, 403);
+    const boosterId = cleanStr(body.boosterId, 32), cost = (body.cost && typeof body.cost === 'object') ? body.cost : {};
+    const durationMs = Math.min(24 * 3600000, Math.max(60000, Number(body.durationMs) || 7200000));
+    if (!boosterId) return json({ ok: false, error: 'Invalid booster.' }, 400);
+    const now = Date.now(), active = { ...(data.activeBoosters || {}) };
+    if ((Number(active[boosterId]) || 0) > now) return json({ ok: false, error: 'This Booster is already active!' }, 400);
+    const vault = { ...(data.vault || {}) };
+    for (const [resId, amt] of Object.entries(cost)) {
+      const need = Math.max(0, Math.floor(Number(amt) || 0));
+      if ((Number(vault[resId]) || 0) < need) return json({ ok: false, error: `Not enough ${resId.replace(/_/g, ' ')} in Clan Vault!` }, 400);
+      vault[resId] = (Number(vault[resId]) || 0) - need;
+    }
+    active[boosterId] = now + durationMs;
+    data.vault = vault; data.activeBoosters = active; data.xp = (Number(data.xp) || 0) + 50;
+    const bName = cleanStr(body.boosterName || boosterId, 40), bSum = cleanStr(body.summary || '', 48);
+    const note = `⚡ ${cleanStr(me.name, 32)} activated ${bName}${bSum ? ` (${bSum})` : ''} for 2h!`;
+    data.activityLog = [note, ...log.slice(0, 9)];
+    await saveClanObj(db, data);
+    await db.prepare('INSERT INTO messages (channel, senderUid, senderName, senderHero, senderRole, senderLevel, text, createdAt) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)').bind(
+      `clan:${clanId}`, myUid, cleanStr(me.name || 'Hero', 32), cleanStr(me.hero || 'psanas', 32),
+      cleanStr(actor.role || 'officer', 20), Math.max(1, Number(me.level) || 1), note, now
+    ).run().catch(() => { });
+    return json({ ok: true, clan: data });
+  }
+
   if (act === 'bounties') {
     const weekKey = cleanStr(body.weekKey || getIsoWeekKey(), 16);
     const ew = Math.max(0, Math.floor(Number(body.endless_waves) || 0));
     const zd = Math.max(0, Math.floor(Number(body.zeus_defeats) || 0));
     const ck = Math.max(0, Math.floor(Number(body.coop_kills) || 0));
-    const contribPts = Math.max(0, Math.floor(Number(body.contribPts) || 0));
+    const playPts = Math.min(30, Math.max(0, Math.floor(Number(body.playPts) || 0)));
+    const playXp = Math.min(60, Math.max(0, Math.floor(Number(body.playXp) || 0)));
+    const contribPts = Math.max(0, Math.floor(Number(body.contribPts) || 0)) + playPts;
     const bounties = { ...(data.bounties || {}) };
     const wk = { ...(bounties[weekKey] || {}) };
     if (ew > 0) wk.endless_waves = (wk.endless_waves || 0) + ew;
@@ -420,6 +449,7 @@ async function handleClans(method, segs, body, db) {
     if (ck > 0) wk.coop_kills = (wk.coop_kills || 0) + ck;
     bounties[weekKey] = wk;
     data.bounties = bounties;
+    if (playXp > 0) data.xp = (Number(data.xp) || 0) + playXp;
     if (contribPts > 0 && validUid(myUid) && members[myUid]) {
       members[myUid] = { ...members[myUid], weeklyContrib: (members[myUid].weeklyContrib || 0) + contribPts, contributedPoints: (members[myUid].contributedPoints || 0) + contribPts };
       data.members = members;

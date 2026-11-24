@@ -387,6 +387,8 @@
 .cr-item-card.tier-legendary { border-color: #f39c12; }
 .cr-item-card.tier-mythic { border-color: #e056fd; }
 .cr-item-card.tier-apex { border-color: #ff2e63; box-shadow: 0 0 18px rgba(217, 70, 239, 0.55); }
+.cr-item-card.tier-celestial { border-color: #f0abfc; background: linear-gradient(145deg, #150c38, #1e1b4b); color: #f5f3ff; box-shadow: 0 0 24px rgba(56, 189, 248, 0.65), 0 0 12px rgba(240, 171, 252, 0.7); }
+.cr-item-card.tier-exotic { border-color: #55efc4; background: linear-gradient(145deg, #071e22, #0f423d); color: #ecfeff; box-shadow: 0 0 20px rgba(0, 206, 201, 0.65); }
 
 .cr-card-rarity-ribbon {
     font-family: 'Luckiest Guy', cursive;
@@ -406,6 +408,8 @@
 .tier-legendary .cr-card-rarity-ribbon { background: #f39c12; }
 .tier-mythic .cr-card-rarity-ribbon { background: #e056fd; }
 .tier-apex .cr-card-rarity-ribbon { background: linear-gradient(135deg, #ff2e63, #a855f7); }
+.tier-celestial .cr-card-rarity-ribbon { background: linear-gradient(135deg, #38bdf8, #c084fc, #fef08a); color: #170b3b; border-color: #fef08a; }
+.tier-exotic .cr-card-rarity-ribbon { background: linear-gradient(135deg, #00cec9, #55efc4); color: #052e2b; }
 
 .cr-item-img {
     width: 72px;

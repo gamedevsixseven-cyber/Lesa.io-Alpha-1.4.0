@@ -292,9 +292,22 @@ class ClanCardRenderer {
 
         const logs = (clan.activityLog || []).slice(0, 6).map(line => `<div style="padding:4px 0;border-bottom:1px solid #e2e8f0;font-size:12px;color:#334155;font-weight:700;">• ${this.esc(line)}</div>`).join('');
 
+        const activeBoosters = typeof ClanBuffs !== 'undefined' ? ClanBuffs.getActiveVaultBoosters(clan) : [];
+        const boostHtml = activeBoosters.length > 0 ? `
+            <div class="clan-section-head"><span>⚡ ACTIVE VAULT BOOSTERS</span><span class="clan-section-sub">Live for All Members</span></div>
+            <div class="clan-grid-2" style="margin-bottom:10px;">
+                ${activeBoosters.map(({ def, remainingMs }) => {
+                    const mins = Math.max(1, Math.ceil(remainingMs / 60000));
+                    const hrs = Math.floor(mins / 60), remM = mins % 60;
+                    const tTxt = hrs > 0 ? `${hrs}h ${remM}m` : `${mins}m`;
+                    return `<div class="clan-card" style="border-color:${this.esc(def.color)};background:#fffbeb;"><div class="donate-top"><div class="donate-name">${this.ico(def.iconKey, def.fallback)} ${this.esc(def.name)}</div><span class="clan-buff-pill coop">⚡ ${tTxt} LEFT</span></div><div style="font-size:11.5px;color:#475569;font-weight:700;margin-top:4px;">${this.esc(def.desc)}</div></div>`;
+                }).join('')}
+            </div>
+        ` : '';
+
         return `
-            ${wcHtml}
-            <div class="clan-section-head"><span>ACTIVE CLAN BUFFS (LIVE IN COMBAT)</span><span class="clan-section-sub">${coopSynergy ? '🤝 CLANMATE CO-OP +5% ACTIVE!' : 'Squad with a Clanmate in Co-op for +5%!'}</span></div>
+            ${wcHtml}${boostHtml}
+            <div class="clan-section-head"><span>ACTIVE CLAN BUFFS (LIVE IN COMBAT)</span><span class="clan-section-sub">${coopSynergy ? '🤝 CLANMATE CO-OP +5% ACTIVE!' : 'Earn +1 Pt per wave &amp; playtime bonus just by playing!'}</span></div>
             <div class="clan-grid-2" style="margin-bottom:10px;">${perksHtml}</div>
             ${isLeader ? `
                 <div class="clan-card" style="margin-bottom:10px;">
@@ -334,7 +347,27 @@ class ClanCardRenderer {
                 </div>
             `;
         }).join('');
-        return `<div class="clan-section-head"><span>CLAN TAX VAULT TREASURY</span><span class="clan-section-sub">Daily Reset: ${resetIn}</span></div><div class="vault-pool-bar">${poolTiles}</div><div class="clan-section-head"><span>DAILY CONTRIBUTION CAPS</span><span class="clan-section-sub">Anti-Whale Limits</span></div><div class="clan-grid-2">${cards}</div>`;
+        const me = service.getMyPlayerMeta();
+        const memRole = clan.members && clan.members[me.uid] ? clan.members[me.uid].role : 'member';
+        const canBoost = ClanConfigHelper.getRoleRank(memRole) >= 2;
+        const activeMap = clan.activeBoosters || {}, nowMs = Date.now();
+        const boostCards = (typeof CLAN_VAULT_BOOSTERS !== 'undefined' ? CLAN_VAULT_BOOSTERS : []).map(b => {
+            const exp = Number(activeMap[b.id]) || 0, isActive = exp > nowMs;
+            const mins = isActive ? Math.max(1, Math.ceil((exp - nowMs) / 60000)) : 0;
+            const tTxt = mins >= 60 ? `${Math.floor(mins / 60)}h ${mins % 60}m` : `${mins}m`;
+            let affordable = true;
+            const costPills = Object.entries(b.cost || {}).map(([rid, amt]) => {
+                const have = Number(vault[rid]) || 0, ok = have >= amt;
+                if (!ok) affordable = false;
+                const rCfg = CLAN_VAULT_RESOURCES.find(r => r.id === rid);
+                return `<span class="clan-cost-chip ${ok ? 'ok' : 'short'}" style="font-size:10.5px;padding:2px 6px;">${amt.toLocaleString()} ${this.esc(rCfg ? rCfg.shortName : rid)}</span>`;
+            }).join(' ');
+            const actBtn = isActive
+                ? `<span class="clan-buff-pill coop">⚡ ACTIVE · ${tTxt}</span>`
+                : `<button type="button" class="clan-btn-green" style="padding:5px 10px;font-size:0.76rem;" data-activate-booster="${this.esc(b.id)}" ${(canBoost && affordable) ? '' : 'disabled'}>${canBoost ? '🔥 ACTIVATE (2H)' : 'OFFICER+ ONLY'}</button>`;
+            return `<div class="donate-card" style="${isActive ? `border-color:${this.esc(b.color)};background:#fffbeb;` : ''}"><div class="donate-top"><div class="donate-name">${this.ico(b.iconKey, b.fallback)} ${this.esc(b.name)}</div>${actBtn}</div><div style="font-size:11.5px;color:#475569;font-weight:700;margin:3px 0 6px;">${this.esc(b.desc)}</div><div style="display:flex;flex-wrap:wrap;gap:5px;">${costPills}</div></div>`;
+        }).join('');
+        return `<div class="clan-section-head"><span>CLAN TAX VAULT TREASURY</span><span class="clan-section-sub">Daily Reset: ${resetIn}</span></div><div class="vault-pool-bar">${poolTiles}</div><div class="clan-section-head"><span>CLAN-WIDE VAULT BOOSTERS</span><span class="clan-section-sub">${canBoost ? 'Spend Vault Treasury (2h Buff + 50 XP)' : 'Officers/Leaders Spend Vault'}</span></div><div class="clan-grid-2" style="margin-bottom:10px;">${boostCards}</div><div class="clan-section-head"><span>DAILY CONTRIBUTION CAPS</span><span class="clan-section-sub">Also earn +1 Pt per wave played!</span></div><div class="clan-grid-2">${cards}</div>`;
     }
 
     static renderBountiesTab(clan, service, isPreview = false) {

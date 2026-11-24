@@ -299,8 +299,10 @@ class PublicProfileModal {
             ? `<div class="pub-self-privacy-note">🔒 Privacy Mode ON — Only you can view your equipped gear and weapon collection.</div>`
             : '';
 
-        const catalog = (typeof PlayerLoadoutExtractor !== 'undefined') ? PlayerLoadoutExtractor.getCatalogWeapons() : [];
         const ownedSet = new Set(Array.isArray(loadout.unlockedWeapons) ? loadout.unlockedWeapons : ['pea']);
+        const catalog = (typeof PlayerLoadoutExtractor !== 'undefined')
+            ? PlayerLoadoutExtractor.getCatalogWeapons().filter(w => !w.devOnly || ownedSet.has(w.id))
+            : [];
         const evolvedSet = new Set(Array.isArray(loadout.evolvedWeapons) ? loadout.evolvedWeapons : []);
         const totalCount = catalog.length;
         const ownedCount = catalog.filter(w => ownedSet.has(w.id)).length;
@@ -392,8 +394,11 @@ class PublicProfileModal {
         const isSelf = !fs || !p.uid || p.isLocalStub || p.uid === fs.getMyUid();
         const loadout = this._resolveLoadout(p, isSelf);
         const lockedForViewer = Boolean(loadout.isPrivate && !isSelf);
-        const ownedWepCount = Array.isArray(loadout.unlockedWeapons) ? loadout.unlockedWeapons.length : 1;
-        const totalWepCount = (typeof PlayerLoadoutExtractor !== 'undefined') ? PlayerLoadoutExtractor.getCatalogWeapons().length : 22;
+        const ownedSetHead = new Set(Array.isArray(loadout.unlockedWeapons) ? loadout.unlockedWeapons : ['pea']);
+        const ownedWepCount = ownedSetHead.size;
+        const totalWepCount = (typeof PlayerLoadoutExtractor !== 'undefined')
+            ? PlayerLoadoutExtractor.getCatalogWeapons().filter(w => !w.devOnly || ownedSetHead.has(w.id)).length
+            : 26;
 
         const hasVipPass = Boolean(cos.hasVipPass || (isSelf && typeof CosmeticManager !== 'undefined' && CosmeticManager.hasLocalVipPass()));
         const vipTagHtml = hasVipPass ? `<div class="pub-cosmetic-tags"><span class="pub-vip-pass-tag">👑 VIP PASS</span></div>` : '';

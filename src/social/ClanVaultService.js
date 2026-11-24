@@ -133,22 +133,90 @@ class ClanVaultService {
         }
     }
 
+    static async activateBooster(svc, boosterId) {
+        if (!svc || !svc.clanId || !svc.currentClan) return { ok: false, error: 'Join or create a Clan first.' };
+        const def = (typeof CLAN_VAULT_BOOSTERS !== 'undefined') ? CLAN_VAULT_BOOSTERS.find(b => b.id === boosterId) : null;
+        if (!def) return { ok: false, error: 'Unknown Booster.' };
+        const me = svc.getMyPlayerMeta();
+        const mem = (svc.currentClan.members && svc.currentClan.members[me.uid]) || {};
+        if (ClanConfigHelper.getRoleRank(mem.role) < 2) return { ok: false, error: 'Only Officers, Co-Leaders, or Leaders can activate Vault Boosters.' };
+        const now = Date.now(), curExp = Number((svc.currentClan.activeBoosters || {})[def.id]) || 0;
+        if (curExp > now) return { ok: false, error: `${def.name} is already active!` };
+        const vault = svc.currentClan.vault || {};
+        for (const [resId, amt] of Object.entries(def.cost || {})) {
+            if ((Number(vault[resId]) || 0) < amt) return { ok: false, error: `Not enough ${resId.replace(/_/g, ' ')} in Clan Vault.` };
+        }
+        try {
+            const edge = (typeof svc.getEdge === 'function') ? svc.getEdge() : null;
+            if (edge) {
+                const er = await svc._postEdgeClan(svc.clanId, 'activate-booster', {
+                    me, boosterId: def.id, boosterName: def.name, summary: def.summary, durationMs: def.durationMs, cost: def.cost
+                });
+                if (er && !er.fallback) {
+                    if (!er.ok) return { ok: false, error: er.error || 'Activation failed.' };
+                    if (er.clan) { svc.currentClan = er.clan; svc.saveLocal(); svc._emitUpdate(); }
+                    return { ok: true, booster: def };
+                }
+            }
+            const db = svc.getDb();
+            if (!db) return { ok: false, error: 'Cloud unavailable.' };
+            await db.runTransaction(async (tx) => {
+                const ref = db.collection('clans').doc(svc.clanId), snap = await tx.get(ref);
+                if (!snap.exists) throw new Error('Clan not found.');
+                const data = snap.data() || {}, v = { ...(data.vault || {}) }, act = { ...(data.activeBoosters || {}) };
+                if ((Number(act[def.id]) || 0) > Date.now()) throw new Error('This Booster is already active!');
+                for (const [r, amt] of Object.entries(def.cost || {})) {
+                    if ((Number(v[r]) || 0) < amt) throw new Error(`Not enough ${r.replace(/_/g, ' ')} in Vault.`);
+                    v[r] = (Number(v[r]) || 0) - amt;
+                }
+                act[def.id] = Date.now() + def.durationMs;
+                const log = [`⚡ ${me.name} activated ${def.name} (${def.summary}) for 2h!`, ...((data.activityLog || []).slice(0, 9))];
+                tx.update(ref, { vault: v, activeBoosters: act, xp: (Number(data.xp) || 0) + 50, activityLog: log });
+            });
+            svc._emitUpdate();
+            return { ok: true, booster: def };
+        } catch (err) {
+            return { ok: false, error: svc._describeError(err) };
+        }
+    }
+
     static bindGameplayEvents(svc) {
-        if (typeof window === 'undefined' || !window.EventBus) return;
-        window.EventBus.on('waveCompleted', ({ isDungeon }) => {
+        if (typeof window === 'undefined' || !window.EventBus || !svc || svc._gameplayBound) return;
+        svc._gameplayBound = true;
+        let lastRunTimeAwarded = 0, runTimePts = 0;
+        const cfg = (typeof CLAN_PLAYTIME_REWARDS !== 'undefined')
+            ? CLAN_PLAYTIME_REWARDS
+            : { perWavePts: 1, perWaveXp: 2, runFinishPts: 2, runFinishXp: 4, playtimeStepSec: 120, playtimeMaxPtsPerRun: 8 };
+
+        window.EventBus.on('waveCompleted', ({ wave, isDungeon } = {}) => {
             if (!svc.clanId) return;
             const g = window.gameInstance;
             if (g && g.gameMode === 'endless' && !isDungeon) {
                 svc._pendingBounties.endless_waves = (svc._pendingBounties.endless_waves || 0) + 1;
-                svc.saveLocal();
-                this.scheduleBountyFlush(svc);
             }
+            // Slow passive Clan Points + XP for advancing waves & surviving over time (never per kill)
+            svc._pendingBounties.play_pts = (svc._pendingBounties.play_pts || 0) + cfg.perWavePts;
+            svc._pendingBounties.play_xp = (svc._pendingBounties.play_xp || 0) + cfg.perWaveXp;
+            if (g && g.gameMode === 'story' && !isDungeon && wave >= 20) {
+                svc._pendingBounties.play_pts += cfg.runFinishPts;
+                svc._pendingBounties.play_xp += cfg.runFinishXp;
+            }
+            const gt = (g && Number(g.gameTime)) || 0;
+            if (gt < lastRunTimeAwarded) { lastRunTimeAwarded = 0; runTimePts = 0; }
+            while (runTimePts < cfg.playtimeMaxPtsPerRun && (gt - lastRunTimeAwarded) >= cfg.playtimeStepSec) {
+                lastRunTimeAwarded += cfg.playtimeStepSec;
+                runTimePts += 1;
+                svc._pendingBounties.play_pts += 1;
+                svc._pendingBounties.play_xp += cfg.perWaveXp;
+            }
+            svc.saveLocal();
+            this.scheduleBountyFlush(svc);
         });
         window.EventBus.on('combatFeatsUpdated', ({ bossId }) => {
             if (!svc.clanId || bossId !== 'zeus') return;
             svc._pendingBounties.zeus_defeats = (svc._pendingBounties.zeus_defeats || 0) + 1;
             svc.saveLocal();
-            this.scheduleBountyFlush(svc, 400);
+            this.scheduleBountyFlush(svc, 5000);
         });
         window.EventBus.on('enemyKilled', () => {
             if (!svc.clanId) return;
@@ -158,7 +226,18 @@ class ClanVaultService {
                 if (svc._pendingBounties.coop_kills % 50 === 0) svc.saveLocal();
             }
         });
-        window.EventBus.on('gameOver', () => this.flushPendingBounties(svc));
+        window.EventBus.on('gameOver', (info) => {
+            if (svc.clanId && ((info && info.wave >= 2) || (window.gameInstance && window.gameInstance.gameTime >= 60))) {
+                svc._pendingBounties.play_pts = (svc._pendingBounties.play_pts || 0) + cfg.runFinishPts;
+                svc._pendingBounties.play_xp = (svc._pendingBounties.play_xp || 0) + cfg.runFinishXp;
+            }
+            lastRunTimeAwarded = 0; runTimePts = 0;
+            this.flushPendingBounties(svc);
+        });
+        if (typeof document !== 'undefined' && !svc._visFlushBound) {
+            svc._visFlushBound = true;
+            document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') this.flushPendingBounties(svc); });
+        }
     }
 
     static scheduleBountyFlush(svc, delayMs = 45000) {
@@ -173,32 +252,39 @@ class ClanVaultService {
         const db = svc.getDb();
         const edge = (typeof svc.getEdge === 'function') ? svc.getEdge() : null;
         const p = svc._pendingBounties;
-        if ((!db && !edge) || !svc.clanId || (!p.endless_waves && !p.zeus_defeats && !p.coop_kills)) return;
+        if ((!db && !edge) || !svc.clanId || (!p.endless_waves && !p.zeus_defeats && !p.coop_kills && !p.play_pts)) return;
         const delta = { ...p };
-        svc._pendingBounties = { endless_waves: 0, zeus_defeats: 0, coop_kills: 0 };
+        svc._pendingBounties = { endless_waves: 0, zeus_defeats: 0, coop_kills: 0, play_pts: 0, play_xp: 0 };
         svc.saveLocal();
 
         const weekKey = ClanConfigHelper.getIsoWeekKey();
         const me = svc.getMyPlayerMeta();
-        const contribPts = (delta.endless_waves * 4) + (delta.zeus_defeats * 30) + Math.floor(delta.coop_kills / 25);
+        const bountyPts = (delta.endless_waves * 4) + (delta.zeus_defeats * 30) + Math.floor(delta.coop_kills / 25);
+        const totalPts = bountyPts + (delta.play_pts || 0);
         try {
             if (edge) {
-                const er = await svc._postEdgeClan(svc.clanId, 'bounties', { me, weekKey, ...delta, contribPts });
+                const er = await svc._postEdgeClan(svc.clanId, 'bounties', {
+                    me, weekKey, endless_waves: delta.endless_waves, zeus_defeats: delta.zeus_defeats, coop_kills: delta.coop_kills,
+                    contribPts: bountyPts, playPts: delta.play_pts || 0, playXp: delta.play_xp || 0
+                });
                 if (er && !er.fallback && er.ok) { if (er.clan) { svc.currentClan = er.clan; svc._emitUpdate(); } return; }
             }
             const updates = {};
             if (delta.endless_waves > 0) updates[`bounties.${weekKey}.endless_waves`] = firebase.firestore.FieldValue.increment(delta.endless_waves);
             if (delta.zeus_defeats > 0) updates[`bounties.${weekKey}.zeus_defeats`] = firebase.firestore.FieldValue.increment(delta.zeus_defeats);
             if (delta.coop_kills > 0) updates[`bounties.${weekKey}.coop_kills`] = firebase.firestore.FieldValue.increment(delta.coop_kills);
-            if (contribPts > 0 && me.uid) {
-                updates[`members.${me.uid}.weeklyContrib`] = firebase.firestore.FieldValue.increment(contribPts);
-                updates[`members.${me.uid}.contributedPoints`] = firebase.firestore.FieldValue.increment(contribPts);
+            if ((delta.play_xp || 0) > 0) updates.xp = firebase.firestore.FieldValue.increment(delta.play_xp);
+            if (totalPts > 0 && me.uid) {
+                updates[`members.${me.uid}.weeklyContrib`] = firebase.firestore.FieldValue.increment(totalPts);
+                updates[`members.${me.uid}.contributedPoints`] = firebase.firestore.FieldValue.increment(totalPts);
             }
             if (db && Object.keys(updates).length > 0) await db.collection('clans').doc(svc.clanId).update(updates);
         } catch (_) {
             svc._pendingBounties.endless_waves += delta.endless_waves;
             svc._pendingBounties.zeus_defeats += delta.zeus_defeats;
             svc._pendingBounties.coop_kills += delta.coop_kills;
+            svc._pendingBounties.play_pts += (delta.play_pts || 0);
+            svc._pendingBounties.play_xp += (delta.play_xp || 0);
             svc.saveLocal();
         }
     }

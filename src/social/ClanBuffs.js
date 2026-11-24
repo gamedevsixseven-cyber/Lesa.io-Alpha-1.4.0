@@ -36,32 +36,50 @@ class ClanBuffs {
         return def.values[Math.min(def.values.length - 1, lv - 1)] || 0;
     }
 
+    static getActiveVaultBoosters(clan = this._getClan()) {
+        const active = (clan && clan.activeBoosters && typeof clan.activeBoosters === 'object') ? clan.activeBoosters : {};
+        const now = Date.now(), out = [];
+        if (typeof CLAN_VAULT_BOOSTERS === 'undefined') return out;
+        CLAN_VAULT_BOOSTERS.forEach((def) => {
+            const exp = Number(active[def.id]) || 0;
+            if (exp > now) out.push({ def, expiresAt: exp, remainingMs: exp - now });
+        });
+        return out;
+    }
+
+    static getActiveBoosterSum(field) {
+        return this.getActiveVaultBoosters().reduce((sum, entry) => {
+            const val = entry.def && entry.def.effects ? Number(entry.def.effects[field]) || 0 : 0;
+            return sum + val;
+        }, 0);
+    }
+
     static getDamageMultiplier() {
         const basePct = this.getPerkValue('war_banner');
         const coopBonus = (basePct > 0 && this.isCoopClanmate()) ? 5 : 0;
-        return 1 + (basePct + coopBonus) / 100;
+        return 1 + (basePct + coopBonus + this.getActiveBoosterSum('damagePct')) / 100;
     }
 
     static getMaxHpMultiplier() {
         const basePct = this.getPerkValue('stamina_reserve');
         const coopBonus = (basePct > 0 && this.isCoopClanmate()) ? 5 : 0;
-        return 1 + (basePct + coopBonus) / 100;
+        return 1 + (basePct + coopBonus + this.getActiveBoosterSum('hpPct')) / 100;
     }
 
     static getGoldMultiplier() {
-        return 1 + this.getPerkValue('golden_tithe') / 100;
+        return 1 + (this.getPerkValue('golden_tithe') + this.getActiveBoosterSum('goldPct')) / 100;
     }
 
     static getXpMultiplier() {
-        return 1 + this.getPerkValue('golden_tithe') / 100;
+        return 1 + (this.getPerkValue('golden_tithe') + this.getActiveBoosterSum('xpPct')) / 100;
     }
 
     static getChestCoinsMultiplier() {
-        return 1 + this.getPerkValue('salvage_mastery') / 100;
+        return 1 + (this.getPerkValue('salvage_mastery') + this.getActiveBoosterSum('chestCoinsPct')) / 100;
     }
 
     static getMaterialLuckBonus() {
-        return this.getPerkValue('salvage_mastery') / 100;
+        return (this.getPerkValue('salvage_mastery') + this.getActiveBoosterSum('matLuckPct')) / 100;
     }
 
     static getPurchasedBanners() {

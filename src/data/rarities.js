@@ -74,6 +74,16 @@ const RARITIES = {
         badgeClass: 'badge-apex',
         glow: 'rgba(255, 46, 76, 0.85)'
     },
+    Celestial: {
+        id: 'Celestial',
+        key: 'celestial',
+        name: 'Celestial',
+        color: '#38bdf8',
+        bg: '#0c0820',
+        border: '#f0abfc',
+        badgeClass: 'badge-celestial',
+        glow: 'rgba(192, 132, 252, 0.92)'
+    },
     Exotic: {
         id: 'Exotic',
         key: 'exotic',

@@ -4,7 +4,7 @@
  */
 
 class WeaponSystem {
-    static SHARED_UNLOCKABLE_IDS = ['bubble', 'rusty_smg', 'nail_gun', 'plasma_pistol', 'sawnoff_shotgun', 'frost_cannon', 'm4_carbine', 'spas12', 'boomerang_saw', 'chrono_rifle', 'symbiote', 'carbine', 'dialtone', 'zeus_thunderbolt', 'helios_cannon', 'skewer_rifle', 'vulcan_minigun', 'hades_railgun', 'medusa_gaze'];
+    static SHARED_UNLOCKABLE_IDS = ['bubble', 'rusty_smg', 'nail_gun', 'plasma_pistol', 'sawnoff_shotgun', 'frost_cannon', 'm4_carbine', 'spas12', 'boomerang_saw', 'chrono_rifle', 'symbiote', 'carbine', 'dialtone', 'zeus_thunderbolt', 'helios_cannon', 'skewer_rifle', 'vulcan_minigun', 'hades_railgun', 'medusa_gaze', 'hyperion_glaive'];
 
     static isSharedWeapon(weaponType) {
         return this.SHARED_UNLOCKABLE_IDS.includes(weaponType);
@@ -207,6 +207,7 @@ class WeaponSystem {
         if (weaponType === 'vulcan_minigun' && typeof HephaestusVulcanMinigun !== 'undefined') { HephaestusVulcanMinigun.drawWeapon(ctx, flash, recoil, isEvolved, player); return true; }
         if (weaponType === 'hades_railgun' && typeof HadesOblivionRailgun !== 'undefined') { HadesOblivionRailgun.drawWeapon(ctx, flash, recoil, isEvolved); return true; }
         if (weaponType === 'medusa_gaze' && typeof MedusaGorgonGaze !== 'undefined') { MedusaGorgonGaze.drawWeapon(ctx, flash, recoil, isEvolved); return true; }
+        if (weaponType === 'hyperion_glaive' && typeof HyperionCelestialGlaive !== 'undefined') { HyperionCelestialGlaive.drawWeapon(ctx, flash, recoil, isEvolved, player); return true; }
         if (weaponType === 'bubble' && typeof BubbleGun !== 'undefined' && typeof BubbleGun.drawWeapon === 'function') {
             BubbleGun.drawWeapon(ctx, flash, recoil, player ? (player.bubbleCharge || 0) : 0);
             return true;
@@ -404,6 +405,14 @@ class WeaponSystem {
         const ps = (typeof window !== 'undefined' && window.perkSystem) ? window.perkSystem : null;
         const perkFire = (ps && typeof ps.onWeaponFire === 'function') ? ps.onWeaponFire(player) : null;
         const perkCritBonus = (ps && typeof ps.getCritDamageBonus === 'function') ? ps.getCritDamageBonus(player) : 0;
+
+        if (player.weaponType === 'hyperion_glaive' && typeof HyperionCelestialGlaive !== 'undefined') {
+            const gCritMult = (player.critMultiplier || 2.0) + perkCritBonus;
+            const glaiveCfg = adminDmgBoost ? { ...config, baseDamage: (config.baseDamage || 80) * 10 } : config;
+            HyperionCelestialGlaive.fireSwing(player, glaiveCfg, critChance, gCritMult, isEvolved, effects, (typeof window !== 'undefined' ? window.gameInstance : null));
+            if (typeof GearPassives !== 'undefined') GearPassives.onShoot(player, [], effects);
+            return [];
+        }
 
         for (let i = 0; i < player.multiShot; i++) {
             const baseAngle = startAngle + i * player.spreadAngle;

@@ -405,7 +405,11 @@ class ChestManager {
             if (pick <= 0) { rolledRarity = r; break; }
         }
         let pool = candidates.filter(w => (w.rarity || 'Rare').toLowerCase() === rolledRarity);
-        if (pool.length === 0) pool = candidates;
+        if (pool.length === 0) {
+            if (rolledRarity === 'celestial') return null;
+            pool = candidates.filter(w => (w.rarity || 'Rare').toLowerCase() !== 'celestial');
+            if (pool.length === 0) return null;
+        }
         const chosen = pool[Math.floor(Math.random() * pool.length)];
         if (!chosen) return null;
 

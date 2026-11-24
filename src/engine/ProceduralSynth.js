@@ -119,6 +119,15 @@ class ProceduralSynth {
             gain.gain.exponentialRampToValueAtTime(0.01, now + 0.14);
             osc.start(now);
             osc.stop(now + 0.15);
+        } else if (type === 'hyperion_glaive') {
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(560 + Math.random() * 80, now);
+            osc.frequency.exponentialRampToValueAtTime(1920, now + 0.08);
+            osc.frequency.exponentialRampToValueAtTime(340, now + 0.16);
+            gain.gain.setValueAtTime(masterVolume * 0.68, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.17);
+            osc.start(now);
+            osc.stop(now + 0.18);
         } else if (type === 'spas12' || type === 'sawnoff_shotgun') {
             osc.type = 'sawtooth';
             osc.frequency.setValueAtTime((type === 'sawnoff_shotgun' ? 380 : 340) + Math.random() * 50, now);

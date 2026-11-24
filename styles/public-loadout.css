@@ -199,6 +199,11 @@
 .pub-wep-card.rarity-legendary:not(.is-locked) { border-color: #f39c12; }
 .pub-wep-card.rarity-mythic:not(.is-locked) { border-color: #e74c3c; }
 .pub-wep-card.rarity-apex:not(.is-locked) { border-color: #ff2e4c; background: #18181b; color: #f8fafc; }
+.pub-wep-card.rarity-exotic:not(.is-locked) { border-color: #00cec9; background: linear-gradient(145deg, #0b2829 0%, #0f3f3a 60%, #07191a 100%); color: #ecfeff; box-shadow: 0 0 12px rgba(0, 206, 201, 0.45), 0 2px 0 #07191a; animation: exoticCardGlow 3.2s ease-in-out infinite; }
+.pub-wep-card.rarity-exotic:not(.is-locked) .pub-wep-img { animation: exoticIconFloat 2.8s ease-in-out infinite; }
+.pub-wep-card.rarity-celestial:not(.is-locked) { border-color: #f0abfc; background: linear-gradient(145deg, #0d0824 0%, #24124d 55%, #102a4c 100%); background-size: 220% 220%; color: #f5f3ff; box-shadow: 0 0 14px rgba(192, 132, 252, 0.58), 0 2px 0 #140b2e; animation: celestialAura 2.9s ease-in-out infinite; }
+.pub-wep-card.rarity-celestial:not(.is-locked) .pub-wep-img { animation: celestialIconOrbit 2.6s ease-in-out infinite; }
+.pub-gear-card.rarity-celestial { border-color: #f0abfc; background: linear-gradient(145deg, #0d0824 0%, #24124d 60%, #102a4c 100%); color: #f5f3ff; box-shadow: 0 0 14px rgba(192, 132, 252, 0.55); }
 .pub-wep-card.rarity-exclusive:not(.is-locked) { border-color: #e84393; }
 .pub-wep-img { width: 32px; height: 32px; object-fit: contain; }
 .pub-wep-name { font-size: 0.6rem; font-weight: 900; line-height: 1.1; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }

@@ -14,7 +14,7 @@ class ClanService {
         this.dailyDonations = { day: '', counts: {} };
         this.claimedBounties = {}; // { [weekKey]: [bountyId, ...] }
         this.lastLeftAt = 0;
-        this._pendingBounties = { endless_waves: 0, zeus_defeats: 0, coop_kills: 0 };
+        this._pendingBounties = { endless_waves: 0, zeus_defeats: 0, coop_kills: 0, play_pts: 0, play_xp: 0 };
         this._unsubClan = null;
         this._bountyFlushTimer = null;
         this.lastError = null;
@@ -92,7 +92,9 @@ class ClanService {
                     this._pendingBounties = {
                         endless_waves: Math.max(0, Math.floor(d.pendingBounties.endless_waves || 0)),
                         zeus_defeats: Math.max(0, Math.floor(d.pendingBounties.zeus_defeats || 0)),
-                        coop_kills: Math.max(0, Math.floor(d.pendingBounties.coop_kills || 0))
+                        coop_kills: Math.max(0, Math.floor(d.pendingBounties.coop_kills || 0)),
+                        play_pts: Math.max(0, Math.floor(d.pendingBounties.play_pts || 0)),
+                        play_xp: Math.max(0, Math.floor(d.pendingBounties.play_xp || 0))
                     };
                 }
             }
@@ -409,6 +411,10 @@ class ClanService {
 
     async donateToVault(resourceId, rawQty) {
         return (typeof ClanVaultService !== 'undefined') ? ClanVaultService.donateToVault(this, resourceId, rawQty) : { ok: false, error: 'Vault service unavailable.' };
+    }
+
+    async activateVaultBooster(boosterId) {
+        return (typeof ClanVaultService !== 'undefined') ? ClanVaultService.activateBooster(this, boosterId) : { ok: false, error: 'Vault service unavailable.' };
     }
 
     async claimWeeklyBounty(bountyId) {

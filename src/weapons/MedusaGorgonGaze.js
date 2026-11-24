@@ -1,10 +1,11 @@
 /**
- * Lesa.io - Mythic Serpent-Crystal Weapon: Medusa's Gorgon Gaze
+ * Lesa.io - Exotic Serpent-Crystal Weapon: Medusa's Gorgon Gaze (Dev Exclusive)
  * Animated living serpent bio-crystal rifle with hovering Gorgon Eye & rotating rune halo.
- * - Primary: Fires slithering Serpent-Eye Plasma Bolts that weave forward (+14% Crit, +3 Pierce).
+ * - Primary: Fires slithering Serpent-Eye Plasma Bolts that weave forward (+18% Crit, +4 Pierce).
  * - Stone Curse (1–3 stacks): Slows foes and turns targets into Petrified Stone Statues at 3 stacks.
- * - Statue Shatter: Striking a petrified statue detonates a 2.2x Emerald Shatter, firing 3 bouncing
- *   Jade Stone Shards and 2 homing Spectral Serpents toward nearby enemies!
+ * - Exotic Special (Chain Petrify Nova): Shattering a petrified statue deals 1.35x burst + 175px Jade
+ *   Chain Nova that spreads Stone Curse (+2 stacks / instant Petrify ★) to 3 nearby foes, spawns
+ *   4 bouncing Jade Shards & 3 Spectral Serpents, and restores +2 HP!
  * - Awakened ★ Evolution: Every 4th shot unleashes a 130° Gorgon Stare Cone that petrifies in AoE!
  */
 
@@ -17,25 +18,25 @@ class MedusaGorgonGaze extends WeaponBase {
             id: 'medusa_gaze',
             name: "Medusa's Gorgon Gaze",
             type: 'medusa_gaze',
-            rarity: 'Mythic',
+            rarity: 'Exotic',
             hero: null,
-            baseDelay: 17,
-            baseDamage: 38,
+            baseDelay: 15,
+            baseDamage: 44,
             radius: 10,
-            extraPierce: 3,
+            extraPierce: 4,
             maxBounces: 0,
-            speedMultiplier: 1.50,
-            critChanceBonus: 0.14,
-            range: 980,
+            speedMultiplier: 1.58,
+            critChanceBonus: 0.18,
+            range: 1040,
             stareEveryNShots: 4,
-            color: '#2ed573',
+            color: '#00cec9',
             icon: 'assets/WeaponIcons/MedusasGorgonGaze.png',
-            description: 'Bio-crystal serpent rifle with a living Gorgon Eye. Fires weaving viper bolts that stack Stone Curse, petrify foes into statues, and shatter into homing spectral snakes.',
+            description: 'Exotic bio-crystal serpent rifle. Fires weaving viper bolts that petrify foes, shatter into homing snakes, and erupt in a Chain Petrify Nova.',
             stats: {
-                damage: '38 Gorgon Plasma',
-                fireRate: 'Medium (0.28s)',
-                pierce: '+3 Pierces & +14% Crit',
-                special: 'Petrify Statue + Shatter Snakes'
+                damage: '44 Gorgon Plasma',
+                fireRate: 'Fast (0.25s)',
+                pierce: '+4 Pierces & +18% Crit',
+                special: 'Exotic Chain Petrify Nova'
             }
         });
     }
@@ -386,8 +387,28 @@ class MedusaGorgonGaze extends WeaponBase {
         }
     }
 
+    static _triggerExoticChainNova(srcEnemy, baseDmg, isEvo, game, effects) {
+        const enemies = game && Array.isArray(game.enemies) ? game.enemies : null;
+        if (effects) effects.addShockwave(srcEnemy.x, srcEnemy.y, 175, 'rgba(0, 206, 201, 0.72)');
+        if (!enemies || (game && game.isCoopGuest)) return;
+        const rMax = 175, novaDmg = Math.max(18, Math.round(baseDmg * 0.65));
+        let chained = 0;
+        const hitNear = (other) => {
+            if (chained >= 3 || !other || other === srcEnemy || other.dead || other.isDying || other.isAirborneImmune) return;
+            if (Math.hypot(other.x - srcEnemy.x, other.y - srcEnemy.y) > rMax + (other.radius || 22)) return;
+            chained++;
+            if (typeof other.takeDamage === 'function') other.takeDamage(novaDmg, effects, true, true);
+            this._tracked.add(other);
+            other._medusaStacks = (other._medusaStacks || 0) + (isEvo ? 3 : 2);
+            other._medusaDecay = 220;
+            if (other._medusaStacks >= 3 && !(other._medusaPetrifiedTimer > 0)) this._applyPetrify(other, effects);
+        };
+        if (typeof SpatialHashGrid !== 'undefined') SpatialHashGrid.forEachEnemyNear(srcEnemy.x, srcEnemy.y, rMax, enemies, hitNear);
+        else for (let i = 0; i < enemies.length; i++) hitNear(enemies[i]);
+    }
+
     /**
-     * Stack Stone Curse -> Petrify Statue -> Shatter into Jade Shards + Homing Spectral Serpents
+     * Stack Stone Curse -> Petrify Statue -> Shatter + Exotic Chain Petrify Nova
      */
     static onHit(b, e, finalDmg, enemies, effects, game) {
         if (!b || !e) return;
@@ -397,33 +418,37 @@ class MedusaGorgonGaze extends WeaponBase {
         if (b.type === 'medusa_gaze' && e._medusaPetrifiedTimer > 0) {
             e._medusaPetrifiedTimer = 0;
             this._tracked.delete(e);
-            const shatterDmg = Math.max(25, Math.round(finalDmg * 1.25));
+            const shatterDmg = Math.max(30, Math.round(finalDmg * 1.35));
             if (!isGuest && !e.dead && typeof e.takeDamage === 'function') {
                 e.takeDamage(shatterDmg, effects, true, true);
             }
+            if (!isGuest && b.shooter && b.shooter.hp > 0 && b.shooter.maxHp > 0 && b.shooter.hp < b.shooter.maxHp) {
+                b.shooter.hp = Math.min(b.shooter.maxHp, b.shooter.hp + 2);
+            }
             if (effects) {
-                effects.addShockwave(e.x, e.y, (e.radius || 22) + 100, 'rgba(46, 213, 115, 0.90)');
+                effects.addShockwave(e.x, e.y, (e.radius || 22) + 108, 'rgba(0, 206, 201, 0.92)');
                 effects.addSparks(e.x, e.y, '#6ee7b7', 10);
                 effects.addSparks(e.x, e.y, '#fed330', 6);
-                effects.addComicSplash(e.x, e.y - 28, `🐍 SHATTER! ${shatterDmg}`, '#4ade80', 26, true);
+                effects.addComicSplash(e.x, e.y - 28, `🐍 EXOTIC SHATTER! ${shatterDmg}`, '#00cec9', 26, true);
             }
+            this._triggerExoticChainNova(e, finalDmg, !!b.isWeaponEvolved, g, effects);
             if (!isGuest && typeof Bullet !== 'undefined' && g && Array.isArray(g.bullets)) {
-                for (let k = 0; k < 3; k++) {
+                for (let k = 0; k < 4; k++) {
                     const ang = Math.random() * Math.PI * 2;
                     g.bullets.push(new Bullet({
-                        x: e.x, y: e.y, vx: Math.cos(ang) * 14, vy: Math.sin(ang) * 14,
-                        damage: Math.round(finalDmg * 0.55), speed: 14, radius: 7,
+                        x: e.x, y: e.y, vx: Math.cos(ang) * 14.5, vy: Math.sin(ang) * 14.5,
+                        damage: Math.round(finalDmg * 0.60), speed: 14.5, radius: 7,
                         type: 'medusa_shard', isEnemy: false, pierce: 2, maxBounces: 2,
-                        range: 340, shooter: b.shooter
+                        range: 360, shooter: b.shooter
                     }));
                 }
-                for (let s = 0; s < 2; s++) {
-                    const sang = (b.rotation || 0) + (s === 0 ? -0.55 : 0.55);
+                for (const offset of [-0.6, 0, 0.6]) {
+                    const sang = (b.rotation || 0) + offset;
                     g.bullets.push(new Bullet({
-                        x: e.x, y: e.y, vx: Math.cos(sang) * 13, vy: Math.sin(sang) * 13,
-                        damage: Math.round(finalDmg * 0.72), speed: 13, radius: 8,
+                        x: e.x, y: e.y, vx: Math.cos(sang) * 13.5, vy: Math.sin(sang) * 13.5,
+                        damage: Math.round(finalDmg * 0.78), speed: 13.5, radius: 8,
                         type: 'medusa_serpent', isEnemy: false, pierce: 2, maxBounces: 0,
-                        range: 520, shooter: b.shooter
+                        range: 560, shooter: b.shooter
                     }));
                 }
             }
