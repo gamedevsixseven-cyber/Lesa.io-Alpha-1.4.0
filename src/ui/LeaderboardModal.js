@@ -172,30 +172,36 @@ class LeaderboardModal {
         const isPrimaryDev = !!(window.AdminAuth && typeof window.AdminAuth.isPrimaryDevUser === 'function' && window.AdminAuth.isPrimaryDevUser());
         byUid.set(selfEntry.uid, selfEntry);
         const edge = (typeof window !== 'undefined' && window.edgeApi && window.edgeApi.isEnabled()) ? window.edgeApi : null;
-        let loadedFromEdge = false;
+        const edgeUids = new Set();
+        const mergeEntry = (raw) => {
+            const f = fs._formatPlayerDoc(raw.uid || raw.id, raw);
+            const isSelf = (f.uid === selfEntry.uid);
+            const cur = byUid.get(f.uid);
+            byUid.set(f.uid, {
+                ...(cur || {}), ...f, ...(isSelf ? selfEntry : {}),
+                level: Math.max(Number(f.level) || 1, Number(cur && cur.level) || 1),
+                highScore: Math.max(Number(f.highScore) || 0, Number(cur && cur.highScore) || 0),
+                maxWave: Math.max(Number(f.maxWave) || 1, Number(cur && cur.maxWave) || 1),
+                endlessMaxWave: Math.max(Number(f.endlessMaxWave) || 0, Number(cur && cur.endlessMaxWave) || 0),
+                olympusMaxFloor: Math.max(Number(f.olympusMaxFloor) || 0, Number(cur && cur.olympusMaxFloor) || 0),
+                totalKills: Math.max(Number(f.totalKills) || 0, Number(cur && cur.totalKills) || 0),
+                ...(isSelf ? { isSelf: true, isLocalStub: false } : {})
+            });
+        };
+        let edgeFull = false;
         if (edge && fs) {
             const er = await edge.get('/leaderboard').catch(() => null);
-            if (er && !er.fallback && er.ok && Array.isArray(er.players) && er.players.length > 0) {
-                loadedFromEdge = true;
+            if (er && !er.fallback && er.ok && Array.isArray(er.players)) {
                 er.players.forEach((raw) => {
-                    const f = fs._formatPlayerDoc(raw.uid || raw.id, raw);
-                    const isSelf = (f.uid === selfEntry.uid);
-                    const cur = byUid.get(f.uid);
-                    byUid.set(f.uid, {
-                        ...(cur || {}), ...f, ...(isSelf ? selfEntry : {}),
-                        level: Math.max(Number(f.level) || 1, Number(cur && cur.level) || 1),
-                        highScore: Math.max(Number(f.highScore) || 0, Number(cur && cur.highScore) || 0),
-                        maxWave: Math.max(Number(f.maxWave) || 1, Number(cur && cur.maxWave) || 1),
-                        endlessMaxWave: Math.max(Number(f.endlessMaxWave) || 0, Number(cur && cur.endlessMaxWave) || 0),
-                        olympusMaxFloor: Math.max(Number(f.olympusMaxFloor) || 0, Number(cur && cur.olympusMaxFloor) || 0),
-                        totalKills: Math.max(Number(f.totalKills) || 0, Number(cur && cur.totalKills) || 0),
-                        ...(isSelf ? { isSelf: true, isLocalStub: false } : {})
-                    });
+                    const pid = raw.uid || raw.id;
+                    if (pid) edgeUids.add(pid);
+                    mergeEntry(raw);
                 });
+                if (er.players.length >= 25) edgeFull = true;
             }
         }
 
-        if (!loadedFromEdge && db) {
+        if (!edgeFull && db && fs) {
             try {
                 const queries = [
                     db.collection('players').orderBy('lbHighScore', 'desc').limit(35).get().catch(() => null),
@@ -231,6 +237,10 @@ class LeaderboardModal {
 
                         const formatted = fs._formatPlayerDoc(raw.uid || doc.id, raw);
                         const isSelfDoc = (doc.id === selfEntry.uid) || (formatted.uid === selfEntry.uid);
+                        if (edge && !edgeUids.has(formatted.uid) && (formatted.highScore > 0 || formatted.level > 1)) {
+                            edgeUids.add(formatted.uid);
+                            edge.post(`/player/${encodeURIComponent(formatted.uid)}`, { ...raw, uid: formatted.uid }).catch(() => {});
+                        }
                         if ((isSelfDoc || (isPrimaryDev && isGuestDoc)) && typeof raw.lbEndlessWave === 'number' && raw.lbEndlessWave !== formatted.endlessMaxWave) {
                             doc.ref.update({ lbEndlessWave: formatted.endlessMaxWave, 'socialStats.endlessMaxWave': formatted.endlessMaxWave }).catch(() => {});
                         }

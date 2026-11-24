@@ -404,15 +404,16 @@ class FriendService {
         const myUid = this.getMyUid();
         try {
             const rawDocs = [];
+            const seenIds = new Set();
             if (edge) {
                 const er = await edge.get(`/players/discover?limit=${maxCount}`).catch(() => null);
-                if (er && !er.fallback && er.ok && Array.isArray(er.players) && er.players.length > 0) {
-                    er.players.forEach((p) => { const pid = p.uid || p.id; if (pid && pid !== myUid) rawDocs.push({ id: pid, data: p }); });
+                if (er && !er.fallback && er.ok && Array.isArray(er.players)) {
+                    er.players.forEach((p) => { const pid = p.uid || p.id; if (pid && pid !== myUid && !seenIds.has(pid)) { seenIds.add(pid); rawDocs.push({ id: pid, data: p }); } });
                 }
             }
-            if (rawDocs.length === 0 && db) {
+            if (rawDocs.length < maxCount && db) {
                 const snap = await db.collection('players').orderBy('lastSeenAt', 'desc').limit(maxCount + 3).get();
-                snap.forEach((doc) => { if (doc.exists && doc.id !== myUid) rawDocs.push({ id: doc.id, data: doc.data() || {} }); });
+                snap.forEach((doc) => { if (doc.exists && doc.id !== myUid && !seenIds.has(doc.id)) { seenIds.add(doc.id); rawDocs.push({ id: doc.id, data: doc.data() || {} }); } });
             }
             if (ps && rawDocs.length) await ps.fetchOnce(rawDocs.map(d => d.id)).catch(() => {});
             const list = rawDocs.map((d) => { const e = this._formatPlayerDoc(d.id, d.data); return { ...e, relation: this.getRelationState(e.uid) }; });
@@ -446,7 +447,7 @@ class FriendService {
                     er.players.forEach((p) => { const pid = p.uid || p.id; if (pid && pid !== myUid && !rawMap.has(pid)) rawMap.set(pid, p); });
                 }
             }
-            if (rawMap.size === 0 && db) {
+            if (rawMap.size < 5 && db) {
                 const queries = [];
                 if (cleanTag.length >= 4 && cleanTag.length <= 10) {
                     queries.push(db.collection('players').where('friendTagClean', '==', cleanTag).limit(6).get());

@@ -245,27 +245,30 @@ class ClanService {
         const db = this.getDb(), edge = this.getEdge();
         if (!db && !edge) return { ok: false, error: 'Connect to internet/cloud to browse Clans.', clans: [] };
         try {
+            const byId = new Map();
+            let edgeOk = false;
             if (edge) {
                 const er = await edge.get('/clans').catch(() => null);
                 if (er && !er.fallback && er.ok) {
-                    if (er.clans.length === 0 && db) {
-                        const snap = await db.collection('clans').orderBy('xp', 'desc').limit(25).get().catch(() => null);
-                        if (snap && !snap.empty) {
-                            const migrated = [];
-                            for (const doc of snap.docs) {
-                                const c = { id: doc.id, ...doc.data() };
-                                await edge.post('/clans/migrate', { clan: c }).catch(() => {});
-                                migrated.push(c);
-                            }
-                            this.browseList = migrated; this._emitUpdate(); return { ok: true, clans: migrated };
-                        }
-                    }
-                    this.browseList = er.clans; this._emitUpdate(); return { ok: true, clans: er.clans };
+                    edgeOk = true;
+                    (er.clans || []).forEach(c => { if (c && c.id) byId.set(c.id, c); });
                 }
             }
-            const snap = await db.collection('clans').orderBy('xp', 'desc').limit(25).get();
-            const list = [];
-            snap.forEach((doc) => { if (doc.exists) list.push({ id: doc.id, ...doc.data() }); });
+            if (db && (!edgeOk || (!this._mergedBrowseOnce && byId.size < 25))) {
+                this._mergedBrowseOnce = true;
+                try {
+                    const snap = await db.collection('clans').orderBy('xp', 'desc').limit(25).get().catch(() => null);
+                    if (snap && typeof snap.forEach === 'function') {
+                        snap.forEach((doc) => {
+                            if (!doc.exists || byId.has(doc.id)) return;
+                            const c = { id: doc.id, ...doc.data() };
+                            byId.set(doc.id, c);
+                            if (edge && edgeOk) edge.post('/clans/migrate', { clan: c }).catch(() => {});
+                        });
+                    }
+                } catch (_) {}
+            }
+            const list = Array.from(byId.values()).sort((a, b) => (Number(b.xp) || 0) - (Number(a.xp) || 0)).slice(0, 25);
             this.browseList = list; this._emitUpdate();
             return { ok: true, clans: list };
         } catch (err) { return { ok: false, error: this._describeError(err), clans: [] }; }
