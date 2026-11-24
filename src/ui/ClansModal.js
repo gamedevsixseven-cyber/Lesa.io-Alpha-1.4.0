@@ -48,6 +48,7 @@ class ClansModal {
                 const syncIco = typeof ClanCardRenderer !== 'undefined' ? ClanCardRenderer.ico('sync') : '↻';
                 syncBtn.innerHTML = `${syncIco} ...`;
                 await this.service.flushPendingBounties();
+                if (typeof this.service.refreshActiveClan === 'function') await this.service.refreshActiveClan();
                 await this.service.fetchBrowseClans();
                 syncBtn.innerHTML = `${syncIco} SYNC`;
                 this.render();
@@ -139,9 +140,16 @@ class ClansModal {
         this.modal.classList.remove('hidden');
         this._syncChatOpenState();
         this.render();
+        if (this._clanPoll) clearInterval(this._clanPoll);
+        this._clanPoll = setInterval(() => {
+            if (this.modal && !this.modal.classList.contains('hidden') && this.service && this.service.clanId && typeof this.service.refreshActiveClan === 'function') {
+                this.service.refreshActiveClan();
+            }
+        }, 15000);
     }
 
     hide() {
+        if (this._clanPoll) { clearInterval(this._clanPoll); this._clanPoll = null; }
         if (this.modal) this.modal.classList.add('hidden');
         this.confirmLeave = false;
         this.confirmTransferUid = null;

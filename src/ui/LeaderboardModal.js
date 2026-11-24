@@ -171,8 +171,31 @@ class LeaderboardModal {
         const byUid = new Map();
         const isPrimaryDev = !!(window.AdminAuth && typeof window.AdminAuth.isPrimaryDevUser === 'function' && window.AdminAuth.isPrimaryDevUser());
         byUid.set(selfEntry.uid, selfEntry);
+        const edge = (typeof window !== 'undefined' && window.edgeApi && window.edgeApi.isEnabled()) ? window.edgeApi : null;
+        let loadedFromEdge = false;
+        if (edge && fs) {
+            const er = await edge.get('/leaderboard').catch(() => null);
+            if (er && !er.fallback && er.ok && Array.isArray(er.players) && er.players.length > 0) {
+                loadedFromEdge = true;
+                er.players.forEach((raw) => {
+                    const f = fs._formatPlayerDoc(raw.uid || raw.id, raw);
+                    const isSelf = (f.uid === selfEntry.uid);
+                    const cur = byUid.get(f.uid);
+                    byUid.set(f.uid, {
+                        ...(cur || {}), ...f, ...(isSelf ? selfEntry : {}),
+                        level: Math.max(Number(f.level) || 1, Number(cur && cur.level) || 1),
+                        highScore: Math.max(Number(f.highScore) || 0, Number(cur && cur.highScore) || 0),
+                        maxWave: Math.max(Number(f.maxWave) || 1, Number(cur && cur.maxWave) || 1),
+                        endlessMaxWave: Math.max(Number(f.endlessMaxWave) || 0, Number(cur && cur.endlessMaxWave) || 0),
+                        olympusMaxFloor: Math.max(Number(f.olympusMaxFloor) || 0, Number(cur && cur.olympusMaxFloor) || 0),
+                        totalKills: Math.max(Number(f.totalKills) || 0, Number(cur && cur.totalKills) || 0),
+                        ...(isSelf ? { isSelf: true, isLocalStub: false } : {})
+                    });
+                });
+            }
+        }
 
-        if (db) {
+        if (!loadedFromEdge && db) {
             try {
                 const queries = [
                     db.collection('players').orderBy('lbHighScore', 'desc').limit(35).get().catch(() => null),

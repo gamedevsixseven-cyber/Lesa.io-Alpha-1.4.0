@@ -30,41 +30,19 @@ class FriendService {
 
     _describeDbError(err) {
         const code = err && err.code ? String(err.code) : '';
-        if (code === 'permission-denied') {
-            return 'Firestore permission denied — update Firestore Rules in Firebase Console.';
-        }
-        if (code === 'unavailable') {
-            return 'Cloud unavailable — check your internet connection.';
-        }
+        if (code === 'permission-denied') return 'Firestore permission denied — update Firestore Rules in Firebase Console.';
+        if (code === 'unavailable') return 'Cloud unavailable — check your internet connection.';
         return (err && err.message) ? err.message : 'Cloud request failed.';
     }
-
-    getDb() {
-        return (typeof window !== 'undefined' && window.cloudSave && window.cloudSave.isInitialized)
-            ? window.cloudSave.db
-            : null;
-    }
-
-    getPresence() {
-        return (typeof window !== 'undefined' && window.presenceService) ? window.presenceService : null;
-    }
-
+    getDb() { return (typeof window !== 'undefined' && window.cloudSave && window.cloudSave.isInitialized) ? window.cloudSave.db : null; }
+    getPresence() { return (typeof window !== 'undefined' && window.presenceService) ? window.presenceService : null; }
     getMyUid() {
-        if (typeof window !== 'undefined' && window.cloudSave && typeof window.cloudSave.getEffectivePlayerUid === 'function') {
-            return window.cloudSave.getEffectivePlayerUid();
-        }
-        if (typeof PlayerIdentity !== 'undefined') {
-            return PlayerIdentity.getEffectiveUid(null, null);
-        }
-        return localStorage.getItem('lesaio_player_uid') || '';
+        if (typeof window !== 'undefined' && window.cloudSave && typeof window.cloudSave.getEffectivePlayerUid === 'function') return window.cloudSave.getEffectivePlayerUid();
+        return (typeof PlayerIdentity !== 'undefined') ? PlayerIdentity.getEffectiveUid(null, null) : (localStorage.getItem('lesaio_player_uid') || '');
     }
-
     getMyTag() {
         const uid = this.getMyUid();
-        if (typeof PlayerIdentity !== 'undefined' && typeof PlayerIdentity.getOnlineTag === 'function') {
-            return PlayerIdentity.getOnlineTag(uid);
-        }
-        return '#GUEST0';
+        return (typeof PlayerIdentity !== 'undefined' && typeof PlayerIdentity.getOnlineTag === 'function') ? PlayerIdentity.getOnlineTag(uid) : '#GUEST0';
     }
 
     static _maxNum(...vals) {
@@ -224,26 +202,29 @@ class FriendService {
             }
         }
         this._lastPresenceSync = now;
-
         try {
-            await db.collection('players').doc(me.uid).set(baseDoc, { merge: true }).catch(async (firstErr) => {
-                if (firstErr && firstErr.code === 'permission-denied') {
-                    const { uid: _omitUid, ...safeDoc } = baseDoc;
-                    await db.collection('players').doc(me.uid).set(safeDoc, { merge: true });
-                } else throw firstErr;
-            });
+            const edge = (typeof window !== 'undefined' && window.edgeApi && window.edgeApi.isEnabled()) ? window.edgeApi : null;
+            let syncedEdge = false;
+            if (edge) {
+                const er = await edge.post(`/player/${encodeURIComponent(me.uid)}`, baseDoc).catch(() => null);
+                if (er && !er.fallback && er.ok) syncedEdge = true;
+            }
+            if (!syncedEdge) {
+                await db.collection('players').doc(me.uid).set(baseDoc, { merge: true }).catch(async (firstErr) => {
+                    if (firstErr && firstErr.code === 'permission-denied') {
+                        const { uid: _omitUid, ...safeDoc } = baseDoc;
+                        await db.collection('players').doc(me.uid).set(safeDoc, { merge: true });
+                    } else throw firstErr;
+                });
+            }
             if (socialSig) this._lastSocialHash = socialSig;
             if (cs && cs.lastCloudData && typeof cs.lastCloudData === 'object') {
-                cs.lastCloudData.playerName = me.name;
-                cs.lastCloudData.playerNameLower = me.nameLower;
+                cs.lastCloudData.playerName = me.name; cs.lastCloudData.playerNameLower = me.nameLower;
                 if (cs.lastCloudData.player && typeof cs.lastCloudData.player === 'object') cs.lastCloudData.player.name = me.name;
             }
             this.lastError = null;
             return true;
-        } catch (err) {
-            this.lastError = this._describeDbError(err);
-            return false;
-        }
+        } catch (err) { this.lastError = this._describeDbError(err); return false; }
     }
 
     markOfflineBeacon() {
@@ -418,13 +399,21 @@ class FriendService {
     }
 
     async fetchDiscoverablePlayers(maxCount = 8) {
-        const db = this.getDb(), ps = this.getPresence();
-        if (!db) return { ok: false, error: 'Offline mode: Connect to internet/cloud to find friends.', results: [] };
+        const db = this.getDb(), ps = this.getPresence(), edge = (typeof window !== 'undefined' && window.edgeApi && window.edgeApi.isEnabled()) ? window.edgeApi : null;
+        if (!db && !edge) return { ok: false, error: 'Offline mode: Connect to internet/cloud to find friends.', results: [] };
         const myUid = this.getMyUid();
         try {
-            const snap = await db.collection('players').orderBy('lastSeenAt', 'desc').limit(maxCount + 3).get();
             const rawDocs = [];
-            snap.forEach((doc) => { if (doc.exists && doc.id !== myUid) rawDocs.push({ id: doc.id, data: doc.data() || {} }); });
+            if (edge) {
+                const er = await edge.get(`/players/discover?limit=${maxCount}`).catch(() => null);
+                if (er && !er.fallback && er.ok && Array.isArray(er.players) && er.players.length > 0) {
+                    er.players.forEach((p) => { const pid = p.uid || p.id; if (pid && pid !== myUid) rawDocs.push({ id: pid, data: p }); });
+                }
+            }
+            if (rawDocs.length === 0 && db) {
+                const snap = await db.collection('players').orderBy('lastSeenAt', 'desc').limit(maxCount + 3).get();
+                snap.forEach((doc) => { if (doc.exists && doc.id !== myUid) rawDocs.push({ id: doc.id, data: doc.data() || {} }); });
+            }
             if (ps && rawDocs.length) await ps.fetchOnce(rawDocs.map(d => d.id)).catch(() => {});
             const list = rawDocs.map((d) => { const e = this._formatPlayerDoc(d.id, d.data); return { ...e, relation: this.getRelationState(e.uid) }; });
             return { ok: true, results: list.slice(0, maxCount) };
@@ -435,8 +424,8 @@ class FriendService {
      * Search players across Firestore by either Online ID (#XXXXXX) or Player Name.
      */
     async searchPlayers(rawQuery) {
-        const db = this.getDb(), ps = this.getPresence();
-        if (!db) return { ok: false, error: 'Offline mode: Connect to internet/cloud to find friends.', results: [] };
+        const db = this.getDb(), ps = this.getPresence(), edge = (typeof window !== 'undefined' && window.edgeApi && window.edgeApi.isEnabled()) ? window.edgeApi : null;
+        if (!db && !edge) return { ok: false, error: 'Offline mode: Connect to internet/cloud to find friends.', results: [] };
         const q = (rawQuery || '').trim();
         if (q.length < 2) return { ok: false, error: 'Type at least 2 characters (Name or #OnlineID).', results: [] };
         await this.syncMyProfile(false);
@@ -451,23 +440,31 @@ class FriendService {
         };
 
         try {
-            const queries = [];
-            if (cleanTag.length >= 4 && cleanTag.length <= 10) {
-                queries.push(db.collection('players').where('friendTagClean', '==', cleanTag).limit(6).get());
-                queries.push(db.collection('players').where('friendTag', '==', `#${cleanTag}`).limit(6).get());
+            if (edge) {
+                const er = await edge.get(`/players/search?q=${encodeURIComponent(q)}`).catch(() => null);
+                if (er && !er.fallback && er.ok && Array.isArray(er.players)) {
+                    er.players.forEach((p) => { const pid = p.uid || p.id; if (pid && pid !== myUid && !rawMap.has(pid)) rawMap.set(pid, p); });
+                }
             }
-            if (q.length >= 12 && !q.includes(' ')) {
-                queries.push(db.collection('players').doc(q).get().then(doc => { if (doc.exists && doc.id !== myUid && !rawMap.has(doc.id)) rawMap.set(doc.id, doc.data() || {}); }).catch(() => {}));
+            if (rawMap.size === 0 && db) {
+                const queries = [];
+                if (cleanTag.length >= 4 && cleanTag.length <= 10) {
+                    queries.push(db.collection('players').where('friendTagClean', '==', cleanTag).limit(6).get());
+                    queries.push(db.collection('players').where('friendTag', '==', `#${cleanTag}`).limit(6).get());
+                }
+                if (q.length >= 12 && !q.includes(' ')) {
+                    queries.push(db.collection('players').doc(q).get().then(doc => { if (doc.exists && doc.id !== myUid && !rawMap.has(doc.id)) rawMap.set(doc.id, doc.data() || {}); }).catch(() => {}));
+                }
+                if (!q.startsWith('#') && lowerName.length >= 2) {
+                    queries.push(db.collection('players').where('playerNameLower', '>=', lowerName).where('playerNameLower', '<=', lowerName + '\uf8ff').limit(10).get());
+                    const titleName = lowerName.charAt(0).toUpperCase() + lowerName.slice(1);
+                    Array.from(new Set([q, lowerName, titleName])).forEach(v => queries.push(db.collection('players').where('playerName', '==', v).limit(5).get()));
+                    queries.push(db.collection('players').where('player.name', '==', q).limit(5).get());
+                }
+                const results = await Promise.allSettled(queries);
+                results.forEach(r => { if (r.status === 'fulfilled' && r.value && typeof r.value.forEach === 'function') collect(r.value); });
+                if (rawMap.size === 0 && results.length > 0 && results.every(r => r.status === 'rejected')) return { ok: false, error: this._describeDbError(results[0].reason), results: [] };
             }
-            if (!q.startsWith('#') && lowerName.length >= 2) {
-                queries.push(db.collection('players').where('playerNameLower', '>=', lowerName).where('playerNameLower', '<=', lowerName + '\uf8ff').limit(10).get());
-                const titleName = lowerName.charAt(0).toUpperCase() + lowerName.slice(1);
-                Array.from(new Set([q, lowerName, titleName])).forEach(v => queries.push(db.collection('players').where('playerName', '==', v).limit(5).get()));
-                queries.push(db.collection('players').where('player.name', '==', q).limit(5).get());
-            }
-            const results = await Promise.allSettled(queries);
-            results.forEach(r => { if (r.status === 'fulfilled' && r.value && typeof r.value.forEach === 'function') collect(r.value); });
-            if (rawMap.size === 0 && results.length > 0 && results.every(r => r.status === 'rejected')) return { ok: false, error: this._describeDbError(results[0].reason), results: [] };
             if (ps && rawMap.size > 0) await ps.fetchOnce(Array.from(rawMap.keys())).catch(() => {});
 
             const list = Array.from(rawMap.entries()).map(([id, d]) => {

@@ -32,6 +32,7 @@ class ChatService {
         this.clanUnread = 0;
         this._watchedClanId = null;
         this._unsubClanChat = null;
+        this._clanPollTimer = null;
         this._activeDmRelId = null;
         this._isClanChatOpen = false;
         this._lastSendAt = 0;
@@ -192,45 +193,58 @@ class ChatService {
     _syncClanListener(db) {
         const cs = (typeof window !== 'undefined') ? window.clanService : null;
         const clanId = (cs && cs.currentClan && cs.currentClan.id) ? cs.currentClan.id : (cs && cs.clanId ? cs.clanId : null);
-        if (clanId === this._watchedClanId && this._unsubClanChat) return;
+        const edge = (typeof window !== 'undefined' && window.edgeApi && window.edgeApi.isEnabled()) ? window.edgeApi : null;
+        if (clanId === this._watchedClanId && (this._unsubClanChat || this._clanPollTimer)) return;
 
-        if (this._unsubClanChat) {
-            try { this._unsubClanChat(); } catch (_) {}
-            this._unsubClanChat = null;
-        }
+        if (this._unsubClanChat) { try { this._unsubClanChat(); } catch (_) {} this._unsubClanChat = null; }
+        if (this._clanPollTimer) { clearInterval(this._clanPollTimer); this._clanPollTimer = null; }
         this._watchedClanId = clanId;
         this.clanMessages = [];
         this.clanUnread = 0;
         if (!clanId) { this._emit(); return; }
 
-        this._unsubClanChat = db.collection('clans').doc(clanId).collection('messages')
-            .orderBy('createdAt', 'desc').limit(ChatService.CLAN_LIMIT)
-            .onSnapshot((snap) => {
-                const list = snap.docs.map(doc => {
-                    const d = doc.data() || {};
-                    return {
-                        id: doc.id,
-                        senderUid: d.senderUid || '',
-                        senderName: d.senderName || 'Hero',
-                        senderHero: d.senderHero || 'psanas',
-                        senderRole: d.senderRole || 'member',
-                        senderLevel: Math.max(1, Number(d.senderLevel) || 1),
-                        text: String(d.text || ''),
-                        createdAt: this._ts(d.createdAt)
-                    };
-                }).reverse();
-                this.lastClanError = '';
-                this.clanMessages = list;
-                if (this._isClanChatOpen && list.length) {
-                    const latestTs = Math.max(Date.now(), list[list.length - 1].createdAt);
-                    this.readCursors.clan[clanId] = Math.max(Number(this.readCursors.clan[clanId]) || 0, latestTs);
-                    this._saveReadCursors();
+        const applyMsgs = (list) => {
+            this.lastClanError = '';
+            this.clanMessages = list;
+            if (this._isClanChatOpen && list.length) {
+                const latestTs = Math.max(Date.now(), list[list.length - 1].createdAt);
+                this.readCursors.clan[clanId] = Math.max(Number(this.readCursors.clan[clanId]) || 0, latestTs);
+                this._saveReadCursors();
+            }
+            this._recomputeClanUnread();
+            this._emit();
+        };
+        const bindFirestore = () => {
+            if (!db || this._unsubClanChat) return;
+            this._unsubClanChat = db.collection('clans').doc(clanId).collection('messages')
+                .orderBy('createdAt', 'desc').limit(ChatService.CLAN_LIMIT)
+                .onSnapshot((snap) => {
+                    const list = snap.docs.map(doc => {
+                        const d = doc.data() || {};
+                        return { id: doc.id, senderUid: d.senderUid || '', senderName: d.senderName || 'Hero', senderHero: d.senderHero || 'psanas', senderRole: d.senderRole || 'member', senderLevel: Math.max(1, Number(d.senderLevel) || 1), text: String(d.text || ''), createdAt: this._ts(d.createdAt) };
+                    }).reverse();
+                    applyMsgs(list);
+                }, (err) => { this.lastClanError = this._describeErr(err); });
+        };
+
+        if (edge) {
+            const pollEdge = async () => {
+                if (this._watchedClanId !== clanId) return;
+                const er = await edge.get(`/messages/${encodeURIComponent(`clan:${clanId}`)}?limit=${ChatService.CLAN_LIMIT}`).catch(() => null);
+                if (er && !er.fallback && er.ok && Array.isArray(er.messages)) { applyMsgs(er.messages); return; }
+                if (er && er.fallback) { if (this._clanPollTimer) { clearInterval(this._clanPollTimer); this._clanPollTimer = null; } bindFirestore(); }
+            };
+            pollEdge();
+            this._clanPollTimer = setInterval(() => {
+                if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return;
+                if (this._isClanChatOpen || !this._lastClanBgPoll || Date.now() - this._lastClanBgPoll > 25000) {
+                    this._lastClanBgPoll = Date.now();
+                    pollEdge();
                 }
-                this._recomputeClanUnread();
-                this._emit();
-            }, (err) => {
-                this.lastClanError = this._describeErr(err);
-            });
+            }, 5000);
+            return;
+        }
+        bindFirestore();
     }
 
     _recomputeClanUnread() {
@@ -325,7 +339,7 @@ class ChatService {
         if (now - this._lastSendAt < ChatService.SEND_COOLDOWN_MS) return { ok: false, error: 'Slow down a tiny bit!' };
         this._lastSendAt = now;
         try {
-            await db.collection('clans').doc(clan.id).collection('messages').add({
+            const msgBody = {
                 senderUid: me.uid,
                 senderName: String(me.name || 'Hero').slice(0, 32),
                 senderHero: String(me.hero || 'psanas').slice(0, 32),
@@ -333,9 +347,21 @@ class ChatService {
                 senderLevel: Math.max(1, Number(me.level) || 1),
                 text: clean,
                 createdAt: now
-            });
+            };
+            const edge = (typeof window !== 'undefined' && window.edgeApi && window.edgeApi.isEnabled()) ? window.edgeApi : null;
+            let sentEdge = false;
+            if (edge) {
+                const er = await edge.post(`/messages/${encodeURIComponent(`clan:${clan.id}`)}`, msgBody).catch(() => null);
+                if (er && !er.fallback) {
+                    if (!er.ok) return { ok: false, error: er.error || 'Message failed.' };
+                    this.clanMessages = [...this.clanMessages, { id: `edge_${now}`, ...msgBody }].slice(-ChatService.CLAN_LIMIT);
+                    sentEdge = true;
+                }
+            }
+            if (!sentEdge) await db.collection('clans').doc(clan.id).collection('messages').add(msgBody);
             this.readCursors.clan[clan.id] = Math.max(Number(this.readCursors.clan[clan.id]) || 0, now);
             this._saveReadCursors();
+            this._emit();
             return { ok: true };
         } catch (err) {
             return { ok: false, error: this._describeErr(err) };

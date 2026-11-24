@@ -28,6 +28,32 @@ class ClanService {
             ? window.cloudSave.db : null;
     }
 
+    getEdge() {
+        return (typeof window !== 'undefined' && window.edgeApi && window.edgeApi.isEnabled()) ? window.edgeApi : null;
+    }
+
+    async _migrateClanToEdge(clanId) {
+        const db = this.getDb(), edge = this.getEdge();
+        if (!db || !edge || !clanId) return null;
+        try {
+            const snap = await db.collection('clans').doc(clanId).get();
+            if (!snap || !snap.exists) return null;
+            const res = await edge.post('/clans/migrate', { clan: { id: snap.id, ...snap.data() } });
+            return (res && res.ok && res.clan) ? res.clan : null;
+        } catch (_) { return null; }
+    }
+
+    async _postEdgeClan(clanId, action, payload) {
+        const edge = this.getEdge();
+        if (!edge || !clanId) return { fallback: true };
+        let res = await edge.post(`/clan/${encodeURIComponent(clanId)}/${action}`, payload);
+        if (res && !res.fallback && res.status === 404) {
+            const migrated = await this._migrateClanToEdge(clanId);
+            if (migrated) res = await edge.post(`/clan/${encodeURIComponent(clanId)}/${action}`, payload);
+        }
+        return res;
+    }
+
     getMyUid() {
         if (typeof window !== 'undefined' && window.cloudSave && typeof window.cloudSave.getEffectivePlayerUid === 'function') {
             return window.cloudSave.getEffectivePlayerUid();
@@ -134,85 +160,115 @@ class ClanService {
     }
 
     async syncMyClanMembership() {
-        const db = this.getDb();
         const uid = this.getMyUid();
-        if (!db || !uid) return;
+        if (!uid) return;
+        const cached = (typeof window !== 'undefined' && window.cloudSave && window.cloudSave.lastCloudData) ? window.cloudSave.lastCloudData : null;
+        if (cached && 'clanId' in cached) {
+            if ((cached.clanId || null) !== (this.clanId || null)) { this.clanId = cached.clanId || null; this.saveLocal(); }
+            return;
+        }
+        const edge = this.getEdge(), db = this.getDb();
+        if (edge) {
+            const er = await edge.get(`/player/${encodeURIComponent(uid)}`).catch(() => null);
+            if (er && er.ok && er.doc && typeof er.doc.clanId === 'string') {
+                if (er.doc.clanId !== (this.clanId || '')) { this.clanId = er.doc.clanId || null; this.saveLocal(); }
+                return;
+            }
+        }
+        if (!db) return;
         try {
             const pDoc = await db.collection('players').doc(uid).get();
             if (pDoc && pDoc.exists) {
                 const pData = pDoc.data() || {};
-                if (typeof pData.clanId === 'string' && pData.clanId !== (this.clanId || '')) {
-                    this.clanId = pData.clanId || null;
-                    this.saveLocal();
-                }
+                if (typeof pData.clanId === 'string' && pData.clanId !== (this.clanId || '')) { this.clanId = pData.clanId || null; this.saveLocal(); }
             }
         } catch (_) {}
     }
 
     async _syncPlayerClanBadge(clanDoc = null) {
-        const db = this.getDb();
         const uid = this.getMyUid();
-        if (!db || !uid) return;
-        try {
-            await db.collection('players').doc(uid).set({
-                clanId: clanDoc ? clanDoc.id : null,
-                clanTag: clanDoc ? clanDoc.tag : null,
-                clanName: clanDoc ? clanDoc.name : null
-            }, { merge: true });
-        } catch (_) {}
+        if (!uid) return;
+        const badge = { clanId: clanDoc ? clanDoc.id : null, clanTag: clanDoc ? clanDoc.tag : null, clanName: clanDoc ? clanDoc.name : null };
+        const edge = this.getEdge();
+        if (edge) {
+            const er = await edge.post(`/player/${encodeURIComponent(uid)}`, badge).catch(() => null);
+            if (er && !er.fallback && er.ok) return;
+        }
+        const db = this.getDb();
+        if (db) { try { await db.collection('players').doc(uid).set(badge, { merge: true }); } catch (_) {} }
+    }
+
+    async refreshActiveClan() {
+        const edge = this.getEdge();
+        if (!edge || !this.clanId) return false;
+        let er = await edge.get(`/clan/${encodeURIComponent(this.clanId)}`).catch(() => null);
+        if (er && !er.fallback && er.status === 404) {
+            const migrated = await this._migrateClanToEdge(this.clanId);
+            if (migrated) er = { ok: true, fallback: false, clan: migrated };
+        }
+        if (!er || er.fallback) return false;
+        if (!er.ok && er.status === 404) { this.clanId = null; this.currentClan = null; this.saveLocal(); this._emitUpdate(); return true; }
+        if (er.ok && er.clan) {
+            const uid = this.getMyUid();
+            if (uid && (!er.clan.members || !er.clan.members[uid])) {
+                this.clanId = null; this.currentClan = null; this.saveLocal(); this._syncPlayerClanBadge(null);
+            } else { this.currentClan = er.clan; }
+            this._emitUpdate();
+            return true;
+        }
+        return false;
     }
 
     bindClanListener() {
-        if (this._unsubClan) {
-            try { this._unsubClan(); } catch (_) {}
-            this._unsubClan = null;
-        }
-        const db = this.getDb();
-        if (!db || !this.clanId) {
-            this.currentClan = null;
-            this._emitUpdate();
+        if (this._unsubClan) { try { this._unsubClan(); } catch (_) {} this._unsubClan = null; }
+        const db = this.getDb(), edge = this.getEdge();
+        if ((!db && !edge) || !this.clanId) { this.currentClan = null; this._emitUpdate(); return; }
+        if (edge) {
+            this.refreshActiveClan().then((handled) => { if (!handled && db) this._bindFirestoreClanDoc(db); });
             return;
         }
+        if (db) this._bindFirestoreClanDoc(db);
+    }
+
+    _bindFirestoreClanDoc(db) {
+        if (!db || !this.clanId) return;
         this._unsubClan = db.collection('clans').doc(this.clanId).onSnapshot((doc) => {
-            if (!doc || !doc.exists) {
-                this.clanId = null;
-                this.currentClan = null;
-                this.saveLocal();
-                this._emitUpdate();
-                return;
-            }
-            const data = { id: doc.id, ...doc.data() };
-            const uid = this.getMyUid();
-            if (uid && (!data.members || !data.members[uid])) {
-                this.clanId = null;
-                this.currentClan = null;
-                this.saveLocal();
-                this._syncPlayerClanBadge(null);
-            } else {
-                this.currentClan = data;
-            }
+            if (!doc || !doc.exists) { this.clanId = null; this.currentClan = null; this.saveLocal(); this._emitUpdate(); return; }
+            const data = { id: doc.id, ...doc.data() }, uid = this.getMyUid();
+            if (uid && (!data.members || !data.members[uid])) { this.clanId = null; this.currentClan = null; this.saveLocal(); this._syncPlayerClanBadge(null); }
+            else { this.currentClan = data; }
             this._emitUpdate();
-        }, (err) => {
-            this.lastError = this._describeError(err);
-        });
+        }, (err) => { this.lastError = this._describeError(err); });
     }
 
     async fetchBrowseClans() {
-        const db = this.getDb();
-        if (!db) return { ok: false, error: 'Connect to internet/cloud to browse Clans.', clans: [] };
+        const db = this.getDb(), edge = this.getEdge();
+        if (!db && !edge) return { ok: false, error: 'Connect to internet/cloud to browse Clans.', clans: [] };
         try {
+            if (edge) {
+                const er = await edge.get('/clans').catch(() => null);
+                if (er && !er.fallback && er.ok) {
+                    if (er.clans.length === 0 && db) {
+                        const snap = await db.collection('clans').orderBy('xp', 'desc').limit(25).get().catch(() => null);
+                        if (snap && !snap.empty) {
+                            const migrated = [];
+                            for (const doc of snap.docs) {
+                                const c = { id: doc.id, ...doc.data() };
+                                await edge.post('/clans/migrate', { clan: c }).catch(() => {});
+                                migrated.push(c);
+                            }
+                            this.browseList = migrated; this._emitUpdate(); return { ok: true, clans: migrated };
+                        }
+                    }
+                    this.browseList = er.clans; this._emitUpdate(); return { ok: true, clans: er.clans };
+                }
+            }
             const snap = await db.collection('clans').orderBy('xp', 'desc').limit(25).get();
             const list = [];
-            snap.forEach((doc) => {
-                if (doc.exists) list.push({ id: doc.id, ...doc.data() });
-            });
-            this.browseList = list;
-            this._emitUpdate();
+            snap.forEach((doc) => { if (doc.exists) list.push({ id: doc.id, ...doc.data() }); });
+            this.browseList = list; this._emitUpdate();
             return { ok: true, clans: list };
-        } catch (err) {
-            const msg = this._describeError(err);
-            return { ok: false, error: msg, clans: [] };
-        }
+        } catch (err) { return { ok: false, error: this._describeError(err), clans: [] }; }
     }
 
     validateCreateInputs(rawName, rawTag) {
@@ -234,46 +290,37 @@ class ClanService {
     async createClan({ name, tag, emblemId = 'spartan_shield', colorId = 'crimson', motto = '', joinMode = 'open' }) {
         const v = this.validateCreateInputs(name, tag);
         if (!v.ok) return v;
-        const db = this.getDb();
-        if (!db) return { ok: false, error: 'Cloud connection required to register your Clan online.' };
-
+        const db = this.getDb(), edge = this.getEdge();
+        if (!db && !edge) return { ok: false, error: 'Cloud connection required to register your Clan online.' };
         const me = this.getMyPlayerMeta();
         if (!me.uid) return { ok: false, error: 'Player identity missing — reload and try again.' };
 
         try {
-            const dupTag = await db.collection('clans').where('tag', '==', v.tag).limit(1).get();
-            if (!dupTag.empty) return { ok: false, error: `Clan Tag [${v.tag}] is already taken!` };
-
             const clanId = `clan_${v.tag.toLowerCase()}_${Date.now().toString(36)}`;
             const weekKey = (typeof ClanConfigHelper !== 'undefined') ? ClanConfigHelper.getIsoWeekKey() : '2026-W01';
             const cleanMotto = String(motto || 'Forged in Lesa.io • No Leeches Allowed').trim().slice(0, 72);
             const clanPayload = {
-                id: clanId,
-                name: v.name,
-                nameLower: v.name.toLowerCase(),
-                tag: v.tag,
-                emblemId,
-                colorId,
-                motto: cleanMotto,
-                joinMode: joinMode === 'request' ? 'request' : 'open',
-                leaderUid: me.uid,
-                xp: 0,
-                level: 1,
-                memberCount: 1,
-                createdAt: Date.now(),
+                id: clanId, name: v.name, nameLower: v.name.toLowerCase(), tag: v.tag, emblemId, colorId, motto: cleanMotto,
+                joinMode: joinMode === 'request' ? 'request' : 'open', leaderUid: me.uid, xp: 0, level: 1, memberCount: 1, createdAt: Date.now(),
                 vault: { coins: 0, armory_shards: 0, mati_crystal: 0, olympian_bronze: 0 },
                 bounties: { [weekKey]: { endless_waves: 0, zeus_defeats: 0, coop_kills: 0, vault_tributes: 0 } },
-                members: {
-                    [me.uid]: {
-                        uid: me.uid, name: me.name, tag: me.tag, hero: me.hero, level: me.level,
-                        role: 'leader', contributedPoints: 0, weeklyContrib: 0, joinedAt: Date.now()
-                    }
-                },
-                joinRequests: {},
-                activityLog: [`${me.name} founded [${v.tag}] ${v.name}!`]
+                members: { [me.uid]: { uid: me.uid, name: me.name, tag: me.tag, hero: me.hero, level: me.level, role: 'leader', contributedPoints: 0, weeklyContrib: 0, joinedAt: Date.now() } },
+                joinRequests: {}, activityLog: [`${me.name} founded [${v.tag}] ${v.name}!`]
             };
 
-            await db.collection('clans').doc(clanId).set(clanPayload);
+            let createdEdge = false;
+            if (edge) {
+                const er = await edge.post('/clans', { clan: clanPayload });
+                if (er && !er.fallback) {
+                    if (!er.ok) return { ok: false, error: er.error || 'Could not create Clan.' };
+                    createdEdge = true;
+                }
+            }
+            if (!createdEdge) {
+                const dupTag = await db.collection('clans').where('tag', '==', v.tag).limit(1).get();
+                if (!dupTag.empty) return { ok: false, error: `Clan Tag [${v.tag}] is already taken!` };
+                await db.collection('clans').doc(clanId).set(clanPayload);
+            }
 
             // Spend currencies ONLY after Firestore confirmed creation
             const gs = window.GameState;
@@ -294,95 +341,67 @@ class ClanService {
     }
 
     async joinClan(clanId) {
-        const db = this.getDb();
-        if (!db || !clanId) return { ok: false, error: 'Cloud unavailable.' };
+        const db = this.getDb(), edge = this.getEdge();
+        if ((!db && !edge) || !clanId) return { ok: false, error: 'Cloud unavailable.' };
         if (this.clanId && this.currentClan) return { ok: false, error: 'You are already in a Clan!' };
-
         const cdMs = (typeof CLAN_REJOIN_COOLDOWN_MS !== 'undefined') ? CLAN_REJOIN_COOLDOWN_MS : 86400000;
         const leftAgo = Date.now() - (this.lastLeftAt || 0);
-        if (this.lastLeftAt > 0 && leftAgo < cdMs) {
-            const hrsLeft = Math.ceil((cdMs - leftAgo) / 3600000);
-            return { ok: false, error: `Clan Cooldown active — wait ${hrsLeft}h before joining a new Clan.` };
-        }
+        if (this.lastLeftAt > 0 && leftAgo < cdMs) return { ok: false, error: `Clan Cooldown active — wait ${Math.ceil((cdMs - leftAgo) / 3600000)}h before joining a new Clan.` };
 
         const me = this.getMyPlayerMeta();
         try {
-            let outcome = 'joined';
-            let joinedDoc = null;
-            await db.runTransaction(async (tx) => {
-                const ref = db.collection('clans').doc(clanId);
-                const snap = await tx.get(ref);
-                if (!snap.exists) throw new Error('Clan no longer exists.');
-                const data = snap.data() || {};
-                const lvl = (typeof ClanConfigHelper !== 'undefined') ? ClanConfigHelper.getLevelFromXp(data.xp || 0).level : 1;
-                const maxMem = (typeof ClanConfigHelper !== 'undefined') ? ClanConfigHelper.getMaxMembersForLevel(lvl) : 12;
-                const members = { ...(data.members || {}) };
-                if (members[me.uid]) { joinedDoc = { id: clanId, ...data }; return; }
-                if (Object.keys(members).length >= maxMem) throw new Error('Clan roster is full!');
-
-                if (data.joinMode === 'request') {
-                    const reqs = { ...(data.joinRequests || {}) };
-                    reqs[me.uid] = { uid: me.uid, name: me.name, tag: me.tag, hero: me.hero, level: me.level, requestedAt: Date.now() };
-                    tx.update(ref, { joinRequests: reqs });
-                    outcome = 'requested';
-                    return;
-                }
-
-                members[me.uid] = {
-                    uid: me.uid, name: me.name, tag: me.tag, hero: me.hero, level: me.level,
-                    role: 'member', contributedPoints: 0, weeklyContrib: 0, joinedAt: Date.now()
-                };
-                const log = [`${me.name} joined the Clan!`, ...((data.activityLog || []).slice(0, 9))];
-                tx.update(ref, { members, memberCount: Object.keys(members).length, activityLog: log });
-                joinedDoc = { id: clanId, ...data, members, memberCount: Object.keys(members).length, activityLog: log };
-            });
-
-            if (outcome === 'joined' && joinedDoc) {
-                this.clanId = clanId;
-                this.currentClan = joinedDoc;
-                this.saveLocal();
-                await this._syncPlayerClanBadge(joinedDoc);
-                this.bindClanListener();
-                this._emitUpdate();
+            let outcome = 'joined', joinedDoc = null;
+            const maxMemEst = (typeof ClanConfigHelper !== 'undefined') ? ClanConfigHelper.getMaxMembersForLevel(10) : 30;
+            const er = await this._postEdgeClan(clanId, 'join', { me, maxMembers: maxMemEst });
+            if (er && !er.fallback) {
+                if (!er.ok) return { ok: false, error: er.error || 'Unable to join Clan.' };
+                outcome = er.outcome || 'joined'; joinedDoc = er.clan || null;
+            } else {
+                await db.runTransaction(async (tx) => {
+                    const ref = db.collection('clans').doc(clanId), snap = await tx.get(ref);
+                    if (!snap.exists) throw new Error('Clan no longer exists.');
+                    const data = snap.data() || {}, lvl = (typeof ClanConfigHelper !== 'undefined') ? ClanConfigHelper.getLevelFromXp(data.xp || 0).level : 1;
+                    const maxMem = (typeof ClanConfigHelper !== 'undefined') ? ClanConfigHelper.getMaxMembersForLevel(lvl) : 12;
+                    const members = { ...(data.members || {}) };
+                    if (members[me.uid]) { joinedDoc = { id: clanId, ...data }; return; }
+                    if (Object.keys(members).length >= maxMem) throw new Error('Clan roster is full!');
+                    if (data.joinMode === 'request') {
+                        const reqs = { ...(data.joinRequests || {}), [me.uid]: { uid: me.uid, name: me.name, tag: me.tag, hero: me.hero, level: me.level, requestedAt: Date.now() } };
+                        tx.update(ref, { joinRequests: reqs }); outcome = 'requested'; return;
+                    }
+                    members[me.uid] = { uid: me.uid, name: me.name, tag: me.tag, hero: me.hero, level: me.level, role: 'member', contributedPoints: 0, weeklyContrib: 0, joinedAt: Date.now() };
+                    const log = [`${me.name} joined the Clan!`, ...((data.activityLog || []).slice(0, 9))];
+                    tx.update(ref, { members, memberCount: Object.keys(members).length, activityLog: log });
+                    joinedDoc = { id: clanId, ...data, members, memberCount: Object.keys(members).length, activityLog: log };
+                });
             }
+            if (outcome === 'joined' && joinedDoc) { this.clanId = clanId; this.currentClan = joinedDoc; this.saveLocal(); await this._syncPlayerClanBadge(joinedDoc); this.bindClanListener(); this._emitUpdate(); }
             return { ok: true, outcome };
-        } catch (err) {
-            return { ok: false, error: this._describeError(err) };
-        }
+        } catch (err) { return { ok: false, error: this._describeError(err) }; }
     }
 
     async respondJoinRequest(targetUid, accept) {
-        const db = this.getDb();
-        const me = this.getMyPlayerMeta();
-        if (!db || !this.clanId || !targetUid) return { ok: false, error: 'Unavailable.' };
+        const db = this.getDb(), edge = this.getEdge(), me = this.getMyPlayerMeta();
+        if ((!db && !edge) || !this.clanId || !targetUid) return { ok: false, error: 'Unavailable.' };
         try {
+            const er = await this._postEdgeClan(this.clanId, 'respond', { me, targetUid, accept });
+            if (er && !er.fallback) {
+                if (!er.ok) return { ok: false, error: er.error || 'Failed.' };
+                if (er.clan) { this.currentClan = er.clan; this._emitUpdate(); }
+                return { ok: true };
+            }
             await db.runTransaction(async (tx) => {
-                const ref = db.collection('clans').doc(this.clanId);
-                const snap = await tx.get(ref);
+                const ref = db.collection('clans').doc(this.clanId), snap = await tx.get(ref);
                 if (!snap.exists) throw new Error('Clan missing.');
-                const data = snap.data() || {};
-                const myRole = data.members && data.members[me.uid] && data.members[me.uid].role;
-                if (myRole !== 'leader' && myRole !== 'officer') throw new Error('Only Leaders or Officers can review requests.');
-
-                const reqs = { ...(data.joinRequests || {}) };
-                const req = reqs[targetUid];
-                delete reqs[targetUid];
-                if (!accept || !req) {
-                    tx.update(ref, { joinRequests: reqs });
-                    return;
-                }
-                const members = { ...(data.members || {}) };
-                members[targetUid] = {
-                    uid: targetUid, name: req.name, tag: req.tag, hero: req.hero, level: req.level,
-                    role: 'member', contributedPoints: 0, weeklyContrib: 0, joinedAt: Date.now()
-                };
-                const log = [`${req.name} joined the Clan!`, ...((data.activityLog || []).slice(0, 9))];
-                tx.update(ref, { joinRequests: reqs, members, memberCount: Object.keys(members).length, activityLog: log });
+                const data = snap.data() || {}, myRole = data.members && data.members[me.uid] && data.members[me.uid].role;
+                if (myRole !== 'leader' && myRole !== 'officer' && myRole !== 'co_leader') throw new Error('Only Leaders or Officers can review requests.');
+                const reqs = { ...(data.joinRequests || {}) }, req = reqs[targetUid]; delete reqs[targetUid];
+                if (!accept || !req) { tx.update(ref, { joinRequests: reqs }); return; }
+                const members = { ...(data.members || {}), [targetUid]: { uid: targetUid, name: req.name, tag: req.tag, hero: req.hero, level: req.level, role: 'member', contributedPoints: 0, weeklyContrib: 0, joinedAt: Date.now() } };
+                tx.update(ref, { joinRequests: reqs, members, memberCount: Object.keys(members).length, activityLog: [`${req.name} joined the Clan!`, ...((data.activityLog || []).slice(0, 9))] });
             });
             return { ok: true };
-        } catch (err) {
-            return { ok: false, error: this._describeError(err) };
-        }
+        } catch (err) { return { ok: false, error: this._describeError(err) }; }
     }
 
     async donateToVault(resourceId, rawQty) {
@@ -394,153 +413,118 @@ class ClanService {
     }
 
     async leaveClan() {
-        const db = this.getDb();
-        const me = this.getMyPlayerMeta();
-        if (!db || !this.clanId) return { ok: false, error: 'Not in a Clan.' };
+        const db = this.getDb(), edge = this.getEdge(), me = this.getMyPlayerMeta();
+        if ((!db && !edge) || !this.clanId) return { ok: false, error: 'Not in a Clan.' };
         try {
             let deleted = false;
-            await db.runTransaction(async (tx) => {
-                const ref = db.collection('clans').doc(this.clanId);
-                const snap = await tx.get(ref);
-                if (!snap.exists) { deleted = true; return; }
-                const data = snap.data() || {};
-                const members = { ...(data.members || {}) };
-                delete members[me.uid];
-                const remUids = Object.keys(members);
-                if (remUids.length === 0) {
-                    tx.delete(ref);
-                    deleted = true;
-                    return;
-                }
-                let nextLeader = data.leaderUid;
-                if (data.leaderUid === me.uid) {
-                    remUids.sort((a, b) => (members[b].contributedPoints || 0) - (members[a].contributedPoints || 0));
-                    nextLeader = remUids[0];
-                    members[nextLeader] = { ...members[nextLeader], role: 'leader' };
-                }
-                const log = [`${me.name} left the Clan.`, ...((data.activityLog || []).slice(0, 9))];
-                const patch = { members, memberCount: remUids.length, activityLog: log };
-                if (nextLeader !== data.leaderUid) patch.leaderUid = nextLeader;
-                tx.update(ref, patch);
-            });
-            this.clanId = null;
-            this.currentClan = null;
-            this.lastLeftAt = deleted ? 0 : Date.now();
-            this.saveLocal();
-            await this._syncPlayerClanBadge(null);
-            this.bindClanListener();
-            this._emitUpdate();
+            const er = await this._postEdgeClan(this.clanId, 'leave', { me });
+            if (er && !er.fallback) {
+                if (!er.ok) return { ok: false, error: er.error || 'Leave failed.' };
+                deleted = Boolean(er.deleted);
+            } else {
+                await db.runTransaction(async (tx) => {
+                    const ref = db.collection('clans').doc(this.clanId), snap = await tx.get(ref);
+                    if (!snap.exists) { deleted = true; return; }
+                    const data = snap.data() || {}, members = { ...(data.members || {}) };
+                    delete members[me.uid];
+                    const remUids = Object.keys(members);
+                    if (remUids.length === 0) { tx.delete(ref); deleted = true; return; }
+                    let nextLeader = data.leaderUid;
+                    if (data.leaderUid === me.uid) { remUids.sort((a, b) => (members[b].contributedPoints || 0) - (members[a].contributedPoints || 0)); nextLeader = remUids[0]; members[nextLeader] = { ...members[nextLeader], role: 'leader' }; }
+                    const patch = { members, memberCount: remUids.length, activityLog: [`${me.name} left the Clan.`, ...((data.activityLog || []).slice(0, 9))] };
+                    if (nextLeader !== data.leaderUid) patch.leaderUid = nextLeader;
+                    tx.update(ref, patch);
+                });
+            }
+            this.clanId = null; this.currentClan = null; this.lastLeftAt = deleted ? 0 : Date.now(); this.saveLocal();
+            await this._syncPlayerClanBadge(null); this.bindClanListener(); this._emitUpdate();
             return { ok: true };
-        } catch (err) {
-            return { ok: false, error: this._describeError(err) };
-        }
+        } catch (err) { return { ok: false, error: this._describeError(err) }; }
     }
 
     async kickMember(targetUid) {
-        const db = this.getDb();
-        const me = this.getMyPlayerMeta();
-        if (!db || !this.clanId || !targetUid || targetUid === me.uid) return { ok: false, error: 'Invalid target.' };
+        const db = this.getDb(), edge = this.getEdge(), me = this.getMyPlayerMeta();
+        if ((!db && !edge) || !this.clanId || !targetUid || targetUid === me.uid) return { ok: false, error: 'Invalid target.' };
         try {
+            const er = await this._postEdgeClan(this.clanId, 'kick', { me, targetUid });
+            if (er && !er.fallback) { if (!er.ok) return { ok: false, error: er.error }; if (er.clan) { this.currentClan = er.clan; this._emitUpdate(); } return { ok: true }; }
             await db.runTransaction(async (tx) => {
-                const ref = db.collection('clans').doc(this.clanId);
-                const snap = await tx.get(ref);
+                const ref = db.collection('clans').doc(this.clanId), snap = await tx.get(ref);
                 if (!snap.exists) throw new Error('Clan missing.');
-                const data = snap.data() || {};
-                const members = { ...(data.members || {}) };
-                const actor = members[me.uid];
-                const target = members[targetUid];
+                const data = snap.data() || {}, members = { ...(data.members || {}) }, actor = members[me.uid], target = members[targetUid];
                 if (!target) return;
-                const myRank = ClanConfigHelper.getRoleRank(actor && actor.role);
-                const tRank = ClanConfigHelper.getRoleRank(target.role);
+                const myRank = ClanConfigHelper.getRoleRank(actor && actor.role), tRank = ClanConfigHelper.getRoleRank(target.role);
                 if (myRank < 3 || myRank <= tRank) throw new Error('Insufficient Clan rank to remove this member.');
                 delete members[targetUid];
-                const log = [`${target.name} was removed from the Clan.`, ...((data.activityLog || []).slice(0, 9))];
-                tx.update(ref, { members, memberCount: Object.keys(members).length, activityLog: log });
+                tx.update(ref, { members, memberCount: Object.keys(members).length, activityLog: [`${target.name} was removed from the Clan.`, ...((data.activityLog || []).slice(0, 9))] });
             });
             return { ok: true };
-        } catch (err) {
-            return { ok: false, error: this._describeError(err) };
-        }
+        } catch (err) { return { ok: false, error: this._describeError(err) }; }
     }
 
     async changeMemberRole(targetUid, direction = 1) {
-        const db = this.getDb();
-        const me = this.getMyPlayerMeta();
-        if (!db || !this.clanId || !targetUid || targetUid === me.uid) return { ok: false, error: 'Invalid member target.' };
+        const db = this.getDb(), edge = this.getEdge(), me = this.getMyPlayerMeta();
+        if ((!db && !edge) || !this.clanId || !targetUid || targetUid === me.uid) return { ok: false, error: 'Invalid member target.' };
         const order = ['member', 'officer', 'co_leader'];
         try {
-            let resultRole = 'member';
-            let targetName = 'Member';
+            const er = await this._postEdgeClan(this.clanId, 'role', { me, targetUid, direction });
+            if (er && !er.fallback) {
+                if (!er.ok) return { ok: false, error: er.error || 'Role update failed.' };
+                if (er.clan) { this.currentClan = er.clan; this._emitUpdate(); }
+                return { ok: true, role: er.role, name: er.name };
+            }
+            let resultRole = 'member', targetName = 'Member';
             await db.runTransaction(async (tx) => {
-                const ref = db.collection('clans').doc(this.clanId);
-                const snap = await tx.get(ref);
+                const ref = db.collection('clans').doc(this.clanId), snap = await tx.get(ref);
                 if (!snap.exists) throw new Error('Clan missing.');
-                const data = snap.data() || {};
-                const members = { ...(data.members || {}) };
-                const actor = members[me.uid];
-                const target = members[targetUid];
+                const data = snap.data() || {}, members = { ...(data.members || {}) }, actor = members[me.uid], target = members[targetUid];
                 if (!actor || !target) throw new Error('Member not found.');
-                const actorRank = ClanConfigHelper.getRoleRank(actor.role);
-                const targetRank = ClanConfigHelper.getRoleRank(target.role);
+                const actorRank = ClanConfigHelper.getRoleRank(actor.role), targetRank = ClanConfigHelper.getRoleRank(target.role);
                 if (actorRank < 3) throw new Error('Only Leaders or Co-Leaders can adjust roles.');
                 if (targetRank >= actorRank) throw new Error('You cannot alter a member of equal or higher rank.');
-
-                const curIdx = Math.max(0, order.indexOf(target.role || 'member'));
-                const nextIdx = curIdx + (direction > 0 ? 1 : -1);
+                const nextIdx = Math.max(0, order.indexOf(target.role || 'member')) + (direction > 0 ? 1 : -1);
                 if (nextIdx < 0 || nextIdx >= order.length) throw new Error(direction > 0 ? 'Max promotable role reached.' : 'Already at lowest rank.');
                 const nextRole = order[nextIdx];
                 if (ClanConfigHelper.getRoleRank(nextRole) >= actorRank) throw new Error('Only the Leader can promote to Co-Leader.');
-
-                members[targetUid] = { ...target, role: nextRole };
-                resultRole = nextRole;
-                targetName = target.name || 'Member';
-                const verb = direction > 0 ? 'promoted' : 'demoted';
-                const roleLabel = ClanConfigHelper.getRoleMeta(nextRole).label;
-                const log = [`${me.name} ${verb} ${targetName} to ${roleLabel}!`, ...((data.activityLog || []).slice(0, 9))];
+                members[targetUid] = { ...target, role: nextRole }; resultRole = nextRole; targetName = target.name || 'Member';
+                const log = [`${me.name} ${direction > 0 ? 'promoted' : 'demoted'} ${targetName} to ${ClanConfigHelper.getRoleMeta(nextRole).label}!`, ...((data.activityLog || []).slice(0, 9))];
                 tx.update(ref, { members, activityLog: log });
             });
             return { ok: true, role: resultRole, name: targetName };
-        } catch (err) {
-            return { ok: false, error: this._describeError(err) };
-        }
+        } catch (err) { return { ok: false, error: this._describeError(err) }; }
     }
 
     async transferLeadership(targetUid) {
-        const db = this.getDb();
-        const me = this.getMyPlayerMeta();
-        if (!db || !this.clanId || !targetUid || targetUid === me.uid) return { ok: false, error: 'Invalid target.' };
+        const db = this.getDb(), edge = this.getEdge(), me = this.getMyPlayerMeta();
+        if ((!db && !edge) || !this.clanId || !targetUid || targetUid === me.uid) return { ok: false, error: 'Invalid target.' };
         try {
+            const er = await this._postEdgeClan(this.clanId, 'transfer', { me, targetUid });
+            if (er && !er.fallback) { if (!er.ok) return { ok: false, error: er.error }; if (er.clan) { this.currentClan = er.clan; this._emitUpdate(); } return { ok: true, name: er.name }; }
             let newName = 'Member';
             await db.runTransaction(async (tx) => {
-                const ref = db.collection('clans').doc(this.clanId);
-                const snap = await tx.get(ref);
+                const ref = db.collection('clans').doc(this.clanId), snap = await tx.get(ref);
                 if (!snap.exists) throw new Error('Clan missing.');
                 const data = snap.data() || {};
                 if (data.leaderUid !== me.uid) throw new Error('Only the current Leader can transfer Leadership.');
                 const members = { ...(data.members || {}) };
                 if (!members[targetUid]) throw new Error('Member not found.');
-                members[me.uid] = { ...members[me.uid], role: 'co_leader' };
-                members[targetUid] = { ...members[targetUid], role: 'leader' };
+                members[me.uid] = { ...members[me.uid], role: 'co_leader' }; members[targetUid] = { ...members[targetUid], role: 'leader' };
                 newName = members[targetUid].name || 'Member';
-                const log = [`👑 ${me.name} passed Clan Leadership to ${newName}!`, ...((data.activityLog || []).slice(0, 9))];
-                tx.update(ref, { leaderUid: targetUid, members, activityLog: log });
+                tx.update(ref, { leaderUid: targetUid, members, activityLog: [`👑 ${me.name} passed Clan Leadership to ${newName}!`, ...((data.activityLog || []).slice(0, 9))] });
             });
             return { ok: true, name: newName };
-        } catch (err) {
-            return { ok: false, error: this._describeError(err) };
-        }
+        } catch (err) { return { ok: false, error: this._describeError(err) }; }
     }
 
     async updateMotto(newMotto) {
-        const db = this.getDb();
-        if (!db || !this.clanId || !this.currentClan) return { ok: false, error: 'Unavailable.' };
-        const clean = String(newMotto || '').trim().slice(0, 72);
+        const db = this.getDb(), edge = this.getEdge(), clean = String(newMotto || '').trim().slice(0, 72);
+        if ((!db && !edge) || !this.clanId || !this.currentClan) return { ok: false, error: 'Unavailable.' };
         try {
+            const er = await this._postEdgeClan(this.clanId, 'motto', { me: this.getMyPlayerMeta(), motto: clean });
+            if (er && !er.fallback) { if (!er.ok) return { ok: false, error: er.error }; if (er.clan) { this.currentClan = er.clan; this._emitUpdate(); } return { ok: true }; }
             await db.collection('clans').doc(this.clanId).update({ motto: clean });
             return { ok: true };
-        } catch (err) {
-            return { ok: false, error: this._describeError(err) };
-        }
+        } catch (err) { return { ok: false, error: this._describeError(err) }; }
     }
 
     bindGameplayEvents() {

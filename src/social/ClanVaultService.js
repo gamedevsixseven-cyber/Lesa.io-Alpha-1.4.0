@@ -31,32 +31,46 @@ class ClanVaultService {
         const me = svc.getMyPlayerMeta();
 
         try {
-            await db.runTransaction(async (tx) => {
-                const ref = db.collection('clans').doc(svc.clanId);
-                const snap = await tx.get(ref);
-                if (!snap.exists) throw new Error('Clan not found.');
-                const data = snap.data() || {};
-                const vault = { ...(data.vault || {}) };
-                vault[resourceId] = (vault[resourceId] || 0) + qty;
+            const edge = (typeof svc.getEdge === 'function') ? svc.getEdge() : null;
+            let donatedViaEdge = false;
+            if (edge) {
+                const res = await svc._postEdgeClan(svc.clanId, 'donate', {
+                    me, resourceId, qty, xpGain, contribGain, weekKey, shortName: cfg.shortName
+                });
+                if (res && !res.fallback) {
+                    if (!res.ok) return { ok: false, error: res.error || 'Donation failed.' };
+                    if (res.clan) { svc.currentClan = res.clan; svc.saveLocal(); }
+                    donatedViaEdge = true;
+                }
+            }
+            if (!donatedViaEdge) {
+                await db.runTransaction(async (tx) => {
+                    const ref = db.collection('clans').doc(svc.clanId);
+                    const snap = await tx.get(ref);
+                    if (!snap.exists) throw new Error('Clan not found.');
+                    const data = snap.data() || {};
+                    const vault = { ...(data.vault || {}) };
+                    vault[resourceId] = (vault[resourceId] || 0) + qty;
 
-                const newXp = (data.xp || 0) + xpGain;
-                const newLvl = ClanConfigHelper.getLevelFromXp(newXp).level;
-                const members = { ...(data.members || {}) };
-                const prevMem = members[me.uid] || { uid: me.uid, name: me.name, tag: me.tag, hero: me.hero, role: 'member', joinedAt: Date.now() };
-                members[me.uid] = {
-                    ...prevMem, name: me.name, level: me.level, hero: me.hero,
-                    contributedPoints: (prevMem.contributedPoints || 0) + contribGain,
-                    weeklyContrib: (prevMem.weeklyContrib || 0) + contribGain
-                };
+                    const newXp = (data.xp || 0) + xpGain;
+                    const newLvl = ClanConfigHelper.getLevelFromXp(newXp).level;
+                    const members = { ...(data.members || {}) };
+                    const prevMem = members[me.uid] || { uid: me.uid, name: me.name, tag: me.tag, hero: me.hero, role: 'member', joinedAt: Date.now() };
+                    members[me.uid] = {
+                        ...prevMem, name: me.name, level: me.level, hero: me.hero,
+                        contributedPoints: (prevMem.contributedPoints || 0) + contribGain,
+                        weeklyContrib: (prevMem.weeklyContrib || 0) + contribGain
+                    };
 
-                const bounties = { ...(data.bounties || {}) };
-                const wk = { ...(bounties[weekKey] || {}) };
-                wk.vault_tributes = (wk.vault_tributes || 0) + contribGain;
-                bounties[weekKey] = wk;
+                    const bounties = { ...(data.bounties || {}) };
+                    const wk = { ...(bounties[weekKey] || {}) };
+                    wk.vault_tributes = (wk.vault_tributes || 0) + contribGain;
+                    bounties[weekKey] = wk;
 
-                const log = [`${me.name} vaulted ${qty.toLocaleString()} ${cfg.shortName} (+${contribGain} pts)`, ...((data.activityLog || []).slice(0, 9))];
-                tx.update(ref, { vault, xp: newXp, level: newLvl, members, bounties, activityLog: log });
-            });
+                    const log = [`${me.name} vaulted ${qty.toLocaleString()} ${cfg.shortName} (+${contribGain} pts)`, ...((data.activityLog || []).slice(0, 9))];
+                    tx.update(ref, { vault, xp: newXp, level: newLvl, members, bounties, activityLog: log });
+                });
+            }
 
             if (cfg.kind === 'currency') {
                 gs.spendCoins(qty);
@@ -96,11 +110,18 @@ class ClanVaultService {
         try {
             const rewardClaimKey = `${weekKey}_${bountyId}`;
             const clanClaimed = Array.isArray(svc.currentClan.claimedXpKeys) ? svc.currentClan.claimedXpKeys : [];
-            if (db && !clanClaimed.includes(rewardClaimKey)) {
-                await db.collection('clans').doc(svc.clanId).update({
-                    xp: firebase.firestore.FieldValue.increment(def.rewardXp),
-                    claimedXpKeys: firebase.firestore.FieldValue.arrayUnion(rewardClaimKey)
-                });
+            if (!clanClaimed.includes(rewardClaimKey)) {
+                let doneEdge = false;
+                if (typeof svc.getEdge === 'function' && svc.getEdge()) {
+                    const er = await svc._postEdgeClan(svc.clanId, 'claim-bounty', { me, rewardClaimKey, rewardXp: def.rewardXp });
+                    if (er && !er.fallback && er.ok) { if (er.clan) svc.currentClan = er.clan; doneEdge = true; }
+                }
+                if (!doneEdge && db) {
+                    await db.collection('clans').doc(svc.clanId).update({
+                        xp: firebase.firestore.FieldValue.increment(def.rewardXp),
+                        claimedXpKeys: firebase.firestore.FieldValue.arrayUnion(rewardClaimKey)
+                    });
+                }
             }
             svc.honorCrests += def.rewardCrests;
             svc.claimedBounties[weekKey] = [...claimed, bountyId];
@@ -140,7 +161,7 @@ class ClanVaultService {
         window.EventBus.on('gameOver', () => this.flushPendingBounties(svc));
     }
 
-    static scheduleBountyFlush(svc, delayMs = 2500) {
+    static scheduleBountyFlush(svc, delayMs = 45000) {
         if (svc._bountyFlushTimer) return;
         svc._bountyFlushTimer = setTimeout(() => {
             svc._bountyFlushTimer = null;
@@ -150,8 +171,9 @@ class ClanVaultService {
 
     static async flushPendingBounties(svc) {
         const db = svc.getDb();
+        const edge = (typeof svc.getEdge === 'function') ? svc.getEdge() : null;
         const p = svc._pendingBounties;
-        if (!db || !svc.clanId || (!p.endless_waves && !p.zeus_defeats && !p.coop_kills)) return;
+        if ((!db && !edge) || !svc.clanId || (!p.endless_waves && !p.zeus_defeats && !p.coop_kills)) return;
         const delta = { ...p };
         svc._pendingBounties = { endless_waves: 0, zeus_defeats: 0, coop_kills: 0 };
         svc.saveLocal();
@@ -160,6 +182,10 @@ class ClanVaultService {
         const me = svc.getMyPlayerMeta();
         const contribPts = (delta.endless_waves * 4) + (delta.zeus_defeats * 30) + Math.floor(delta.coop_kills / 25);
         try {
+            if (edge) {
+                const er = await svc._postEdgeClan(svc.clanId, 'bounties', { me, weekKey, ...delta, contribPts });
+                if (er && !er.fallback && er.ok) { if (er.clan) { svc.currentClan = er.clan; svc._emitUpdate(); } return; }
+            }
             const updates = {};
             if (delta.endless_waves > 0) updates[`bounties.${weekKey}.endless_waves`] = firebase.firestore.FieldValue.increment(delta.endless_waves);
             if (delta.zeus_defeats > 0) updates[`bounties.${weekKey}.zeus_defeats`] = firebase.firestore.FieldValue.increment(delta.zeus_defeats);
@@ -168,7 +194,7 @@ class ClanVaultService {
                 updates[`members.${me.uid}.weeklyContrib`] = firebase.firestore.FieldValue.increment(contribPts);
                 updates[`members.${me.uid}.contributedPoints`] = firebase.firestore.FieldValue.increment(contribPts);
             }
-            if (Object.keys(updates).length > 0) await db.collection('clans').doc(svc.clanId).update(updates);
+            if (db && Object.keys(updates).length > 0) await db.collection('clans').doc(svc.clanId).update(updates);
         } catch (_) {
             svc._pendingBounties.endless_waves += delta.endless_waves;
             svc._pendingBounties.zeus_defeats += delta.zeus_defeats;

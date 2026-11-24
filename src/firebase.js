@@ -28,7 +28,7 @@ class CloudSaveService {
         this.lastLocalMutationDirtyAt = 0;
         this._localMutationVersion = 0;
         this._activeListenerUid = null;
-        this._cloudSyncCooldownMs = 45000;
+        this._cloudSyncCooldownMs = 120000;
         this._lastCloudSyncAt = 0;
         this._cloudSyncTimer = null;
         this._pendingCloudSyncData = null;
@@ -203,12 +203,20 @@ class CloudSaveService {
         this._pendingCloudSaves = (this._pendingCloudSaves || 0) + 1;
         const saveVer = this._localMutationVersion || 0;
         try {
+            const edge = (typeof window !== 'undefined' && window.edgeApi && window.edgeApi.isEnabled()) ? window.edgeApi : null;
             const userDocRef = this.db.collection('players').doc(user.uid);
             if (!this.hasCompletedInitialSync) {
-                const preSnap = await userDocRef.get().catch(() => null);
+                let preData = null;
+                if (edge) {
+                    const er = await edge.get(`/player/${encodeURIComponent(user.uid)}`).catch(() => null);
+                    if (er && er.ok && er.doc) preData = er.doc;
+                }
+                if (!preData) {
+                    const preSnap = await userDocRef.get().catch(() => null);
+                    if (preSnap && preSnap.exists) preData = preSnap.data();
+                }
                 this.hasCompletedInitialSync = true;
-                if (preSnap && preSnap.exists) {
-                    const preData = preSnap.data();
+                if (preData) {
                     if (!this.lastCloudData) this.lastCloudData = preData;
                     this.applyCloudData(preData);
                 }
@@ -222,24 +230,22 @@ class CloudSaveService {
                 ? SaveSerializer.buildCloudPayload(rawIn, user, { friendTag: fTag, friendTagClean: fTagClean }, this.lastCloudData)
                 : { ...rawIn, friendTag: fTag, friendTagClean: fTagClean, ...(user.email ? { email: user.email } : {}) };
 
-            this.lastSavedGems = payload.gems;
-            this.lastSavedCoins = payload.coins;
-            this.lastKnownRootGems = payload.gems;
-            this.lastKnownRootCoins = payload.coins;
+            this.lastSavedGems = payload.gems; this.lastSavedCoins = payload.coins;
+            this.lastKnownRootGems = payload.gems; this.lastKnownRootCoins = payload.coins;
             this.lastCloudData = payload;
 
-            const writePayload = {
-                ...payload,
-                lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
-            };
-            try {
-                await userDocRef.set(writePayload, { merge: true });
-            } catch (writeErr) {
-                if (writeErr && writeErr.code === 'permission-denied') {
-                    const { uid: _u, email: _e, isAdmin: _a, wipedByDevAt: _w, ...safePayload } = writePayload;
-                    await userDocRef.set(safePayload, { merge: true });
-                } else {
-                    throw writeErr;
+            let savedToEdge = false;
+            if (edge) {
+                const putRes = await edge.post(`/player/${encodeURIComponent(user.uid)}`, { ...payload, lastUpdated: Date.now() }).catch(() => null);
+                if (putRes && putRes.ok) savedToEdge = true;
+            }
+            if (!savedToEdge) {
+                const writePayload = { ...payload, lastUpdated: firebase.firestore.FieldValue.serverTimestamp() };
+                try { await userDocRef.set(writePayload, { merge: true }); } catch (writeErr) {
+                    if (writeErr && writeErr.code === 'permission-denied') {
+                        const { uid: _u, email: _e, isAdmin: _a, wipedByDevAt: _w, ...safePayload } = writePayload;
+                        await userDocRef.set(safePayload, { merge: true });
+                    } else throw writeErr;
                 }
             }
 
@@ -262,43 +268,38 @@ class CloudSaveService {
         if (!this.isInitialized || !this.db) return null;
         const user = this.currentUser || (this.auth ? this.auth.currentUser : null);
         if (!user) return null;
-
         try {
-            const userDocRef = this.db.collection('players').doc(user.uid);
-            const doc = await userDocRef.get();
-
-            if (doc.exists) {
-                const data = doc.data();
-                this.applyCloudData(data);
-                return data;
-            } else {
-                // First time linking -> upload current local progress to cloud
-                const localCoins = parseInt(localStorage.getItem('lesaio_coins')) || 1500;
-                const localGems = parseInt(localStorage.getItem('lesaio_gems')) || 50;
-                const initialData = {
-                    coins: localCoins,
-                    gems: localGems,
-                    playerName: localStorage.getItem('lesaio_player_name') || 'Psanas',
-                    level: localStorage.getItem('lesaio_account_level') || localStorage.getItem('lesaio_player_level') || '1',
-                    unlockedHeroes: localStorage.getItem('lesaio_unlocked_heroes') || '["psanas"]',
-                    highScore: localStorage.getItem('lesaio_highscore') || localStorage.getItem('lesaio_high_score') || '0',
-                    maxWave: localStorage.getItem('lesaio_max_wave') || '1'
-                };
-                await this.saveToCloud(initialData);
-                return initialData;
+            const edge = (typeof window !== 'undefined' && window.edgeApi && window.edgeApi.isEnabled()) ? window.edgeApi : null;
+            if (edge) {
+                const er = await edge.get(`/player/${encodeURIComponent(user.uid)}`).catch(() => null);
+                if (er && er.ok && er.doc) { this.applyCloudData(er.doc); return er.doc; }
             }
-        } catch (error) {
-            console.error('Cloud Load Error:', error);
-            return null;
-        }
+            const doc = await this.db.collection('players').doc(user.uid).get();
+            if (doc.exists) { const data = doc.data(); this.applyCloudData(data); return data; }
+            const initialData = {
+                coins: parseInt(localStorage.getItem('lesaio_coins')) || 1500, gems: parseInt(localStorage.getItem('lesaio_gems')) || 50,
+                playerName: localStorage.getItem('lesaio_player_name') || 'Psanas',
+                level: localStorage.getItem('lesaio_account_level') || localStorage.getItem('lesaio_player_level') || '1',
+                unlockedHeroes: localStorage.getItem('lesaio_unlocked_heroes') || '["psanas"]',
+                highScore: localStorage.getItem('lesaio_highscore') || localStorage.getItem('lesaio_high_score') || '0',
+                maxWave: localStorage.getItem('lesaio_max_wave') || '1'
+            };
+            await this.saveToCloud(initialData);
+            return initialData;
+        } catch (error) { console.error('Cloud Load Error:', error); return null; }
     }
 
     _reconcileDoc(fields) {
-        if (!this.db) return;
         const uid = this.getEffectivePlayerUid();
-        if (uid) {
-            this.db.collection('players').doc(uid).update(fields).catch(() => {});
+        if (!uid) return;
+        const edge = (typeof window !== 'undefined' && window.edgeApi && window.edgeApi.isEnabled()) ? window.edgeApi : null;
+        if (edge) {
+            edge.post(`/player/${encodeURIComponent(uid)}`, fields).then((r) => {
+                if (r && r.fallback && this.db) this.db.collection('players').doc(uid).update(fields).catch(() => {});
+            }).catch(() => {});
+            return;
         }
+        if (this.db) this.db.collection('players').doc(uid).update(fields).catch(() => {});
     }
 
     _animatePill(selector) {
