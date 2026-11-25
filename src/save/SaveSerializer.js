@@ -319,8 +319,11 @@ class SaveSerializer {
         }
         if (p.cosmetics && typeof p.cosmetics === 'object' && typeof CosmeticManager !== 'undefined') {
             const curC = CosmeticManager.getState();
+            const curGifted = new Set(curC.devGiftedBanners || []);
+            const cloudEqBanner = p.cosmetics.equippedBanner;
+            const hasNewDevBanner = Boolean(cloudEqBanner && Array.isArray(p.cosmetics.devGiftedBanners) && p.cosmetics.devGiftedBanners.includes(cloudEqBanner) && !curGifted.has(cloudEqBanner));
             CosmeticManager.saveState({
-                equippedBanner: curC.equippedBanner || p.cosmetics.equippedBanner,
+                equippedBanner: (hasNewDevBanner || opts.syncSelections) ? cloudEqBanner : (curC.equippedBanner || cloudEqBanner),
                 equippedFrame: curC.equippedFrame || p.cosmetics.equippedFrame,
                 displayedCoins: curC.displayedCoins && curC.displayedCoins.length ? curC.displayedCoins : (Array.isArray(p.cosmetics.displayedCoins) ? p.cosmetics.displayedCoins : []),
                 unlockedBanners: [...curC.unlockedBanners, ...(p.cosmetics.unlockedBanners || [])],
