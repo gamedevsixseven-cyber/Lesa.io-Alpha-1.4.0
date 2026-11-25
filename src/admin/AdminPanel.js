@@ -428,17 +428,35 @@ class AdminPanelController {
         container.innerHTML = accounts.map((acc, idx) => `
             <div class="admin-dev-acc-card">
                 <div class="admin-dev-acc-meta">
-                    <div class="admin-dev-acc-title">${this._escHtml(acc.name)} <span style="color:#fed330;">${this._escHtml(acc.tag)}</span> ${acc.hasVipPass ? '<span style="color:#fed330;font-size:0.74rem;">[👑 VIP]</span> ' : ''}${acc.isAdmin ? '<span style="color:#2ed573;font-size:0.74rem;">[ADMIN]</span>' : ''}</div>
+                    <div class="admin-dev-acc-title">${this._escHtml(acc.name)} <span style="color:#fed330;">${this._escHtml(acc.tag)}</span> ${acc.hasVipPass ? '<span style="color:#fed330;font-size:0.74rem;">[👑 VIP]</span> ' : ''}${acc.isAdmin ? '<span style="color:#2ed573;font-size:0.74rem;">[ADMIN]</span> ' : ''}${acc.leaderboardHidden ? '<span style="color:#ff6b81;font-size:0.74rem;">[🚫 LB HIDDEN]</span>' : ''}</div>
                     <div class="admin-dev-acc-sub">UID: ${this._escHtml(acc.uid)}${acc.email ? ` | Email: ${this._escHtml(acc.email)}` : ''}${acc.pendingDevGiftsCount > 0 ? ` | 🎁 Queued Gifts: ${acc.pendingDevGiftsCount}` : ''}</div>
                     <div class="admin-dev-acc-sub">Lv.${acc.level} | 🪙 ${acc.coins.toLocaleString()} | 💎 ${acc.gems.toLocaleString()} | 🏆 Score: ${acc.highScore.toLocaleString()} | 🔥 W${acc.endlessWave} | ⚔️ ${acc.totalKills.toLocaleString()}</div>
                 </div>
                 <div class="admin-dev-acc-actions">
                     <button type="button" class="admin-control-btn btn-success admin-dev-gift-btn" data-idx="${idx}">🎁 GIFT</button>
+                    <button type="button" class="admin-control-btn ${acc.leaderboardHidden ? 'btn-primary' : 'btn-warning'} admin-dev-lbhide-btn" data-idx="${idx}">${acc.leaderboardHidden ? 'SHOW ON LB' : 'HIDE FROM LB'}</button>
                     <button type="button" class="admin-control-btn btn-warning admin-dev-wipe-btn" data-idx="${idx}">WIPE LV.1</button>
                     <button type="button" class="admin-control-btn btn-danger admin-dev-delete-btn" data-idx="${idx}">DELETE EVERYWHERE</button>
                 </div>
             </div>
         `).join('');
+
+        container.querySelectorAll('.admin-dev-lbhide-btn').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const acc = accounts[parseInt(btn.getAttribute('data-idx'), 10)];
+                if (!acc || !window.DevAccountManager) return;
+                btn.disabled = true;
+                try {
+                    const nextHidden = !acc.leaderboardHidden;
+                    await window.DevAccountManager.setLeaderboardVisibility(acc, nextHidden);
+                    this.showToast(`${acc.name} (${acc.tag}) ${nextHidden ? 'removed from' : 'restored to'} Leaderboards.`, nextHidden ? 'warn' : 'info');
+                    document.getElementById('admin-btn-lookup-account')?.click();
+                } catch (err) {
+                    btn.disabled = false;
+                    this.showToast(`Leaderboard update failed: ${err.message}`, 'error');
+                }
+            });
+        });
 
         container.querySelectorAll('.admin-dev-gift-btn').forEach(btn => {
             btn.addEventListener('click', () => {

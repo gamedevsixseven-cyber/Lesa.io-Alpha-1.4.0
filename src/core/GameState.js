@@ -32,7 +32,7 @@ class GameState {
         const si = GameState._safeInt;
         // Player Profile & Identity
         this.player = {
-            name: localStorage.getItem('lesaio_player_name') || 'Psanas',
+            name: localStorage.getItem('lesaio_player_name') || 'Hero',
             accountLevel: si('lesaio_account_level', 1, 1),
             accountXp: si('lesaio_account_xp', 0, 0),
             coins: si('lesaio_coins', 1500, 0),

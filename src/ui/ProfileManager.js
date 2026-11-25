@@ -282,14 +282,27 @@ class ProfileManager {
             return;
         }
 
-        const ok = await this._verifyAndClaimName(btn, errorEl, val);
+        const ok = await this._verifyAndClaimName(btn, errorEl, val, null, () => {
+            if (this.gameState) this.gameState.player.name = val;
+            localStorage.setItem('lesaio_player_name', val);
+            localStorage.setItem('lesaio_player_name_chosen', 'true');
+            if (typeof PlayerIdentity !== 'undefined') {
+                PlayerIdentity.getEffectiveUid(window.cloudSave && window.cloudSave.auth, window.cloudSave && window.cloudSave.currentUser);
+            }
+            return true;
+        });
         if (!ok) return;
 
-        if (this.gameState) {
-            this.gameState.player.name = val;
-            localStorage.setItem('lesaio_player_name', val);
-        }
+        if (this.gameState) this.gameState.player.name = val;
+        localStorage.setItem('lesaio_player_name', val);
         localStorage.setItem('lesaio_player_name_chosen', 'true');
+
+        if (typeof window !== 'undefined' && window.cloudSave && window.cloudSave.isInitialized) {
+            const uid = window.cloudSave.getEffectivePlayerUid();
+            if (uid && !window.cloudSave.currentUser) window.cloudSave.seedNewPlayerDoc(uid);
+            if (uid) window.cloudSave.startRealtimeListener({ uid, email: window.cloudSave.getEffectivePlayerEmail() });
+        }
+        if (typeof window !== 'undefined' && window.friendService) window.friendService.onAuthChanged();
 
         if (window.soundEngine) window.soundEngine.playLevelUp();
         this.hideFirstTimeNameModal();

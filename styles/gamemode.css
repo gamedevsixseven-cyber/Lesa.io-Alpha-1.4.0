@@ -385,3 +385,116 @@
         white-space: nowrap;
     }
 }
+
+/* Endless Difficulty Selection Screen */
+#endless-diff-modal.modal-overlay {
+    position: fixed; inset: 0; background: rgba(6, 9, 18, 0.82);
+    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 10020; padding: 14px;
+}
+#endless-diff-modal.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+.ediff-panel {
+    width: min(94vw, 760px); max-height: 92vh; overflow-y: auto;
+    background: linear-gradient(180deg, #161d31 0%, #0d1220 100%);
+    border: 4px solid #fed330; border-radius: 24px; padding: 18px 22px 22px;
+    box-shadow: 0 18px 50px rgba(0, 0, 0, 0.85), 0 0 36px rgba(155, 89, 182, 0.28);
+    animation: modeModalPopIn 0.24s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+.ediff-header { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.ediff-title {
+    margin: 0; font-family: 'Luckiest Guy', cursive, sans-serif; font-size: clamp(1.2rem, 2.8vw, 1.7rem);
+    color: #fed330; letter-spacing: 0.7px; text-align: center; flex: 1;
+    -webkit-text-stroke: 1.2px #0f172a; text-shadow: 0 3px 0 #0f172a;
+}
+.ediff-back-btn {
+    background: #27324b; color: #f8fafc; border: 2.5px solid #0f172a; border-radius: 11px;
+    padding: 6px 12px; font-family: 'Fredoka', sans-serif; font-weight: 800; font-size: 0.8rem;
+    cursor: pointer; box-shadow: 0 3px 0 #0f172a; transition: transform 0.12s ease;
+}
+.ediff-back-btn:hover { background: #344366; transform: translateY(-1px); }
+.ediff-close-x { position: static; flex-shrink: 0; }
+.ediff-subtitle {
+    margin: 6px 0 14px; text-align: center; color: #cbd5e1;
+    font-family: 'Outfit', sans-serif; font-size: 0.86rem; font-weight: 600;
+}
+.ediff-notice {
+    margin: 0 auto 12px; max-width: 92%; text-align: center; padding: 7px 14px;
+    background: linear-gradient(180deg, #dc2626, #991b1b); color: #ffffff;
+    border: 2.5px solid #0f172a; border-radius: 12px; font-weight: 800; font-size: 0.82rem;
+    box-shadow: 0 3px 0 #0f172a;
+}
+.ediff-notice.hidden { display: none; }
+.ediff-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.ediff-card {
+    position: relative; display: flex; flex-direction: column; align-items: center; text-align: center;
+    padding: 22px 16px 16px; border-radius: 20px; border: 3.5px solid #0f172a; cursor: pointer;
+    box-shadow: 0 7px 0 #0f172a, 0 14px 28px rgba(0, 0, 0, 0.55);
+    transition: transform 0.16s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.16s ease, filter 0.16s ease;
+}
+.ediff-card:hover { transform: translateY(-4px); box-shadow: 0 11px 0 #0f172a, 0 18px 34px rgba(0, 0, 0, 0.7); }
+.ediff-card.is-normal {
+    background: radial-gradient(circle at 50% 0%, rgba(168, 85, 247, 0.34), transparent 65%), linear-gradient(180deg, #281b47 0%, #15122b 100%);
+    border-color: #a855f7;
+}
+.ediff-card.is-hard {
+    background: radial-gradient(circle at 50% 0%, rgba(239, 68, 68, 0.38), transparent 65%), linear-gradient(180deg, #3c141c 0%, #1a0b12 100%);
+    border-color: #ff4757;
+}
+.ediff-card.is-hard.is-locked { filter: grayscale(0.45) brightness(0.88); border-color: #64748b; }
+.ediff-card-ribbon {
+    position: absolute; top: -11px; padding: 3px 12px; border-radius: 999px;
+    border: 2.5px solid #0f172a; background: #a855f7; color: #ffffff;
+    font-family: 'Fredoka', sans-serif; font-size: 0.72rem; font-weight: 900; letter-spacing: 0.5px;
+    box-shadow: 0 2px 0 #0f172a;
+}
+.ediff-card-ribbon.is-hard { background: linear-gradient(90deg, #ff4757, #f59e0b); color: #fff; }
+.ediff-card-icon {
+    width: 58px; height: 58px; border-radius: 16px; display: flex; align-items: center; justify-content: center;
+    font-size: 2rem; margin: 6px 0 8px; border: 3px solid #0f172a;
+    background: linear-gradient(180deg, #7e22ce, #4c1d95); box-shadow: 0 4px 0 #0f172a;
+}
+.ediff-card-icon.is-hard { background: linear-gradient(180deg, #ef4444, #991b1b); }
+.ediff-card-title {
+    margin: 0; font-family: 'Luckiest Guy', cursive, sans-serif; font-size: 1.35rem;
+    color: #e9d5ff; letter-spacing: 0.6px; text-shadow: 0 2px 0 #0f172a;
+}
+.ediff-card-title.is-hard { color: #fecaca; }
+.ediff-card-desc { margin: 4px 0 10px; font-size: 0.79rem; font-weight: 700; color: #cbd5e1; }
+.ediff-perks {
+    width: 100%; list-style: none; padding: 0; margin: 0 0 12px;
+    display: flex; flex-direction: column; gap: 6px; text-align: left;
+}
+.ediff-perks li {
+    background: rgba(15, 23, 42, 0.58); border: 1.5px solid rgba(255, 255, 255, 0.12);
+    border-radius: 10px; padding: 6px 10px; font-size: 0.76rem; font-weight: 700; color: #f1f5f9;
+}
+.ediff-record-chip {
+    margin-top: auto; margin-bottom: 10px; padding: 4px 12px; border-radius: 999px;
+    background: rgba(168, 85, 247, 0.22); border: 1.5px solid #c084fc; color: #f3e8ff;
+    font-size: 0.72rem; font-weight: 900; letter-spacing: 0.4px;
+}
+.ediff-record-chip.is-hard { background: rgba(239, 68, 68, 0.25); border-color: #fda4af; color: #ffe4e6; }
+.ediff-record-chip.hidden, .ediff-lock-progress.hidden { display: none; }
+.ediff-lock-progress { width: 100%; margin-top: auto; margin-bottom: 10px; }
+.ediff-lock-bar-bg {
+    height: 10px; border-radius: 999px; background: #0f172a; border: 1.5px solid #475569; overflow: hidden; margin-bottom: 4px;
+}
+.ediff-lock-bar-fill { height: 100%; width: 0%; background: linear-gradient(90deg, #f59e0b, #ef4444); transition: width 0.25s ease; }
+#ediff-hard-lock-label { font-size: 0.72rem; font-weight: 800; color: #fca5a5; }
+.ediff-play-btn {
+    width: 100%; border: 3px solid #0f172a; border-radius: 13px; padding: 10px 14px;
+    font-family: 'Luckiest Guy', cursive, sans-serif; font-size: 1.08rem; letter-spacing: 0.7px;
+    color: #ffffff; cursor: pointer; box-shadow: 0 4px 0 #0f172a;
+    -webkit-text-stroke: 0.8px #0f172a; text-shadow: 0 2px 0 #0f172a;
+}
+.ediff-play-btn.is-normal { background: linear-gradient(180deg, #2ed573, #1ea356); }
+.ediff-play-btn.is-hard { background: linear-gradient(180deg, #ff4757, #b91c1c); }
+.ediff-play-btn.is-hard.is-locked { background: #475569; color: #cbd5e1; cursor: not-allowed; }
+.friend-status-text.is-hard-status, .pub-status-chip.online.is-hard-status { color: #ff6b81; font-weight: 900; text-shadow: 0 0 8px rgba(255, 71, 87, 0.4); }
+@media (max-width: 680px), (max-height: 520px) {
+    .ediff-panel { padding: 12px 14px 14px; border-radius: 18px; }
+    .ediff-grid { grid-template-columns: 1fr; gap: 12px; }
+    .ediff-card { padding: 16px 12px 12px; }
+    .ediff-card-icon { width: 42px; height: 42px; font-size: 1.4rem; margin: 2px 0 6px; }
+}

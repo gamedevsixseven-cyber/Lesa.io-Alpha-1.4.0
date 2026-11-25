@@ -534,6 +534,7 @@ class WeaponSystem {
         }
         if (typeof localStorage !== 'undefined') localStorage.setItem('lesaio_selected_weapon', wt);
         if (typeof window !== 'undefined' && window.SaveManager && typeof window.SaveManager.requestSave === 'function') window.SaveManager.requestSave(300);
+        if (typeof window !== 'undefined' && window.friendService && typeof window.friendService.syncMyProfile === 'function') window.friendService.syncMyProfile(true);
         if (modalManager && typeof modalManager.updateGearScreen === 'function') modalManager.updateGearScreen();
         if (typeof window !== 'undefined' && window.soundEngine && typeof window.soundEngine.playSelect === 'function') {
             window.soundEngine.playSelect();

@@ -195,6 +195,9 @@ class CloudSaveService {
         if (this.isSyncingFromCloud || this.isHydratingAuth) {
             return false;
         }
+        if (typeof PlayerIdentity !== 'undefined' && PlayerIdentity.isAwaitingInitialName() && !this.currentUser) {
+            return false;
+        }
         const uid = this.getEffectivePlayerUid();
         const email = this.getEffectivePlayerEmail();
         const user = { uid, email };
@@ -278,7 +281,7 @@ class CloudSaveService {
             if (doc.exists) { const data = doc.data(); this.applyCloudData(data); return data; }
             const initialData = {
                 coins: parseInt(localStorage.getItem('lesaio_coins')) || 1500, gems: parseInt(localStorage.getItem('lesaio_gems')) || 50,
-                playerName: localStorage.getItem('lesaio_player_name') || 'Psanas',
+                playerName: localStorage.getItem('lesaio_player_name') || 'Hero',
                 level: localStorage.getItem('lesaio_account_level') || localStorage.getItem('lesaio_player_level') || '1',
                 unlockedHeroes: localStorage.getItem('lesaio_unlocked_heroes') || '["psanas"]',
                 highScore: localStorage.getItem('lesaio_highscore') || localStorage.getItem('lesaio_high_score') || '0',

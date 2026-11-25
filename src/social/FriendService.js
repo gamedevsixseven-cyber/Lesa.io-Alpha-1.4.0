@@ -93,12 +93,15 @@ class FriendService {
         const ps = this.getPresence();
         if (ps && !this._presenceBound) {
             this._presenceBound = true;
-            ps.onChange(() => this.emitUpdate());
+            ps.onChange((uid) => { this._syncFriendFromPresence(uid); this.emitUpdate(); });
         }
-        if (ps) ps.start(this.getMyUid(), this._currentStatus, this._activeRoomCode);
+        const uid = this.getMyUid();
+        if (ps && uid && !(typeof PlayerIdentity !== 'undefined' && PlayerIdentity.isAwaitingInitialName() && !(window.cloudSave && window.cloudSave.currentUser))) {
+            ps.start(uid, this._currentStatus, this._activeRoomCode);
+        }
 
         this.attachListeners();
-        this.syncMyProfile(true);
+        if (uid) this.syncMyProfile(true);
 
         // Low-frequency fallback recovery (live presence & friendships use RTDB + Firestore snapshots)
         this._presenceTimer = setInterval(() => {
@@ -113,48 +116,38 @@ class FriendService {
             window.addEventListener('beforeunload', markOffline);
             if (typeof document !== 'undefined') {
                 document.addEventListener('visibilitychange', () => {
-                    if (document.visibilityState === 'hidden') markOffline();
-                    else if (document.visibilityState === 'visible') {
-                        const rt = this.getPresence();
-                        if (rt && rt.isReady()) rt.start(this.getMyUid(), this._currentStatus, this._activeRoomCode);
-                        else this.syncMyProfile(true);
-                    }
+                    if (document.visibilityState === 'hidden') return markOffline();
+                    if (document.visibilityState !== 'visible') return;
+                    const rt = this.getPresence();
+                    if (rt && rt.isReady()) rt.start(this.getMyUid(), this._currentStatus, this._activeRoomCode);
+                    else this.syncMyProfile(true);
                 });
             }
         }
     }
 
     onAuthChanged() {
-        this._seenInviteIds.clear();
-        this._seenRequestIds.clear();
-        this._friendshipsErrored = false;
-        this._lastSocialHash = '';
-        this._lastFriendsLoadedAt = 0;
-        const ps = this.getPresence();
-        if (ps) ps.start(this.getMyUid(), this._currentStatus, this._activeRoomCode);
-        this.attachListeners();
-        this.syncMyProfile(true);
-        this.emitUpdate();
+        this._seenInviteIds.clear(); this._seenRequestIds.clear();
+        this._friendshipsErrored = false; this._lastSocialHash = ''; this._lastFriendsLoadedAt = 0;
+        const ps = this.getPresence(), uid = this.getMyUid();
+        if (ps && uid) ps.start(uid, this._currentStatus, this._activeRoomCode);
+        this.attachListeners(); this.syncMyProfile(true); this.emitUpdate();
     }
 
     setPresenceStatus(statusText = 'In Lobby', roomCode = null) {
-        this._currentStatus = statusText;
-        this._activeRoomCode = roomCode;
+        this._currentStatus = statusText; this._activeRoomCode = roomCode;
         const ps = this.getPresence();
-        if (ps && ps.isReady()) {
-            ps.setStatus(this.getMyUid(), statusText, roomCode);
-            this.emitUpdate();
-            return;
-        }
+        if (ps && ps.isReady()) { ps.setStatus(this.getMyUid(), statusText, roomCode); this.emitUpdate(); return; }
         this.syncMyProfile(true);
     }
 
     async syncMyProfile(force = false) {
         const db = this.getDb();
+        const cs = (typeof window !== 'undefined') ? window.cloudSave : null;
+        if (typeof PlayerIdentity !== 'undefined' && PlayerIdentity.isAwaitingInitialName() && !(cs && cs.currentUser)) return false;
         const me = this.getMySummary();
         if (!db || !me.uid) return false;
 
-        const cs = (typeof window !== 'undefined') ? window.cloudSave : null;
         if (cs && (cs.isHydratingAuth || cs.isSyncingFromCloud)) {
             if (!this._deferredSyncTimer) this._deferredSyncTimer = setTimeout(() => { this._deferredSyncTimer = null; this.syncMyProfile(true); }, 1500);
             return false;
@@ -271,21 +264,42 @@ class FriendService {
         // 2. Real-time Co-op match invites listener
         try {
             this._unsubInvites = db.collection('friend_invites').where('toUid', '==', myUid).onSnapshot((snap) => {
-                const now = Date.now(), invites = [];
+                const now = Date.now(), invites = [], activeInvKeys = new Set();
                 let newestUnseen = null;
                 snap.forEach((doc) => {
                     const d = doc.data();
                     if (!d || !d.roomCode || (d.expiresAt && d.expiresAt < now)) return;
                     const inv = { id: doc.id, ...d };
-                    invites.push(inv);
-                    if (!this._seenInviteIds.has(doc.id)) { this._seenInviteIds.add(doc.id); newestUnseen = inv; }
+                    const invKey = `${doc.id}:${inv.roomCode}:${inv.createdAt || 0}`;
+                    invites.push(inv); activeInvKeys.add(invKey);
+                    if (!this._seenInviteIds.has(invKey)) { this._seenInviteIds.add(invKey); newestUnseen = inv; }
                 });
+                for (const k of [...this._seenInviteIds]) if (!activeInvKeys.has(k)) this._seenInviteIds.delete(k);
                 invites.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
                 this.incomingInvites = invites;
                 this.emitUpdate();
                 if (newestUnseen && typeof window !== 'undefined' && window.EventBus) window.EventBus.emit('coopInviteReceived', newestUnseen);
             }, () => {});
         } catch (_) {}
+    }
+
+    _syncFriendFromPresence(uid) {
+        if (!uid || typeof PresenceService === 'undefined') return;
+        const f = this.friends.find(x => x.otherUid === uid);
+        const cur = this.friendProfiles[uid] || (f && f.profile ? { uid, ...f.profile } : null);
+        if (!cur) return;
+        const ps = this.getPresence();
+        const pres = PresenceService.resolve(uid, cur, ps ? ps.cache : null);
+        this.friendProfiles[uid] = { ...cur, ...pres };
+    }
+
+    getOnlineFriends() {
+        const ps = this.getPresence(), cache = ps ? ps.cache : null;
+        return this.friends.map((f) => {
+            const base = this.friendProfiles[f.otherUid] || f.profile || {};
+            const pres = (typeof PresenceService !== 'undefined') ? PresenceService.resolve(f.otherUid, base, cache) : base;
+            return { uid: f.otherUid, ...base, isOnline: Boolean(pres.isOnline), currentStatus: pres.currentStatus || base.currentStatus || 'In Lobby', coopRoomCode: pres.coopRoomCode || null };
+        }).filter(f => f.isOnline);
     }
 
     _applyFriendshipsSnap(snap, myUid) {
@@ -342,8 +356,8 @@ class FriendService {
     }
 
     async refreshFriendStatuses(uids = null) {
-        const db = this.getDb();
-        const ps = this.getPresence();
+        const db = this.getDb(), ps = this.getPresence();
+        if (db && this.getMyUid() && (!this._unsubInvites || !this._unsubFriendships)) this.attachListeners();
         const list = uids || this.friends.map(f => f.otherUid);
         if (!list.length) return;
         try {
@@ -352,17 +366,18 @@ class FriendService {
                 ps ? ps.fetchOnce(list).catch(() => {}) : Promise.resolve()
             ]);
             this._lastFriendsLoadedAt = Date.now();
-            docs.forEach((doc) => {
-                if (doc && doc.exists) this.friendProfiles[doc.id] = this._formatPlayerDoc(doc.id, doc.data() || {});
-            });
+            docs.forEach((doc) => { if (doc && doc.exists) this.friendProfiles[doc.id] = this._formatPlayerDoc(doc.id, doc.data() || {}); });
+            list.forEach((uid) => this._syncFriendFromPresence(uid));
             this.emitUpdate();
         } catch (_) {}
     }
 
     _formatPlayerDoc(uid, data) {
         const p = data.player || {}, social = data.socialStats || {}, pStats = p.stats || {}, rStats = data.stats || {}, pFeats = p.combatFeats || {}, cosRaw = data.cosmetics || {};
-        const name = data.playerName || p.name || 'Hero';
-        const tag = data.friendTag || (typeof PlayerIdentity !== 'undefined' ? PlayerIdentity.getOnlineTag(uid) : '#HERO00');
+        const idMeta = (typeof PlayerIdentity !== 'undefined' && typeof PlayerIdentity.resolvePublicDisplay === 'function')
+            ? PlayerIdentity.resolvePublicDisplay(uid, data)
+            : { name: data.playerName || p.name || 'Hero', tag: data.friendTag || '#HERO00', _isUnnamedGhost: false, leaderboardHidden: Boolean(data.leaderboardHidden) };
+        const { name, tag, _isUnnamedGhost, leaderboardHidden } = idMeta;
         const level = parseInt(data.level || data.accountLevel || p.accountLevel || 1, 10) || 1;
         const hero = data.selectedHero || p.selectedHero || 'psanas';
         const ps = this.getPresence();
@@ -380,7 +395,7 @@ class FriendService {
             : FriendService._maxNum(0, (social.endlessMaxWave !== maxWave || maxWave > 20) ? social.endlessMaxWave : 0, (data.lbEndlessWave !== maxWave || maxWave > 20) ? data.lbEndlessWave : 0, maxWave > 20 ? maxWave : 0);
 
         return {
-            uid, name, tag, tagClean: (data.friendTagClean || tag.replace(/[^A-Z0-9]/g, '')).toUpperCase(),
+            uid, name, _isUnnamedGhost, leaderboardHidden, tag, tagClean: (data.friendTagClean || tag.replace(/[^A-Z0-9]/g, '')).toUpperCase(),
             clanId: data.clanId || null, clanTag: data.clanTag || null, clanName: data.clanName || null,
             level, hero, isOnline, lastSeenAt, currentStatus, coopRoomCode,
             highScore: FriendService._maxNum(social.highScore, pStats.highScore, rStats.highScore, data.highScore, data.lbHighScore),
@@ -558,31 +573,15 @@ class FriendService {
                 roomCode: String(roomCode).trim().toUpperCase(), gameMode, createdAt: now, expiresAt: now + 600000
             });
             return true;
-        } catch (_) { return false; }
+        } catch (err) { this.lastError = this._describeDbError(err); return false; }
     }
     setPendingInvite(inviteId) { this._pendingAcceptedInviteId = inviteId || null; }
-    dismissPendingInvite() {
-        const id = this._pendingAcceptedInviteId;
-        this._pendingAcceptedInviteId = null;
-        if (id) return this.dismissInvite(id);
-    }
-    async dismissInvite(inviteId) {
-        const db = this.getDb();
-        if (!db || !inviteId) return;
-        try { await db.collection('friend_invites').doc(inviteId).delete(); } catch (_) {}
-    }
-
-    getTotalNotificationCount() {
-        return this.incomingRequests.length + this.incomingInvites.length;
-    }
-
+    dismissPendingInvite() { const id = this._pendingAcceptedInviteId; this._pendingAcceptedInviteId = null; if (id) return this.dismissInvite(id); }
+    async dismissInvite(inviteId) { const db = this.getDb(); if (!db || !inviteId) return; try { await db.collection('friend_invites').doc(inviteId).delete(); } catch (_) {} }
+    getTotalNotificationCount() { return this.incomingRequests.length + this.incomingInvites.length; }
     emitUpdate() {
         if (typeof window !== 'undefined' && window.EventBus) {
-            window.EventBus.emit('friendsUpdated', {
-                friendsCount: this.friends.length,
-                requestsCount: this.incomingRequests.length,
-                invitesCount: this.incomingInvites.length
-            });
+            window.EventBus.emit('friendsUpdated', { friendsCount: this.friends.length, requestsCount: this.incomingRequests.length, invitesCount: this.incomingInvites.length });
         }
     }
 }

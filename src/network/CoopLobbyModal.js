@@ -163,19 +163,15 @@ class CoopLobbyModal {
 
         tabHost.addEventListener('click', () => {
             this.activeTab = 'host';
-            tabHost.classList.add('active');
-            tabJoin.classList.remove('active');
-            contentHost.classList.add('active');
-            contentJoin.classList.remove('active');
+            tabHost.classList.add('active'); tabJoin.classList.remove('active');
+            contentHost.classList.add('active'); contentJoin.classList.remove('active');
             this.setupHostRoom();
         });
 
         tabJoin.addEventListener('click', () => {
             this.activeTab = 'join';
-            tabJoin.classList.add('active');
-            tabHost.classList.remove('active');
-            contentJoin.classList.add('active');
-            contentHost.classList.remove('active');
+            tabJoin.classList.add('active'); tabHost.classList.remove('active');
+            contentJoin.classList.add('active'); contentHost.classList.remove('active');
             if (window.friendService) window.friendService.setPresenceStatus('In Lobby', null);
             this.resetJoinUI();
         });
@@ -183,18 +179,8 @@ class CoopLobbyModal {
         // Mode selectors
         const btnStory = document.getElementById('coop-mode-story');
         const btnEndless = document.getElementById('coop-mode-endless');
-
-        btnStory.addEventListener('click', () => {
-            this.selectedMode = 'story';
-            btnStory.classList.add('selected');
-            btnEndless.classList.remove('selected');
-        });
-
-        btnEndless.addEventListener('click', () => {
-            this.selectedMode = 'endless';
-            btnEndless.classList.add('selected');
-            btnStory.classList.remove('selected');
-        });
+        btnStory.addEventListener('click', () => { this.selectedMode = 'story'; btnStory.classList.add('selected'); btnEndless.classList.remove('selected'); });
+        btnEndless.addEventListener('click', () => { this.selectedMode = 'endless'; btnEndless.classList.add('selected'); btnStory.classList.remove('selected'); });
 
         // Copy button (with fallback when Clipboard API unavailable on HTTP LAN)
         const copyBtn = document.getElementById('coop-copy-code-btn');
@@ -238,74 +224,46 @@ class CoopLobbyModal {
             });
         }
 
-        // Start match button (Host)
         const startBtn = document.getElementById('coop-start-btn');
-        startBtn.addEventListener('click', () => {
-            this.launchMatchAsHost();
-        });
-
+        startBtn.addEventListener('click', () => this.launchMatchAsHost());
         this.bindNetworkCallbacks();
-
         if (typeof window !== 'undefined' && window.EventBus) {
             window.EventBus.on('friendsUpdated', () => {
-                if (this.modal && !this.modal.classList.contains('hidden') && this.activeTab === 'host') {
-                    this.renderFriendQuickInvite();
-                }
+                if (this.modal && !this.modal.classList.contains('hidden') && this.activeTab === 'host') this.renderFriendQuickInvite();
             });
         }
     }
 
     bindNetworkCallbacks() {
         if (!window.networkManager) return;
-
-        window.networkManager.onConnectedCallback = (isHost, peerInfo, peerId, roster) => {
-            this.handlePeerConnected(isHost, peerInfo, peerId, roster);
-        };
-
+        window.networkManager.onConnectedCallback = (isHost, peerInfo, peerId, roster) => this.handlePeerConnected(isHost, peerInfo, peerId, roster);
         window.networkManager.onRosterCallback = (roster, hostInfo) => {
             this.connectedPeers = Array.isArray(roster) ? roster : [];
             if (hostInfo) this.hostInfo = hostInfo;
             this.renderSquadRoster(false);
         };
-
-        window.networkManager.onDisconnectedCallback = (reason, peerId, leftInfo, remaining) => {
-            this.handlePeerDisconnected(reason, peerId, leftInfo, remaining);
-        };
-
+        window.networkManager.onDisconnectedCallback = (reason, peerId, leftInfo, remaining) => this.handlePeerDisconnected(reason, peerId, leftInfo, remaining);
         window.networkManager.onErrorCallback = (err) => {
-            const statusEl = (this.activeTab === 'host') ? document.getElementById('coop-host-status') : document.getElementById('coop-join-status');
+            const statusEl = document.getElementById(this.activeTab === 'host' ? 'coop-host-status' : 'coop-join-status');
             if (statusEl) { if (typeof UiIcons !== 'undefined') UiIcons.setRichText(statusEl, `⚠️ Network notice: ${err}`, 'ui-icon-sm'); else statusEl.textContent = `⚠️ Network notice: ${err}`; }
             const connectBtn = document.getElementById('coop-connect-btn');
-            if (connectBtn) {
-                connectBtn.textContent = 'CONNECT TO HOST';
-                connectBtn.disabled = false;
-            }
+            if (connectBtn) { connectBtn.textContent = 'CONNECT TO HOST'; connectBtn.disabled = false; }
         };
-
         window.networkManager.onStatusCallback = (msg) => {
-            const statusEl = (this.activeTab === 'host') ? document.getElementById('coop-host-status') : document.getElementById('coop-join-status');
+            const statusEl = document.getElementById(this.activeTab === 'host' ? 'coop-host-status' : 'coop-join-status');
             if (statusEl && msg && !window.networkManager.connected) statusEl.textContent = msg;
         };
-
         // Listen for Guest MATCH_START
         window.networkManager.onMessageCallback = (type, payload) => {
-            if (type === 'MATCH_START' && !window.networkManager.isHost) {
-                this.launchMatchAsGuest(payload);
-            }
+            if (type === 'MATCH_START' && !window.networkManager.isHost) this.launchMatchAsGuest(payload);
         };
     }
 
     resetJoinUI() {
-        const statusEl = document.getElementById('coop-join-status');
-        const dotEl = document.getElementById('coop-join-dot');
-        const connectBtn = document.getElementById('coop-connect-btn');
+        const statusEl = document.getElementById('coop-join-status'), dotEl = document.getElementById('coop-join-dot'), connectBtn = document.getElementById('coop-connect-btn'), jr = document.getElementById('coop-join-roster');
         if (statusEl) statusEl.textContent = 'Enter code and click Connect';
         if (dotEl) dotEl.classList.remove('connected');
-        if (connectBtn) {
-            connectBtn.textContent = 'CONNECT TO HOST';
-            connectBtn.disabled = false;
-        }
-        const jr = document.getElementById('coop-join-roster');
+        if (connectBtn) { connectBtn.textContent = 'CONNECT TO HOST'; connectBtn.disabled = false; }
         if (jr) jr.textContent = '';
     }
 
@@ -334,34 +292,49 @@ class CoopLobbyModal {
 
         if (window.friendService) {
             window.friendService.setPresenceStatus('Hosting Co-op', this.roomCode);
+            if (!window.friendService.friends.length && typeof window.friendService.pollFriendships === 'function') window.friendService.pollFriendships();
+            else if (typeof window.friendService.refreshFriendStatuses === 'function') window.friendService.refreshFriendStatuses();
         }
         this.renderFriendQuickInvite();
     }
 
     renderFriendQuickInvite() {
-        const container = document.getElementById('coop-friend-quicklist');
-        if (!container || !window.friendService) return;
-        const fs = window.friendService;
-        const onlineFriends = fs.friends
-            .map(f => ({ uid: f.otherUid, ...(fs.friendProfiles[f.otherUid] || f.profile) }))
-            .filter(f => f.isOnline);
+        const container = document.getElementById('coop-friend-quicklist'), fs = window.friendService;
+        if (!container || !fs) return;
+        const onlineFriends = typeof fs.getOnlineFriends === 'function' ? fs.getOnlineFriends()
+            : fs.friends.map(f => ({ uid: f.otherUid, ...(fs.friendProfiles[f.otherUid] || f.profile) })).filter(f => f.isOnline);
+        container.innerHTML = '';
+        const hdr = document.createElement('div');
+        hdr.className = 'coop-friends-hdr';
+        const lbl = document.createElement('span');
+        lbl.className = 'coop-friends-label';
+        lbl.textContent = `INVITE ONLINE FRIENDS (${onlineFriends.length}):`;
+        const syncBtn = document.createElement('button');
+        syncBtn.type = 'button'; syncBtn.className = 'coop-friends-refresh-btn'; syncBtn.title = 'Refresh Online Friends'; syncBtn.textContent = '↻';
+        syncBtn.onclick = async () => { syncBtn.disabled = true; if (fs.pollFriendships) await fs.pollFriendships(); if (fs.refreshFriendStatuses) await fs.refreshFriendStatuses(); syncBtn.disabled = false; this.renderFriendQuickInvite(); };
+        hdr.append(lbl, syncBtn);
+        container.appendChild(hdr);
         if (!onlineFriends.length) {
-            container.innerHTML = '';
+            const empty = document.createElement('span');
+            empty.className = 'coop-friends-empty';
+            empty.textContent = 'No friends online right now — share your code or tap ↻ to check.';
+            container.appendChild(empty);
             return;
         }
-        container.innerHTML = `<span class="coop-friends-label">INVITE ONLINE FRIENDS:</span>`;
-        onlineFriends.slice(0, 4).forEach((f) => {
+        onlineFriends.slice(0, 8).forEach((f) => {
             const btn = document.createElement('button');
-            btn.type = 'button';
-            btn.className = 'coop-friend-chip-btn';
-            if (typeof UiIcons !== 'undefined') UiIcons.setRichText(btn, `📨 ${f.name}`, 'ui-icon-sm'); else btn.textContent = `📨 ${f.name}`;
+            btn.type = 'button'; btn.className = 'coop-friend-chip-btn';
+            const setLbl = (txt) => { if (typeof UiIcons !== 'undefined') UiIcons.setRichText(btn, txt, 'ui-icon-sm'); else btn.textContent = txt; };
+            setLbl(`📨 ${f.name}`);
             btn.onclick = async () => {
-                btn.disabled = true;
-                btn.textContent = '⏳ Opening...';
+                btn.disabled = true; btn.textContent = '⏳ Opening...';
                 const ready = window.networkManager ? await window.networkManager.waitUntilReady(6500) : true;
-                if (!ready) { btn.disabled = false; btn.textContent = `Retry ${f.name}`; return; }
-                await fs.sendCoopInvite(f.uid, this.roomCode, this.selectedMode || 'story');
-                btn.textContent = `✓ Sent to ${f.name}`;
+                if (!ready) { btn.disabled = false; setLbl(`Retry ${f.name}`); return; }
+                const ok = await fs.sendCoopInvite(f.uid, this.roomCode, this.selectedMode || 'story');
+                if (ok) {
+                    setLbl(`✓ Sent to ${f.name}`);
+                    setTimeout(() => { if (btn.isConnected && btn.disabled) { btn.disabled = false; setLbl(`📨 ${f.name}`); } }, 8000);
+                } else { btn.disabled = false; setLbl(`⚠️ Retry ${f.name}`); }
             };
             container.appendChild(btn);
         });
@@ -508,7 +481,10 @@ class CoopLobbyModal {
         });
 
         this.hide();
-        if (window.friendService) window.friendService.setPresenceStatus('Playing Co-op', null);
+        if (window.friendService) {
+            const label = this.selectedMode === 'endless' ? (this.selectedEndlessHard ? 'Playing Co-op (Endless Hard)' : 'Playing Co-op (Endless)') : 'Playing Co-op (Story)';
+            window.friendService.setPresenceStatus(label, null);
+        }
 
         if (window.menuController) window.menuController.hideGameModeModal();
         const menuScreen = document.getElementById('menu-screen');
@@ -516,7 +492,7 @@ class CoopLobbyModal {
 
         if (window.gameInstance) {
             window.gameInstance.isCoopGuest = false;
-            window.gameInstance.startNewGame(u.heroType, this.selectedMode);
+            window.gameInstance.startNewGame(u.heroType, this.selectedMode, { isCoop: true, isEndlessHard: !!this.selectedEndlessHard });
             if (window.gameInstance.arena && typeof window.gameInstance.arena.reseed === 'function') {
                 window.gameInstance.arena.reseed(mapSeed);
             }
@@ -529,21 +505,24 @@ class CoopLobbyModal {
 
     launchMatchAsGuest(payload) {
         this.hide();
-        if (window.friendService) window.friendService.setPresenceStatus('Playing Co-op', null);
-
         if (window.menuController) window.menuController.hideGameModeModal();
         const menuScreen = document.getElementById('menu-screen');
         if (menuScreen) menuScreen.classList.add('hidden');
 
         const u = this.getLocalUserData();
         const gameMode = payload.gameMode || 'story';
+        const isHard = !!(gameMode === 'endless' && payload.isEndlessHard);
+        if (window.friendService) {
+            const label = gameMode === 'endless' ? (isHard ? 'Playing Co-op (Endless Hard)' : 'Playing Co-op (Endless)') : 'Playing Co-op (Story)';
+            window.friendService.setPresenceStatus(label, null);
+        }
         const mapSeed = payload.mapSeed || 123456;
         const hostData = payload.hostInfo || this.hostInfo || this.peerData || { name: payload.hostName || 'Host', heroType: payload.hostHero || 'psanas' };
         const initPeers = Array.isArray(payload.peers) ? payload.peers : (Array.isArray(this.connectedPeers) ? this.connectedPeers : []);
 
         if (window.gameInstance) {
             window.gameInstance.isCoopGuest = true;
-            window.gameInstance.startNewGame(u.heroType, gameMode);
+            window.gameInstance.startNewGame(u.heroType, gameMode, { isCoop: true, isEndlessHard: isHard });
             if (window.gameInstance.arena && typeof window.gameInstance.arena.reseed === 'function') {
                 window.gameInstance.arena.reseed(mapSeed);
             }

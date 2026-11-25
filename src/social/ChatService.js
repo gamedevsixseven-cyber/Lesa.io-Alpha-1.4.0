@@ -27,7 +27,10 @@ class ChatService {
         this.readCursors = this._loadReadCursors();
         this.dmThreads = {};       // { [relId]: Message[] }
         this.dmMeta = {};          // { [relId]: { unread, lastText, lastAt } }
+        this.dmErrors = {};        // { [relId]: string }
         this._dmUnsubs = {};       // { [relId]: fn }
+        this._dmPollTimer = null;
+        this._lastDmBgPoll = 0;
         this.clanMessages = [];
         this.clanUnread = 0;
         this._watchedClanId = null;
@@ -39,6 +42,10 @@ class ChatService {
         this._bootTimer = null;
         this.lastDmError = '';
         this.lastClanError = '';
+    }
+
+    _edge() {
+        return (typeof window !== 'undefined' && window.edgeApi && window.edgeApi.isEnabled()) ? window.edgeApi : null;
     }
 
     _loadReadCursors() {
@@ -110,7 +117,7 @@ class ChatService {
             this._bootTimer = setInterval(() => {
                 tries += 1;
                 this.syncSubscriptions();
-                if ((this._getDb() && tries >= 3) || tries >= 12) {
+                if (((this._getDb() || this._edge()) && tries >= 3) || tries >= 12) {
                     clearInterval(this._bootTimer);
                     this._bootTimer = null;
                 }
@@ -119,56 +126,125 @@ class ChatService {
     }
 
     syncSubscriptions() {
-        const db = this._getDb();
-        if (!db) return;
-        this._syncDmListeners(db);
+        const db = this._getDb(), edge = this._edge();
+        if (!db && !edge) return;
+        this._syncDmListeners(db, edge);
         this._syncClanListener(db);
     }
 
-    _syncDmListeners(db) {
+    _applyDmMessages(relId, list) {
+        delete this.dmErrors[relId];
+        this.lastDmError = '';
+        this.dmThreads[relId] = list;
+        if (this._activeDmRelId === relId && list.length) {
+            const latestTs = Math.max(Date.now(), list[list.length - 1].createdAt);
+            this.readCursors.dm[relId] = Math.max(Number(this.readCursors.dm[relId]) || 0, latestTs);
+            this._saveReadCursors();
+        }
+        this._recomputeDmMeta(relId);
+        this._emit();
+    }
+
+    async _fetchEdgeDm(relId, limit = ChatService.DM_LIMIT) {
+        const edge = this._edge();
+        if (!edge || !relId) return 'fallback';
+        const er = await edge.get(`/messages/${encodeURIComponent(`dm:${relId}`)}?limit=${limit}`).catch(() => null);
+        if (er && !er.fallback && er.ok && Array.isArray(er.messages)) {
+            const list = er.messages.map(d => ({
+                id: String(d.id || `edge_${d.createdAt}`),
+                senderUid: d.senderUid || '',
+                senderName: d.senderName || 'Hero',
+                senderHero: d.senderHero || 'psanas',
+                text: String(d.text || ''),
+                createdAt: this._ts(d.createdAt)
+            }));
+            this._applyDmMessages(relId, list);
+            return 'ok';
+        }
+        if (er && er.fallback) return 'fallback';
+        this.dmErrors[relId] = (er && er.error) || 'Could not load messages.';
+        if (this._activeDmRelId === relId) this.lastDmError = this.dmErrors[relId];
+        return 'err';
+    }
+
+    async pollDmThreads(force = false) {
+        const edge = this._edge();
+        if (!edge) return;
+        if (this._activeDmRelId) {
+            const st = await this._fetchEdgeDm(this._activeDmRelId);
+            if (st === 'fallback') {
+                const db = this._getDb();
+                if (db) this._bindAllFirestoreDms(db);
+                return;
+            }
+        }
+        const now = Date.now();
+        if (!force && this._lastDmBgPoll && now - this._lastDmBgPoll < 22000) return;
+        this._lastDmBgPoll = now;
+        const fs = (typeof window !== 'undefined') ? window.friendService : null;
+        const friends = (fs && Array.isArray(fs.friends)) ? fs.friends.slice(0, 12) : [];
+        await Promise.all(friends.filter(f => f && f.id && f.id !== this._activeDmRelId).map(f => this._fetchEdgeDm(f.id, 10)));
+    }
+
+    _bindFirestoreDm(db, relId) {
+        if (!db || !relId || this._dmUnsubs[relId]) return;
+        this._dmUnsubs[relId] = db.collection('friendships').doc(relId).collection('messages')
+            .orderBy('createdAt', 'desc').limit(ChatService.DM_LIMIT)
+            .onSnapshot((snap) => {
+                const list = snap.docs.map(doc => {
+                    const d = doc.data() || {};
+                    return { id: doc.id, senderUid: d.senderUid || '', senderName: d.senderName || 'Hero', senderHero: d.senderHero || 'psanas', text: String(d.text || ''), createdAt: this._ts(d.createdAt) };
+                }).reverse();
+                this._applyDmMessages(relId, list);
+            }, (err) => {
+                this.dmErrors[relId] = this._describeErr(err);
+                if (this._activeDmRelId === relId) this.lastDmError = this.dmErrors[relId];
+            });
+    }
+
+    _bindAllFirestoreDms(db) {
+        if (this._dmPollTimer) { clearInterval(this._dmPollTimer); this._dmPollTimer = null; }
+        const fs = (typeof window !== 'undefined') ? window.friendService : null;
+        const friends = (fs && Array.isArray(fs.friends)) ? fs.friends.slice(0, ChatService.MAX_DM_WATCHERS) : [];
+        const wanted = new Set(friends.map(f => f.id).filter(Boolean));
+        if (this._activeDmRelId) wanted.add(this._activeDmRelId);
+        wanted.forEach((relId) => this._bindFirestoreDm(db, relId));
+    }
+
+    _syncDmListeners(db, edge = this._edge()) {
         const fs = (typeof window !== 'undefined') ? window.friendService : null;
         const friends = (fs && Array.isArray(fs.friends)) ? fs.friends.slice(0, ChatService.MAX_DM_WATCHERS) : [];
         const wanted = new Set(friends.map(f => f.id).filter(Boolean));
         if (this._activeDmRelId) wanted.add(this._activeDmRelId);
 
         Object.keys(this._dmUnsubs).forEach((relId) => {
-            if (!wanted.has(relId)) {
+            if (!wanted.has(relId) || edge) {
                 try { this._dmUnsubs[relId](); } catch (_) {}
                 delete this._dmUnsubs[relId];
-                delete this.dmThreads[relId];
-                delete this.dmMeta[relId];
+            }
+        });
+        Object.keys(this.dmThreads).forEach((relId) => {
+            if (!wanted.has(relId)) {
+                delete this.dmThreads[relId]; delete this.dmMeta[relId]; delete this.dmErrors[relId];
             }
         });
 
-        wanted.forEach((relId) => {
-            if (this._dmUnsubs[relId]) return;
-            this._dmUnsubs[relId] = db.collection('friendships').doc(relId).collection('messages')
-                .orderBy('createdAt', 'desc').limit(ChatService.DM_LIMIT)
-                .onSnapshot((snap) => {
-                    const list = snap.docs.map(doc => {
-                        const d = doc.data() || {};
-                        return {
-                            id: doc.id,
-                            senderUid: d.senderUid || '',
-                            senderName: d.senderName || 'Hero',
-                            senderHero: d.senderHero || 'psanas',
-                            text: String(d.text || ''),
-                            createdAt: this._ts(d.createdAt)
-                        };
-                    }).reverse();
-                    this.lastDmError = '';
-                    this.dmThreads[relId] = list;
-                    if (this._activeDmRelId === relId && list.length) {
-                        const latestTs = Math.max(Date.now(), list[list.length - 1].createdAt);
-                        this.readCursors.dm[relId] = Math.max(Number(this.readCursors.dm[relId]) || 0, latestTs);
-                        this._saveReadCursors();
+        if (edge) {
+            if (!this._dmPollTimer && wanted.size > 0) {
+                this.pollDmThreads(false);
+                this._dmPollTimer = setInterval(() => {
+                    if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return;
+                    if (this._activeDmRelId || !this._lastDmBgPoll || Date.now() - this._lastDmBgPoll >= 25000) {
+                        this.pollDmThreads(false);
                     }
-                    this._recomputeDmMeta(relId);
-                    this._emit();
-                }, (err) => {
-                    this.lastDmError = this._describeErr(err);
-                });
-        });
+                }, 2500);
+            } else if (wanted.size === 0 && this._dmPollTimer) {
+                clearInterval(this._dmPollTimer); this._dmPollTimer = null;
+            }
+            return;
+        }
+        if (this._dmPollTimer) { clearInterval(this._dmPollTimer); this._dmPollTimer = null; }
+        wanted.forEach((relId) => this._bindFirestoreDm(db, relId));
     }
 
     _recomputeDmMeta(relId) {
@@ -262,9 +338,11 @@ class ChatService {
 
     setActiveDm(relId) {
         this._activeDmRelId = relId || null;
+        this.lastDmError = relId ? (this.dmErrors[relId] || '') : '';
         if (relId) {
             this.markDmRead(relId);
             this.syncSubscriptions();
+            if (this._edge()) this._fetchEdgeDm(relId);
         }
         this._emit();
     }
@@ -292,6 +370,7 @@ class ChatService {
     }
 
     getDmMessages(relId) { return this.dmThreads[relId] || []; }
+    getDmError(relId) { return (relId && this.dmErrors[relId]) || ''; }
     getDmUnread(relId) { return (this.dmMeta[relId] && this.dmMeta[relId].unread) || 0; }
     getTotalDmUnread() {
         return Object.keys(this.dmMeta).reduce((sum, id) => sum + ((this.dmMeta[id] && this.dmMeta[id].unread) || 0), 0);
@@ -299,25 +378,42 @@ class ChatService {
     getClanUnread() { return this.clanUnread || 0; }
 
     async sendDirectMessage(relId, text) {
-        const db = this._getDb();
-        const me = this._getMe();
-        const clean = this._cleanText(text);
-        if (!db) return { ok: false, error: 'Cloud service offline.' };
+        const db = this._getDb(), edge = this._edge(), me = this._getMe(), clean = this._cleanText(text);
+        if (!edge && !db) return { ok: false, error: 'Cloud service offline.' };
         if (!relId || !me.uid) return { ok: false, error: 'Invalid friend channel.' };
         if (!clean) return { ok: false, error: 'Enter a message first.' };
         const now = Date.now();
         if (now - this._lastSendAt < ChatService.SEND_COOLDOWN_MS) return { ok: false, error: 'Slow down a tiny bit!' };
         this._lastSendAt = now;
+        const msgBody = {
+            senderUid: me.uid,
+            senderName: String(me.name || 'Hero').slice(0, 32),
+            senderHero: String(me.hero || 'psanas').slice(0, 32),
+            text: clean,
+            createdAt: now
+        };
         try {
-            await db.collection('friendships').doc(relId).collection('messages').add({
-                senderUid: me.uid,
-                senderName: String(me.name || 'Hero').slice(0, 32),
-                senderHero: String(me.hero || 'psanas').slice(0, 32),
-                text: clean,
-                createdAt: now
-            });
+            let sentEdge = false;
+            if (edge) {
+                const er = await edge.post(`/messages/${encodeURIComponent(`dm:${relId}`)}`, msgBody).catch(() => null);
+                if (er && !er.fallback) {
+                    if (!er.ok) return { ok: false, error: er.error || 'Message failed to send.' };
+                    sentEdge = true;
+                }
+            }
+            if (!sentEdge) {
+                if (!db) return { ok: false, error: 'Cloud service offline.' };
+                await db.collection('friendships').doc(relId).collection('messages').add(msgBody);
+            }
+            const cur = this.dmThreads[relId] || [];
+            if (!cur.some(m => m.senderUid === me.uid && m.createdAt === now && m.text === clean)) {
+                this.dmThreads[relId] = [...cur, { id: `${sentEdge ? 'edge' : 'local'}_${now}`, ...msgBody }].slice(-ChatService.DM_LIMIT);
+            }
+            delete this.dmErrors[relId]; this.lastDmError = '';
             this.readCursors.dm[relId] = Math.max(Number(this.readCursors.dm[relId]) || 0, now);
             this._saveReadCursors();
+            this._recomputeDmMeta(relId);
+            this._emit();
             return { ok: true };
         } catch (err) {
             return { ok: false, error: this._describeErr(err) };

@@ -14,6 +14,7 @@ class LeaderboardModal {
         this._loading = false;
         this._error = '';
         this._fetchSeq = 0;
+        this._showHiddenDev = false;
     }
 
     _esc(str) {
@@ -141,7 +142,7 @@ class LeaderboardModal {
         if (!force && this._cachedRows && (Date.now() - this._cacheAt < 300000)) {
             this._loading = false;
             this._error = '';
-            if (ps) await ps.fetchOnce(this._cachedRows.map(r => r.uid).filter(Boolean)).catch(() => {});
+            if (ps) await ps.fetchOnce(this._cachedRows.map(r => r.uid).filter(Boolean)).catch(() => { });
             if (seq !== this._fetchSeq) return;
             this._rows = this._cachedRows.map((r) => {
                 if (r.isSelf) return { ...r, ...selfEntry, isSelf: true, isLocalStub: false };
@@ -231,7 +232,7 @@ class LeaderboardModal {
                                 if (raw.player && typeof raw.player === 'object') raw.player.name = 'PsanasIphone';
                             }
                             if (Object.keys(fixPayload).length > 0) {
-                                doc.ref.update(fixPayload).catch(() => {});
+                                doc.ref.update(fixPayload).catch(() => { });
                             }
                         }
 
@@ -239,10 +240,10 @@ class LeaderboardModal {
                         const isSelfDoc = (doc.id === selfEntry.uid) || (formatted.uid === selfEntry.uid);
                         if (edge && !edgeUids.has(formatted.uid) && (formatted.highScore > 0 || formatted.level > 1)) {
                             edgeUids.add(formatted.uid);
-                            edge.post(`/player/${encodeURIComponent(formatted.uid)}`, { ...raw, uid: formatted.uid }).catch(() => {});
+                            edge.post(`/player/${encodeURIComponent(formatted.uid)}`, { ...raw, uid: formatted.uid }).catch(() => { });
                         }
                         if ((isSelfDoc || (isPrimaryDev && isGuestDoc)) && typeof raw.lbEndlessWave === 'number' && raw.lbEndlessWave !== formatted.endlessMaxWave) {
-                            doc.ref.update({ lbEndlessWave: formatted.endlessMaxWave, 'socialStats.endlessMaxWave': formatted.endlessMaxWave }).catch(() => {});
+                            doc.ref.update({ lbEndlessWave: formatted.endlessMaxWave, 'socialStats.endlessMaxWave': formatted.endlessMaxWave }).catch(() => { });
                         }
 
                         if (isSelfDoc) {
@@ -266,9 +267,15 @@ class LeaderboardModal {
                             const existing = byUid.get(formatted.uid);
                             if (existing) {
                                 const newer = (Number(formatted.lastSeenAt) || 0) >= (Number(existing.lastSeenAt) || 0);
+                                const base = newer ? existing : formatted;
+                                const top = newer ? formatted : existing;
                                 byUid.set(formatted.uid, {
-                                    ...(newer ? existing : formatted),
-                                    ...(newer ? formatted : existing),
+                                    ...base,
+                                    ...top,
+                                    name: (!formatted._isUnnamedGhost && (newer || existing._isUnnamedGhost)) ? formatted.name : existing.name,
+                                    hero: (raw.selectedHero || (raw.player && raw.player.selectedHero)) ? (newer ? formatted.hero : existing.hero) : existing.hero,
+                                    cosmetics: (raw.cosmetics || (raw.player && raw.player.cosmetics)) ? (newer ? formatted.cosmetics : existing.cosmetics) : existing.cosmetics,
+                                    loadout: (raw.publicLoadout || (raw.player && raw.player.selectedWeapon)) ? (newer ? formatted.loadout : existing.loadout) : existing.loadout,
                                     level: Math.max(Number(formatted.level) || 1, Number(existing.level) || 1),
                                     highScore: Math.max(Number(formatted.highScore) || 0, Number(existing.highScore) || 0),
                                     maxWave: Math.max(Number(formatted.maxWave) || 1, Number(existing.maxWave) || 1),
@@ -288,9 +295,11 @@ class LeaderboardModal {
         }
 
         if (seq !== this._fetchSeq) return;
-        const rows = Array.from(byUid.values());
+        const rows = Array.from(byUid.values()).filter((r) => (
+            r && (r.isSelf || !r._isUnnamedGhost || r.highScore > 0 || r.totalKills > 0 || r.endlessMaxWave > 0 || r.level > 1)
+        ));
         if (ps && typeof PresenceService !== 'undefined') {
-            await ps.fetchOnce(rows.map(r => r.uid).filter(Boolean)).catch(() => {});
+            await ps.fetchOnce(rows.map(r => r.uid).filter(Boolean)).catch(() => { });
             if (seq !== this._fetchSeq) return;
             rows.forEach((r) => {
                 if (r.isSelf) return;
@@ -340,7 +349,17 @@ class LeaderboardModal {
             return;
         }
 
-        const sorted = [...this._rows]
+        const isPrimaryDev = !!(typeof window !== 'undefined' && window.AdminAuth && typeof window.AdminAuth.isPrimaryDevUser === 'function' && window.AdminAuth.isPrimaryDevUser());
+        const hiddenCount = this._rows.filter(r => r && r.leaderboardHidden).length;
+        if (hiddenCount === 0) this._showHiddenDev = false;
+        const devBarHtml = isPrimaryDev && (hiddenCount > 0 || this._showHiddenDev) ? `
+            <div class="lb-dev-filter-bar">
+                <span>🛡️ Dev Filter: ${this._showHiddenDev ? `Hidden Accounts (${hiddenCount})` : `Live Rankings (${hiddenCount} hidden)`}</span>
+                <button type="button" id="lb-dev-toggle-hidden" class="lb-dev-hide-btn ${this._showHiddenDev ? 'is-restore' : ''}">${this._showHiddenDev ? '◀ LIVE LB' : `👁️ SHOW HIDDEN (${hiddenCount})`}</button>
+            </div>` : '';
+
+        const sorted = this._rows
+            .filter(r => r && (this._showHiddenDev ? !!r.leaderboardHidden : !r.leaderboardHidden))
             .sort((a, b) => (
                 (this._getMetricValue(b) - this._getMetricValue(a))
                 || ((Number(b.highScore) || 0) - (Number(a.highScore) || 0))
@@ -349,7 +368,8 @@ class LeaderboardModal {
             .slice(0, 25);
 
         if (sorted.length === 0) {
-            box.innerHTML = `<div class="lb-empty-state">No ranked champions recorded yet.</div>`;
+            box.innerHTML = devBarHtml + `<div class="lb-empty-state">${this._showHiddenDev ? 'No hidden accounts.' : 'No ranked champions recorded yet.'}</div>`;
+            box.querySelector('#lb-dev-toggle-hidden')?.addEventListener('click', () => { this._showHiddenDev = !this._showHiddenDev; this.render(); });
             return;
         }
 
@@ -394,15 +414,37 @@ class LeaderboardModal {
                         <span class="lb-score-val">${this._formatMetricLabel(entry)}</span>
                         <span class="lb-inspect-hint">VIEW ▸</span>
                     </div>
+                    ${isPrimaryDev ? `<button type="button" class="lb-dev-hide-btn ${entry.leaderboardHidden ? 'is-restore' : ''}" data-lb-dev-idx="${idx}" title="${entry.leaderboardHidden ? 'Restore to Leaderboard' : 'Remove from Leaderboard'}">${entry.leaderboardHidden ? '👁️ SHOW' : '✕'}</button>` : ''}
                 </button>
             `;
         }).join('');
 
-        box.innerHTML = noteHtml + rowsHtml;
+        box.innerHTML = noteHtml + devBarHtml + rowsHtml;
         if (typeof CosmeticEffectsEngine !== 'undefined') {
             CosmeticEffectsEngine.decorateContainer(box);
             CosmeticEffectsEngine.bindHoloCards(box);
         }
+        box.querySelector('#lb-dev-toggle-hidden')?.addEventListener('click', () => {
+            if (window.soundEngine) window.soundEngine.playSelect();
+            this._showHiddenDev = !this._showHiddenDev;
+            this.render();
+        });
+        box.querySelectorAll('[data-lb-dev-idx]').forEach((devBtn) => {
+            devBtn.addEventListener('click', async (e) => {
+                e.stopPropagation();
+                const entry = sorted[parseInt(devBtn.dataset.lbDevIdx || '-1', 10)];
+                if (!entry || !window.DevAccountManager) return;
+                const nextHidden = !entry.leaderboardHidden;
+                if (nextHidden && !confirm(`Remove "${entry.name}" (${entry.tag}) from Global Leaderboards?\n(Their account save stays intact.)`)) return;
+                devBtn.disabled = true;
+                try {
+                    await window.DevAccountManager.setLeaderboardVisibility(entry, nextHidden);
+                } catch (err) {
+                    devBtn.disabled = false;
+                    alert(err.message || 'Failed to update leaderboard visibility.');
+                }
+            });
+        });
         box.querySelectorAll('[data-lb-idx]').forEach((rowBtn) => {
             rowBtn.addEventListener('click', () => {
                 const idx = parseInt(rowBtn.dataset.lbIdx || '-1', 10);

@@ -362,6 +362,10 @@
 }
 .lb-you-pill { background: #facc15; color: #0f172a; }
 .lb-score-col { text-align: right; flex-shrink: 0; min-width: 78px; }
+.lb-dev-filter-bar { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 7px 10px; background: rgba(15, 23, 42, 0.85); border: 2px solid #f43f5e; border-radius: 10px; font-size: 0.75rem; font-weight: 800; color: #fecdd3; }
+.lb-dev-hide-btn { flex-shrink: 0; border: 2px solid #0f172a; border-radius: 8px; padding: 4px 8px; font-weight: 900; font-size: 0.7rem; background: #ef4444; color: #fff; cursor: pointer; box-shadow: 0 2px 0 #0f172a; }
+.lb-dev-hide-btn.is-restore { background: #22c55e; color: #052e16; }
+.lb-dev-hide-btn:hover { filter: brightness(1.1); }
 .lb-score-val { display: block; font-weight: 900; font-size: 0.96rem; color: #fde047; text-shadow: 0 2px 3px rgba(0,0,0,0.8); white-space: nowrap; }
 .lb-inspect-hint { font-size: 0.65rem; font-weight: 800; color: #cbd5e1; white-space: nowrap; }
 .lb-empty-state, .lb-warn-banner { flex: 0 0 auto; padding: 14px; text-align: center; font-weight: 800; color: #cbd5e1; background: rgba(15, 23, 42, 0.6); border-radius: 10px; }

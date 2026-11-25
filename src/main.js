@@ -234,8 +234,9 @@ class UIController {
                         }
                         return;
                     }
+                    const wasEndlessHard = !!window.gameInstance.isEndlessHard;
                     this.hideGameOverModal();
-                    window.gameInstance.start(hero, activeMode);
+                    window.gameInstance.start(hero, activeMode, { isEndlessHard: wasEndlessHard });
                 } else {
                     this.hideGameOverModal();
                 }
@@ -494,6 +495,7 @@ class UIController {
         if (this.menuController && typeof this.menuController.hideGameModeModal === 'function') {
             this.menuController.hideGameModeModal();
         }
+        if (typeof EndlessDifficultyModal !== 'undefined') EndlessDifficultyModal.hide();
         if (this.dailyQuestsModal) this.dailyQuestsModal.classList.add('hidden');
         if (this.modalManager) this.modalManager.hideFeatureModal();
         if (this.settingsManager) this.settingsManager.hideSettingsModal();

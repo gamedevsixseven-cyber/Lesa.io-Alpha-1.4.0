@@ -22,6 +22,12 @@ class DirectMessageView {
 
     static render(container, friend, chatService, modal) {
         if (!container || !friend) return;
+        const existingView = container.querySelector(`.dm-view[data-dm-rel="${CSS.escape ? CSS.escape(friend.relId) : friend.relId}"]`);
+        if (existingView && existingView.querySelector('#dm-chat-input')) {
+            this._syncPeerHeader(existingView, friend);
+            this.paintMessages(friend.relId, chatService);
+            return;
+        }
         const avatar = this.getAvatar(friend.hero);
         const roomAction = friend.coopRoomCode
             ? `<button type="button" class="friend-btn friend-btn-join" data-dm-act="join" data-code="${this.esc(friend.coopRoomCode)}">${this.ico('rocket')} JOIN ROOM</button>`
@@ -113,6 +119,35 @@ class DirectMessageView {
         }
     }
 
+    static _syncPeerHeader(viewEl, friend) {
+        const dot = viewEl.querySelector('.dm-peer .friend-presence-dot');
+        if (dot) dot.classList.toggle('online', Boolean(friend.isOnline));
+        const subWrap = viewEl.querySelector('.dm-peer-meta > div:last-child');
+        if (subWrap) {
+            const lastOnlineTxt = (!friend.isOnline && !friend.coopRoomCode && typeof FriendsCardRenderer !== 'undefined' && typeof FriendsCardRenderer.formatLastOnline === 'function')
+                ? FriendsCardRenderer.formatLastOnline(friend.lastSeenAt) : '';
+            const statusText = friend.isOnline ? (friend.status || 'In Lobby') : (lastOnlineTxt || 'Offline');
+            subWrap.innerHTML = friend.coopRoomCode
+                ? `<span class="friend-room-pill">${this.ico('gamepad')} ROOM ${this.esc(friend.coopRoomCode)}</span>`
+                : `<span class="dm-sub-status">${this.ico(friend.isOnline ? 'orb_green' : 'orb_dark')} ${this.esc(statusText)}</span>`;
+        }
+        const acts = viewEl.querySelector('.dm-topbar-actions');
+        const curActionBtn = acts ? acts.querySelector('[data-dm-act="invite"], [data-dm-act="join"]') : null;
+        if (curActionBtn) {
+            if (friend.coopRoomCode) {
+                curActionBtn.dataset.dmAct = 'join'; curActionBtn.dataset.code = friend.coopRoomCode;
+                curActionBtn.disabled = false; curActionBtn.className = 'friend-btn friend-btn-join';
+                curActionBtn.innerHTML = `${this.ico('rocket')} JOIN ROOM`;
+            } else {
+                curActionBtn.dataset.dmAct = 'invite'; delete curActionBtn.dataset.code;
+                curActionBtn.disabled = !friend.isOnline;
+                curActionBtn.title = friend.isOnline ? '' : 'Friend is offline';
+                curActionBtn.className = 'friend-btn friend-btn-primary';
+                curActionBtn.innerHTML = `${this.ico('swords')} INVITE`;
+            }
+        }
+    }
+
     static showError(msg) {
         const el = document.getElementById('dm-chat-error');
         if (!el) return;
@@ -130,7 +165,12 @@ class DirectMessageView {
         const myUid = chatService._getMe().uid;
         const msgs = chatService.getDmMessages(relId);
 
-        if (chatService.lastDmError) this.showError(chatService.lastDmError);
+        const dmErr = typeof chatService.getDmError === 'function' ? chatService.getDmError(relId) : chatService.lastDmError;
+        if (dmErr) this.showError(dmErr);
+
+        const sig = `${relId}|${msgs.length}|${msgs.length ? `${msgs[msgs.length - 1].id}_${msgs[msgs.length - 1].createdAt}` : '0'}`;
+        if (!forceScroll && listEl.dataset.dmSig === sig) return;
+        listEl.dataset.dmSig = sig;
 
         if (!msgs.length) {
             listEl.innerHTML = `

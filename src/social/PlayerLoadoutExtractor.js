@@ -156,6 +156,7 @@ class PlayerLoadoutExtractor {
         const unlockedHeroes = Array.isArray(p.unlockedHeroes) ? p.unlockedHeroes : sj('lesaio_unlocked_heroes', ['psanas']);
         const unlockedRaw = Array.isArray(p.unlockedWeapons) ? p.unlockedWeapons : sj('lesaio_unlocked_weapons', ['pea']);
         const unlockedWeapons = this.resolveOwnedWeapons(unlockedHeroes, unlockedRaw);
+        if (weapon && !unlockedWeapons.includes(weapon)) unlockedWeapons.push(weapon);
         const starBlessed = (typeof HeroStarBlessing !== 'undefined' && typeof HeroStarBlessing.isBlessed === 'function')
             ? Boolean(HeroStarBlessing.isBlessed(hero))
             : (Array.isArray(p.starBlessedHeroes) && p.starBlessedHeroes.includes(hero));
@@ -203,7 +204,8 @@ class PlayerLoadoutExtractor {
         }
         if (pub && !pub.private && (pub.weapon || pub.gear)) {
             const evoWeps = Array.isArray(pub.evolvedWeapons) ? pub.evolvedWeapons : [];
-            const owned = Array.isArray(pub.unlockedWeapons) && pub.unlockedWeapons.length ? pub.unlockedWeapons : ['pea'];
+            const owned = Array.isArray(pub.unlockedWeapons) && pub.unlockedWeapons.length ? [...pub.unlockedWeapons] : ['pea'];
+            if (pub.weapon && !owned.includes(pub.weapon)) owned.push(pub.weapon);
             return {
                 isPrivate,
                 hero: pub.hero || data.selectedHero || p.selectedHero || 'psanas',
@@ -222,7 +224,9 @@ class PlayerLoadoutExtractor {
         const unlockedWeapons = this.resolveOwnedWeapons(unlockedHeroes, Array.isArray(p.unlockedWeapons) ? p.unlockedWeapons : data.unlockedWeapons);
         const evolvedWeapons = Array.isArray(p.evolvedWeapons) ? p.evolvedWeapons : [];
         const rawWep = p.selectedWeapon || p.weaponType || data.selectedWeapon || heroMap[hero] || 'pea';
-        const weapon = unlockedWeapons.includes(rawWep) ? rawWep : (heroMap[hero] || 'pea');
+        const reg = (typeof WEAPONS !== 'undefined' && WEAPONS) || (typeof window !== 'undefined' && window.WEAPONS) || {};
+        const weapon = (unlockedWeapons.includes(rawWep) || !!reg[rawWep]) ? rawWep : (heroMap[hero] || 'pea');
+        if (weapon && !unlockedWeapons.includes(weapon)) unlockedWeapons.push(weapon);
         const starBlessed = Array.isArray(p.starBlessedHeroes) && p.starBlessedHeroes.includes(hero);
 
         return {

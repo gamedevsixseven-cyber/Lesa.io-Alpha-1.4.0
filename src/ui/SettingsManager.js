@@ -327,7 +327,7 @@ class SettingsManager {
             ...(serialized || {}),
             coins: this.ui.coins,
             gems: this.ui.gems,
-            playerName: (p && p.name) || localStorage.getItem('lesaio_player_name') || 'Psanas',
+            playerName: (p && p.name) || localStorage.getItem('lesaio_player_name') || 'Hero',
             level: (p && p.accountLevel) || parseInt(localStorage.getItem('lesaio_account_level') || '1', 10),
             xp: (p && p.accountXp) || parseInt(localStorage.getItem('lesaio_account_xp') || '0', 10),
             unlockedHeroes: (p && p.unlockedHeroes) || JSON.parse(localStorage.getItem('lesaio_unlocked_heroes') || '["psanas"]'),

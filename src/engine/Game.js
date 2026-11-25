@@ -113,12 +113,16 @@ class Game {
         }
     }
 
-    start(heroType = 'psanas', gameMode = 'story') {
-        this.startNewGame(heroType, gameMode);
+    start(heroType = 'psanas', gameMode = 'story', options = {}) {
+        this.startNewGame(heroType, gameMode, options);
     }
 
     startNewGame(heroType = 'psanas', gameMode = 'story', options = {}) {
         const isHard = (gameMode === 'endless') && !!(options && options.isEndlessHard);
+        if (!options.isCoop && typeof window !== 'undefined' && window.friendService) {
+            const statusLabel = gameMode === 'dungeons' ? 'Climbing Mt. Olympus' : (gameMode === 'endless' ? (isHard ? 'Playing Endless Hard' : 'Playing Endless') : 'Playing Story');
+            window.friendService.setPresenceStatus(statusLabel, null);
+        }
         if (typeof window !== 'undefined' && window.GameState && typeof window.GameState.syncLiveGame === 'function') {
             window.GameState.syncLiveGame(this, true);
             window.GameState.beginMatchSession(heroType, gameMode);

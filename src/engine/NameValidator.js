@@ -285,8 +285,9 @@ class NameValidator {
 
         const selfUids = this._getSelfUids();
         const myUid = (typeof window !== 'undefined' && window.cloudSave && typeof window.cloudSave.getEffectivePlayerUid === 'function' && window.cloudSave.getEffectivePlayerUid())
+            || (typeof PlayerIdentity !== 'undefined' ? PlayerIdentity.getEffectiveUid(null, null) : null)
             || (typeof localStorage !== 'undefined' && localStorage.getItem('lesaio_player_uid'))
-            || `user_${Math.random().toString(36).substr(2, 9)}`;
+            || `player_${Math.random().toString(36).substr(2, 9)}`;
         selfUids.add(myUid);
 
         if (typeof localStorage !== 'undefined') {

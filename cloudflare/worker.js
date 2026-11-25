@@ -151,7 +151,10 @@ async function handlePlayers(method, segs, url, body, db) {
     for (const res of [hs, ew, tk, seen]) {
       for (const r of (res.results || [])) {
         if (!map.has(r.uid)) {
-          try { map.set(r.uid, { id: r.uid, ...JSON.parse(r.dataJson || '{}') }); } catch (_) { }
+          try {
+            const parsed = JSON.parse(r.dataJson || '{}');
+            if (!parsed.leaderboardHidden) map.set(r.uid, { id: r.uid, ...parsed });
+          } catch (_) { }
         }
       }
     }

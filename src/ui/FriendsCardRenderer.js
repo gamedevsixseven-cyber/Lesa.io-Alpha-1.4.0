@@ -165,9 +165,10 @@ class FriendsCardRenderer {
 
         const lastOnlineTxt = (!f.isOnline && !f.coopRoomCode) ? this.formatLastOnline(f.lastSeenAt) : '';
         const offlineLabel = lastOnlineTxt ? `${this.esc(f.status)} · ${this.esc(lastOnlineTxt)}` : this.esc(f.status);
+        const isHardStatus = f.isOnline && /endless hard/i.test(String(f.status || ''));
         const statusBadge = f.coopRoomCode
             ? `<span class="friend-room-pill">${this._ico('gamepad')} ROOM ${this.esc(f.coopRoomCode)}</span>`
-            : `<span class="friend-status-text">${this._ico(f.isOnline ? 'orb_green' : 'orb_dark')} ${f.isOnline ? this.esc(f.status) : offlineLabel}</span>`;
+            : `<span class="friend-status-text ${isHardStatus ? 'is-hard-status' : ''}">${this._ico(f.isOnline ? 'orb_green' : 'orb_dark')} ${f.isOnline ? this.esc(f.status) : offlineLabel}</span>`;
 
         const joinOrInviteBtn = f.coopRoomCode
             ? `<button class="friend-btn friend-btn-join" data-action="join-room" data-code="${this.esc(f.coopRoomCode)}">${this._ico('rocket')} JOIN</button>`

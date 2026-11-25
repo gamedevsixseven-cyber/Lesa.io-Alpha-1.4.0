@@ -13,6 +13,7 @@ class MenuController {
         this.hudAvatarImg = document.getElementById('hud-avatar-img');
         this.gameModeModal = document.getElementById('game-mode-modal');
         this.endlessHardSelected = false;
+        if (typeof window !== 'undefined') window.menuController = this;
 
         this.initButtons();
         this.updateHeroAvatarUI();
@@ -64,13 +65,13 @@ class MenuController {
         };
 
         const handleEndless = () => {
-            const useHard = !!(this.endlessHardSelected && this.isEndlessHardUnlocked());
-            if (window.soundEngine && typeof window.soundEngine.playStartGame === 'function') {
-                window.soundEngine.playStartGame();
-            } else if (window.soundEngine) {
-                window.soundEngine.playSelect();
+            if (window.soundEngine) window.soundEngine.playSelect();
+            if (typeof EndlessDifficultyModal !== 'undefined') {
+                EndlessDifficultyModal.open(this);
+            } else {
+                const useHard = !!(this.endlessHardSelected && this.isEndlessHardUnlocked());
+                this.startGame('endless', { isEndlessHard: useHard });
             }
-            this.startGame('endless', { isEndlessHard: useHard });
         };
 
         const handleDungeons = () => {
@@ -101,33 +102,9 @@ class MenuController {
 
         const modeEndlessBtn = document.getElementById('mode-select-endless-btn');
         if (modeEndlessBtn) modeEndlessBtn.addEventListener('click', handleEndless);
-        const endlessNormBtn = document.getElementById('mode-endless-normal-btn');
-        const endlessHardBtn = document.getElementById('mode-endless-hard-btn');
-        if (endlessNormBtn) {
-            endlessNormBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                if (window.soundEngine) window.soundEngine.playSelect();
-                this.endlessHardSelected = false;
-                this.updateEndlessHardUnlockUI();
-            });
-        }
-        if (endlessHardBtn) {
-            endlessHardBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                if (!this.isEndlessHardUnlocked()) {
-                    if (window.soundEngine && typeof window.soundEngine.playGoBack === 'function') window.soundEngine.playGoBack();
-                    else if (window.soundEngine) window.soundEngine.playSelect();
-                    this.showEndlessHardLockedNotice();
-                    return;
-                }
-                if (window.soundEngine) window.soundEngine.playSelect();
-                this.endlessHardSelected = true;
-                this.updateEndlessHardUnlockUI();
-            });
-        }
         const modeEndlessSlot = document.querySelector('.mode-slot-endless');
         if (modeEndlessSlot) modeEndlessSlot.addEventListener('click', (e) => {
-            if (e.target !== modeEndlessBtn && e.target !== endlessNormBtn && e.target !== endlessHardBtn) handleEndless();
+            if (e.target !== modeEndlessBtn) handleEndless();
         });
 
         const modeDungeonsBtn = document.getElementById('mode-select-dungeons-btn');
@@ -471,34 +448,11 @@ class MenuController {
     updateEndlessHardUnlockUI() {
         const unlocked = this.isEndlessHardUnlocked();
         if (!unlocked) this.endlessHardSelected = false;
-        const normBtn = document.getElementById('mode-endless-normal-btn');
-        const hardBtn = document.getElementById('mode-endless-hard-btn');
-        const slotEl = document.querySelector('.mode-slot-endless');
-        if (normBtn) normBtn.classList.toggle('active', !this.endlessHardSelected);
-        if (hardBtn) {
-            hardBtn.classList.toggle('is-locked', !unlocked);
-            hardBtn.classList.toggle('active', unlocked && this.endlessHardSelected);
-            hardBtn.textContent = unlocked ? '🔥 HARD' : '🔒 HARD • W30';
-            hardBtn.title = unlocked ? 'Endless Hard Mode (2x Rewards + Apex Chest)' : 'Reach Wave 30 in Normal Endless to unlock Hard Mode';
-        }
-        if (slotEl) slotEl.classList.toggle('is-hard-selected', unlocked && this.endlessHardSelected);
+        if (typeof EndlessDifficultyModal !== 'undefined') EndlessDifficultyModal.refreshState(this);
     }
 
     showEndlessHardLockedNotice() {
-        const noticeEl = document.getElementById('mode-crest-notice');
-        if (noticeEl) {
-            noticeEl.textContent = '🔒 Reach Wave 30 in Normal Endless to unlock Hard Mode!';
-            noticeEl.classList.remove('hidden');
-            if (this._crestNoticeTimer) clearTimeout(this._crestNoticeTimer);
-            this._crestNoticeTimer = setTimeout(() => { noticeEl.classList.add('hidden'); this._crestNoticeTimer = null; }, 3800);
-        }
-        const slotEl = document.querySelector('.mode-slot-endless');
-        if (slotEl) {
-            slotEl.classList.remove('crest-shake');
-            void slotEl.offsetWidth;
-            slotEl.classList.add('crest-shake');
-            setTimeout(() => slotEl.classList.remove('crest-shake'), 450);
-        }
+        if (typeof EndlessDifficultyModal !== 'undefined') EndlessDifficultyModal._showLockedFeedback();
     }
 
     startGame(gameMode = 'story', options = {}) {
@@ -509,6 +463,7 @@ class MenuController {
             }
         }
         this.hideGameModeModal();
+        if (typeof EndlessDifficultyModal !== 'undefined') EndlessDifficultyModal.hide();
         if (typeof window.triggerGameFullscreen === 'function') {
             window.triggerGameFullscreen();
         }
@@ -518,7 +473,7 @@ class MenuController {
         }
         this.ui.hud.show();
         if (window.friendService) {
-            const label = gameMode === 'dungeons' ? 'Climbing Mt. Olympus' : (gameMode === 'endless' ? (options.isEndlessHard ? 'Endless Hard Mode' : 'Playing Endless') : 'Playing Story');
+            const label = gameMode === 'dungeons' ? 'Climbing Mt. Olympus' : (gameMode === 'endless' ? (options.isEndlessHard ? 'Playing Endless Hard' : 'Playing Endless') : 'Playing Story');
             window.friendService.setPresenceStatus(label, null);
         }
 

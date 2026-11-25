@@ -65,24 +65,38 @@ class PublicProfileModal {
         const fs = (typeof window !== 'undefined') ? window.friendService : null;
         const db = fs && typeof fs.getDb === 'function' ? fs.getDb() : null;
         const ps = (typeof window !== 'undefined') ? window.presenceService : null;
-        if (db && merged.uid && !merged.isLocalStub) {
+        const edge = (typeof window !== 'undefined' && window.edgeApi && window.edgeApi.isEnabled()) ? window.edgeApi : null;
+        if ((edge || db) && merged.uid && !merged.isLocalStub) {
             try {
-                const [snap] = await Promise.all([
-                    db.collection('players').doc(merged.uid).get(),
-                    ps ? ps.fetchOnce([merged.uid]).catch(() => {}) : Promise.resolve()
+                const [edgeRes, snap] = await Promise.all([
+                    edge ? edge.get(`/player/${encodeURIComponent(merged.uid)}`).catch(() => null) : Promise.resolve(null),
+                    (!edge && db) ? db.collection('players').doc(merged.uid).get().catch(() => null) : Promise.resolve(null)
                 ]);
-                if (snap && snap.exists && this._currentProfile && this._currentProfile.uid === merged.uid) {
-                    const formatted = fs._formatPlayerDoc(snap.id, snap.data() || {});
+                let rawDoc = (edgeRes && !edgeRes.fallback && edgeRes.ok && edgeRes.doc) ? edgeRes.doc : null;
+                if (!rawDoc && db) {
+                    const fsSnap = snap || await db.collection('players').doc(merged.uid).get().catch(() => null);
+                    if (fsSnap && fsSnap.exists) rawDoc = fsSnap.data() || {};
+                }
+                if (rawDoc) await (ps ? ps.fetchOnce([merged.uid]).catch(() => {}) : Promise.resolve());
+                if (rawDoc && this._currentProfile && this._currentProfile.uid === merged.uid) {
+                    const formatted = fs._formatPlayerDoc(merged.uid, rawDoc);
+                    const hasRealName = Boolean(rawDoc.playerName || (rawDoc.player && rawDoc.player.name));
+                    const hasCos = Boolean(rawDoc.cosmetics || (rawDoc.player && rawDoc.player.cosmetics));
+                    const hasLoadout = Boolean(rawDoc.publicLoadout || (rawDoc.player && rawDoc.player.selectedWeapon));
                     merged = {
                         ...merged,
-                        ...formatted,
+                        ...(hasRealName ? { name: formatted.name, tag: formatted.tag } : {}),
+                        ...(rawDoc.selectedHero || (rawDoc.player && rawDoc.player.selectedHero) ? { hero: formatted.hero } : {}),
+                        ...(formatted.clanTag ? { clanId: formatted.clanId, clanTag: formatted.clanTag, clanName: formatted.clanName } : {}),
+                        ...(hasCos ? { cosmetics: formatted.cosmetics } : {}),
+                        ...(hasLoadout ? { loadout: formatted.loadout } : {}),
+                        ...(formatted.isOnline || rawDoc.lastSeenAt ? { isOnline: formatted.isOnline, lastSeenAt: Math.max(Number(merged.lastSeenAt) || 0, Number(formatted.lastSeenAt) || 0), currentStatus: formatted.currentStatus, coopRoomCode: formatted.coopRoomCode } : {}),
                         level: Math.max(Number(merged.level) || 1, Number(formatted.level) || 1),
                         highScore: Math.max(Number(merged.highScore) || 0, Number(formatted.highScore) || 0),
                         maxWave: Math.max(Number(merged.maxWave) || 1, Number(formatted.maxWave) || 1),
                         endlessMaxWave: Math.max(Number(merged.endlessMaxWave) || 0, Number(formatted.endlessMaxWave) || 0),
                         olympusMaxFloor: Math.max(Number(merged.olympusMaxFloor) || 0, Number(formatted.olympusMaxFloor) || 0),
-                        totalKills: Math.max(Number(merged.totalKills) || 0, Number(formatted.totalKills) || 0),
-                        loadout: formatted.loadout || merged.loadout || null
+                        totalKills: Math.max(Number(merged.totalKills) || 0, Number(formatted.totalKills) || 0)
                     };
                     this._currentProfile = merged;
                     this._render(merged);
@@ -300,8 +314,9 @@ class PublicProfileModal {
             : '';
 
         const ownedSet = new Set(Array.isArray(loadout.unlockedWeapons) ? loadout.unlockedWeapons : ['pea']);
+        if (loadout.weapon && !loadout.isPrivate) ownedSet.add(loadout.weapon);
         const catalog = (typeof PlayerLoadoutExtractor !== 'undefined')
-            ? PlayerLoadoutExtractor.getCatalogWeapons().filter(w => !w.devOnly || ownedSet.has(w.id))
+            ? PlayerLoadoutExtractor.getCatalogWeapons().filter(w => !w.devOnly || ownedSet.has(w.id) || w.id === loadout.weapon)
             : [];
         const evolvedSet = new Set(Array.isArray(loadout.evolvedWeapons) ? loadout.evolvedWeapons : []);
         const totalCount = catalog.length;
@@ -395,9 +410,10 @@ class PublicProfileModal {
         const loadout = this._resolveLoadout(p, isSelf);
         const lockedForViewer = Boolean(loadout.isPrivate && !isSelf);
         const ownedSetHead = new Set(Array.isArray(loadout.unlockedWeapons) ? loadout.unlockedWeapons : ['pea']);
+        if (loadout.weapon && !lockedForViewer) ownedSetHead.add(loadout.weapon);
         const ownedWepCount = ownedSetHead.size;
         const totalWepCount = (typeof PlayerLoadoutExtractor !== 'undefined')
-            ? PlayerLoadoutExtractor.getCatalogWeapons().filter(w => !w.devOnly || ownedSetHead.has(w.id)).length
+            ? PlayerLoadoutExtractor.getCatalogWeapons().filter(w => !w.devOnly || ownedSetHead.has(w.id) || (!lockedForViewer && w.id === loadout.weapon)).length
             : 26;
 
         const hasVipPass = Boolean(cos.hasVipPass || (isSelf && typeof CosmeticManager !== 'undefined' && CosmeticManager.hasLocalVipPass()));
@@ -405,6 +421,7 @@ class PublicProfileModal {
         const rel = (fs && p.uid && !p.isLocalStub) ? fs.getRelationState(p.uid) : { state: 'self' };
         const friendLastOnline = (!p.isOnline && rel.state === 'accepted' && typeof FriendsCardRenderer !== 'undefined' && typeof FriendsCardRenderer.formatLastOnline === 'function')
             ? FriendsCardRenderer.formatLastOnline(p.lastSeenAt) : '';
+        const isHardStatus = p.isOnline && /endless hard/i.test(String(p.currentStatus || ''));
         const statusChipText = p.isOnline ? `● ${this._esc(p.currentStatus || 'Online')}` : (friendLastOnline ? `● Offline · ${this._esc(friendLastOnline)}` : '● Offline');
 
         let socialBtnHtml = '';
@@ -416,6 +433,11 @@ class PublicProfileModal {
                 ? `<button type="button" id="pub-prof-join-coop" class="comic-btn comic-btn-primary pub-social-btn">🚀 JOIN CO-OP</button>`
                 : (p.isOnline ? `<button type="button" id="pub-prof-invite-coop" class="comic-btn comic-btn-primary pub-social-btn">⚔️ INVITE CO-OP</button>` : '');
         }
+
+        const isPrimaryDev = !!(typeof window !== 'undefined' && window.AdminAuth && typeof window.AdminAuth.isPrimaryDevUser === 'function' && window.AdminAuth.isPrimaryDevUser());
+        const devHideBtnHtml = (isPrimaryDev && p.uid && !p.isLocalStub)
+            ? `<button type="button" id="pub-prof-dev-lb-hide" class="comic-btn ${p.leaderboardHidden ? 'comic-btn-primary' : 'comic-btn-danger'} pub-social-btn">${p.leaderboardHidden ? '👁️ SHOW ON LB' : '🚫 HIDE FROM LB'}</button>`
+            : '';
 
         let bodyHtml = '';
         if (this._activeTab === 'gear') bodyHtml = this._renderGearTab(loadout, isSelf, lockedForViewer);
@@ -437,7 +459,7 @@ class PublicProfileModal {
                         </div>
                         <div class="pub-meta-row">
                             <span class="pub-tag-chip">${this._esc(p.tag || '#HERO00')}</span>
-                            <span class="pub-status-chip ${p.isOnline ? 'online' : ''}">${statusChipText}</span>
+                            <span class="pub-status-chip ${p.isOnline ? 'online' : ''} ${isHardStatus ? 'is-hard-status' : ''}">${statusChipText}</span>
                         </div>
                         ${vipTagHtml}
                     </div>
@@ -453,6 +475,7 @@ class PublicProfileModal {
 
                 <div class="modal-actions pub-actions-row">
                     ${socialBtnHtml}
+                    ${devHideBtnHtml}
                     <button type="button" id="pub-profile-close" class="comic-btn">CLOSE</button>
                 </div>
             </div>
@@ -503,6 +526,19 @@ class PublicProfileModal {
         modal.querySelector('#pub-prof-invite-coop')?.addEventListener('click', () => {
             this.hide();
             if (window.friendsModal) window.friendsModal.inviteFriendToCoop(p.uid, p.name);
+        });
+        modal.querySelector('#pub-prof-dev-lb-hide')?.addEventListener('click', async (e) => {
+            if (!window.DevAccountManager) return;
+            const nextHidden = !p.leaderboardHidden;
+            e.currentTarget.disabled = true;
+            try {
+                await window.DevAccountManager.setLeaderboardVisibility(p, nextHidden);
+                p.leaderboardHidden = nextHidden;
+                this._render(this._currentProfile);
+            } catch (err) {
+                e.currentTarget.disabled = false;
+                alert(err.message || 'Failed to update leaderboard visibility.');
+            }
         });
         if (typeof CosmeticEffectsEngine !== 'undefined') {
             CosmeticEffectsEngine.decorateContainer(modal);

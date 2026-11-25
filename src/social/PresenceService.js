@@ -61,7 +61,7 @@ class PresenceService {
         this._status = statusText || 'In Lobby';
         this._roomCode = roomCode || null;
         const rtdb = this.getRtdb();
-        if (!rtdb || !uid) return false;
+        if (!rtdb || !uid || (typeof PlayerIdentity !== 'undefined' && PlayerIdentity.isAwaitingInitialName() && !(typeof window !== 'undefined' && window.cloudSave && window.cloudSave.currentUser))) return false;
 
         if (this._uid === uid && this._connRef) {
             this.setOnline(uid, this._status, this._roomCode);

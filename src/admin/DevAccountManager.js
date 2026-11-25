@@ -42,6 +42,7 @@ class DevAccountManager {
             hasVipPass: Boolean((p.battlePass && p.battlePass.hasPremium) || (data.battlePass && data.battlePass.hasPremium)),
             pendingDevGiftsCount: Array.isArray(data.devGifts) ? data.devGifts.length : 0,
             isAdmin: data.isAdmin === true,
+            leaderboardHidden: data.leaderboardHidden === true,
             lastSeenAt: Number(data.lastSeenAt) || 0,
             altDocIds: [docId]
         };
@@ -304,6 +305,38 @@ class DevAccountManager {
             this._purgeFromLocalCaches(uid);
         }
         return { ok: true, uid, selfReset: isSelf };
+    }
+
+    /**
+     * Show or hide a player/account on Global Leaderboards without wiping their account.
+     */
+    static async setLeaderboardVisibility(targetInfo, hidden = true) {
+        const check = await this._requireDev();
+        if (!check.authorized) throw new Error(check.message || 'Primary Dev authorization required.');
+        const uid = targetInfo && targetInfo.uid;
+        if (!uid) throw new Error('Invalid target account.');
+        const db = this._getDb();
+        const isHidden = !!hidden;
+        if (db) {
+            const docIds = new Set([uid, ...(targetInfo.altDocIds || [])]);
+            try {
+                const snap = await db.collection('players').where('uid', '==', uid).get();
+                snap.forEach(d => docIds.add(d.id));
+            } catch (_) {}
+            for (const docId of docIds) {
+                await db.collection('players').doc(docId).set({ leaderboardHidden: isHidden }, { merge: true }).catch(() => {});
+            }
+        }
+        const edge = (typeof window !== 'undefined' && window.edgeApi && window.edgeApi.isEnabled()) ? window.edgeApi : null;
+        if (edge) await edge.post(`/player/${encodeURIComponent(uid)}`, { leaderboardHidden: isHidden }).catch(() => {});
+        if (typeof window !== 'undefined' && window.leaderboardModal) {
+            const lb = window.leaderboardModal;
+            [lb._rows, lb._cachedRows].forEach((arr) => {
+                if (Array.isArray(arr)) arr.forEach((r) => { if (r && r.uid === uid) r.leaderboardHidden = isHidden; });
+            });
+            if (typeof lb.render === 'function' && lb._modal && !lb._modal.classList.contains('hidden')) lb.render();
+        }
+        return { ok: true, uid, leaderboardHidden: isHidden };
     }
 
     /**

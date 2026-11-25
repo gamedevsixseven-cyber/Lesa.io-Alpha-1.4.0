@@ -77,7 +77,7 @@ class SaveSerializer {
             version: 3,
             timestamp: Date.now(),
             player: {
-                name: state.player.name || 'Psanas',
+                name: state.player.name || 'Hero',
                 accountLevel: Number.isFinite(Number(state.player.accountLevel)) ? state.player.accountLevel : 1,
                 accountXp: Number.isFinite(Number(state.player.accountXp)) ? state.player.accountXp : 0,
                 coins: Number.isFinite(Number(state.player.coins)) ? state.player.coins : 0,

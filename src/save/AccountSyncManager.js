@@ -103,7 +103,7 @@ class AccountSyncManager {
                     const accountLevel = localEstablished ? Math.max(cloudLvl, si('lesaio_account_level', 1, 1)) : cloudLvl;
                     const accountXp = accountLevel > cloudLvl ? si('lesaio_account_xp', 0, 0) : (parseInt(p.accountXp ?? p.xp ?? docData.xp ?? 0, 10) || 0);
                     const localName = localStorage.getItem('lesaio_player_name');
-                    const name = (localEstablished && localName && localName !== 'Psanas') ? localName : (p.name || p.playerName || docData.playerName || user.displayName || user.email?.split('@')[0] || 'Psanas');
+                    const name = (localEstablished && localName && localName !== 'Psanas') ? localName : (p.name || p.playerName || docData.playerName || user.displayName || user.email?.split('@')[0] || 'Hero');
                     const selectedHero = (localEstablished && localStorage.getItem('lesaio_selected_hero')) || p.selectedHero || docData.selectedHero || 'psanas';
                     const heroStyles = (p.heroStyles && typeof p.heroStyles === 'object') ? { ...p.heroStyles } : ((docData.heroStyles && typeof docData.heroStyles === 'object') ? { ...docData.heroStyles } : {});
                     if (localStorage.getItem('lesaio_hero_style_psgiannhs') && !heroStyles.psgiannhs) heroStyles.psgiannhs = localStorage.getItem('lesaio_hero_style_psgiannhs');

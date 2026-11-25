@@ -5,6 +5,14 @@
  */
 
 class PlayerIdentity {
+    static isAwaitingInitialName() {
+        if (typeof localStorage === 'undefined') return false;
+        if (localStorage.getItem('lesaio_player_name_chosen') === 'true') return false;
+        if (localStorage.getItem('lesaio_google_linked') === 'true') return false;
+        if (localStorage.getItem('lesaio_player_uid')) return false;
+        return true;
+    }
+
     static getEffectiveUid(auth, currentUser) {
         // 1. Authenticated Google user in active session
         if (currentUser && currentUser.uid) return currentUser.uid;
@@ -32,6 +40,7 @@ class PlayerIdentity {
         // Assign and persist a unique per-device player UID so each device has its own distinct Firestore record
         let playerUid = localStorage.getItem('lesaio_player_uid');
         if (!playerUid || playerUid === 'RLqBTfjZATZzePCPDyNCrUGCYrs2') {
+            if (this.isAwaitingInitialName()) return null;
             const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
             playerUid = (isMobile ? 'phone_' : 'player_') + Math.random().toString(36).substring(2, 8) + '_' + Date.now().toString(36);
             localStorage.setItem('lesaio_player_uid', playerUid);
@@ -101,9 +110,9 @@ class PlayerIdentity {
     }
 
     static seedNewPlayerDoc(db, uid) {
-        if (!db || !uid) return;
+        if (!db || !uid || this.isAwaitingInitialName()) return;
         const isMobile = uid.startsWith('phone_');
-        const pName = localStorage.getItem('lesaio_player_name') || (isMobile ? 'Mobile Survivor' : 'Survivor');
+        const pName = localStorage.getItem('lesaio_player_name') || 'Hero';
         const tag = this.getOnlineTag(uid);
         const initial = {
             uid: uid,
@@ -127,6 +136,19 @@ class PlayerIdentity {
             createdAt: firebase.firestore.FieldValue.serverTimestamp()
         };
         db.collection('players').doc(uid).set(initial, { merge: true }).catch(() => {});
+    }
+
+    static resolvePublicDisplay(uid, data = {}) {
+        const p = data.player || {};
+        const tag = data.friendTag || this.getOnlineTag(uid);
+        const creatorUid = 'RLqBTfjZATZzePCPDyNCrUGCYrs2';
+        const isPlaceholder = (n) => !n || /^(psanas|hero|survivor|mobile survivor)$/i.test(String(n).trim());
+        const candA = String(data.playerName || '').trim(), candB = String(p.name || '').trim();
+        let name = (uid === creatorUid) ? (candA || candB || 'Psanas') : ((!isPlaceholder(candA) && candA) || (!isPlaceholder(candB) && candB) || candA || candB || 'Hero');
+        const hasFlagFalse = !!(p.flags && p.flags.nameChosen === false);
+        if (uid !== creatorUid && /^psanas$/i.test(name)) name = `Hero ${tag.slice(0, 5)}`;
+        const _isUnnamedGhost = (uid !== creatorUid) && (hasFlagFalse || (isPlaceholder(candA) && isPlaceholder(candB)));
+        return { name, tag, _isUnnamedGhost, leaderboardHidden: Boolean(data.leaderboardHidden) };
     }
 }
 

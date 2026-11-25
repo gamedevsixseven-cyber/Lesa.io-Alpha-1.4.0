@@ -145,7 +145,7 @@ class FriendsModal {
                 window.presenceService.fetchOnce(this.service.friends.map(f => f.otherUid)).then(() => this.render());
             }
         }
-        if (window.chatService) window.chatService.syncSubscriptions();
+        if (window.chatService) { window.chatService.syncSubscriptions(); if (typeof window.chatService.pollDmThreads === 'function') window.chatService.pollDmThreads(true); }
         this.render();
         if (this.modal) this.modal.classList.remove('hidden');
         if (this._refreshInterval) clearInterval(this._refreshInterval);
