@@ -4,16 +4,17 @@
  */
 
 class Fatmir extends EnemyBase {
-    constructor(x, y, waveMultiplier = 1.0) {
+    constructor(x, y, waveMultiplier = 1.0, options = {}) {
         super(x, y, 'fatmir', waveMultiplier);
-        this.name = 'Skatmir';
-        this.radius = 32;
-        this.maxHp = Math.round(180 * waveMultiplier);
+        this.isCrimson = !!(options && options.isCrimson);
+        this.name = this.isCrimson ? 'Fatmir' : 'Skatmir';
+        this.radius = this.isCrimson ? 34 : 32;
+        this.maxHp = Math.round((this.isCrimson ? 245 : 180) * waveMultiplier);
         this.hp = this.maxHp;
-        this.speed = 2.4;
-        this.damage = 28;
-        this.color = '#20bf6b';
-        this.xpDrop = 45;
+        this.speed = this.isCrimson ? 2.75 : 2.4;
+        this.damage = this.isCrimson ? 34 : 28;
+        this.color = this.isCrimson ? '#ff2e4c' : '#20bf6b';
+        this.xpDrop = this.isCrimson ? 85 : 45;
 
         // Fatmir Special State
         this.isCharging = false;
@@ -55,8 +56,8 @@ class Fatmir extends EnemyBase {
                 window.soundEngine.playFatmirSlam();
             }
             if (effects) {
-                effects.addShockwave(this.x, this.y, 140, 'rgba(235, 77, 75, 0.9)');
-                effects.addComicSplash(this.x, this.y - 40, 'SLAM!');
+                effects.addShockwave(this.x, this.y, 140, this.isCrimson ? 'rgba(255, 46, 76, 0.94)' : 'rgba(235, 77, 75, 0.9)');
+                effects.addComicSplash(this.x, this.y - 40, this.isCrimson ? 'CRIMSON SLAM!' : 'SLAM!');
                 if (typeof effects.onBossSlam === 'function') effects.onBossSlam(0.036);
             }
             if (dist < 130) {
@@ -195,7 +196,7 @@ class Fatmir extends EnemyBase {
                 ctx.scale(-1, 1);
             }
             if (!this.isCharging && typeof SpriteAtlasCache !== 'undefined') {
-                const fKey = `fatmir:${isBack ? 'b' : 'f'}:${flash ? 1 : 0}`;
+                const fKey = `${this.isCrimson ? 'fatmir_red' : 'fatmir'}:${isBack ? 'b' : 'f'}:${flash ? 1 : 0}`;
                 const fw = Math.ceil(spriteW + 4);
                 const fh = Math.ceil(spriteH + 4);
                 const ax = fw * 0.5;
@@ -204,6 +205,9 @@ class Fatmir extends EnemyBase {
                     if (flash) {
                         const cached = CharacterSprites.getFiltered(img, 'flash_25', 'brightness(2.5)', 0);
                         fctx.drawImage(cached ? cached.canvas : img, -spriteW / 2, feetY - spriteH, spriteW, spriteH);
+                    } else if (this.isCrimson) {
+                        const redCached = CharacterSprites.getFiltered(img, 'fatmir_crimson_v1', 'sepia(1) hue-rotate(-52deg) saturate(4.2) brightness(0.95)', 0);
+                        fctx.drawImage(redCached ? redCached.canvas : img, -spriteW / 2, feetY - spriteH, spriteW, spriteH);
                     } else {
                         fctx.drawImage(img, -spriteW / 2, feetY - spriteH, spriteW, spriteH);
                     }
@@ -223,6 +227,9 @@ class Fatmir extends EnemyBase {
                 } else {
                     ctx.drawImage(img, -spriteW / 2, feetY - spriteH, spriteW, spriteH);
                 }
+            } else if (this.isCrimson) {
+                const redCached = CharacterSprites.getFiltered(img, 'fatmir_crimson_v1', 'sepia(1) hue-rotate(-52deg) saturate(4.2) brightness(0.95)', 0);
+                ctx.drawImage(redCached ? redCached.canvas : img, -spriteW / 2, feetY - spriteH, spriteW, spriteH);
             } else {
                 ctx.drawImage(img, -spriteW / 2, feetY - spriteH, spriteW, spriteH);
             }
@@ -261,15 +268,15 @@ class Fatmir extends EnemyBase {
         ctx.stroke();
         ctx.restore();
 
-        // Fatmir Chunky Body (Green Orc Brute)
-        ctx.fillStyle = flash ? '#ffffff' : '#88b04b';
+        // Fatmir Chunky Body (Green Orc Brute or Crimson Red Variant)
+        ctx.fillStyle = flash ? '#ffffff' : (this.isCrimson ? '#e11d48' : '#88b04b');
         ctx.beginPath();
         ctx.arc(0, 0, r, 0, Math.PI * 2);
         ctx.fill();
         ctx.stroke();
 
-        // Blue Tunic vest
-        ctx.fillStyle = flash ? '#ffffff' : '#3867d6';
+        // Tunic vest
+        ctx.fillStyle = flash ? '#ffffff' : (this.isCrimson ? '#7f1d1d' : '#3867d6');
         ctx.beginPath();
         ctx.arc(0, 0, r * 0.85, Math.PI * 0.3, Math.PI * 1.7, false);
         ctx.fill();

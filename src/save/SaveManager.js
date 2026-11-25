@@ -19,7 +19,7 @@ class SaveManager {
                 'accountXpChanged', 'statsUpdated', 'materialsUpdated', 'gearUpgraded',
                 'gearEvolved', 'evolutionStoneCrafted', 'weaponEvolved', 'weaponUnlocked',
                 'skillUnlocked', 'upgradesUpdated', 'skillLevelsChanged', 'perkUnlocked',
-                'perkEquipped', 'perkUnequipped', 'cosmeticsUpdated', 'battlePassUpdated',
+                'perkEquipped', 'perkUnequipped', 'combatFeatsUpdated', 'cosmeticsUpdated', 'battlePassUpdated',
                 'heroSkinChanged', 'starBlessingUpdated', 'crestsUpdated', 'chestSlotsChanged'
             ];
             for (const ev of events) {

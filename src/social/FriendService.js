@@ -68,10 +68,14 @@ class FriendService {
             ? PerkProgression.getFeatSnapshot(gs) : null;
         const endlessMaxWave = FriendService._maxNum(p.combatFeats && p.combatFeats.endlessMaxWave, featSnap && featSnap.endlessMaxWave, rawMaxWave > 20 ? rawMaxWave : 0);
 
-        const _cl = (typeof window !== 'undefined' && window.clanService && window.clanService.currentClan) || null;
+        const _cs = (typeof window !== 'undefined' && window.clanService) ? window.clanService : null;
+        const _cl = (_cs && _cs.currentClan) || null;
+        const _cloud = (typeof window !== 'undefined' && window.cloudSave && window.cloudSave.lastCloudData) ? window.cloudSave.lastCloudData : null;
+        const _cid = _cl ? _cl.id : (_cs && _cs.clanId ? _cs.clanId : null);
         return {
             uid, tag, tagClean, name, nameLower: name.trim().toLowerCase(),
-            clanId: _cl ? _cl.id : null, clanTag: _cl ? _cl.tag : null, clanName: _cl ? _cl.name : null,
+            clanId: _cid, clanTag: _cl ? _cl.tag : (_cid && _cloud && _cloud.clanId === _cid ? (_cloud.clanTag || null) : null),
+            clanName: _cl ? _cl.name : (_cid && _cloud && _cloud.clanId === _cid ? (_cloud.clanName || null) : null),
             level: p.accountLevel || parseInt(localStorage.getItem('lesaio_account_level') || '1', 10) || 1,
             selectedHero: p.selectedHero || localStorage.getItem('lesaio_selected_hero') || 'psanas',
             highScore: FriendService._maxNum(stats.highScore, parseInt(localStorage.getItem('lesaio_highscore') || '0', 10)),
@@ -188,7 +192,7 @@ class FriendService {
                 friendTag: me.tag, friendTagClean: me.tagClean, playerName: me.name, playerNameLower: me.nameLower,
                 accountLevel: lvl, level: lvl, selectedHero: me.selectedHero,
                 socialStats: { highScore: hs, maxWave: mw, totalKills: tk, endlessMaxWave: ew, olympusMaxFloor: me.olympusMaxFloor },
-                clanId: me.clanId || null, clanTag: me.clanTag || null, clanName: me.clanName || null,
+                ...(me.clanId || !(typeof window !== 'undefined' && window.clanService && window.clanService.clanId) ? { clanId: me.clanId || null, clanTag: me.clanTag || null, clanName: me.clanName || null } : {}),
                 cosmetics: me.cosmetics, lbHighScore: hs, lbEndlessWave: ew, lbTotalKills: tk
             });
             if (typeof PlayerLoadoutExtractor !== 'undefined') {

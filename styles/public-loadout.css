@@ -130,7 +130,38 @@
 .pub-gear-card.rarity-epic { border-color: #9b59b6; background: linear-gradient(180deg, #fff 0%, #f6effa 100%); }
 .pub-gear-card.rarity-legendary { border-color: #f39c12; background: linear-gradient(180deg, #fff 0%, #fef7e6 100%); }
 .pub-gear-card.rarity-mythic { border-color: #e74c3c; background: linear-gradient(180deg, #fff 0%, #fdeceb 100%); }
-.pub-gear-card.rarity-apex { border-color: #ff2e4c; background: linear-gradient(180deg, #1f2937 0%, #111827 100%); color: #f8fafc; }
+@keyframes pubApexPulse {
+    0%, 100% { box-shadow: 0 2px 0 #0f172a, 0 0 14px rgba(255, 46, 76, 0.62), 0 0 5px rgba(254, 211, 48, 0.45); }
+    50% { box-shadow: 0 2px 0 #0f172a, 0 0 22px rgba(255, 46, 76, 0.92), 0 0 12px rgba(254, 211, 48, 0.80); }
+}
+@keyframes pubApexSweep {
+    0% { transform: translateX(-165%) rotate(22deg); opacity: 0; }
+    24% { opacity: 0.72; }
+    56% { opacity: 0.55; }
+    100% { transform: translateX(285%) rotate(22deg); opacity: 0; }
+}
+.pub-gear-card.rarity-apex {
+    position: relative;
+    overflow: hidden;
+    border-color: #ff2e4c;
+    background: linear-gradient(155deg, #1b1720 0%, #34111e 55%, #110d13 100%);
+    color: #fed330;
+    animation: pubApexPulse 2.8s ease-in-out infinite;
+}
+.pub-gear-card.rarity-apex::after {
+    content: '';
+    position: absolute;
+    top: -45%;
+    left: -35%;
+    width: 44%;
+    height: 195%;
+    background: linear-gradient(90deg, transparent 0%, rgba(255, 46, 76, 0.26) 35%, rgba(254, 211, 48, 0.45) 52%, rgba(255, 46, 76, 0.22) 70%, transparent 100%);
+    pointer-events: none;
+    z-index: 2;
+    animation: pubApexSweep 3.1s ease-in-out infinite;
+}
+.pub-gear-card.rarity-apex .pub-gear-img { filter: drop-shadow(0 0 8px rgba(255, 46, 76, 0.7)) drop-shadow(0 0 4px rgba(254, 211, 48, 0.55)); }
+.pub-gear-card.rarity-apex .pub-slot-tag { background: rgba(255, 46, 76, 0.28); color: #fef08a; border: 1px solid rgba(254, 211, 48, 0.45); }
 .pub-gear-card.rarity-exclusive { border-color: #e84393; background: linear-gradient(180deg, #fff 0%, #fdecf5 100%); }
 
 .pub-slot-top { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 3px; }

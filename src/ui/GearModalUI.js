@@ -122,6 +122,10 @@ class GearModalUI {
             const oldBadge = el.querySelector('.gear-slot-lvl-badge');
             if (oldBadge) oldBadge.remove();
 
+            const effRar = equipped ? ((typeof GearUpgradeManager !== 'undefined' && typeof GearUpgradeManager.getEffectiveRarity === 'function') ? GearUpgradeManager.getEffectiveRarity(equipped) : (equipped.rarity || 'common')) : '';
+            const tabBtn = document.querySelector(`.gear-tab-btn[data-tab="${slot}"]`);
+            if (tabBtn) tabBtn.classList.toggle('is-apex-tab', effRar === 'apex');
+
             if (equipped) {
                 const hasUpgradeSys = typeof GearUpgradeManager !== 'undefined';
                 const effRarity = hasUpgradeSys && typeof GearUpgradeManager.getEffectiveRarity === 'function' ? GearUpgradeManager.getEffectiveRarity(equipped) : (equipped.rarity || 'common');
@@ -229,7 +233,7 @@ class GearModalUI {
             const isEquipped = currentEquipped && currentEquipped.id === item.id;
             const isUnlocked = (typeof GearManager !== 'undefined') ? GearManager.isUnlocked(item.id) : false;
             const baseRarity = item.rarity || 'common';
-            const isBossOnly = !!(item.bossUnlock || baseRarity === 'mythic');
+            const isBossOnly = !!(item.bossUnlock || (baseRarity === 'mythic' && !item.chestOnly) || baseRarity === 'apex');
             const isChestOnly = !!(item.chestOnly || baseRarity === 'epic' || baseRarity === 'legendary');
             const isExclusive = baseRarity === 'exclusive';
             const canAfford = !isBossOnly && !isChestOnly && !isExclusive && playerCoins >= (item.cost || 0);
@@ -262,7 +266,7 @@ class GearModalUI {
                 const pDesc = isAwakenedStorm
                     ? 'Grants a 75 HP Thunder Barrier every 8s and unleashes a 105 DMG lightning shockwave (0.8s stun) when hit.'
                     : item.passive.desc;
-                const pClass = `${rClass === 'legendary' ? 'is-legendary' : (rClass === 'mythic' ? 'is-mythic' : '')} ${isAwakenedStorm ? 'gear-evolved-passive-pill' : ''}`;
+                const pClass = `${rClass === 'legendary' ? 'is-legendary' : (rClass === 'mythic' ? 'is-mythic' : (rClass === 'apex' ? 'is-apex' : ''))} ${isAwakenedStorm ? 'gear-evolved-passive-pill' : ''}`;
                 passiveHtml = `<div class="gear-passive-pill ${pClass}" title="${pDesc}">${typeof UiIcons !== 'undefined' ? UiIcons.i('sparkle', 'ui-icon-sm') : '✨'} <strong>${pName}:</strong> ${pDesc}</div>`;
             }
 
@@ -274,11 +278,13 @@ class GearModalUI {
                 buttonHtml = `<button class="gear-btn gear-btn-equip" data-action="equip" data-item="${item.id}">EQUIP</button>`;
             } else if (isBossOnly) {
                 const bossLbl = item.unlockLabel || 'DEFEAT ZEUS';
-                buttonHtml = `<button class="gear-btn gear-btn-chest-only is-mythic" data-action="boss-hint" data-item="${item.id}">${typeof UiIcons !== 'undefined' ? UiIcons.i('lock', 'ui-icon-sm') : '🔒'} ${bossLbl}</button>`;
+                const lockCls = (baseRarity === 'apex' || rClass === 'apex') ? 'is-apex' : 'is-mythic';
+                buttonHtml = `<button class="gear-btn gear-btn-chest-only ${lockCls}" data-action="boss-hint" data-item="${item.id}">${typeof UiIcons !== 'undefined' ? UiIcons.i('lock', 'ui-icon-sm') : '🔒'} ${bossLbl}</button>`;
             } else if (isExclusive) {
                 buttonHtml = `<button class="gear-btn gear-btn-chest-only" data-action="exclusive-hint" data-item="${item.id}">${typeof UiIcons !== 'undefined' ? UiIcons.i('lock', 'ui-icon-sm') : '🔒'} EVENT EXCLUSIVE</button>`;
             } else if (isChestOnly) {
-                buttonHtml = `<button class="gear-btn gear-btn-chest-only ${rClass === 'legendary' ? 'is-legendary' : ''}" data-action="chest-hint" data-item="${item.id}">${typeof UiIcons !== 'undefined' ? UiIcons.i('crate', 'ui-icon-sm') : '📦'} CHESTS ONLY</button>`;
+                const chestTierCls = rClass === 'mythic' ? 'is-mythic' : (rClass === 'legendary' ? 'is-legendary' : '');
+                buttonHtml = `<button class="gear-btn gear-btn-chest-only ${chestTierCls}" data-action="chest-hint" data-item="${item.id}">${typeof UiIcons !== 'undefined' ? UiIcons.i('crate', 'ui-icon-sm') : '📦'} CHESTS ONLY</button>`;
             } else {
                 buttonHtml = `<button class="gear-btn gear-btn-unlock ${canAfford ? '' : 'disabled'}" data-action="unlock" data-item="${item.id}">${typeof UiIcons !== 'undefined' ? UiIcons.i('coin', 'ui-icon-sm') : '🪙'} ${item.cost ? item.cost.toLocaleString() : 0} UNLOCK</button>`;
             }
@@ -287,7 +293,7 @@ class GearModalUI {
                 ? `<img src="${item.iconImg}" class="gear-card-img" alt="${item.name}">`
                 : `<span class="gear-card-emoji">${item.icon || '🛡️'}</span>`;
 
-            const levelRowHtml = isUpgradable ? this._buildLevelHeaderHtml(level, maxLevel, isEvolved, isAscended) : '';
+            const levelRowHtml = isUpgradable ? this._buildLevelHeaderHtml(level, maxLevel, isEvolved, isAscended, baseRarity) : '';
             const upgradeBoxHtml = (isUnlocked && isUpgradable) ? this._buildUpgradeBoxHtml(item, level, maxLevel, isEvolved, playerCoins, isAscended) : '';
 
             card.innerHTML = `
@@ -326,11 +332,14 @@ class GearModalUI {
                         window.soundEngine.playSelect();
                     }
                 } else if (isBossOnly || isChestOnly || isExclusive) {
+                    let bossHint = `⚡ ${item.name} unlocks on your first victory over Zeus (Mount Olympus Floor 5)!`;
+                    if (item.bossUnlock === 'apex_sovereign_w30') bossHint = `♦️ ${item.name} unlocks on your first victory over Wave 30 Hard Endless Apex Boss (Aethelgard)!`;
+                    else if (item.bossUnlock === 'apex_omega_w60') bossHint = `👑 ${item.name} unlocks on your first victory over Wave 60 Hard Endless Final Apex Boss (Erebus)!`;
                     const msg = isBossOnly
-                        ? `⚡ ${item.name} unlocks on your first victory over Zeus (Mount Olympus Floor 5)!`
+                        ? bossHint
                         : (isExclusive
                             ? `🔒 ${item.name} is a special event exclusive item!`
-                            : `📦 ${item.name} unlocks only from chests (Rare+, Epic, Legendary & Boss Crates — 0% in Common/Uncommon)!`);
+                            : `📦 ${item.name} unlocks only from chests (Rare+, Epic, Legendary, Mythic & Apex Crates)!`);
                     if (typeof ModalManager !== 'undefined' && ModalManager.notifyInsufficient) {
                         ModalManager.notifyInsufficient(msg, card);
                     }
@@ -491,10 +500,12 @@ class GearModalUI {
         return html;
     }
 
-    static _buildLevelHeaderHtml(level, maxLevel, isEvolved, isAscended = false) {
+    static _buildLevelHeaderHtml(level, maxLevel, isEvolved, isAscended = false, rarity = '') {
         const isMax = level >= maxLevel;
         const pillCls = isEvolved ? 'is-evolved' : (isAscended ? 'is-ascended' : (isMax ? 'is-max' : ''));
-        const label = isEvolved ? '★ EVOLVED AWAKENED' : (isAscended ? '✦ ASCENDED MYTHIC' : (isMax ? `LV ${level}/${maxLevel} MAX` : `LV ${level}/${maxLevel}`));
+        const evoText = rarity === 'apex' ? '★ EVOLVED APEX' : '★ EVOLVED AWAKENED';
+        const apexBonusText = (maxLevel === 6 && level === 5) ? 'LV 5/6 (4/4) • +💎' : (isMax ? `LV ${level}/${maxLevel} MAX` : `LV ${level}/${maxLevel}`);
+        const label = isEvolved ? evoText : (isAscended ? '✦ ASCENDED MYTHIC' : apexBonusText);
         let pips = '';
         for (let i = 1; i <= maxLevel; i++) {
             const cls = isEvolved ? 'is-evolved' : (i <= level ? 'is-filled' : '');
@@ -506,9 +517,10 @@ class GearModalUI {
     static _buildUpgradeBoxHtml(item, level, maxLevel, isEvolved, playerCoins, isAscended = false) {
         if (typeof GearUpgradeManager === 'undefined') return '';
         if (isEvolved) {
+            const isApex = item && item.rarity === 'apex';
             return `
                 <div class="gear-upgrade-box">
-                    <div class="gear-upgrade-cost-line" style="color:#b45309;">★ AWAKENED MYTHIC POWER MAXED ★</div>
+                    <div class="gear-upgrade-cost-line" style="color:${isApex ? '#fed330' : '#b45309'};">${isApex ? '★ AWAKENED APEX POWER MAXED ★' : '★ AWAKENED MYTHIC POWER MAXED ★'}</div>
                 </div>
             `;
         }
@@ -520,25 +532,12 @@ class GearModalUI {
             if (!cost) return '';
             const inv = (typeof window !== 'undefined') ? window.inventoryManager : null;
             const canAfford = GearUpgradeManager.hasUpgradeResources(item);
-            const coinShort = playerCoins < cost.coins;
-            const matChips = Object.entries(cost.materials || {}).map(([matId, need]) => {
-                const def = (typeof MaterialRegistry !== 'undefined') ? MaterialRegistry.get(matId) : null;
-                const have = inv && typeof inv.getMaterialCount === 'function' ? inv.getMaterialCount(matId) : 0;
-                const ic = def && def.iconKey && typeof UiIcons !== 'undefined' ? UiIcons.i(def.iconKey, 'ui-icon-sm') : (def ? def.icon : matId);
-                return `<span class="gear-cost-chip ${have < need ? 'is-short' : ''}" title="${def ? def.name : matId}: ${have}/${need}">${ic} ${need}</span>`;
-            }).join('');
-
-            return `
-                <div class="gear-upgrade-box">
-                    <div class="gear-upgrade-cost-line">
-                        <span class="gear-cost-chip ${coinShort ? 'is-short' : ''}">${coinIcon} ${cost.coins.toLocaleString()}</span>
-                        ${matChips}
-                    </div>
-                    <button type="button" class="gear-btn gear-btn-upgrade ${canAfford ? '' : 'disabled'}" data-gear-upgrade="${item.id}">
-                        UPGRADE → LV ${level + 1}
-                    </button>
-                </div>
-            `;
+            const chipsHtml = (typeof GearUpgradeConfig !== 'undefined')
+                ? GearUpgradeConfig.buildCostChipsHtml(cost, playerCoins, inv)
+                : `<span class="gear-cost-chip ${playerCoins < cost.coins ? 'is-short' : ''}">${coinIcon} ${cost.coins.toLocaleString()}</span>`;
+            const btnCls = cost.isDiamondBonus ? 'gear-btn-diamond-bonus' : 'gear-btn-upgrade';
+            const btnTxt = cost.isDiamondBonus ? '💎 DIAMOND BONUS → LV 6' : `UPGRADE → LV ${level + 1}`;
+            return `<div class="gear-upgrade-box"><div class="gear-upgrade-cost-line">${chipsHtml}</div><button type="button" class="gear-btn ${btnCls} ${canAfford ? '' : 'disabled'}" data-gear-upgrade="${item.id}">${btnTxt}</button></div>`;
         }
 
         if (typeof GearUpgradeManager.canAscendToMythic === 'function' && GearUpgradeManager.canAscendToMythic(item)) {

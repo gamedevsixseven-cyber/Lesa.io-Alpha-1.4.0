@@ -9,13 +9,18 @@ class NetworkManager {
         this.conn = null;
         this.fastConn = null;
         this._fastConnected = false;
+        this.peers = new Map();
+        this._pendingFastConns = new Map();
+        this.maxGuests = 3;
         this.isHost = false;
+        this.assignedPeerId = null;
         this.roomCode = '';
         this.connected = false;
         this.connecting = false;
         this.isPeerOpen = false;
         this._readyPromise = null;
         this._readyResolve = null;
+        this._hostSessionId = 0;
         this._joinSessionId = 0;
         this._retryTimer = null;
 
@@ -52,12 +57,9 @@ class NetworkManager {
             debug: 1,
             config: {
                 iceServers: [
-                    { urls: 'stun:stun.relay.metered.ca:80' },
+                    { urls: 'stun:stun.turnix.io:3478' },
                     { urls: 'stun:stun.l.google.com:19302' },
-                    { urls: 'turn:global.relay.metered.ca:80', username: 'e8e23423d2382fb60f7a0b29', credential: '6PkUXx4SXx9a4OBG' },
-                    { urls: 'turn:global.relay.metered.ca:80?transport=tcp', username: 'e8e23423d2382fb60f7a0b29', credential: '6PkUXx4SXx9a4OBG' },
-                    { urls: 'turn:global.relay.metered.ca:443', username: 'e8e23423d2382fb60f7a0b29', credential: '6PkUXx4SXx9a4OBG' },
-                    { urls: 'turns:global.relay.metered.ca:443?transport=tcp', username: 'e8e23423d2382fb60f7a0b29', credential: '6PkUXx4SXx9a4OBG' }
+                    { urls: 'stun:stun.cloudflare.com:3478' }
                 ],
                 iceCandidatePoolSize: 10
             }
@@ -103,58 +105,99 @@ class NetworkManager {
         this._readyPromise = new Promise((resolve) => { this._readyResolve = resolve; });
 
         const fullPeerId = this.normalizeRoomId(this.roomCode);
+        const myHostId = ++this._hostSessionId;
 
-        try {
-            if (typeof Peer === 'undefined') {
-                throw new Error('PeerJS library is not loaded');
-            }
+        (async () => {
+            try {
+                if (typeof Peer === 'undefined') {
+                    throw new Error('PeerJS library is not loaded');
+                }
+                if (typeof CoopNetTransport !== 'undefined' && typeof CoopNetTransport.refreshIceServers === 'function') {
+                    await CoopNetTransport.refreshIceServers(false, 2200);
+                }
+                if (myHostId !== this._hostSessionId || !this.isHost) return;
 
-            this.peer = new Peer(fullPeerId, this._getPeerOptions());
-            if (typeof CoopNetTransport !== 'undefined') {
-                CoopNetTransport.bindPeerLifecycle(this);
-                CoopNetTransport.ensureVisibilityReconnect(this);
-            }
+                this.peer = new Peer(fullPeerId, this._getPeerOptions());
+                if (typeof CoopNetTransport !== 'undefined') {
+                    CoopNetTransport.bindPeerLifecycle(this);
+                    CoopNetTransport.ensureVisibilityReconnect(this);
+                }
 
-            this.peer.on('open', (id) => {
-                this.isPeerOpen = true;
-                if (this._readyResolve) { this._readyResolve(true); this._readyResolve = null; }
-                console.log(`[NetworkManager] Room created with ID: ${this.roomCode} (${id})`);
-                if (this.onStatusCallback && !this.connected) this.onStatusCallback('Waiting for partner to join...');
-            });
+                this.peer.on('open', (id) => {
+                    this.isPeerOpen = true;
+                    this.assignedPeerId = 'host';
+                    if (this._readyResolve) { this._readyResolve(true); this._readyResolve = null; }
+                    console.log(`[NetworkManager] Room created with ID: ${this.roomCode} (${id})`);
+                    if (this.onStatusCallback && this.peers.size === 0) this.onStatusCallback('Waiting for squadmates to join (up to 3)...');
+                });
 
-            this.peer.on('connection', (connection) => {
-                const isFastChannel = !!(connection && connection.metadata && connection.metadata.channel === 'fast');
-                if (isFastChannel) {
-                    if (this.conn && typeof CoopNetTransport !== 'undefined') {
-                        CoopNetTransport.setupFastChannelHandlers(this, connection);
-                    } else {
-                        try { connection.close(); } catch (_) {}
+                this.peer.on('connection', (connection) => {
+                    const remoteId = connection && connection.peer;
+                    const isFastChannel = !!(connection && connection.metadata && connection.metadata.channel === 'fast');
+                    if (isFastChannel) {
+                        const peerEntry = remoteId ? this.peers.get(remoteId) : null;
+                        if (peerEntry && typeof CoopNetTransport !== 'undefined') {
+                            CoopNetTransport.setupFastChannelHandlers(this, connection, peerEntry);
+                        } else if (remoteId) {
+                            this._pendingFastConns.set(remoteId, connection);
+                            connection.on('close', () => {
+                                if (this._pendingFastConns.get(remoteId) === connection) this._pendingFastConns.delete(remoteId);
+                            });
+                        } else {
+                            try { connection.close(); } catch (_) {}
+                        }
+                        return;
                     }
-                    return;
-                }
-                const matchInProgress = (typeof window !== 'undefined' && window.gameInstance && window.gameInstance.coopSession && window.gameInstance.state === 'PLAYING');
-                if (matchInProgress || (this.conn && this.conn.open && this.connected)) {
-                    connection.close();
-                    return;
-                }
-                if (this.conn && this.conn !== connection) {
-                    try { this.conn.close(); } catch (_) {}
-                }
-                this.conn = connection;
-                this.setupConnectionHandlers();
-            });
+                    const matchInProgress = (typeof window !== 'undefined' && window.gameInstance && window.gameInstance.coopSession && window.gameInstance.state === 'PLAYING');
+                    let openCount = 0;
+                    for (const [pid, p] of this.peers.entries()) {
+                        if (pid !== remoteId && p && p.conn && p.conn.open) openCount++;
+                    }
+                    if (matchInProgress || openCount >= this.maxGuests || !remoteId) {
+                        const reason = matchInProgress ? 'Match is already in progress' : 'Room is full (4/4 players)';
+                        connection.on('open', () => {
+                            try { connection.send({ type: 'ROOM_REJECTED', payload: { reason } }); } catch (_) {}
+                            setTimeout(() => { try { connection.close(); } catch (_) {} }, 80);
+                        });
+                        if (connection.open) {
+                            try { connection.send({ type: 'ROOM_REJECTED', payload: { reason } }); } catch (_) {}
+                            setTimeout(() => { try { connection.close(); } catch (_) {} }, 80);
+                        }
+                        return;
+                    }
+                    const prev = this.peers.get(remoteId);
+                    if (prev && prev.conn && prev.conn !== connection) {
+                        try { prev.conn.close(); } catch (_) {}
+                        if (prev.fastConn) { try { prev.fastConn.close(); } catch (_) {} }
+                    }
+                    const peerEntry = {
+                        id: remoteId, conn: connection, fastConn: null, fastConnected: false,
+                        userData: null, connected: false, lastMessageTime: performance.now(), latency: this.latency
+                    };
+                    this.peers.set(remoteId, peerEntry);
+                    const pendingFast = this._pendingFastConns.get(remoteId);
+                    if (pendingFast) {
+                        this._pendingFastConns.delete(remoteId);
+                        if (typeof CoopNetTransport !== 'undefined') {
+                            CoopNetTransport.setupFastChannelHandlers(this, pendingFast, peerEntry);
+                        }
+                    }
+                    this._syncPrimaryPeerAlias();
+                    this.setupConnectionHandlers(peerEntry);
+                });
 
-            this.peer.on('error', (err) => {
-                console.error('[NetworkManager] Peer error:', err);
-                if (!this.isPeerOpen && this._readyResolve) { this._readyResolve(false); this._readyResolve = null; }
-                if (this.onErrorCallback) this.onErrorCallback(err.type || err.message);
-            });
+                this.peer.on('error', (err) => {
+                    console.error('[NetworkManager] Peer error:', err);
+                    if (!this.isPeerOpen && this._readyResolve) { this._readyResolve(false); this._readyResolve = null; }
+                    if (this.onErrorCallback) this.onErrorCallback(err.type || err.message);
+                });
 
-        } catch (err) {
-            console.error('[NetworkManager] Host init error:', err);
-            if (this._readyResolve) { this._readyResolve(false); this._readyResolve = null; }
-            if (this.onErrorCallback) this.onErrorCallback(err.message);
-        }
+            } catch (err) {
+                console.error('[NetworkManager] Host init error:', err);
+                if (this._readyResolve) { this._readyResolve(false); this._readyResolve = null; }
+                if (this.onErrorCallback) this.onErrorCallback(err.message);
+            }
+        })();
 
         return this.roomCode;
     }
@@ -169,15 +212,20 @@ class NetworkManager {
         const targetPeerId = this.normalizeRoomId(this.roomCode);
         const myJoinId = ++this._joinSessionId;
 
-        try {
-            if (typeof Peer === 'undefined') {
-                throw new Error('PeerJS library is not loaded');
-            }
-            if (!this.roomCode) {
-                throw new Error('Invalid room code');
-            }
+        (async () => {
+            try {
+                if (typeof Peer === 'undefined') {
+                    throw new Error('PeerJS library is not loaded');
+                }
+                if (!this.roomCode) {
+                    throw new Error('Invalid room code');
+                }
+                if (typeof CoopNetTransport !== 'undefined' && typeof CoopNetTransport.refreshIceServers === 'function') {
+                    await CoopNetTransport.refreshIceServers(false, 2200);
+                }
+                if (myJoinId !== this._joinSessionId) return;
 
-            this.peer = new Peer(undefined, this._getPeerOptions());
+                this.peer = new Peer(undefined, this._getPeerOptions());
             if (typeof CoopNetTransport !== 'undefined') {
                 CoopNetTransport.bindPeerLifecycle(this);
                 CoopNetTransport.ensureVisibilityReconnect(this);
@@ -251,94 +299,140 @@ class NetworkManager {
                 if (this.onErrorCallback) this.onErrorCallback(msg);
             });
 
-        } catch (err) {
-            this.connecting = false;
-            console.error('[NetworkManager] Join init error:', err);
-            if (this.onErrorCallback) this.onErrorCallback(err.message);
-        }
+            } catch (err) {
+                this.connecting = false;
+                console.error('[NetworkManager] Join init error:', err);
+                if (this.onErrorCallback) this.onErrorCallback(err.message);
+            }
+        })();
     }
 
-    setupConnectionHandlers() {
-        if (!this.conn) return;
-        const activeConn = this.conn;
-        if (typeof CoopNetTransport !== 'undefined') {
-            CoopNetTransport.attachIceRecovery(this, activeConn);
+    _syncPrimaryPeerAlias() {
+        if (!this.isHost) return;
+        let first = null, hasConn = false;
+        for (const p of this.peers.values()) {
+            if (!first && p.connected) first = p;
+            if (p.connected) hasConn = true;
         }
+        if (!first) first = this.peers.values().next().value || null;
+        this.conn = first ? first.conn : null;
+        this.fastConn = first ? first.fastConn : null;
+        this._fastConnected = !!(first && first.fastConnected);
+        this.peerUserData = first ? first.userData : null;
+        this.connected = hasConn;
+    }
+
+    getConnectedPeers() {
+        const list = [];
+        for (const p of this.peers.values()) {
+            if (p && p.connected) list.push({ id: p.id, ...(p.userData || {}) });
+        }
+        return list;
+    }
+
+    getPeerCount() {
+        if (!this.isHost) return this.connected ? 1 : 0;
+        let n = 0;
+        for (const p of this.peers.values()) { if (p && p.connected) n++; }
+        return n;
+    }
+
+    setupConnectionHandlers(peerEntry = null) {
+        const activeConn = peerEntry ? peerEntry.conn : this.conn;
+        if (!activeConn) return;
+        if (typeof CoopNetTransport !== 'undefined') CoopNetTransport.attachIceRecovery(this, activeConn);
+        const isCurrent = () => peerEntry ? (this.peers.get(peerEntry.id) === peerEntry) : (this.conn === activeConn);
 
         const onConnOpen = () => {
-            if (this.conn !== activeConn || this.connected) return;
+            if (!isCurrent()) return;
+            if (peerEntry ? peerEntry.connected : this.connected) return;
             if (this._retryTimer) { clearTimeout(this._retryTimer); this._retryTimer = null; }
-            if (this.connectTimeout) {
-                clearTimeout(this.connectTimeout);
-                this.connectTimeout = null;
-            }
+            if (this.connectTimeout) { clearTimeout(this.connectTimeout); this.connectTimeout = null; }
             this.connecting = false;
-            this.connected = true;
-            this.lastMessageTime = performance.now();
-            console.log('[NetworkManager] Connection established!');
-
-            // Send handshake hello
-            this.send('HANDSHAKE_HELLO', {
-                isHost: this.isHost,
-                userData: this.localUserData
-            });
-
+            const now = performance.now();
+            this.lastMessageTime = now;
+            if (peerEntry) {
+                peerEntry.connected = true;
+                peerEntry.lastMessageTime = now;
+                this._syncPrimaryPeerAlias();
+                this.sendTo(peerEntry.id, 'HANDSHAKE_HELLO', { isHost: true, userData: this.localUserData });
+            } else {
+                this.connected = true;
+                this.send('HANDSHAKE_HELLO', { isHost: false, userData: this.localUserData });
+            }
+            console.log('[NetworkManager] Connection established!', peerEntry ? peerEntry.id : 'host');
             this.startHeartbeat();
         };
 
         activeConn.on('open', onConnOpen);
-        if (activeConn.open) {
-            onConnOpen();
-        }
+        if (activeConn.open) onConnOpen();
 
         activeConn.on('data', (raw) => {
-            if (this.conn !== activeConn) return;
-            this.lastMessageTime = performance.now();
+            if (!isCurrent()) return;
+            const now = performance.now();
+            this.lastMessageTime = now;
+            if (peerEntry) peerEntry.lastMessageTime = now;
             const data = this._decodePacket(raw);
             if (!data) return;
 
+            if (data.type === 'ROOM_REJECTED') {
+                this._joinSessionId++;
+                this.connecting = false;
+                if (this.connectTimeout) { clearTimeout(this.connectTimeout); this.connectTimeout = null; }
+                const reason = (data.payload && data.payload.reason) || 'Room unavailable';
+                try { activeConn.close(); } catch (_) {}
+                if (this.onErrorCallback) this.onErrorCallback(reason);
+                return;
+            }
             if (data.type === 'HANDSHAKE_HELLO') {
-                this.peerUserData = data.payload.userData;
-                if (this.isHost) {
-                    this.send('HANDSHAKE_ACK', {
-                        userData: this.localUserData
+                const uData = data.payload && data.payload.userData;
+                if (peerEntry) {
+                    peerEntry.userData = uData;
+                    this._syncPrimaryPeerAlias();
+                    const roster = this.getConnectedPeers();
+                    this.sendTo(peerEntry.id, 'HANDSHAKE_ACK', {
+                        userData: this.localUserData, assignedPeerId: peerEntry.id, peers: roster
                     });
-                }
-                if (this.onConnectedCallback) {
-                    this.onConnectedCallback(this.isHost, this.peerUserData);
+                    if (roster.length > 1) {
+                        this.broadcastExcept(peerEntry.id, 'LOBBY_ROSTER', { peers: roster, host: this.localUserData });
+                    }
+                    if (this.onConnectedCallback) this.onConnectedCallback(true, uData, peerEntry.id, roster);
+                } else {
+                    this.peerUserData = uData;
+                    if (this.onConnectedCallback) this.onConnectedCallback(false, uData, 'host', []);
                 }
                 return;
             }
-
             if (data.type === 'HANDSHAKE_ACK') {
-                this.peerUserData = data.payload.userData;
-                if (typeof CoopNetTransport !== 'undefined') {
-                    CoopNetTransport.openGuestFastChannel(this);
-                }
-                if (this.onConnectedCallback) {
-                    this.onConnectedCallback(this.isHost, this.peerUserData);
-                }
+                this.peerUserData = data.payload && data.payload.userData;
+                if (data.payload && data.payload.assignedPeerId) this.assignedPeerId = data.payload.assignedPeerId;
+                const roster = (data.payload && Array.isArray(data.payload.peers)) ? data.payload.peers : [];
+                this._lobbyPeers = roster;
+                if (typeof CoopNetTransport !== 'undefined') CoopNetTransport.openGuestFastChannel(this);
+                if (this.onConnectedCallback) this.onConnectedCallback(this.isHost, this.peerUserData, 'host', roster);
                 return;
             }
-
+            if (data.type === 'LOBBY_ROSTER') {
+                this._lobbyPeers = (data.payload && Array.isArray(data.payload.peers)) ? data.payload.peers : [];
+                if (this.onRosterCallback) this.onRosterCallback(this._lobbyPeers, data.payload && data.payload.host);
+                return;
+            }
             if (data.type === 'PING') {
-                this.send('PONG', data.payload);
+                if (peerEntry) this.sendTo(peerEntry.id, 'PONG', data.payload);
+                else this.send('PONG', data.payload);
                 return;
             }
-
             if (data.type === 'PONG') {
-                const now = performance.now();
                 if (data.payload && data.payload.time) {
                     const sample = Math.round((now - data.payload.time) / 2);
-                    // Smoothed moving average latency
+                    if (peerEntry) peerEntry.latency = Math.round((peerEntry.latency * 0.7) + (sample * 0.3));
                     this.latency = Math.round((this.latency * 0.7) + (sample * 0.3));
                 }
                 return;
             }
-
             if (this.onMessageCallback) {
                 try {
-                    this.onMessageCallback(data.type, data.payload);
+                    this.onMessageCallback(data.type, data.payload, peerEntry ? peerEntry.id : 'host');
                 } catch (msgErr) {
                     console.error('[NetworkManager] Error in message handler:', data.type, msgErr);
                 }
@@ -346,72 +440,93 @@ class NetworkManager {
         });
 
         activeConn.on('close', () => {
-            if (this.conn !== activeConn) return;
-            this.handleDisconnect('Connection closed by peer');
+            if (!isCurrent()) return;
+            if (peerEntry) this._dropHostPeer(peerEntry, 'Connection closed by peer');
+            else this.handleDisconnect('Connection closed by peer', 'host', this.peerUserData, 0);
         });
-
         activeConn.on('error', (err) => {
-            if (this.conn !== activeConn) return;
+            if (!isCurrent()) return;
             console.error('[NetworkManager] Data connection error:', err);
-            this.handleDisconnect(err ? (err.message || String(err)) : 'Data connection error');
+            const reason = err ? (err.message || String(err)) : 'Data connection error';
+            if (peerEntry) this._dropHostPeer(peerEntry, reason);
+            else this.handleDisconnect(reason, 'host', this.peerUserData, 0);
         });
+    }
+
+    _dropHostPeer(peerEntry, reason = 'Disconnected') {
+        if (!peerEntry || this.peers.get(peerEntry.id) !== peerEntry) return;
+        this.peers.delete(peerEntry.id);
+        try { if (peerEntry.fastConn) peerEntry.fastConn.close(); } catch (_) {}
+        try { if (peerEntry.conn) peerEntry.conn.close(); } catch (_) {}
+        const wasConnected = !!peerEntry.connected;
+        this._syncPrimaryPeerAlias();
+        if (this.peers.size > 0) {
+            this.send('LOBBY_ROSTER', { peers: this.getConnectedPeers(), host: this.localUserData });
+            if (wasConnected && this.onDisconnectedCallback) {
+                this.onDisconnectedCallback(reason, peerEntry.id, peerEntry.userData, this.peers.size);
+            }
+        } else {
+            this.handleDisconnect(reason, peerEntry.id, peerEntry.userData, 0);
+        }
+    }
+
+    sendTo(peerId, type, payload = {}, options = null) {
+        return this.send(type, payload, { ...(options || {}), to: peerId });
+    }
+
+    broadcastExcept(excludePeerId, type, payload = {}, options = null) {
+        return this.send(type, payload, { ...(options || {}), exclude: excludePeerId });
     }
 
     send(type, payload = {}, options = null) {
         if (!this.connected) return false;
         const opts = options || {};
-        const useFast = !!(opts.fast && this.fastConn && this.fastConn.open);
-        const targetConn = useFast ? this.fastConn : this.conn;
-        if (!targetConn || !targetConn.open) return false;
-
-        const dc = targetConn.dataChannel || targetConn._dc;
-        const maxBuf = opts.maxBufferedBytes || 98304;
-        if (opts.droppable && dc && typeof dc.bufferedAmount === 'number' && dc.bufferedAmount > maxBuf) {
-            return false;
-        }
-        try {
-            const msg = { type, payload };
-            targetConn.send(targetConn.serialization === 'json' ? JSON.stringify(msg) : msg);
-            return true;
-        } catch (err) {
-            if (useFast && this.conn && this.conn.open) {
-                try {
-                    const msg = { type, payload };
-                    this.conn.send(this.conn.serialization === 'json' ? JSON.stringify(msg) : msg);
-                    return true;
-                } catch (_) {}
+        if (this.isHost) {
+            if (opts.to) {
+                const p = this.peers.get(opts.to);
+                return !!(p && p.connected && CoopNetTransport.sendOnConnPair(p.conn, p.fastConn, type, payload, opts));
             }
-            console.warn('[NetworkManager] Failed to send packet:', type, err);
-            return false;
+            let anySent = false;
+            for (const p of this.peers.values()) {
+                if (!p || !p.connected || (opts.exclude && p.id === opts.exclude)) continue;
+                if (CoopNetTransport.sendOnConnPair(p.conn, p.fastConn, type, payload, opts)) anySent = true;
+            }
+            return anySent;
         }
+        return CoopNetTransport.sendOnConnPair(this.conn, this.fastConn, type, payload, opts);
     }
 
     startHeartbeat() {
         if (this.pingInterval) clearInterval(this.pingInterval);
         if (this.watchdogInterval) clearInterval(this.watchdogInterval);
-
-        // Ping at 1.5s interval
         this.pingInterval = setInterval(() => {
-            if (this.connected) {
-                this.send('PING', { time: performance.now() });
-            }
+            if (this.connected) this.send('PING', { time: performance.now() });
         }, 1500);
-
-        // Resilient Watchdog for mobile 4G spikes/handoffs: probe at 4s, disconnect after 9.5s silence
         this.watchdogInterval = setInterval(() => {
-            if (this.connected) {
-                const idleTime = performance.now() - this.lastMessageTime;
-                if (idleTime > 4000 && idleTime <= 9500) {
-                    this.send('PING', { time: performance.now() });
-                } else if (idleTime > 9500) {
-                    console.warn(`[NetworkManager] Peer heartbeat timeout (${Math.round(idleTime)}ms idle)`);
-                    this.handleDisconnect('Connection timed out');
+            if (!this.connected) return;
+            const now = performance.now();
+            if (this.isHost) {
+                for (const p of Array.from(this.peers.values())) {
+                    if (!p.connected) continue;
+                    const idle = now - p.lastMessageTime;
+                    if (idle > 4000 && idle <= 9500) this.sendTo(p.id, 'PING', { time: now });
+                    else if (idle > 9500) {
+                        console.warn(`[NetworkManager] Peer ${p.id} heartbeat timeout (${Math.round(idle)}ms idle)`);
+                        this._dropHostPeer(p, 'Connection timed out');
+                    }
                 }
+                return;
+            }
+            const idleTime = now - this.lastMessageTime;
+            if (idleTime > 4000 && idleTime <= 9500) this.send('PING', { time: now });
+            else if (idleTime > 9500) {
+                console.warn(`[NetworkManager] Host heartbeat timeout (${Math.round(idleTime)}ms idle)`);
+                this.handleDisconnect('Connection timed out', 'host', this.peerUserData, 0);
             }
         }, 1000);
     }
 
-    handleDisconnect(reason = 'Disconnected') {
+    handleDisconnect(reason = 'Disconnected', peerId = null, leftUserData = null, remaining = 0) {
         const wasConnected = this.connected;
         this.connected = false;
         this.connecting = false;
@@ -419,23 +534,17 @@ class NetworkManager {
         this.pingInterval = null;
         if (this.watchdogInterval) clearInterval(this.watchdogInterval);
         this.watchdogInterval = null;
-
         if (wasConnected && this.onDisconnectedCallback) {
-            this.onDisconnectedCallback(reason);
+            this.onDisconnectedCallback(reason, peerId, leftUserData, remaining);
         }
     }
 
     disconnectGracefully(reason = 'Host left the match', onDone = null, packetType = 'HOST_QUIT_MATCH', packetPayload = null) {
         if (this.isGracefulDisconnecting) return;
         this.isGracefulDisconnecting = true;
-
         if (this.connected) {
-            try {
-                this.send(packetType, packetPayload || { reason });
-            } catch (e) {}
+            try { this.send(packetType, packetPayload || { reason }); } catch (e) {}
         }
-
-        // Allow outgoing buffer to flush onto network wire
         if (this._gracefulTimer) clearTimeout(this._gracefulTimer);
         this._gracefulTimer = setTimeout(() => {
             this._gracefulTimer = null;
@@ -446,43 +555,35 @@ class NetworkManager {
     }
 
     disconnect(silent = false) {
+        this._hostSessionId++;
         this._joinSessionId++;
         this._onAttemptIceFailed = null;
-        if (this._retryTimer) {
-            clearTimeout(this._retryTimer);
-            this._retryTimer = null;
-        }
-        if (this._gracefulTimer) {
-            clearTimeout(this._gracefulTimer);
-            this._gracefulTimer = null;
-        }
+        if (this._retryTimer) { clearTimeout(this._retryTimer); this._retryTimer = null; }
+        if (this._gracefulTimer) { clearTimeout(this._gracefulTimer); this._gracefulTimer = null; }
         this.isGracefulDisconnecting = false;
         this.connecting = false;
         this.isPeerOpen = false;
         if (this._readyResolve) { this._readyResolve(false); this._readyResolve = null; }
         this._readyPromise = null;
-        if (this.connectTimeout) {
-            clearTimeout(this.connectTimeout);
-            this.connectTimeout = null;
-        }
+        if (this.connectTimeout) { clearTimeout(this.connectTimeout); this.connectTimeout = null; }
         if (silent) this.connected = false;
         this.handleDisconnect('Disconnected locally');
-        if (this.fastConn) {
-            try { this.fastConn.close(); } catch (e) {}
-            this.fastConn = null;
+        for (const p of this.peers.values()) {
+            try { if (p.fastConn) p.fastConn.close(); } catch (_) {}
+            try { if (p.conn) p.conn.close(); } catch (_) {}
         }
+        this.peers.clear();
+        for (const fc of this._pendingFastConns.values()) { try { fc.close(); } catch (_) {} }
+        this._pendingFastConns.clear();
+        if (this.fastConn) { try { this.fastConn.close(); } catch (e) {} this.fastConn = null; }
         this._fastConnected = false;
-        if (this.conn) {
-            try { this.conn.close(); } catch (e) {}
-            this.conn = null;
-        }
-        if (this.peer) {
-            try { this.peer.destroy(); } catch (e) {}
-            this.peer = null;
-        }
+        if (this.conn) { try { this.conn.close(); } catch (e) {} this.conn = null; }
+        if (this.peer) { try { this.peer.destroy(); } catch (e) {} this.peer = null; }
         this.connected = false;
         this.roomCode = '';
+        this.assignedPeerId = null;
         this.peerUserData = null;
+        this._lobbyPeers = [];
     }
 }
 

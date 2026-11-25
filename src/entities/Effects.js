@@ -346,8 +346,14 @@ class EffectsManager {
         if (typeof EndlessMapEvolution !== 'undefined') {
             EndlessMapEvolution.drawScreenAtmosphere(ctx, width, height);
         }
+        if (typeof EndlessHardMap !== 'undefined') {
+            EndlessHardMap.drawScreenAtmosphere(ctx, width, height);
+        }
         if (typeof KolossosArenaAtmosphere !== 'undefined') {
             KolossosArenaAtmosphere.drawScreenFog(ctx, width, height);
+        }
+        if (typeof ApexW60Atmosphere !== 'undefined') {
+            ApexW60Atmosphere.drawScreenAtmosphere(ctx, width, height);
         }
         if (this.combatJuice) {
             this.combatJuice.drawScreenOverlays(ctx, width, height, player);
@@ -434,11 +440,18 @@ class EffectsManager {
         if (typeof HadesOblivionRailgun !== 'undefined') HadesOblivionRailgun.update(dt);
         if (typeof MedusaGorgonGaze !== 'undefined') MedusaGorgonGaze.update(dt);
         if (typeof HyperionCelestialGlaive !== 'undefined') HyperionCelestialGlaive.update(dt, gameRef);
+        if (typeof ChestWeaponsCoordinator !== 'undefined') ChestWeaponsCoordinator.updateWorldFx(dt, gameRef);
         if (typeof EndlessMapEvolution !== 'undefined') {
             EndlessMapEvolution.update(dt, gameRef);
         }
+        if (typeof EndlessHardMap !== 'undefined') {
+            EndlessHardMap.update(dt, gameRef);
+        }
         if (typeof KolossosArenaAtmosphere !== 'undefined') {
             KolossosArenaAtmosphere.update(dt, gameRef);
+        }
+        if (typeof ApexW60Atmosphere !== 'undefined') {
+            ApexW60Atmosphere.update(dt, gameRef);
         }
     }
 
@@ -488,12 +501,19 @@ class EffectsManager {
         if (typeof HadesOblivionRailgun !== 'undefined') HadesOblivionRailgun.drawWorld(ctx, cam);
         if (typeof MedusaGorgonGaze !== 'undefined') MedusaGorgonGaze.drawWorld(ctx, cam);
         if (typeof HyperionCelestialGlaive !== 'undefined') HyperionCelestialGlaive.drawWorld(ctx, cam);
+        if (typeof ChestWeaponsCoordinator !== 'undefined') ChestWeaponsCoordinator.drawWorldFx(ctx, cam);
 
         if (typeof EndlessMapEvolution !== 'undefined') {
             EndlessMapEvolution.drawWorldForeground(ctx, cam);
         }
+        if (typeof EndlessHardMap !== 'undefined') {
+            EndlessHardMap.drawWorldForeground(ctx, cam);
+        }
         if (typeof KolossosArenaAtmosphere !== 'undefined') {
             KolossosArenaAtmosphere.drawWorldFog(ctx, cam);
+        }
+        if (typeof ApexW60Atmosphere !== 'undefined') {
+            ApexW60Atmosphere.drawWorldWeather(ctx, cam);
         }
 
         // 4. Comic Popups & Floating Damage: Hardware-Accelerated Bitmap Pass
@@ -531,11 +551,18 @@ class EffectsManager {
         if (typeof HadesOblivionRailgun !== 'undefined') HadesOblivionRailgun.clear();
         if (typeof MedusaGorgonGaze !== 'undefined') MedusaGorgonGaze.clear();
         if (typeof HyperionCelestialGlaive !== 'undefined') HyperionCelestialGlaive.clear();
+        if (typeof ChestWeaponsCoordinator !== 'undefined') ChestWeaponsCoordinator.clearWorldFx();
         if (typeof EndlessMapEvolution !== 'undefined') {
             EndlessMapEvolution.reset();
         }
+        if (typeof EndlessHardMap !== 'undefined') {
+            EndlessHardMap.reset();
+        }
         if (typeof KolossosArenaAtmosphere !== 'undefined') {
             KolossosArenaAtmosphere.reset();
+        }
+        if (typeof ApexW60Atmosphere !== 'undefined') {
+            ApexW60Atmosphere.reset();
         }
     }
 }

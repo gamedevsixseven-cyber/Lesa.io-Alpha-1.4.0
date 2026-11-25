@@ -56,7 +56,7 @@ class CloudSaveService {
                     if (typeof window !== 'undefined' && !this._flushBound) {
                         this._flushBound = true;
                         window.addEventListener('pagehide', () => this.flushPendingCloudSync());
-                        if (typeof document !== 'undefined') document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') this.flushPendingCloudSync(); });
+                        if (typeof document !== 'undefined') document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') this.flushPendingCloudSync(); else if (typeof DevGiftTransport !== 'undefined') DevGiftTransport.pullRemotePendingGifts(this, false); });
                     }
 
                     // Start live listener for distinct device or authenticated player
@@ -533,6 +533,7 @@ class CloudSaveService {
             }
         }
         if (Array.isArray(data.devGifts) && data.devGifts.length > 0 && typeof DevGiftManager !== 'undefined') DevGiftManager.claimPendingGifts(data, this);
+        if (typeof DevGiftTransport !== 'undefined') DevGiftTransport.pullRemotePendingGifts(this, false);
         if (data.mail && typeof data.mail === 'object' && data.mail.title && window.uiController && window.uiController.mailManager) window.uiController.mailManager.addOrUpdateFirebaseMail(data.mail, isInitialSync);
         if ((data.resetQuests || data.resetChallenges) && window.questManager && typeof window.questManager.resetDailyChallenges === 'function') {
             window.questManager.resetDailyChallenges();
@@ -566,8 +567,9 @@ class CloudSaveService {
         if (user.uid) {
             try { const unsubUid = this.db.collection('players').doc(user.uid).onSnapshot((doc) => {
                 if (doc.exists) this.applyCloudData(doc.data());
-                else if (!(doc.metadata && doc.metadata.fromCache) && !this.isHydratingAuth) { if (!user.email) this.seedNewPlayerDoc(user.uid); this.hasCompletedInitialSync = true; }
+                else if (!(doc.metadata && doc.metadata.fromCache) && !this.isHydratingAuth) { if (!user.email) this.seedNewPlayerDoc(user.uid); this.hasCompletedInitialSync = true; if (typeof DevGiftTransport !== 'undefined') DevGiftTransport.pullRemotePendingGifts(this, true); }
             }, (err) => console.warn('UID listener warning:', err)); this.unsubscribes.push(unsubUid); } catch (e) {}
+            if (typeof DevGiftTransport !== 'undefined') DevGiftTransport.pullRemotePendingGifts(this, true);
         } else if (user.email) {
             try {
                 this.unsubscribes.push(this.db.collection('players').doc(user.email).onSnapshot((doc) => { if (doc.exists) this.applyCloudData(doc.data()); }, () => {}));

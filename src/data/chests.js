@@ -108,10 +108,11 @@ const CHEST_TYPES = {
         weaponOdds: { rare: 0.45, epic: 0.45, legendary: 0.10 },
         gearOdds: {
             common: 0.00,
-            uncommon: 0.30,
+            uncommon: 0.28,
             rare: 0.55,
             epic: 0.14,
-            legendary: 0.01
+            legendary: 0.01,
+            mythic: 0.02
         }
     },
     legendary: {
@@ -137,9 +138,10 @@ const CHEST_TYPES = {
         gearOdds: {
             common: 0.00,
             uncommon: 0.00,
-            rare: 0.40,
-            epic: 0.45,
-            legendary: 0.15
+            rare: 0.36,
+            epic: 0.43,
+            legendary: 0.15,
+            mythic: 0.06
         }
     },
     mythic: {
@@ -165,9 +167,39 @@ const CHEST_TYPES = {
         gearOdds: {
             common: 0.00,
             uncommon: 0.00,
-            rare: 0.10,
-            epic: 0.40,
-            legendary: 0.50
+            rare: 0.06,
+            epic: 0.34,
+            legendary: 0.44,
+            mythic: 0.16
+        }
+    },
+    apex: {
+        id: 'apex',
+        name: 'Apex Chest',
+        rarity: 'apex',
+        icon: 'assets/Chests/ApexChest.png',
+        color: '#ff2e4c',
+        bannerColor: '#b71540',
+        unlockTimeSec: 129600, // 36 hours
+        gemSpeedCost: 500,
+        buyGems: 4500,
+        buyCoins: null,
+        minCoins: 75000,
+        maxCoins: 150000,
+        gemDropChance: 1.00,
+        minGems: 350,
+        maxGems: 750,
+        gearCount: 7,
+        guaranteedLegendary: 3,
+        weaponDropChance: 1.00,
+        weaponOdds: { epic: 0.16, legendary: 0.36, mythic: 0.28, apex: 0.16, celestial: 0.04 },
+        gearOdds: {
+            common: 0.00,
+            uncommon: 0.00,
+            rare: 0.00,
+            epic: 0.20,
+            legendary: 0.55,
+            mythic: 0.25
         }
     }
 };

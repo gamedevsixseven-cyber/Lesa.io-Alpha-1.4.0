@@ -4,7 +4,7 @@
  */
 
 class WeaponSystem {
-    static SHARED_UNLOCKABLE_IDS = ['bubble', 'rusty_smg', 'nail_gun', 'plasma_pistol', 'sawnoff_shotgun', 'frost_cannon', 'm4_carbine', 'spas12', 'boomerang_saw', 'chrono_rifle', 'symbiote', 'carbine', 'dialtone', 'zeus_thunderbolt', 'helios_cannon', 'skewer_rifle', 'vulcan_minigun', 'hades_railgun', 'medusa_gaze', 'hyperion_glaive'];
+    static SHARED_UNLOCKABLE_IDS = ['bubble', 'rusty_smg', 'nail_gun', 'plasma_pistol', 'sawnoff_shotgun', 'frost_cannon', 'm4_carbine', 'spas12', 'boomerang_saw', 'chrono_rifle', 'symbiote', 'carbine', 'dialtone', 'zeus_thunderbolt', 'helios_cannon', 'skewer_rifle', 'vulcan_minigun', 'hades_railgun', 'medusa_gaze', 'hyperion_glaive', 'tempest_bow', 'void_mortar', 'aurelion_scepter'];
 
     static isSharedWeapon(weaponType) {
         return this.SHARED_UNLOCKABLE_IDS.includes(weaponType);
@@ -208,6 +208,7 @@ class WeaponSystem {
         if (weaponType === 'hades_railgun' && typeof HadesOblivionRailgun !== 'undefined') { HadesOblivionRailgun.drawWeapon(ctx, flash, recoil, isEvolved); return true; }
         if (weaponType === 'medusa_gaze' && typeof MedusaGorgonGaze !== 'undefined') { MedusaGorgonGaze.drawWeapon(ctx, flash, recoil, isEvolved); return true; }
         if (weaponType === 'hyperion_glaive' && typeof HyperionCelestialGlaive !== 'undefined') { HyperionCelestialGlaive.drawWeapon(ctx, flash, recoil, isEvolved, player); return true; }
+        if (typeof ChestWeaponsCoordinator !== 'undefined' && ChestWeaponsCoordinator.drawWeapon(weaponType, ctx, flash, recoil, isEvolved)) return true;
         if (weaponType === 'bubble' && typeof BubbleGun !== 'undefined' && typeof BubbleGun.drawWeapon === 'function') {
             BubbleGun.drawWeapon(ctx, flash, recoil, player ? (player.bubbleCharge || 0) : 0);
             return true;
@@ -225,6 +226,7 @@ class WeaponSystem {
         if ((b.type === 'medusa_gaze' || b.type === 'medusa_serpent') && typeof MedusaGorgonGaze !== 'undefined') {
             return MedusaGorgonGaze.updateBullet(b, dt, effects, arena);
         }
+        if (typeof ChestWeaponsCoordinator !== 'undefined') return ChestWeaponsCoordinator.updateBullet(b, dt, effects, arena);
         return false;
     }
 
@@ -247,6 +249,7 @@ class WeaponSystem {
         if (b.type === 'vulcan_minigun' && typeof HephaestusVulcanMinigun !== 'undefined') { HephaestusVulcanMinigun.drawBullet(ctx, b); return true; }
         if (b.type === 'hades_railgun' && typeof HadesOblivionRailgun !== 'undefined') { HadesOblivionRailgun.drawBullet(ctx, b); return true; }
         if ((b.type === 'medusa_gaze' || b.type === 'medusa_serpent' || b.type === 'medusa_shard') && typeof MedusaGorgonGaze !== 'undefined') { MedusaGorgonGaze.drawBullet(ctx, b); return true; }
+        if (typeof ChestWeaponsCoordinator !== 'undefined' && ChestWeaponsCoordinator.drawBullet(ctx, b)) return true;
         return false;
     }
 
@@ -277,6 +280,8 @@ class WeaponSystem {
             ChronoRifle.onHit(b, e, finalDmg, enemies, effects, game);
         } else if ((b.type === 'symbiote' || b.type === 'symbiote_tendril') && typeof SymbioteLauncher !== 'undefined') {
             SymbioteLauncher.onHit(b, e, finalDmg, enemies, effects, game);
+        } else if (typeof ChestWeaponsCoordinator !== 'undefined') {
+            ChestWeaponsCoordinator.onBulletHit(b, e, finalDmg, enemies, effects, game);
         }
         if (b.type !== 'chrono_rifle' && typeof ChronoRifle !== 'undefined') {
             ChronoRifle.onAnyBulletHit(e, finalDmg, effects);
@@ -413,6 +418,13 @@ class WeaponSystem {
             if (typeof GearPassives !== 'undefined') GearPassives.onShoot(player, [], effects);
             return [];
         }
+        if ((player.weaponType === 'tempest_bow' || player.weaponType === 'aurelion_scepter') && typeof ChestWeaponsCoordinator !== 'undefined') {
+            const cMult = (player.critMultiplier || 2.0) + perkCritBonus;
+            const cCfg = adminDmgBoost ? { ...config, baseDamage: (config.baseDamage || 50) * 10 } : config;
+            ChestWeaponsCoordinator.fireWeapon(player, cCfg, critChance, cMult, isEvolved, effects, bullets);
+            if (typeof GearPassives !== 'undefined') GearPassives.onShoot(player, bullets, effects);
+            return bullets;
+        }
 
         for (let i = 0; i < player.multiShot; i++) {
             const baseAngle = startAngle + i * player.spreadAngle;
@@ -430,9 +442,9 @@ class WeaponSystem {
                 const pr = player.radius || 25;
                 let muzzleX = player.x + Math.cos(aimAngle) * (pr + 14);
                 let muzzleY = player.y + Math.sin(aimAngle) * (pr + 14);
-                if (player.weaponType === 'm4_carbine' || player.weaponType === 'spas12' || player.weaponType === 'boomerang_saw' || player.weaponType === 'chrono_rifle' || player.weaponType === 'symbiote' || player.weaponType === 'helios_cannon' || player.weaponType === 'rusty_smg' || player.weaponType === 'nail_gun' || player.weaponType === 'plasma_pistol' || player.weaponType === 'sawnoff_shotgun' || player.weaponType === 'frost_cannon' || player.weaponType === 'skewer_rifle' || player.weaponType === 'vulcan_minigun' || player.weaponType === 'hades_railgun' || player.weaponType === 'medusa_gaze') {
-                    const tip = player.weaponType === 'boomerang_saw' ? 43 : (player.weaponType === 'm4_carbine' ? 46 : (player.weaponType === 'rusty_smg' || player.weaponType === 'plasma_pistol' || player.weaponType === 'nail_gun' || player.weaponType === 'sawnoff_shotgun' || player.weaponType === 'frost_cannon' ? 38 : 48));
-                    const gyBase = (player.weaponType === 'spas12' || player.weaponType === 'sawnoff_shotgun') ? 2.1 : ((player.weaponType === 'symbiote' || player.weaponType === 'helios_cannon' || player.weaponType === 'vulcan_minigun' || player.weaponType === 'hades_railgun' || player.weaponType === 'medusa_gaze') ? 0 : 1.05);
+                if (player.weaponType === 'm4_carbine' || player.weaponType === 'spas12' || player.weaponType === 'boomerang_saw' || player.weaponType === 'chrono_rifle' || player.weaponType === 'symbiote' || player.weaponType === 'helios_cannon' || player.weaponType === 'rusty_smg' || player.weaponType === 'nail_gun' || player.weaponType === 'plasma_pistol' || player.weaponType === 'sawnoff_shotgun' || player.weaponType === 'frost_cannon' || player.weaponType === 'skewer_rifle' || player.weaponType === 'vulcan_minigun' || player.weaponType === 'hades_railgun' || player.weaponType === 'medusa_gaze' || player.weaponType === 'void_mortar') {
+                    const tip = player.weaponType === 'boomerang_saw' ? 43 : (player.weaponType === 'm4_carbine' ? 46 : (player.weaponType === 'void_mortar' ? 45 : (player.weaponType === 'rusty_smg' || player.weaponType === 'plasma_pistol' || player.weaponType === 'nail_gun' || player.weaponType === 'sawnoff_shotgun' || player.weaponType === 'frost_cannon' ? 38 : 48)));
+                    const gyBase = (player.weaponType === 'spas12' || player.weaponType === 'sawnoff_shotgun') ? 2.1 : ((player.weaponType === 'symbiote' || player.weaponType === 'helios_cannon' || player.weaponType === 'vulcan_minigun' || player.weaponType === 'hades_railgun' || player.weaponType === 'medusa_gaze' || player.weaponType === 'void_mortar') ? 0 : 1.05);
                     const gy = Math.cos(aimAngle) < 0 ? gyBase : -gyBase;
                     muzzleX = player.x + Math.cos(aimAngle) * tip - Math.sin(aimAngle) * gy;
                     muzzleY = (player.y - pr * 0.32) + Math.sin(aimAngle) * tip + Math.cos(aimAngle) * gy;

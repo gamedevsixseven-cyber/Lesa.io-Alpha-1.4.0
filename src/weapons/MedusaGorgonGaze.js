@@ -374,7 +374,8 @@ class MedusaGorgonGaze extends WeaponBase {
         if (!e || e.dead) return;
         e._medusaStacks = 0;
         e._medusaDecay = 0;
-        const dur = (e.isBoss || e.isMiniBoss) ? 62 : 125;
+        if (e.isBoss || e.isMiniBoss || e.isStationary) return;
+        const dur = 125;
         e._medusaPetrifiedTimer = dur;
         e._medusaPetrifiedMax = dur;
         e.stunTimer = Math.max(e.stunTimer || 0, dur);
@@ -477,6 +478,11 @@ class MedusaGorgonGaze extends WeaponBase {
         for (const e of this._tracked) {
             if (!e || e.dead) { this._tracked.delete(e); continue; }
             if (e._medusaPetrifiedTimer > 0) {
+                if (e.isBoss || e.isMiniBoss || e.isStationary) {
+                    e._medusaPetrifiedTimer = 0;
+                    this._tracked.delete(e);
+                    continue;
+                }
                 e._medusaPetrifiedTimer -= dt;
                 e.vx = 0;
                 e.vy = 0;

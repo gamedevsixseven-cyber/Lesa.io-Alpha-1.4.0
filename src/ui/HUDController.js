@@ -120,10 +120,12 @@ class HUDController {
             this.scoreText.textContent = player.score.toLocaleString();
         }
         if (this.waveText) {
-            const isEndless = (window.gameInstance && window.gameInstance.gameMode === 'endless');
-            const isDungeon = (window.gameInstance && window.gameInstance.gameMode === 'dungeons');
+            const gInst = (typeof window !== 'undefined') ? window.gameInstance : null;
+            const isEndless = !!(gInst && gInst.gameMode === 'endless');
+            const isHard = !!(isEndless && gInst.isEndlessHard);
+            const isDungeon = !!(gInst && gInst.gameMode === 'dungeons');
             if (isDungeon) {
-                const floorName = (window.gameInstance.waveManager && window.gameInstance.waveManager.dungeonManager) ? window.gameInstance.waveManager.dungeonManager.getCurrentFloorName() : 'OLYMPUS';
+                const floorName = (gInst.waveManager && gInst.waveManager.dungeonManager) ? gInst.waveManager.dungeonManager.getCurrentFloorName() : 'OLYMPUS';
                 const waveKey = `d:${wave}:${floorName}`;
                 if (c.waveKey !== waveKey) {
                     c.waveKey = waveKey;
@@ -132,10 +134,10 @@ class HUDController {
                     else this.waveText.textContent = txt;
                 }
             } else {
-                const waveKey = isEndless ? `e:${wave}` : `w:${wave}`;
+                const waveKey = isHard ? `eh:${wave}` : (isEndless ? `e:${wave}` : `w:${wave}`);
                 if (c.waveKey !== waveKey) {
                     c.waveKey = waveKey;
-                    const waveTxt = isEndless ? `⚡ ENDLESS ${wave}` : `WAVE ${wave}`;
+                    const waveTxt = isHard ? `🔥 HARD ENDLESS ${wave}` : (isEndless ? `⚡ ENDLESS ${wave}` : `WAVE ${wave}`);
                     if (typeof UiIcons !== 'undefined') UiIcons.setRichText(this.waveText, waveTxt, 'ui-icon-sm');
                     else this.waveText.textContent = waveTxt;
                 }
@@ -251,7 +253,9 @@ class HUDController {
             }
             const isMasteredFrappes = baseSkill === 'frappes' &&
                 (player.hasPagakiaMastery || (typeof PlayerSkills !== 'undefined' && PlayerSkills.getSkillLevel('frappes') >= 5));
-            const skillKey = isMasteredFrappes ? 'frappes_plus' : baseSkill;
+            const isBonusChronos = baseSkill === 'chrono_hourglass' &&
+                (typeof PlayerSkills !== 'undefined' && PlayerSkills.getSkillLevel('chrono_hourglass') >= 6);
+            const skillKey = isMasteredFrappes ? 'frappes_plus' : (isBonusChronos ? 'chrono_hourglass_plus' : baseSkill);
 
             if (skillSpan && this.currentSkillKey !== skillKey) {
                 this.currentSkillKey = skillKey;
@@ -268,6 +272,7 @@ class HUDController {
                     'frappes': { img: 'assets/SkillsIcons/FrappesSkill.png', name: 'FRAPPES' },
                     'frappes_plus': { img: 'assets/SkillsIcons/FrappesSkill.png', name: 'FRAPPES+' },
                     'chrono_hourglass': { img: 'assets/SkillsIcons/ChronoHourglassSkill.svg', name: 'CHRONOS' },
+                    'chrono_hourglass_plus': { img: 'assets/SkillsIcons/ChronoHourglassSkill.svg', name: 'CHRONOS+' },
                     'wrath_of_olympus': { img: 'assets/SkillsIcons/WrathOfOlympusSkill.svg', name: 'WRATH OF OLYMPUS' }
                 };
                 const cfg = skillConfigs[skillKey] || skillConfigs['blade_rush'];
@@ -312,7 +317,8 @@ class HUDController {
             plasma_pistol: 'Neon Arc Pistol', sawnoff_shotgun: 'Sawn-Off DB', frost_cannon: 'Cryo Vortex',
             boomerang_saw: 'Boomerang Sawblade', chrono_rifle: 'Chrono Stutter Rifle', symbiote: 'Symbiote Launcher',
             carbine: "Kiloumpas's Carbine", dialtone: 'Dial-Tone Blaster', zeus_thunderbolt: "Zeus's Thunderbolt", helios_cannon: 'Helios Omega Cannon',
-            skewer_rifle: 'Skewer Charcoal Rifle', vulcan_minigun: 'Hephaestus Vulcan Minigun', hades_railgun: 'Hades Oblivion Railgun', medusa_gaze: "Medusa's Gorgon Gaze", hyperion_glaive: 'Hyperion Celestial Glaive'
+            skewer_rifle: 'Skewer Charcoal Rifle', vulcan_minigun: 'Hephaestus Vulcan Minigun', hades_railgun: 'Hades Oblivion Railgun', medusa_gaze: "Medusa's Gorgon Gaze", hyperion_glaive: 'Hyperion Celestial Glaive',
+            tempest_bow: 'Stormcaller Longbow', void_mortar: 'Vortex Void Mortar', aurelion_scepter: 'Aurelion Astral Scepter'
         };
         const weaponKeys = {
             pea: 'weapon_pea', watermelon: 'weapon_watermelon', bubble: 'weapon_bubble', pepper: 'weapon_pepper',
@@ -321,13 +327,15 @@ class HUDController {
             plasma_pistol: 'weapon_plasma_pistol', sawnoff_shotgun: 'weapon_sawnoff_shotgun', frost_cannon: 'weapon_frost_cannon',
             boomerang_saw: 'weapon_boomerang_saw', chrono_rifle: 'weapon_chrono_rifle', symbiote: 'weapon_symbiote',
             carbine: 'weapon_carbine', dialtone: 'weapon_dialtone', zeus_thunderbolt: 'weapon_zeus_thunderbolt', helios_cannon: 'weapon_helios_cannon',
-            skewer_rifle: 'weapon_skewer_rifle', vulcan_minigun: 'weapon_vulcan_minigun', hades_railgun: 'weapon_hades_railgun', medusa_gaze: 'weapon_medusa_gaze', hyperion_glaive: 'weapon_hyperion_glaive'
+            skewer_rifle: 'weapon_skewer_rifle', vulcan_minigun: 'weapon_vulcan_minigun', hades_railgun: 'weapon_hades_railgun', medusa_gaze: 'weapon_medusa_gaze', hyperion_glaive: 'weapon_hyperion_glaive',
+            tempest_bow: 'weapon_tempest_bow', void_mortar: 'weapon_void_mortar', aurelion_scepter: 'weapon_aurelion_scepter'
         };
         const weaponIcons = {
             pea: '🌱', watermelon: '🍉', bubble: '🫧', pepper: '🌶️', money_gun: '💵', burger: '🍔', lightning: '⚡', greek_flag: '🇬🇷',
             m4_carbine: '🔫', spas12: '🔫', rusty_smg: '🔫', nail_gun: '🔨', plasma_pistol: '⚡', sawnoff_shotgun: '💥',
             frost_cannon: '❄️', boomerang_saw: '🪚', chrono_rifle: '⏳', symbiote: '🦠', carbine: '🔫', dialtone: '📱', zeus_thunderbolt: '⚡', helios_cannon: '☀️',
-            skewer_rifle: '🍢', vulcan_minigun: '🔥', hades_railgun: '💀', medusa_gaze: '🐍', hyperion_glaive: '🌙'
+            skewer_rifle: '🍢', vulcan_minigun: '🔥', hades_railgun: '💀', medusa_gaze: '🐍', hyperion_glaive: '🌙',
+            tempest_bow: '🏹', void_mortar: '🌀', aurelion_scepter: '🪄'
         };
         if (this.weaponIcon) {
             const wKey = weaponKeys[player.weaponType] || 'weapon_pea';
@@ -528,9 +536,12 @@ class HUDController {
             ctx.fill();
         }
 
-        if (window.gameInstance && window.gameInstance.coopSession && window.gameInstance.coopSession.remotePlayer) {
-            const rp = window.gameInstance.coopSession.remotePlayer;
-            if (!rp.isDownedDisconnected) {
+        if (window.gameInstance && window.gameInstance.coopSession) {
+            const cs = window.gameInstance.coopSession;
+            const rps = cs.remotePlayers || (cs.remotePlayer ? [cs.remotePlayer] : []);
+            for (let ri = 0; ri < rps.length; ri++) {
+                const rp = rps[ri];
+                if (!rp || rp.isDownedDisconnected) continue;
                 const rpx = (arena.halfWidth ? (rp.x + arena.halfWidth) : rp.x) * scaleX;
                 const rpy = (arena.halfHeight ? (rp.y + arena.halfHeight) : rp.y) * scaleY;
                 ctx.fillStyle = rp.isDowned ? '#ff4757' : '#00cec9';

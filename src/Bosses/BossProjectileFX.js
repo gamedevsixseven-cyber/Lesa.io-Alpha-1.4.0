@@ -28,7 +28,12 @@ const BOSS_PROJECTILE_SPECS = {
     berserker_frost_round: { mode: 'beam', trail: 'frost_tracer', trailCol: '#74b9ff', sparkA: '#74b9ff', sparkB: '#dfe6e9', splat: ['#636e72', '#74b9ff'] },
     bio_acid: { mode: 'spin', spin: 0.28, trail: 'venom', trailCol: '#2ed573', sparkA: '#2ed573', sparkB: '#bef264', shock: 'rgba(46, 213, 115, 0.78)', splat: ['#10ac84', '#bef264'] },
     lil_xas_note: { mode: 'spin', spin: 0.14, trail: 'siren', trailCol: '#e056fd', sparkA: '#e056fd', sparkB: '#00f5ff', shock: 'rgba(224, 86, 253, 0.78)', splat: ['#e056fd', '#00f5ff'] },
-    lil_xas_vinyl: { mode: 'spin', spin: 0.34, trail: 'gold', trailCol: '#facc15', sparkA: '#facc15', sparkB: '#e056fd', shock: 'rgba(250, 204, 21, 0.84)', splat: ['#facc15', '#18181b'] }
+    lil_xas_vinyl: { mode: 'spin', spin: 0.34, trail: 'gold', trailCol: '#facc15', sparkA: '#facc15', sparkB: '#e056fd', shock: 'rgba(250, 204, 21, 0.84)', splat: ['#facc15', '#18181b'] },
+    void_orb: { mode: 'spin', spin: 0.25, trail: 'reactor', trailCol: '#a855f7', sparkA: '#a855f7', sparkB: '#38bdf8', shock: 'rgba(168, 85, 247, 0.78)', splat: ['#7e22ce', '#c084fc'] },
+    magma_shard: { mode: 'spin', spin: 0.3, trail: 'ember', trailCol: '#ff6b35', sparkA: '#ff6b35', sparkB: '#fed330', shock: 'rgba(255, 107, 53, 0.82)', crack: true, splat: ['#7c2d12', '#ff6b35'] },
+    crimson_slash: { mode: 'beam', trail: 'slash', trailCol: '#ff2e4c', sparkA: '#ff2e4c', sparkB: '#fecdd3', shock: 'rgba(255, 46, 76, 0.82)', splat: ['#9f1239', '#ff2e4c'] },
+    tempest_bolt: { mode: 'beam', trail: 'laser', trailCol: '#38bdf8', sparkA: '#38bdf8', sparkB: '#fef08a', shock: 'rgba(56, 189, 248, 0.78)', splat: ['#0ea5e9', '#fef08a'] },
+    eclipse_glaive: { mode: 'spin', spin: 0.36, trail: 'crimson', trailCol: '#ff2e4c', sparkA: '#ff2e4c', sparkB: '#fed330', shock: 'rgba(254, 211, 48, 0.82)', splat: ['#be123c', '#fed330'] }
 };
 
 class BossProjectileFX {
@@ -197,6 +202,11 @@ class BossProjectileFX {
             case 'bio_acid': return this.drawBioAcid(ctx, r);
             case 'lil_xas_note': return this.drawLilXasNote(ctx, b, r);
             case 'lil_xas_vinyl': return this.drawLilXasVinyl(ctx, r);
+            case 'void_orb': return this.drawVoidOrb(ctx, r);
+            case 'magma_shard': return this.drawMagmaShard(ctx, r);
+            case 'crimson_slash': return this.drawCrimsonSlash(ctx, r);
+            case 'tempest_bolt': return this.drawTempestBolt(ctx, r);
+            case 'eclipse_glaive': return this.drawEclipseGlaive(ctx, r);
             default: return false;
         }
     }
@@ -463,6 +473,47 @@ class BossProjectileFX {
         this.drawPoly(ctx, [[-r * 0.65, -r * 0.46], [r * 0.45, -r * 0.44], [r * 1.22, 0], [r * 0.45, r * 0.44], [-r * 0.65, r * 0.46]], '#636e72', '#1e272e', 2.1);
         ctx.fillStyle = '#00f5ff';
         ctx.beginPath(); ctx.moveTo(r * 0.45, -r * 0.36); ctx.lineTo(r * 1.15, 0); ctx.lineTo(r * 0.45, r * 0.36); ctx.closePath(); ctx.fill();
+        return true;
+    }
+
+    static drawVoidOrb(ctx, r) {
+        ctx.fillStyle = 'rgba(168, 85, 247, 0.34)';
+        ctx.beginPath(); ctx.arc(0, 0, r * 1.38, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#4c1d95'; ctx.strokeStyle = '#c084fc'; ctx.lineWidth = 2.2;
+        ctx.beginPath(); ctx.arc(0, 0, r * 0.92, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = '#f3e8ff';
+        ctx.beginPath(); ctx.arc(0, 0, r * 0.34, 0, Math.PI * 2); ctx.fill();
+        return true;
+    }
+
+    static drawMagmaShard(ctx, r) {
+        this.drawPoly(ctx, [[-r * 1.15, -r * 0.25], [r * 0.1, -r * 0.95], [r * 1.25, 0], [r * 0.15, r * 0.9], [-r * 0.9, r * 0.45]], '#7c2d12', '#181014', 2.2);
+        this.drawPoly(ctx, [[-r * 0.45, 0], [r * 0.15, -r * 0.48], [r * 0.85, 0], [r * 0.1, r * 0.45]], '#fed330', null, 0);
+        return true;
+    }
+
+    static drawCrimsonSlash(ctx, r) {
+        ctx.fillStyle = 'rgba(255, 46, 76, 0.28)';
+        ctx.beginPath(); ctx.arc(0, 0, r * 1.4, -1.15, 1.15); ctx.fill();
+        ctx.strokeStyle = '#ff2e4c'; ctx.lineWidth = 5; ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.arc(-r * 0.2, 0, r * 1.1, -1.05, 1.05); ctx.stroke();
+        ctx.strokeStyle = '#fff1f2'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(-r * 0.1, 0, r * 0.95, -0.8, 0.8); ctx.stroke();
+        return true;
+    }
+
+    static drawTempestBolt(ctx, r) {
+        this.drawPoly(ctx, [[-r * 1.4, -r * 0.25], [r * 0.4, -r * 0.42], [r * 1.55, 0], [r * 0.4, r * 0.42], [-r * 1.4, r * 0.25]], '#0284c7', '#082f49', 2);
+        ctx.fillStyle = '#fef08a';
+        ctx.fillRect(-r * 0.7, -r * 0.14, r * 1.8, r * 0.28);
+        return true;
+    }
+
+    static drawEclipseGlaive(ctx, r) {
+        ctx.fillStyle = '#be123c'; ctx.strokeStyle = '#12060a'; ctx.lineWidth = 2.2;
+        ctx.beginPath(); ctx.arc(0, 0, r * 1.15, -1.2, 1.2); ctx.quadraticCurveTo(0, r * 0.25, -r * 0.35, -r * 0.9); ctx.closePath(); ctx.fill(); ctx.stroke();
+        ctx.strokeStyle = '#fed330'; ctx.lineWidth = 2.2;
+        ctx.beginPath(); ctx.arc(0, 0, r * 1.05, -1.0, 1.0); ctx.stroke();
         return true;
     }
 }

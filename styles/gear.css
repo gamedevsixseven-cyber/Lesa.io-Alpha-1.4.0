@@ -185,6 +185,18 @@
     box-shadow: 0 0 8px rgba(232, 67, 147, 0.4);
 }
 
+.gear-card-icon-wrap.rarity-mythic {
+    background: #fdeceb;
+    border-color: #e74c3c;
+    box-shadow: 0 0 10px rgba(231, 76, 60, 0.45);
+}
+
+.gear-card-icon-wrap.rarity-apex {
+    background: linear-gradient(135deg, #18181f 0%, #3b0a14 100%);
+    border-color: #fed330;
+    box-shadow: 0 0 12px rgba(255, 46, 76, 0.65);
+}
+
 .gear-card-img {
     width: 38px;
     height: 38px;
@@ -380,6 +392,13 @@
     border-color: #7b241c;
 }
 
+.gear-btn-chest-only.is-apex {
+    background: linear-gradient(135deg, #991b1b 0%, #ff2e4c 55%, #fbbf24 100%);
+    color: #ffffff;
+    border-color: #fed330;
+    box-shadow: 0 3px 0 #1e272e, 0 0 10px rgba(255, 46, 76, 0.55);
+}
+
 /* Signature Passive Pill on Epic / Legendary Gear Cards */
 .gear-passive-pill {
     margin: 4px 0 8px 0;
@@ -406,6 +425,13 @@
     color: #1e272e;
 }
 
+.gear-passive-pill.is-apex {
+    background: linear-gradient(135deg, #1a1218, #2b0b12);
+    border-color: #ff2e4c;
+    color: #fef3c7;
+    box-shadow: inset 0 0 8px rgba(255, 46, 76, 0.28);
+}
+
 .gear-card.rarity-epic:not(.is-locked) {
     border-color: #9b59b6;
 }
@@ -418,6 +444,17 @@
     border-color: #e74c3c;
     box-shadow: 0 4px 0 #1e272e, 0 0 14px rgba(231, 76, 60, 0.38);
 }
+
+.gear-card.rarity-apex:not(.is-locked) {
+    background: linear-gradient(180deg, #1b1720 0%, #110d13 100%);
+    border-color: #ff2e4c;
+    color: #f8fafc;
+    box-shadow: 0 4px 0 #1e272e, 0 0 16px rgba(255, 46, 76, 0.52);
+}
+.gear-card.rarity-apex:not(.is-locked) .gear-card-name { color: #fed330; }
+.gear-card.rarity-apex:not(.is-locked) .gear-card-subname { color: #cbd5e1; }
+.gear-card.rarity-apex:not(.is-locked) .gear-card-stat-pill { background: rgba(255, 46, 76, 0.14); border-color: rgba(254, 211, 48, 0.35); color: #fef3c7; }
+.gear-card.rarity-apex:not(.is-locked) .gear-lvl-pill:not(.is-evolved) { background: rgba(254, 211, 48, 0.16); color: #fef08a; border-color: rgba(254, 211, 48, 0.5); }
 
 .gear-slot-emoji {
     font-size: 1.55rem;
@@ -457,6 +494,27 @@
 .gear-slot-card.gear-slot-mythic {
     border-color: #e74c3c !important;
     box-shadow: 0 0 14px rgba(231, 76, 60, 0.65) !important;
+}
+
+.gear-slot-card.gear-slot-apex {
+    background: linear-gradient(180deg, #1b1720 0%, #110d13 100%) !important;
+    border-color: #ff2e4c !important;
+    color: #fed330 !important;
+    box-shadow: 0 0 16px rgba(255, 46, 76, 0.72), 0 0 6px rgba(254, 211, 48, 0.5) !important;
+}
+.gear-slot-card.gear-slot-apex .gear-slot-name { color: #fed330 !important; }
+
+.gear-cost-chip.is-diamond-cost {
+    background: linear-gradient(135deg, #0ea5e9 0%, #6366f1 100%) !important;
+    color: #ffffff !important;
+    border-color: #7dd3fc !important;
+    font-weight: 900;
+}
+.gear-btn-diamond-bonus {
+    background: linear-gradient(135deg, #38bdf8 0%, #8b5cf6 52%, #ec4899 100%);
+    color: #ffffff;
+    border-color: #fef08a;
+    box-shadow: 0 3px 0 #1e272e, 0 0 12px rgba(56, 189, 248, 0.55);
 }
 
 /* Mobile Responsiveness (Zoomed-Out Compact 2-Column Layout for Phones) */

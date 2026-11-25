@@ -121,6 +121,24 @@ async function saveClanObj(db, clan) {
   return clan;
 }
 
+async function syncPlayerClanFields(db, uid, clanOrNull) {
+  if (!validUid(uid)) return;
+  try {
+    const row = await db.prepare('SELECT dataJson FROM players WHERE uid = ?1').bind(uid).first();
+    if (!row) return;
+    let doc = {};
+    try { doc = JSON.parse(row.dataJson || '{}'); } catch (_) { }
+    const clanId = clanOrNull ? clanOrNull.id : null;
+    const clanTag = clanOrNull ? clanOrNull.tag : null;
+    const clanName = clanOrNull ? clanOrNull.name : null;
+    doc.clanId = clanId; doc.clanTag = clanTag; doc.clanName = clanName;
+    const now = Date.now();
+    await db.prepare(
+      'UPDATE players SET clanId = ?1, clanTag = ?2, clanName = ?3, updatedAt = ?4, dataJson = ?5 WHERE uid = ?6'
+    ).bind(clanId, clanTag, clanName, now, JSON.stringify(doc), uid).run();
+  } catch (_) { }
+}
+
 async function handlePlayers(method, segs, url, body, db) {
   if (segs[0] === 'leaderboard' && method === 'GET') {
     const [hs, ew, tk, seen] = await db.batch([
@@ -178,6 +196,32 @@ async function handlePlayers(method, segs, url, body, db) {
   if (segs[0] === 'player' && segs[1]) {
     const uid = decodeURIComponent(segs[1]);
     if (!validUid(uid)) return json({ ok: false, error: 'Invalid player UID.' }, 400);
+    if (method === 'POST' && segs[2] === 'gift') {
+      const existingRow = await db.prepare('SELECT dataJson FROM players WHERE uid = ?1').bind(uid).first();
+      let doc = {};
+      if (existingRow && existingRow.dataJson) { try { doc = JSON.parse(existingRow.dataJson); } catch (_) { } }
+      if (segs[3] === 'claim') {
+        const claimedIds = new Set(Array.isArray(body && body.giftIds) ? body.giftIds : []);
+        if (Array.isArray(doc.devGifts)) doc.devGifts = doc.devGifts.filter(g => g && !claimedIds.has(g.id));
+        await db.prepare('UPDATE players SET dataJson = ?1, updatedAt = ?2 WHERE uid = ?3').bind(JSON.stringify(doc), Date.now(), uid).run();
+        return json({ ok: true, uid, devGifts: doc.devGifts || [] });
+      }
+      const gift = body && body.gift && typeof body.gift === 'object' ? body.gift : null;
+      if (!gift || !gift.id) return json({ ok: false, error: 'Invalid gift payload.' }, 400);
+      const prevGifts = Array.isArray(doc.devGifts) ? doc.devGifts : [];
+      if (!prevGifts.some(g => g && g.id === gift.id)) prevGifts.push(gift);
+      const meta = body && body.playerMeta && typeof body.playerMeta === 'object' ? body.playerMeta : {};
+      const nextDoc = { playerName: cleanStr(meta.playerName || 'Hero', 40), friendTag: cleanStr(meta.friendTag || '', 16), ...doc, uid, devGifts: prevGifts };
+      const now = Date.now();
+      const pName = cleanStr(nextDoc.playerName || 'Hero', 40) || 'Hero';
+      const fTag = cleanStr(nextDoc.friendTag || '', 16);
+      await db.prepare(
+        `INSERT INTO players (uid, playerName, playerNameLower, friendTag, friendTagClean, lastSeenAt, updatedAt, dataJson)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)
+         ON CONFLICT(uid) DO UPDATE SET updatedAt=excluded.updatedAt, dataJson=excluded.dataJson`
+      ).bind(uid, pName, pName.toLowerCase(), fTag, fTag.replace(/[^A-Z0-9]/gi, '').toUpperCase(), Number(nextDoc.lastSeenAt) || now, now, JSON.stringify(nextDoc)).run();
+      return json({ ok: true, uid, devGifts: prevGifts });
+    }
     if (method === 'GET') {
       const row = await db.prepare('SELECT uid, dataJson, updatedAt FROM players WHERE uid = ?1').bind(uid).first();
       if (!row) return json({ ok: false, error: 'Not found' }, 404);
@@ -195,6 +239,13 @@ async function handlePlayers(method, segs, url, body, db) {
         try { prev = JSON.parse(existingRow.dataJson); } catch (_) { }
       }
       const merged = { ...prev, ...incoming, uid };
+      if (incoming.devGifts === undefined && prev.devGifts !== undefined) merged.devGifts = prev.devGifts;
+      if (prev.clanId && !incoming.clanId && !incoming._clearClan) {
+        merged.clanId = prev.clanId;
+        if (prev.clanTag) merged.clanTag = prev.clanTag;
+        if (prev.clanName) merged.clanName = prev.clanName;
+      }
+      delete merged._clearClan;
       if (prev.player && incoming.player) merged.player = { ...prev.player, ...incoming.player };
       if (prev.socialStats && incoming.socialStats) merged.socialStats = { ...prev.socialStats, ...incoming.socialStats };
       const jsonStr = JSON.stringify(merged);
@@ -239,6 +290,17 @@ async function handleClans(method, segs, body, db) {
     return json({ ok: true, clans: (results || []).map(parseClanRow).filter(Boolean) });
   }
 
+  if (segs[0] === 'clans' && segs[1] === 'member' && segs[2] && method === 'GET') {
+    const uid = decodeURIComponent(segs[2]);
+    if (!validUid(uid)) return json({ ok: false, error: 'Invalid player UID.' }, 400);
+    const { results } = await db.prepare('SELECT id, xp, level, memberCount, leaderUid, dataJson FROM clans WHERE dataJson LIKE ?1 ORDER BY xp DESC LIMIT 10').bind(`%${uid}%`).all();
+    for (const r of (results || [])) {
+      const c = parseClanRow(r);
+      if (c && c.members && c.members[uid]) { await syncPlayerClanFields(db, uid, c); return json({ ok: true, clan: c }); }
+    }
+    return json({ ok: true, clan: null });
+  }
+
   if (segs[0] === 'clans' && segs[1] === 'migrate' && method === 'POST') {
     const c = body && body.clan;
     if (!c || !validClanId(c.id)) return json({ ok: false, error: 'Invalid clan migration payload.' }, 400);
@@ -254,6 +316,7 @@ async function handleClans(method, segs, body, db) {
     const dup = await db.prepare('SELECT id FROM clans WHERE tag = ?1 LIMIT 1').bind(String(c.tag).toUpperCase()).first();
     if (dup) return json({ ok: false, error: `Clan Tag [${c.tag}] is already taken!` }, 409);
     const saved = await saveClanObj(db, c);
+    await syncPlayerClanFields(db, c.leaderUid, saved);
     return json({ ok: true, clan: saved });
   }
 
@@ -276,7 +339,7 @@ async function handleClans(method, segs, body, db) {
 
   if (act === 'join') {
     if (!validUid(myUid)) return json({ ok: false, error: 'Missing player UID.' }, 400);
-    if (members[myUid]) return json({ ok: true, outcome: 'joined', clan: data });
+    if (members[myUid]) { await syncPlayerClanFields(db, myUid, data); return json({ ok: true, outcome: 'joined', clan: data }); }
     const maxMem = Math.max(12, Number(body.maxMembers) || 12);
     if (Object.keys(members).length >= maxMem) return json({ ok: false, error: 'Clan roster is full!' }, 400);
     if (data.joinMode === 'request') {
@@ -289,6 +352,7 @@ async function handleClans(method, segs, body, db) {
     data.members = members;
     data.activityLog = [`${cleanStr(me.name, 32)} joined the Clan!`, ...log.slice(0, 9)];
     await saveClanObj(db, data);
+    await syncPlayerClanFields(db, myUid, data);
     return json({ ok: true, outcome: 'joined', clan: data });
   }
 
@@ -305,6 +369,7 @@ async function handleClans(method, segs, body, db) {
       data.activityLog = [`${req.name} joined the Clan!`, ...log.slice(0, 9)];
     }
     await saveClanObj(db, data);
+    if (body.accept && req) await syncPlayerClanFields(db, tUid, data);
     return json({ ok: true, clan: data });
   }
 
@@ -348,6 +413,7 @@ async function handleClans(method, segs, body, db) {
     data.members = members;
     data.activityLog = [`${target.name} was removed from the Clan.`, ...log.slice(0, 9)];
     await saveClanObj(db, data);
+    await syncPlayerClanFields(db, tUid, null);
     return json({ ok: true, clan: data });
   }
 
@@ -356,6 +422,7 @@ async function handleClans(method, segs, body, db) {
     const rem = Object.keys(members);
     if (rem.length === 0) {
       await db.prepare('DELETE FROM clans WHERE id = ?1').bind(clanId).run();
+      await syncPlayerClanFields(db, myUid, null);
       return json({ ok: true, deleted: true });
     }
     if (data.leaderUid === myUid) {
@@ -366,6 +433,7 @@ async function handleClans(method, segs, body, db) {
     data.members = members;
     data.activityLog = [`${cleanStr(me.name, 32)} left the Clan.`, ...log.slice(0, 9)];
     await saveClanObj(db, data);
+    await syncPlayerClanFields(db, myUid, null);
     return json({ ok: true, deleted: false, clan: data });
   }
 

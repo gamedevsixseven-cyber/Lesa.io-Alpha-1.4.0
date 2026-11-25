@@ -448,3 +448,31 @@
     color: #1e272e;
     font-weight: 900;
 }
+
+.skill-level-badge.bonus-level-badge {
+    background: linear-gradient(135deg, #2ed573, #fed330);
+    color: #1e272e;
+    box-shadow: 0 0 10px rgba(46, 213, 115, 0.7), 1.5px 1.5px 0 var(--dark-outline);
+}
+
+.skill-pip.bonus {
+    background: linear-gradient(135deg, #2ed573, #fed330);
+    box-shadow: 0 0 7px #2ed573;
+}
+
+.skill-card.bonus-mastered-card {
+    box-shadow: 0 0 14px rgba(46, 213, 115, 0.4), 4px 4px 0 var(--dark-outline);
+}
+
+.skill-upgrade-btn.bonus-mastery-btn {
+    background: linear-gradient(135deg, #2ed573, #fed330);
+    color: #1e272e;
+    box-shadow: 0 0 9px rgba(46, 213, 115, 0.55);
+}
+
+.skill-upgrade-btn.bonus-unlock-btn {
+    background: linear-gradient(135deg, #2ed573, #fed330);
+    color: #1e272e;
+    font-size: 0.72rem;
+    box-shadow: 0 0 8px rgba(254, 211, 48, 0.45);
+}

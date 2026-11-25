@@ -268,7 +268,8 @@ class HephaestusVulcanMinigun extends WeaponBase {
         const g = game || (typeof window !== 'undefined' ? window.gameInstance : null);
         if (!g) return;
         const now = typeof performance !== 'undefined' ? performance.now() : Date.now();
-        const players = [g.player, (g.coopSession && g.coopSession.remotePlayer) ? g.coopSession.remotePlayer : null];
+        const rps = (g.coopSession && (g.coopSession.remotePlayers || (g.coopSession.remotePlayer ? [g.coopSession.remotePlayer] : []))) || [];
+        const players = [g.player, ...rps];
 
         for (let i = 0; i < players.length; i++) {
             const p = players[i];

@@ -4,10 +4,32 @@
  * awards Guest pickups authoritatively, and prevents full-HP hosts from starving hurt teammates.
  */
 class CoopDropSync {
-    static awardSquadDrop(session, drop, collectorIsGuest = false) {
+    static _sendToPeer(net, peerId, type, payload) {
+        if (!net) return;
+        if (peerId && typeof net.sendTo === 'function') net.sendTo(peerId, type, payload);
+        else net.send(type, payload);
+    }
+
+    static tryHostHeartShare(drop, player, effects) {
+        const g = (typeof window !== 'undefined') ? window.gameInstance : null;
+        const rps = (g && !g.isCoopGuest && g.coopSession) ? (g.coopSession.remotePlayers || (g.coopSession.remotePlayer ? [g.coopSession.remotePlayer] : [])) : [];
+        const rp = rps.find(r => r && !r.isDowned && !r.isDownedDisconnected && r.hp < r.maxHp) || null;
+        if (!rp || !player || player.hp < player.maxHp) return false;
+        const healAmt = drop.value || 30;
+        rp.hp = Math.min(rp.maxHp, rp.hp + healAmt);
+        if (window.soundEngine) window.soundEngine.playPickup('heart');
+        if (effects) { effects.addPopup(rp.x, rp.y, `+${healAmt} HP`, '#2ed573', 24); effects.addSparks(rp.x, rp.y, '#2ed573', 8); }
+        this._sendToPeer(g.coopSession.net, rp.peerId, 'GUEST_DROP_EFFECT', { type: 'heart', amt: healAmt, hp: Math.round(rp.hp), maxHp: Math.round(rp.maxHp) });
+        return true;
+    }
+
+    static awardSquadDrop(session, drop, collectorOrFlag = false, collectorPeerId = null) {
         const game = session && session.game;
         const p1 = game && game.player;
-        const p2 = session && session.remotePlayer;
+        const isObjCollector = collectorOrFlag && typeof collectorOrFlag === 'object';
+        const collectorIsGuest = isObjCollector || collectorOrFlag === true;
+        const p2 = isObjCollector ? collectorOrFlag : (session && session.remotePlayer);
+        const peerId = collectorPeerId || (p2 && p2.peerId) || null;
         if (!drop || !game) return;
 
         if (drop.type === 'xp') {
@@ -27,17 +49,17 @@ class CoopDropSync {
                 const gain = drop.value || 30;
                 target.hp = Math.min(target.maxHp, target.hp + gain);
                 if (game.effects) game.effects.addComicSplash(target.x, target.y - 25, `+${gain} HP 💚`);
-                if (collectorIsGuest && session.net) {
-                    session.net.send('GUEST_DROP_EFFECT', { type: 'heart', amt: gain, hp: Math.round(target.hp), maxHp: Math.round(target.maxHp) });
+                if (collectorIsGuest) {
+                    this._sendToPeer(session.net, peerId, 'GUEST_DROP_EFFECT', { type: 'heart', amt: gain, hp: Math.round(target.hp), maxHp: Math.round(target.maxHp) });
                 }
             }
         } else if (drop.type === 'star') {
-            if (collectorIsGuest && session.net) session.net.send('GUEST_DROP_EFFECT', { type: 'star', val: drop.value || 1 });
+            if (collectorIsGuest) this._sendToPeer(session.net, peerId, 'GUEST_DROP_EFFECT', { type: 'star', val: drop.value || 1 });
         } else if (drop.type === 'shield') {
             if (collectorIsGuest && p2 && !p2.isDowned) {
                 p2.shieldActive = true;
                 p2._shieldBrokenUntil = 0;
-                if (session.net) session.net.send('GUEST_DROP_EFFECT', { type: 'shield' });
+                this._sendToPeer(session.net, peerId, 'GUEST_DROP_EFFECT', { type: 'shield' });
             }
         } else if (drop.type === 'magnet' && typeof game.vacuumAllXP === 'function') {
             game.vacuumAllXP();
@@ -48,8 +70,8 @@ class CoopDropSync {
             } else {
                 p1.chronoCores = (p1.chronoCores || 0) + (drop.value || 1);
             }
-            if (collectorIsGuest && session.net) {
-                session.net.send('GUEST_DROP_EFFECT', { type: 'chrono_core', val: drop.value || 1, total: p1.chronoCores || 0 });
+            if (collectorIsGuest) {
+                this._sendToPeer(session.net, peerId, 'GUEST_DROP_EFFECT', { type: 'chrono_core', val: drop.value || 1, total: p1.chronoCores || 0 });
             }
         } else if (typeof Drop !== 'undefined' && Drop.MATERIAL_DROP_MAP && Drop.MATERIAL_DROP_MAP[drop.type]) {
             const matId = Drop.MATERIAL_DROP_MAP[drop.type];
@@ -60,17 +82,19 @@ class CoopDropSync {
         }
     }
 
-    static handleGuestCollectDrop(session, payload) {
-        const p2 = session && session.remotePlayer;
-        if (!payload || typeof payload.id !== 'number' || !p2 || p2.isDowned || p2.isDownedDisconnected) return;
+    static handleGuestCollectDrop(session, payload, senderId = null) {
+        const collector = (session && typeof session.getRemotePlayer === 'function')
+            ? session.getRemotePlayer(senderId) : (session && session.remotePlayer);
+        if (!payload || typeof payload.id !== 'number' || !collector || collector.isDowned || collector.isDownedDisconnected) return;
         const drops = session.game && session.game.drops;
         if (!Array.isArray(drops)) return;
+        const collectorTag = collector.peerId || senderId || 'guest';
         for (let i = 0; i < drops.length; i++) {
             const d = drops[i];
             if (d && !d.dead && d._netId === payload.id) {
-                if (Math.hypot(p2.x - d.x, p2.y - d.y) > 750 && !d.magnetized && d._magTarget !== 'guest') return;
+                if (Math.hypot(collector.x - d.x, collector.y - d.y) > 750 && !d.magnetized && d._magTarget !== collectorTag) return;
                 d.dead = true;
-                this.awardSquadDrop(session, d, true);
+                this.awardSquadDrop(session, d, collector, senderId || collector.peerId);
                 if (d.type === 'heart' && typeof session.broadcastSnapshot === 'function') session.broadcastSnapshot();
                 break;
             }
@@ -80,12 +104,22 @@ class CoopDropSync {
     static updateHostDrops(session, dt) {
         const game = session && session.game;
         if (!game || !Array.isArray(game.drops)) return;
-        const p1 = game.player, p2 = session.remotePlayer;
-        const p1Alive = !!(p1 && p1.hp > 0);
-        const p2Alive = !!(p2 && !p2.isDowned && !p2.isDownedDisconnected);
-        const anyAlive = p1Alive || p2Alive;
+        const p1 = game.player;
+        const alivePlayers = (typeof CoopPeerRoster !== 'undefined')
+            ? CoopPeerRoster.getAlivePlayers(session)
+            : (() => {
+                const list = [];
+                if (p1 && p1.hp > 0) list.push(p1);
+                if (session.remotePlayer && !session.remotePlayer.isDowned && !session.remotePlayer.isDownedDisconnected) list.push(session.remotePlayer);
+                return list;
+            })();
+        const anyAlive = alivePlayers.length > 0;
         const perkMagMult = (typeof window !== 'undefined' && window.perkSystem && typeof window.perkSystem.getMagnetMultiplier === 'function') ? window.perkSystem.getMagnetMultiplier() : 1.0;
         let dWrite = 0;
+
+        const tagOf = (u) => (u === p1) ? 'host' : (u.peerId || 'guest');
+        const byTag = new Map();
+        for (let i = 0; i < alivePlayers.length; i++) byTag.set(tagOf(alivePlayers[i]), alivePlayers[i]);
 
         for (let i = 0; i < game.drops.length; i++) {
             const drop = game.drops[i];
@@ -100,33 +134,29 @@ class CoopDropSync {
             if (drop.pickupDelay > 0) drop.pickupDelay -= dt;
 
             if (anyAlive && (drop.pickupDelay <= 0 || drop.magnetized)) {
-                if (drop._magTarget === 'host' && !p1Alive) { drop._magTarget = null; drop.magnetized = false; }
-                if (drop._magTarget === 'guest' && !p2Alive) { drop._magTarget = null; drop.magnetized = false; }
+                if (drop._magTarget && !byTag.has(drop._magTarget)) { drop._magTarget = null; drop.magnetized = false; }
 
                 const extraR = (drop.type === 'xp' ? 0 : 30);
-                const mag1 = p1Alive ? ((p1.magnetRadius || 140) + extraR) * perkMagMult : 0;
-                const mag2 = p2Alive ? ((p2.magnetRadius || 140) + extraR) : 0;
-                const dSq1 = p1Alive ? ((p1.x - drop.x) ** 2 + (p1.y - drop.y) ** 2) : Infinity;
-                const dSq2 = p2Alive ? ((p2.x - drop.x) ** 2 + (p2.y - drop.y) ** 2) : Infinity;
+                let target = drop._magTarget ? byTag.get(drop._magTarget) : null;
+                let magDist = target ? (((target.magnetRadius || 140) + extraR) * (target === p1 ? perkMagMult : 1)) : 140;
 
-                let target = null, magDist = 140;
-                if (drop._magTarget === 'host') { target = p1; magDist = mag1; }
-                else if (drop._magTarget === 'guest') { target = p2; magDist = mag2; }
-                else {
-                    const in1 = p1Alive && (dSq1 < mag1 * mag1 || drop.magnetized);
-                    const in2 = p2Alive && (dSq2 < mag2 * mag2 || drop.magnetized);
-                    if (in1 && in2) {
-                        if (drop.type === 'heart' && p1.hp >= p1.maxHp && p2.hp < p2.maxHp) { target = p2; magDist = mag2; }
-                        else if (drop.type === 'heart' && p2.hp >= p2.maxHp && p1.hp < p1.maxHp) { target = p1; magDist = mag1; }
-                        else if (dSq2 < dSq1) { target = p2; magDist = mag2; }
-                        else { target = p1; magDist = mag1; }
-                    } else if (in1) { target = p1; magDist = mag1; }
-                    else if (in2) { target = p2; magDist = mag2; }
+                if (!target) {
+                    let bestScore = Infinity;
+                    for (let j = 0; j < alivePlayers.length; j++) {
+                        const u = alivePlayers[j];
+                        const r = ((u.magnetRadius || 140) + extraR) * (u === p1 ? perkMagMult : 1);
+                        const dSq = (u.x - drop.x) ** 2 + (u.y - drop.y) ** 2;
+                        if (dSq >= r * r && !drop.magnetized) continue;
+                        // Prioritize hurt teammates for heart drops over full-HP players
+                        const fullPenalty = (drop.type === 'heart' && u.hp >= u.maxHp) ? 1e12 : 0;
+                        const score = dSq + fullPenalty;
+                        if (score < bestScore) { bestScore = score; target = u; magDist = r; }
+                    }
                 }
 
                 if (target) {
                     drop.magnetized = true;
-                    drop._magTarget = (target === p2) ? 'guest' : 'host';
+                    drop._magTarget = tagOf(target);
                     const dx = target.x - drop.x, dy = target.y - drop.y;
                     const dist = Math.hypot(dx, dy);
                     const pullSpeed = Math.min(20, 4 + Math.max(0, magDist - dist) * 0.12 + 6);
@@ -137,7 +167,7 @@ class CoopDropSync {
                     if (dist < (target.radius || 24) + (drop.radius || 14)) {
                         drop.dead = true;
                         if (target === p1) drop.onCollect(p1, game.effects);
-                        else this.awardSquadDrop(session, drop, true);
+                        else this.awardSquadDrop(session, drop, target, target.peerId);
                         continue;
                     }
                 }

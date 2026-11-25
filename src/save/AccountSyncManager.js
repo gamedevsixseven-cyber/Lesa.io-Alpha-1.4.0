@@ -150,6 +150,17 @@ class AccountSyncManager {
                     const combatFeats = (typeof PerkProgression !== 'undefined')
                         ? PerkProgression.mergeFeats(localEstablished ? sj('lesaio_combat_feats', {}) : {}, p.combatFeats || {})
                         : { ...(localEstablished ? sj('lesaio_combat_feats', {}) : {}), ...(p.combatFeats || {}) };
+                    const stats = (p.stats && typeof p.stats === 'object') ? p.stats : (docData.stats || {});
+                    const social = (docData.socialStats && typeof docData.socialStats === 'object') ? docData.socialStats : {};
+                    const highScore = Math.max(parseInt(stats.highScore || docData.lbHighScore || social.highScore || docData.highScore || 0, 10) || 0, localEstablished ? si('lesaio_highscore', 0, 0) : 0);
+                    const totalKills = Math.max(parseInt(stats.totalKills || docData.lbTotalKills || social.totalKills || docData.totalKills || 0, 10) || 0, localEstablished ? si('lesaio_total_kills', 0, 0) : 0);
+                    const maxWave = Math.max(parseInt(stats.maxWave || docData.lbEndlessWave || social.maxWave || docData.maxWave || 1, 10) || 1, localEstablished ? si('lesaio_max_wave', 1, 1) : 1);
+                    const cloudEndWave = Math.max(Number(combatFeats.endlessMaxWave) || 0, Number(docData.lbEndlessWave) || 0, Number(social.endlessMaxWave) || 0, maxWave > 20 ? maxWave : 0);
+                    if (cloudEndWave > (combatFeats.endlessMaxWave || 0)) combatFeats.endlessMaxWave = cloudEndWave;
+                    if (cloudEndWave >= 30 || (combatFeats.endlessHardMaxWave || 0) >= 1) {
+                        combatFeats.hardEndlessUnlocked = true;
+                        localStorage.setItem('lesaio_hard_endless_unlocked', 'true');
+                    }
 
                     const equippedGear = (p.equippedGear && typeof p.equippedGear === 'object')
                         ? { helmet: null, armor: null, belt: null, gloves: null, boots: null, ...p.equippedGear }
@@ -165,17 +176,14 @@ class AccountSyncManager {
                     const evolvedGear = Array.from(new Set([...(Array.isArray(p.evolvedGear) ? p.evolvedGear : []), ...(localEstablished ? sj('lesaio_evolved_gear', []) : [])]));
                     const ascendedGear = Array.from(new Set([...(Array.isArray(p.ascendedGear) ? p.ascendedGear : []), ...(localEstablished ? sj('lesaio_ascended_gear', []) : [])]));
                     const evolvedWeapons = Array.from(new Set([...(Array.isArray(p.evolvedWeapons) ? p.evolvedWeapons : []), ...(localEstablished ? sj('lesaio_evolved_weapons', []) : [])]));
+                    const celestialTrees = (typeof CelestialSkillTreeManager !== 'undefined')
+                        ? CelestialSkillTreeManager.mergeMaps(p.celestialTrees || {}, localEstablished ? sj('lesaio_celestial_trees', {}) : {})
+                        : (p.celestialTrees || {});
                     const starBlessedHeroes = Array.from(new Set([...(Array.isArray(p.starBlessedHeroes) ? p.starBlessedHeroes : []), ...(localEstablished ? sj('lesaio_star_blessed_heroes', []) : [])]));
                     const rawMats = (p.inventory && p.inventory.materials) || p.materials || {};
                     const materials = (typeof MaterialRegistry !== 'undefined')
                         ? MaterialRegistry.normalizeMap(rawMats)
                         : { ...rawMats };
-
-                    const stats = (p.stats && typeof p.stats === 'object') ? p.stats : (docData.stats || {});
-                    const social = (docData.socialStats && typeof docData.socialStats === 'object') ? docData.socialStats : {};
-                    const highScore = Math.max(parseInt(stats.highScore || docData.lbHighScore || social.highScore || docData.highScore || 0, 10) || 0, localEstablished ? si('lesaio_highscore', 0, 0) : 0);
-                    const totalKills = Math.max(parseInt(stats.totalKills || docData.lbTotalKills || social.totalKills || docData.totalKills || 0, 10) || 0, localEstablished ? si('lesaio_total_kills', 0, 0) : 0);
-                    const maxWave = Math.max(parseInt(stats.maxWave || docData.lbEndlessWave || social.maxWave || docData.maxWave || 1, 10) || 1, localEstablished ? si('lesaio_max_wave', 1, 1) : 1);
 
                     // Reconstruct Master Save (preserving full inventory, cosmetics, chests, battlePass, skins)
                     const masterSaveV2 = {
@@ -189,7 +197,7 @@ class AccountSyncManager {
                             ascentCrestsDate: ascentCrestsDate || (window.ascentCrestManager ? window.ascentCrestManager.lastDailyDate : ''),
                             selectedSkill, unlockedSkills, skillLevels, upgrades, unlockedPerks, equippedPerks,
                             perkRanks, combatFeats, equippedGear, unlockedGear, gearLevels, evolvedGear,
-                            ascendedGear, evolvedWeapons, starBlessedHeroes, materials,
+                            ascendedGear, evolvedWeapons, celestialTrees, starBlessedHeroes, materials,
                             inventory: p.inventory || null,
                             cosmetics: p.cosmetics || null,
                             heroSkins: p.heroSkins || null,
@@ -268,6 +276,8 @@ class AccountSyncManager {
                     localStorage.setItem('lesaio_ascended_gear', JSON.stringify(ascendedGear));
                     if (typeof GearUpgradeManager !== 'undefined' && typeof GearUpgradeManager.setAscendedList === 'function') GearUpgradeManager.setAscendedList(ascendedGear);
                     localStorage.setItem('lesaio_evolved_weapons', JSON.stringify(evolvedWeapons));
+                    localStorage.setItem('lesaio_celestial_trees', JSON.stringify(celestialTrees));
+                    if (typeof CelestialSkillTreeManager !== 'undefined') CelestialSkillTreeManager.setState(celestialTrees);
                     localStorage.setItem('lesaio_star_blessed_heroes', JSON.stringify(starBlessedHeroes));
                     if (typeof HeroStarBlessing !== 'undefined') HeroStarBlessing.setBlessedList(starBlessedHeroes);
                     if (p.cosmetics && typeof p.cosmetics === 'object' && typeof CosmeticManager !== 'undefined') {
@@ -336,9 +346,23 @@ class AccountSyncManager {
                         if (window.GameState && typeof SaveSerializer !== 'undefined') {
                             SaveSerializer.deserialize(masterSaveV2, window.GameState);
                         }
+                        if (docData.clanId) {
+                            masterSaveV2.clanId = docData.clanId;
+                            if (docData.clanTag) masterSaveV2.clanTag = docData.clanTag;
+                            if (docData.clanName) masterSaveV2.clanName = docData.clanName;
+                        }
+                        if (Array.isArray(docData.devGifts) && docData.devGifts.length > 0) {
+                            masterSaveV2.devGifts = docData.devGifts;
+                        }
                         if (window.cloudSave) {
                             window.cloudSave.lastCloudData = masterSaveV2;
                             window.cloudSave.hasCompletedInitialSync = true;
+                        }
+                        if (docData.clanId && window.clanService && typeof window.clanService.onAuthChanged === 'function') {
+                            window.clanService.onAuthChanged();
+                        }
+                        if (Array.isArray(docData.devGifts) && docData.devGifts.length > 0 && typeof DevGiftManager !== 'undefined') {
+                            DevGiftManager.claimPendingGifts(docData, window.cloudSave);
                         }
                     }
                     if (localEstablished || doc.id !== user.uid) {

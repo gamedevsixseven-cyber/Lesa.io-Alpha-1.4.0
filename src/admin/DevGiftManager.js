@@ -8,11 +8,12 @@
 class DevGiftManager {
     static CLAIMED_STORAGE_KEY = 'lesaio_claimed_dev_gifts';
     static MAX_CLAIMED_HISTORY = 120;
-    static CHEST_ORDER = ['common', 'uncommon', 'rare', 'epic', 'legendary', 'mythic'];
-    static CHEST_LABELS = { common: 'Common Chest', uncommon: 'Uncommon Chest', rare: 'Rare Chest', epic: 'Epic Chest', legendary: 'Legendary Chest', mythic: 'Mythic Chest' };
+    static CHEST_ORDER = ['common', 'uncommon', 'rare', 'epic', 'legendary', 'mythic', 'apex'];
+    static CHEST_LABELS = { common: 'Common Chest', uncommon: 'Uncommon Chest', rare: 'Rare Chest', epic: 'Epic Chest', legendary: 'Legendary Chest', mythic: 'Mythic Chest', apex: 'Apex Chest' };
     static CHEST_ICONS = {
         common: 'assets/Chests/CommonChest.png', uncommon: 'assets/Chests/UncommonChest.png', rare: 'assets/Chests/RareChest.png',
-        epic: 'assets/Chests/EpicChest.png', legendary: 'assets/Chests/LegendaryChest.png', mythic: 'assets/Chests/MythicChest.png'
+        epic: 'assets/Chests/EpicChest.png', legendary: 'assets/Chests/LegendaryChest.png', mythic: 'assets/Chests/MythicChest.png',
+        apex: 'assets/Chests/ApexChest.png'
     };
 
     static getWeaponOptions() {
@@ -112,20 +113,10 @@ class DevGiftManager {
     static async sendGiftToPlayer(targetInfo, rawSpec) {
         const check = await this._requireDev();
         if (!check.authorized) throw new Error(check.message || 'Primary Dev authorization required.');
-        const db = this._getDb();
-        if (!db || !targetInfo || !targetInfo.uid) throw new Error('Invalid target account.');
+        if (!targetInfo || !targetInfo.uid) throw new Error('Invalid target account.');
 
         const clean = this.sanitizeGiftSpec(rawSpec);
         if (clean.isEmpty) throw new Error('Select at least one gift item.');
-
-        const candidateDocIds = Array.from(new Set([targetInfo.uid, ...(Array.isArray(targetInfo.altDocIds) ? targetInfo.altDocIds : [])].filter(Boolean)));
-        let targetRef = null;
-        for (const docId of candidateDocIds) {
-            const ref = db.collection('players').doc(docId);
-            const snap = await ref.get().catch(() => null);
-            if (snap && snap.exists) { targetRef = ref; break; }
-        }
-        if (!targetRef) throw new Error('Target player document not found in Firestore.');
 
         const giftEntry = {
             id: `dg_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
@@ -139,12 +130,9 @@ class DevGiftManager {
             sentAt: Date.now()
         };
 
-        await targetRef.update({
-            devGifts: firebase.firestore.FieldValue.arrayUnion(giftEntry),
-            lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
-        });
-
-        return { ok: true, docId: targetRef.id, gift: giftEntry, summary: this.formatGiftSummary(clean) };
+        if (typeof DevGiftTransport === 'undefined') throw new Error('DevGiftTransport unavailable.');
+        const res = await DevGiftTransport.sendGift(targetInfo, giftEntry);
+        return { ok: true, docId: res.docId || targetInfo.uid, gift: giftEntry, summary: this.formatGiftSummary(clean) };
     }
 
     static closeComposer() {
@@ -336,10 +324,8 @@ class DevGiftManager {
             }
         }
         if (cloudSave && gs && gs.player) {
-            cloudSave.lastSeenCoins = cloudSave.lastSavedCoins = gs.player.coins;
-            cloudSave.lastSeenGold = gs.player.coins;
-            cloudSave.lastSeenGems = cloudSave.lastSavedGems = gs.player.gems;
-            cloudSave.lastSeenDiamonds = gs.player.gems;
+            cloudSave.lastSavedCoins = gs.player.coins;
+            cloudSave.lastSavedGems = gs.player.gems;
         }
     }
 
@@ -412,7 +398,7 @@ class DevGiftManager {
 
     static _isBootOverlayActive() {
         if (typeof document === 'undefined') return false;
-        const blockers = ['loading-screen', 'dev-intro-overlay', 'first-time-name-modal', 'mazonakis-tribute-modal', 'update-101-modal'];
+        const blockers = ['loading-screen', 'dev-intro-screen', 'dev-intro-overlay', 'first-time-name-modal', 'mazonakis-tribute-modal', 'update-101-modal'];
         return blockers.some(id => {
             const el = document.getElementById(id);
             return el && !el.classList.contains('hidden') && el.style.display !== 'none';
@@ -442,19 +428,26 @@ class DevGiftManager {
     static claimPendingGifts(cloudData, cloudSave) {
         if (!cloudData || !Array.isArray(cloudData.devGifts) || cloudData.devGifts.length === 0) return false;
         const claimedSet = this._getClaimedSet();
-        const pending = cloudData.devGifts.filter(g => g && typeof g === 'object' && g.id && !claimedSet.has(g.id));
-        if (pending.length === 0) return false;
+        const fresh = cloudData.devGifts.filter(g => g && typeof g === 'object' && g.id && !claimedSet.has(g.id));
+        if (fresh.length === 0) return false;
 
+        const merged = new Map();
+        for (const g of this._pendingPopupGifts || []) { if (g && g.id && !claimedSet.has(g.id)) merged.set(g.id, g); }
+        for (const g of fresh) merged.set(g.id, g);
+        const pending = Array.from(merged.values());
         this._pendingPopupGifts = pending;
         if (cloudSave) this._lastCloudSave = cloudSave;
         if (typeof document === 'undefined') return this.confirmClaimPendingGifts(pending, cloudSave);
 
         if (this._isBootOverlayActive()) {
             if (!this._bootWaitTimer) {
-                this._bootWaitTimer = setTimeout(() => {
+                const waitReady = () => {
                     this._bootWaitTimer = null;
-                    if (this._pendingPopupGifts.length > 0) this.showGiftClaimModal(this._pendingPopupGifts, this._lastCloudSave);
-                }, 700);
+                    if (this._pendingPopupGifts.length === 0) return;
+                    if (this._isBootOverlayActive()) { this._bootWaitTimer = setTimeout(waitReady, 650); return; }
+                    this.showGiftClaimModal(this._pendingPopupGifts, this._lastCloudSave);
+                };
+                this._bootWaitTimer = setTimeout(waitReady, 650);
             }
             return true;
         }
@@ -475,7 +468,9 @@ class DevGiftManager {
             modal = document.createElement('div');
             modal.id = 'dev-gift-claim-modal';
             modal.className = 'modal-overlay dev-gift-modal-overlay hidden';
-            (document.querySelector('.ui-layer') || document.body).appendChild(modal);
+            document.body.appendChild(modal);
+        } else if (modal.parentElement !== document.body) {
+            document.body.appendChild(modal);
         }
 
         const { totalCoins, totalGems, chestTotals, weapons, grantVip, exclusiveBanner, notes } = this._aggregateGifts(pendingGifts);
@@ -540,19 +535,14 @@ class DevGiftManager {
                 else if (typeof window.soundEngine.playPickup === 'function') window.soundEngine.playPickup('star');
             }
             if (summary && window.modalManager && typeof window.modalManager.showQuickToast === 'function') window.modalManager.showQuickToast(`🎁 Claimed: ${summary}!`, 3200);
-            if (window.SaveManager && typeof window.SaveManager.saveLocalOnly === 'function') window.SaveManager.saveLocalOnly();
-            if (cloudSave && cloudSave.db) {
-                const uid = cloudSave.getEffectivePlayerUid();
-                if (uid && typeof firebase !== 'undefined' && firebase.firestore && firebase.firestore.FieldValue) {
-                    cloudSave.db.collection('players').doc(uid).update({ devGifts: firebase.firestore.FieldValue.arrayRemove(...pending) }).catch(() => { });
-                }
-                setTimeout(() => {
-                    if (window.SaveSerializer && window.GameState) {
-                        const payload = window.SaveSerializer.serialize(window.GameState);
-                        if (payload) cloudSave.saveToCloud(payload);
-                    }
-                }, 200);
+            if (cloudSave && typeof cloudSave.markLocalMutationDirty === 'function') cloudSave.markLocalMutationDirty();
+            if (window.chestManager && typeof window.chestManager.render === 'function') window.chestManager.render();
+            if (window.inventoryModalUI && typeof window.inventoryModalUI.render === 'function') window.inventoryModalUI.render();
+            const saved = (window.SaveManager && typeof window.SaveManager.saveLocalOnly === 'function') ? window.SaveManager.saveLocalOnly() : null;
+            if (cloudSave && cloudSave.isInitialized && saved && typeof cloudSave.saveToCloud === 'function') {
+                cloudSave.saveToCloud(saved);
             }
+            if (typeof DevGiftTransport !== 'undefined') DevGiftTransport.markClaimedOnCloud(cloudSave, pending);
         }
         return true;
     }

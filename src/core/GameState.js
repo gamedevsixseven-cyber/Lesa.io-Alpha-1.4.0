@@ -51,6 +51,7 @@ class GameState {
             gearLevels: sj('lesaio_gear_levels', {}),
             evolvedGear: sj('lesaio_evolved_gear', []),
             evolvedWeapons: sj('lesaio_evolved_weapons', []),
+            celestialTrees: sj('lesaio_celestial_trees', {}),
             evolutionStones: si('lesaio_evolution_stones', 0, 0),
             perkRanks: (() => {
                 const unlocked = sj('lesaio_unlocked_perks', []);

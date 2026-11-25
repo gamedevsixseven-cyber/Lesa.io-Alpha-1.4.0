@@ -40,16 +40,18 @@
     <link rel="stylesheet" href="styles/gear.css?v=1.0.3">
     <link rel="stylesheet" href="styles/gear-upgrades.css?v=1.1.8">
     <link rel="stylesheet" href="styles/perks.css?v=1.0.3">
-    <link rel="stylesheet" href="styles/chests.css?v=1.1.8">
+    <link rel="stylesheet" href="styles/chests.css?v=1.2.0">
+    <link rel="stylesheet" href="styles/celestial-reveal.css?v=1.0.0">
+    <link rel="stylesheet" href="styles/celestial-tree.css?v=1.0.0">
     <link rel="stylesheet" href="styles/inventory.css?v=1.0.3">
     <link rel="stylesheet" href="styles/tabs-shared.css?v=1.5.62">
     <link rel="stylesheet" href="styles/loading.css">
     <link rel="stylesheet" href="styles/mobile.css?v=1.9.2">
     <link rel="stylesheet" href="styles/mobile-modals.css?v=1.9.2">
     <link rel="stylesheet" href="styles/mobile-settings.css?v=1.6.23">
-    <link rel="stylesheet" href="src/admin/admin.css?v=1.9.4">
+    <link rel="stylesheet" href="src/admin/admin.css?v=1.2.6">
     <link rel="stylesheet" href="styles/credits.css?v=1.4.0">
-    <link rel="stylesheet" href="styles/gamemode.css?v=1.5.0">
+    <link rel="stylesheet" href="styles/gamemode.css?v=1.2.0">
     <link rel="stylesheet" href="styles/coop.css?v=1.8.4">
     <link rel="stylesheet" href="styles/events.css?v=1.8.8">
     <link rel="stylesheet" href="styles/tribute.css?v=1.4.0">
@@ -315,7 +317,7 @@
             </div>
 
             <!-- GAME VERSION (BOTTOM RIGHT) -->
-            <div id="menu-game-version" class="menu-game-version">Version 1.1.1</div>
+            <div id="menu-game-version" class="menu-game-version">Version 1.2.0</div>
         </div>
 
         <!-- ================= IN-GAME CARTOON HUD ================= -->
@@ -741,6 +743,10 @@
                     <div class="mode-card-slot mode-slot-endless" title="Play Endless Mode">
                         <img src="assets/GameModeIcons/card_endless.png" class="mode-card-hover-art" alt="Endless Mode"
                             draggable="false" loading="lazy" decoding="async">
+                        <div id="mode-endless-diff-row" class="mode-endless-diff-row" aria-label="Endless Difficulty">
+                            <button id="mode-endless-normal-btn" class="mode-diff-pill active" type="button">⚡ NORMAL</button>
+                            <button id="mode-endless-hard-btn" class="mode-diff-pill is-hard is-locked" type="button" title="Unlock by reaching Wave 30 in Normal Endless">🔒 HARD • W30</button>
+                        </div>
                         <button id="mode-select-endless-btn" class="mode-action-hitbox" title="Play Endless Mode"
                             aria-label="Play Endless Mode"></button>
                     </div>
@@ -774,7 +780,7 @@
                         <span class="mode-coop-icon"><img src="assets/ui-icons/handshake.svg" class="ui-icon ui-icon-sm"
                                 alt="" loading="lazy" decoding="async"></span>
                         <span class="mode-coop-label">CO-OP MULTIPLAYER</span>
-                        <span class="mode-coop-pill">2P ONLINE</span>
+                        <span class="mode-coop-pill">4P ONLINE</span>
                     </button>
                 </div>
             </div>
@@ -2748,6 +2754,67 @@
                             <button id="admin-toggle-super-speed" class="admin-control-btn">2x SPEED: OFF</button>
                             <button id="admin-toggle-dmg-boost" class="admin-control-btn">10x DMG + CRIT: OFF</button>
                             <button id="admin-toggle-instakill" class="admin-control-btn">1-HIT AURA: OFF</button>
+                            <button id="admin-toggle-hyperfire" class="admin-control-btn">HYPER FIRE 5x: OFF</button>
+                            <button id="admin-toggle-multishot" class="admin-control-btn">+6 MULTI-SHOT: OFF</button>
+                            <button id="admin-toggle-automagnet" class="admin-control-btn">AUTO MAGNET: OFF</button>
+                            <button id="admin-toggle-freeze" class="admin-control-btn">FREEZE MOBS: OFF</button>
+                        </div>
+                    </div>
+
+                    <div class="admin-section">
+                        <div class="admin-section-title"><img src="assets/ui-icons/siren.svg"
+                                class="ui-icon ui-icon-sm" alt="" loading="lazy" decoding="async"> Live Global Admin Broadcast (All Online Players)</div>
+                        <div style="display:flex;flex-direction:column;gap:8px;">
+                            <input type="text" id="admin-bcast-text" class="admin-text-input" maxlength="180"
+                                placeholder="Type message to broadcast live across all active players...">
+                            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(175px,1fr));gap:8px;">
+                                <select id="admin-bcast-tag-mode" class="admin-text-input">
+                                    <option value="dev">👑 Show "DEV BROADCAST" Tag</option>
+                                    <option value="plain">💬 Plain Text Only (No Dev Tag)</option>
+                                    <option value="alert">⚠️ Show "SERVER ALERT" Tag</option>
+                                    <option value="event">🎉 Show "LIVE EVENT" Tag</option>
+                                </select>
+                                <select id="admin-bcast-theme" class="admin-text-input">
+                                    <option value="gold">✨ Gold Royal Banner</option>
+                                    <option value="crimson">🔴 Crimson Alert Banner</option>
+                                    <option value="celestial">🌙 Celestial Prism Banner</option>
+                                    <option value="emerald">🟢 Emerald Matrix Banner</option>
+                                </select>
+                            </div>
+                            <div class="admin-dev-gift-presets">
+                                <button type="button" class="admin-gift-chip admin-bcast-preset" data-msg="🔥 New Update Incoming! Finish your current wave!">🔥 Update Incoming</button>
+                                <button type="button" class="admin-gift-chip admin-bcast-preset" data-msg="🎁 Special Dev Event Live Now! Good luck champions!">🎁 Event Live</button>
+                                <button type="button" class="admin-gift-chip admin-bcast-preset" data-msg="👑 The Developer is online in the Arena right now!">👑 Dev Online</button>
+                                <button type="button" class="admin-gift-chip admin-bcast-preset" data-msg="⚔️ Endless Boss Challenge starting — push your highest wave!">⚔️ Boss Challenge</button>
+                            </div>
+                            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                                <button type="button" id="admin-btn-send-bcast" class="admin-control-btn btn-warning" style="flex:2;">📢 BROADCAST TO ALL PLAYERS</button>
+                                <button type="button" id="admin-btn-preview-bcast" class="admin-control-btn btn-info" style="flex:1;">👁️ PREVIEW LOCALLY</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="admin-section">
+                        <div class="admin-section-title"><img src="assets/ui-icons/swords.svg"
+                                class="ui-icon ui-icon-sm" alt="" loading="lazy" decoding="async"> Instant Live Weapon &amp; Hero Hot-Swap (Mid-Run or Menu)</div>
+                        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(175px,1fr));gap:8px;align-items:center;">
+                            <select id="admin-select-instant-weapon" class="admin-text-input">
+                                <option value="hyperion_glaive">[CELESTIAL] Hyperion Celestial Glaive</option>
+                            </select>
+                            <button type="button" id="admin-btn-equip-weapon-now" class="admin-control-btn btn-info">🔫 EQUIP WEAPON</button>
+                            <button type="button" id="admin-btn-evolve-weapon-now" class="admin-control-btn btn-warning">★ EQUIP AWAKENED ★</button>
+                        </div>
+                        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(175px,1fr));gap:8px;align-items:center;margin-top:8px;">
+                            <select id="admin-select-instant-hero" class="admin-text-input">
+                                <option value="psanas">Psanas</option>
+                                <option value="psogas">Psogas</option>
+                                <option value="petros">Petros</option>
+                                <option value="50balos">50Balos</option>
+                                <option value="billias">Billias</option>
+                                <option value="kitsos">Kitsos</option>
+                                <option value="psgiannhs">Psgiannhs</option>
+                            </select>
+                            <button type="button" id="admin-btn-switch-hero-now" class="admin-control-btn btn-success">🦸 MORPH HERO NOW</button>
                         </div>
                     </div>
 
@@ -2782,6 +2849,8 @@
                                     src="assets/ui-icons/cross.svg" class="ui-icon ui-icon-sm" alt="" loading="lazy"
                                     decoding="async"> CLEAR
                                 DROPS</button>
+                            <button id="admin-btn-overshield" class="admin-control-btn btn-info">🛡️ +5,000 OVER-SHIELD</button>
+                            <button id="admin-btn-loot-rain" class="admin-control-btn btn-warning">🌧️ 30x LOOT RAIN</button>
                         </div>
                     </div>
 
@@ -2990,9 +3059,29 @@
                                 Coins</button>
                             <button class="admin-control-btn admin-add-coins-btn" data-amount="100000">+100,000
                                 Coins</button>
+                            <button class="admin-control-btn admin-add-coins-btn btn-warning" data-amount="1000000">+1,000,000
+                                Coins</button>
                             <button class="admin-control-btn admin-add-gems-btn" data-amount="1000">+1,000 Gems</button>
                             <button class="admin-control-btn admin-add-gems-btn" data-amount="10000">+10,000
                                 Gems</button>
+                            <button class="admin-control-btn admin-add-gems-btn btn-info" data-amount="100000">+100,000
+                                Gems</button>
+                        </div>
+                    </div>
+
+                    <div class="admin-section">
+                        <div class="admin-section-title"><img src="assets/ui-icons/gift.svg" class="ui-icon ui-icon-sm"
+                                alt="" loading="lazy" decoding="async"> Instant Chests, Clan Vault &amp; 1-Click God Account</div>
+                        <div class="admin-btn-grid">
+                            <button id="admin-btn-grant-mythic-chests" class="admin-control-btn btn-olympus">📦 +5 Mythic Chests</button>
+                            <button id="admin-btn-grant-all-chests" class="admin-control-btn btn-warning">📦 +5 All Chests (30x)</button>
+                            <button id="admin-btn-grant-all-mats" class="admin-control-btn btn-info">🧪 +500 All Mats + 25 Stones</button>
+                            <button id="admin-btn-evolve-all-weapons" class="admin-control-btn btn-warning">★ Awaken/Evolve ALL Weapons</button>
+                            <button id="admin-btn-max-all-gear" class="admin-control-btn btn-info">🛡️ Max Lv.4 + ★ Evolve ALL Gear</button>
+                            <button id="admin-btn-unlock-cosmetics" class="admin-control-btn btn-success">🎨 Unlock All Banners, Frames &amp; Coins</button>
+                            <button id="admin-btn-max-battlepass" class="admin-control-btn btn-warning">👑 Unlock VIP Pass + Max Tier 30</button>
+                            <button id="admin-btn-boost-clan" class="admin-control-btn btn-olympus">🏰 Max Clan Vault + 2,500 Crests</button>
+                            <button id="admin-btn-god-account" class="admin-control-btn btn-danger" style="grid-column: 1 / -1; font-size: 0.95rem;">⚡ 1-CLICK 100% MAX GOD ACCOUNT (UNLOCK &amp; MAX EVERYTHING)</button>
                         </div>
                     </div>
 
@@ -3497,7 +3586,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
     <script src="src/save/PlayerIdentity.js?v=1.9.9"></script>
     <script src="src/cloudflare/EdgeApiClient.js?v=1.1.3"></script>
-    <script src="src/firebase.js?v=1.1.3"></script>
+    <script src="src/firebase.js?v=1.2.6"></script>
 
     <!-- GAME SCRIPTS IN CLEAN DEPENDENCY ORDER -->
     <!-- 1. DATA DEFINITIONS -->
@@ -3518,6 +3607,11 @@
     <script src="src/weapons/HadesOblivionRailgun.js?v=1.1.0"></script>
     <script src="src/weapons/MedusaGorgonGaze.js?v=1.1.6"></script>
     <script src="src/weapons/HyperionCelestialGlaive.js?v=1.1.8"></script>
+    <script src="src/weapons/HyperionSkillTreeTraits.js?v=1.0.0"></script>
+    <script src="src/weapons/TempestLongbow.js?v=1.0.2"></script>
+    <script src="src/weapons/VoidSingularityMortar.js?v=1.0.2"></script>
+    <script src="src/weapons/AurelionAstralScepter.js?v=1.0.2"></script>
+    <script src="src/weapons/ChestWeaponsCoordinator.js?v=1.0.1"></script>
     <script src="src/weapons/Exclusive/BubbleGun.js?v=1.2.4"></script>
     <script src="src/weapons/BossWeapons/KiloumpasCarbine.js?v=1.5.15"></script>
     <script src="src/weapons/BossWeapons/RoufDialToneBlaster.js?v=1.5.15"></script>
@@ -3526,6 +3620,7 @@
     <script src="src/weapons/BattlePassWeapons.js?v=1.5.83"></script>
     <script src="src/data/heroes.js?v=1.5.56"></script>
     <script src="src/data/weapons.js?v=1.1.8"></script>
+    <script src="src/data/ChestWeaponsExpansionData.js?v=1.0.2"></script>
     <script src="src/data/skills.js?v=1.5.44"></script>
     <script src="src/data/skills_ext.js?v=1.6.2"></script>
     <script src="src/data/quests.js?v=1.5.36"></script>
@@ -3536,8 +3631,10 @@
     <script src="src/data/perks.js?v=1.5.37"></script>
     <script src="src/data/gear.js?v=1.5.8"></script>
     <script src="src/data/gearEndgame.js?v=1.9.15"></script>
-    <script src="src/data/chests.js?v=1.1.8"></script>
-    <script src="src/data/materials.js?v=1.1.0"></script>
+    <script src="src/data/ApexGearData.js?v=1.0.0"></script>
+    <script src="src/data/ChestGearExpansionData.js?v=1.0.0"></script>
+    <script src="src/data/chests.js?v=1.2.0"></script>
+    <script src="src/data/materials.js?v=1.2.0"></script>
     <script src="src/data/bossRanks.js?v=1.5.16"></script>
     <script src="src/data/profile_cosmetics.js?v=1.9.13"></script>
     <script src="src/data/profile_cosmetics_ext.js?v=1.1.0"></script>
@@ -3553,19 +3650,23 @@
     <script src="src/core/AutoUpdater.js?v=1.0.2"></script>
     <script src="src/save/SaveMigration.js?v=1.0.4"></script>
     <script src="src/core/GameState.js?v=1.0.9"></script>
-    <script src="src/progression/PerkProgression.js?v=1.0.7"></script>
+    <script src="src/progression/PerkProgression.js?v=1.2.5"></script>
     <script src="src/progression/CosmeticManager.js?v=1.9.13"></script>
     <script src="src/progression/EventManager.js?v=1.8.8"></script>
     <script src="src/dungeons/AscentCrestManager.js?v=1.5.14"></script>
     <script src="src/core/CharacterSprites.js?v=1.9.0"></script>
     <script src="src/engine/SpriteAtlasCache.js?v=1.9.1"></script>
     <script src="src/engine/EnemyBatchRenderer.js?v=1.1.0"></script>
-    <script src="src/save/SaveSerializer.js?v=1.0.9"></script>
-    <script src="src/save/SaveManager.js?v=1.1.2"></script>
-    <script src="src/save/AccountSyncManager.js?v=1.0.9"></script>
+    <script src="src/save/SaveSerializer.js?v=1.2.6"></script>
+    <script src="src/save/SaveManager.js?v=1.2.5"></script>
+    <script src="src/save/AccountSyncManager.js?v=1.2.6"></script>
     <script src="src/gear/GearManager.js?v=1.6.14"></script>
+    <script src="src/gear/GearUpgradeConfig.js?v=1.0.0"></script>
     <script src="src/gear/GearUpgradeManager.js?v=1.6.0"></script>
+    <script src="src/weapons/CelestialSkillTreeData.js?v=1.0.0"></script>
+    <script src="src/weapons/CelestialSkillTreeManager.js?v=1.0.0"></script>
     <script src="src/weapons/WeaponEvolutionManager.js?v=1.1.8"></script>
+    <script src="src/gear/GearPassiveHandlersExt.js?v=1.0.0"></script>
     <script src="src/gear/GearPassives.js?v=1.6.8"></script>
     <script src="src/social/PlayerLoadoutExtractor.js?v=1.0.9"></script>
 
@@ -3579,13 +3680,15 @@
     <script src="src/engine/Camera.js?v=1.5.51"></script>
     <script src="src/engine/EndlessBuildingModels.js?v=1.5.73"></script>
     <script src="src/engine/EndlessBuildingRenderer.js?v=1.9.1"></script>
-    <script src="src/engine/EndlessMapEvolution.js?v=1.9.1"></script>
+    <script src="src/engine/EndlessHardHazards.js?v=1.2.5"></script>
+    <script src="src/engine/EndlessHardMap.js?v=1.2.5"></script>
+    <script src="src/engine/EndlessMapEvolution.js?v=1.2.0"></script>
     <script src="src/engine/CryptonXModel.js?v=1.5.78"></script>
     <script src="src/engine/OutsidePerimeterRoads.js?v=1.6.3"></script>
-    <script src="src/engine/Arena.js?v=1.9.0"></script>
+    <script src="src/engine/Arena.js?v=1.3.1"></script>
     <script src="src/engine/SpatialHashGrid.js?v=1.1.0"></script>
-    <script src="src/engine/WaveManager.js?v=1.6.6"></script>
-    <script src="src/engine/EndlessWaveDirector.js?v=1.0.7"></script>
+    <script src="src/engine/WaveManager.js?v=1.2.0"></script>
+    <script src="src/engine/EndlessWaveDirector.js?v=1.3.2"></script>
     <script src="src/dungeons/OlympusAssets.js?v=1.9.0"></script>
     <script src="src/dungeons/OlympusLayouts.js?v=1.5.4"></script>
     <script src="src/dungeons/OlympusAltarUI.js?v=1.5.13"></script>
@@ -3594,7 +3697,7 @@
     <script src="src/dungeons/DungeonMapTheme.js?v=1.5.66"></script>
     <script src="src/dungeons/DungeonManager.js?v=1.0.7"></script>
     <script src="src/progression/BossRewardManager.js?v=1.0.7"></script>
-    <script src="src/engine/CollisionSystem.js?v=1.1.0"></script>
+    <script src="src/engine/CollisionSystem.js?v=1.2.1"></script>
     <script src="src/engine/NameValidator.js?v=1.6.24"></script>
     <script src="src/engine/EpicPerkEffects.js?v=1.6.6"></script>
     <script src="src/engine/LegendaryPerkEffects.js?v=1.5.45"></script>
@@ -3606,11 +3709,11 @@
     <script src="src/entities/ComicPopupCache.js?v=1.9.0"></script>
     <script src="src/entities/CombatRenderFX.js?v=1.1.0"></script>
     <script src="src/entities/CombatJuiceFX.js?v=1.1.0"></script>
-    <script src="src/entities/Effects.js?v=1.1.8"></script>
+    <script src="src/entities/Effects.js?v=1.3.1"></script>
     <script src="src/entities/Bullet.js?v=1.1.0"></script>
     <script src="src/entities/Drop.js?v=1.1.0"></script>
     <script src="src/entities/FoliageRenderer.js?v=1.9.1"></script>
-    <script src="src/entities/Obstacle.js?v=1.9.0"></script>
+    <script src="src/entities/Obstacle.js?v=1.2.5"></script>
     <script src="src/entities/WaterPuddle.js?v=1.2.2"></script>
     <script src="src/entities/Weapons.js?v=1.1.8"></script>
     <script src="src/heroes/HeroSkinSystem.js?v=1.5.83"></script>
@@ -3621,9 +3724,10 @@
     <script src="src/heroes/BilliasHero.js?v=1.3.0"></script>
     <script src="src/heroes/KitsosHero.js?v=1.3.0"></script>
     <script src="src/heroes/PsgiannhsHero.js?v=1.5.56"></script>
-    <script src="src/heroes/HeroArmorEndgame.js?v=1.5.81"></script>
+    <script src="src/heroes/HeroArmorApexMythic.js?v=1.6.1"></script>
+    <script src="src/heroes/HeroArmorEndgame.js?v=1.6.1"></script>
     <script src="src/heroes/HeroArmorCommon.js?v=1.5.81"></script>
-    <script src="src/heroes/HeroArmorRenderer.js?v=1.6.7"></script>
+    <script src="src/heroes/HeroArmorRenderer.js?v=1.6.8"></script>
     <script src="src/heroes/HeroStarBlessing.js?v=1.6.0"></script>
     <script src="src/heroes/HeroSkinRenderer.js?v=1.6.0"></script>
     <script src="src/entities/HeroRenderer.js?v=1.7.9"></script>
@@ -3645,7 +3749,7 @@
 
     <!-- 6. ENEMIES -->
     <script src="src/enemies/EnemyBase.js?v=1.9.2"></script>
-    <script src="src/enemies/Fatmir.js?v=1.5.27"></script>
+    <script src="src/enemies/Fatmir.js?v=1.2.0"></script>
     <script src="src/enemies/Casillas.js?v=1.5.27"></script>
     <script src="src/enemies/Skarmogyftos.js?v=1.9.2"></script>
     <script src="src/enemies/Astynomos.js?v=1.4.1"></script>
@@ -3658,12 +3762,29 @@
     <script src="src/enemies/EndlessEnemyRenderer.js?v=1.6.14"></script>
     <script src="src/enemies/EndlessEnemies.js?v=1.5.16"></script>
     <script src="src/enemies/BioAlchemist.js?v=1.6.13"></script>
+    <script src="src/enemies/VoidAcolyteRenderer.js?v=1.2.3"></script>
+    <script src="src/enemies/ObsidianGolemRenderer.js?v=1.2.3"></script>
+    <script src="src/enemies/CrimsonWraithRenderer.js?v=1.2.3"></script>
+    <script src="src/enemies/StormTempestRenderer.js?v=1.2.4"></script>
+    <script src="src/enemies/EclipseHarbingerRenderer.js?v=1.2.4"></script>
+    <script src="src/enemies/HardEnemyRenderer.js?v=1.2.4"></script>
+    <script src="src/enemies/VoidAcolyte.js?v=1.2.3"></script>
+    <script src="src/enemies/ObsidianGolem.js?v=1.2.3"></script>
+    <script src="src/enemies/CrimsonWraith.js?v=1.2.3"></script>
+    <script src="src/enemies/StormTempest.js?v=1.2.4"></script>
+    <script src="src/enemies/EclipseHarbinger.js?v=1.2.4"></script>
+    <script src="src/enemies/BlightNecromancerRenderer.js?v=1.2.5"></script>
+    <script src="src/enemies/CryoSniperRenderer.js?v=1.2.5"></script>
+    <script src="src/enemies/InfernoArtilleryRenderer.js?v=1.2.5"></script>
+    <script src="src/enemies/BlightNecromancer.js?v=1.2.5"></script>
+    <script src="src/enemies/CryoSniper.js?v=1.2.5"></script>
+    <script src="src/enemies/InfernoArtillery.js?v=1.2.5"></script>
     <script src="src/dungeons/OlympusIceRenderer.js?v=1.5.52"></script>
     <script src="src/dungeons/IceEnemies.js?v=1.5.13"></script>
 
     <!-- 6.5. BOSSES -->
-    <script src="src/Bosses/BossProjectileFX.js?v=1.6.17"></script>
-    <script src="src/Bosses/BossTelegraphFX.js?v=1.5.19"></script>
+    <script src="src/Bosses/BossProjectileFX.js?v=1.2.4"></script>
+    <script src="src/Bosses/BossTelegraphFX.js?v=1.3.0"></script>
     <script src="src/Bosses/KleanthisRenderer.js?v=1.5.26"></script>
     <script src="src/Bosses/Kleanthis.js?v=1.5.12"></script>
     <script src="src/Bosses/KiloumpasRenderer.js?v=1.4.0"></script>
@@ -3684,9 +3805,31 @@
     <script src="src/Bosses/KolossosHazardVFX.js?v=1.5.70"></script>
     <script src="src/Bosses/KolossosAttackSystem.js?v=1.5.70"></script>
     <script src="src/Bosses/MechaKolossosRenderer.js?v=1.5.70"></script>
-    <script src="src/Bosses/EndlessBossRenderer.js?v=1.5.20"></script>
+    <script src="src/Bosses/EndlessBossRenderer.js?v=1.2.9"></script>
+    <script src="src/Bosses/ApexBossHUD.js?v=1.2.8"></script>
     <script src="src/Bosses/EndlessMiniBosses.js?v=1.5.16"></script>
     <script src="src/Bosses/EndlessMainBosses.js?v=1.5.70"></script>
+    <script src="src/Bosses/HardBossEntranceFX.js?v=1.3.5"></script>
+    <script src="src/Bosses/HardMiniBossRenderers.js?v=1.2.6"></script>
+    <script src="src/Bosses/PlagueSovereignRenderer.js?v=1.3.0"></script>
+    <script src="src/Bosses/AbyssalSeraphRenderer.js?v=1.2.6"></script>
+    <script src="src/Bosses/HardLateMiniBossRenderers.js?v=1.2.8"></script>
+    <script src="src/Bosses/ApexSovereignW30Renderer.js?v=1.2.8"></script>
+    <script src="src/Bosses/VoidArchonW40Renderer.js?v=1.2.8"></script>
+    <script src="src/Bosses/HardMiniBosses.js?v=1.2.6"></script>
+    <script src="src/Bosses/HardMainBosses.js?v=1.2.6"></script>
+    <script src="src/Bosses/HardLateMiniBosses.js?v=1.2.7"></script>
+    <script src="src/Bosses/ApexShieldPillar.js?v=1.2.8"></script>
+    <script src="src/Bosses/HardApexBossW30.js?v=1.3.5"></script>
+    <script src="src/Bosses/HardLateMainBosses.js?v=1.2.7"></script>
+    <script src="src/Bosses/HardW45_55MiniRenderers.js?v=1.2.9"></script>
+    <script src="src/Bosses/W50ChronoReaverRenderer.js?v=1.3.0"></script>
+    <script src="src/Bosses/HardW45_55MiniBosses.js?v=1.2.9"></script>
+    <script src="src/Bosses/HardMainBossW50.js?v=1.2.9"></script>
+    <script src="src/Bosses/ApexW60Atmosphere.js?v=1.3.1"></script>
+    <script src="src/Bosses/ApexW60Cutscene.js?v=1.3.1"></script>
+    <script src="src/Bosses/ApexOmegaW60Renderer.js?v=1.3.1"></script>
+    <script src="src/Bosses/HardApexBossW60.js?v=1.3.5"></script>
     <script src="src/Bosses/LilXasRenderer.js?v=1.9.0"></script>
     <script src="src/Bosses/LilXasCutsceneFX.js?v=1.6.18"></script>
     <script src="src/Bosses/LilXasAttacksFX.js?v=1.6.21"></script>
@@ -3714,11 +3857,12 @@
     <script src="src/ui/BossRewardModalUI.js?v=1.5.72"></script>
     <script src="src/ui/OlympusVictoryModal.js?v=1.8.7"></script>
     <script src="src/ui/GearModalUI.js?v=1.0.2"></script>
+    <script src="src/ui/CelestialSkillTreeModalUI.js?v=1.0.0"></script>
     <script src="src/ui/ProfileCosmeticsUI.js?v=1.9.13"></script>
     <script src="src/ui/PublicProfileModal.js?v=1.1.8"></script>
     <script src="src/ui/LeaderboardModal.js?v=1.1.4"></script>
     <script src="src/ui/ModalManager.js?v=1.1.8"></script>
-    <script src="src/ui/HUDController.js?v=1.1.8"></script>
+    <script src="src/ui/HUDController.js?v=1.2.0"></script>
     <script src="src/ui/ProfileManager.js?v=1.0.4"></script>
     <script src="src/ui/HeroRoster.js?v=1.6.0"></script>
     <script src="src/ui/SkillManager.js?v=1.6.2"></script>
@@ -3727,22 +3871,26 @@
     <script src="src/ui/MailManager.js?v=1.5.10"></script>
     <script src="src/ui/StarterPackModal.js?v=1.5.10"></script>
     <script src="src/ui/SettingsManager.js?v=1.0.9"></script>
-    <script src="src/ui/MenuController.js?v=1.1.0"></script>
+    <script src="src/ui/MenuController.js?v=1.2.5"></script>
     <script src="src/ui/BossWarningOverlay.js?v=1.9.0"></script>
     <script src="src/ui/CinematicCutsceneOverlay.js?v=1.8.0"></script>
     <script src="src/ui/CreditsScreen.js?v=1.8.0"></script>
     <script src="src/chests/ChestManager.js?v=1.1.8"></script>
+    <script src="src/ui/CelestialRevealFX.js?v=1.0.0"></script>
     <script src="src/ui/ChestModalUI.js?v=1.5.61"></script>
-    <script src="src/progression/InventoryManager.js?v=1.9.6"></script>
-    <script src="src/ui/InventoryModalUI.js?v=1.9.6"></script>
+    <script src="src/ui/BatchChestModalUI.js?v=1.2.0"></script>
+    <script src="src/progression/InventoryManager.js?v=1.2.0"></script>
+    <script src="src/ui/InventoryModalUI.js?v=1.2.0"></script>
     <script src="src/ui/TributeManager.js?v=1.1.1"></script>
 
     <!-- 8.5. ADMIN & PLAYTESTING SUBSYSTEM -->
     <script src="src/admin/AdminAuth.js?v=1.6.15"></script>
-    <script src="src/admin/AdminCheats.js?v=1.0.8"></script>
-    <script src="src/admin/DevAccountManager.js?v=1.9.2"></script>
-    <script src="src/admin/DevGiftManager.js?v=1.0.8"></script>
-    <script src="src/admin/AdminPanel.js?v=1.0.8"></script>
+    <script src="src/admin/AdminCheats.js?v=1.1.9"></script>
+    <script src="src/admin/DevGiftTransport.js?v=1.2.6"></script>
+    <script src="src/admin/DevAccountManager.js?v=1.2.6"></script>
+    <script src="src/admin/DevGiftManager.js?v=1.2.6"></script>
+    <script src="src/admin/DevPowerTools.js?v=1.1.9"></script>
+    <script src="src/admin/AdminPanel.js?v=1.1.9"></script>
 
     <!-- 8.7. MOBILE TOUCH SUBSYSTEM -->
     <script src="src/engine/MobileAimAssist.js?v=1.6.22"></script>
@@ -3757,13 +3905,14 @@
     <script src="src/network/CoopDropSync.js?v=1.8.7"></script>
     <script src="src/network/CoopCombatFx.js?v=1.1.8"></script>
     <script src="src/network/CoopPauseSync.js?v=1.7.5"></script>
+    <script src="src/network/CoopPeerRoster.js?v=1.0.0"></script>
     <script src="src/network/CoopHostSession.js?v=1.0.8"></script>
     <script src="src/network/CoopGuestSession.js?v=1.0.8"></script>
     <script src="src/network/CoopLobbyModal.js?v=1.1.0"></script>
 
     <!-- 8.9. FRIENDS & ONLINE PLAYER ID SUBSYSTEM -->
     <script src="src/social/PresenceService.js?v=1.1.2"></script>
-    <script src="src/social/FriendService.js?v=1.1.4"></script>
+    <script src="src/social/FriendService.js?v=1.2.6"></script>
     <script src="src/social/ChatService.js?v=1.1.3"></script>
     <script src="src/ui/FriendsCardRenderer.js?v=1.1.0"></script>
     <script src="src/ui/DirectMessageView.js?v=1.1.1"></script>
@@ -3771,14 +3920,14 @@
     <script src="src/data/clanConfig.js?v=1.1.5"></script>
     <script src="src/social/ClanBuffs.js?v=1.1.5"></script>
     <script src="src/social/ClanVaultService.js?v=1.1.5"></script>
-    <script src="src/social/ClanService.js?v=1.1.5"></script>
+    <script src="src/social/ClanService.js?v=1.2.6"></script>
     <script src="src/ui/ClanChatView.js?v=1.1.1"></script>
     <script src="src/ui/ClanCardRenderer.js?v=1.1.5"></script>
-    <script src="src/ui/ClansModal.js?v=1.1.5"></script>
+    <script src="src/ui/ClansModal.js?v=1.2.6"></script>
 
     <!-- 9. GAME COORDINATOR & BOOTSTRAP -->
     <script src="src/engine/WaveSkipperMachine.js?v=1.6.22"></script>
-    <script src="src/engine/Game.js?v=1.1.1"></script>
+    <script src="src/engine/Game.js?v=1.3.2"></script>
     <script src="src/main.js?v=1.1.0"></script>
 </body>
 

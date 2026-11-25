@@ -115,6 +115,12 @@ const CONTAINER_MATERIAL_DROPS = {
         { matId: 'mati_crystal', min: 2, max: 3, chance: 1.00 },
         { matId: 'olympian_bronze', min: 2, max: 3, chance: 1.00 }
     ],
+    apex: [
+        { matId: 'armory_shards', min: 14, max: 22, chance: 1.00 },
+        { matId: 'mati_crystal', min: 4, max: 6, chance: 1.00 },
+        { matId: 'olympian_bronze', min: 3, max: 5, chance: 1.00 },
+        { matId: 'ambrosia_spark', min: 1, max: 1, chance: 0.35 }
+    ],
     boss_crate_easy: [
         { matId: 'armory_shards', min: 1, max: 1, chance: 0.70 },
         { matId: 'mati_crystal', min: 1, max: 1, chance: 0.12 }

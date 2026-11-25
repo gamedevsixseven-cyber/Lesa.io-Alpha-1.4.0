@@ -43,10 +43,12 @@ class AdminCheatsService {
                 cs.net.send('GUEST_HEAL', { amount: p.maxHp });
             }
         }
-        if ((this.squadGodMode || this._remoteGuestGod) && cs && cs.isHost && cs.remotePlayer) {
-            const rp = cs.remotePlayer;
-            rp.hp = rp.maxHp;
-            rp.isDowned = false;
+        if ((this.squadGodMode || this._remoteGuestGod) && cs && cs.isHost) {
+            const rps = cs.remotePlayers || (cs.remotePlayer ? [cs.remotePlayer] : []);
+            for (let ri = 0; ri < rps.length; ri++) {
+                const rp = rps[ri];
+                if (rp && !rp.isDownedDisconnected) { rp.hp = rp.maxHp; rp.isDowned = false; }
+            }
         }
         if (this.infiniteDash) {
             p.dashCooldown = 0;
@@ -75,6 +77,9 @@ class AdminCheatsService {
                     this._forceKillEntity(game.enemies[i], game);
                 }
             }
+        }
+        if (typeof window !== 'undefined' && window.DevPowerTools) {
+            window.DevPowerTools.applyToUpdate(game, dt);
         }
     }
 
@@ -189,10 +194,15 @@ class AdminCheatsService {
         this.fullHeal(game);
         const cs = game.coopSession;
         if (cs) {
-            if (cs.isHost && cs.remotePlayer) {
-                cs.remotePlayer.hp = cs.remotePlayer.maxHp;
-                cs.remotePlayer.isDowned = false;
-                if (cs.net) cs.net.send('GUEST_DROP_EFFECT', { type: 'heart', amt: cs.remotePlayer.maxHp, hp: cs.remotePlayer.maxHp, maxHp: cs.remotePlayer.maxHp });
+            if (cs.isHost) {
+                const rps = cs.remotePlayers || (cs.remotePlayer ? [cs.remotePlayer] : []);
+                for (const rp of rps) {
+                    if (!rp || rp.isDownedDisconnected) continue;
+                    rp.hp = rp.maxHp; rp.isDowned = false;
+                    const fxData = { type: 'heart', amt: rp.maxHp, hp: rp.maxHp, maxHp: rp.maxHp };
+                    if (typeof CoopDropSync !== 'undefined') CoopDropSync._sendToPeer(cs.net, rp.peerId, 'GUEST_DROP_EFFECT', fxData);
+                    else if (cs.net) cs.net.send('GUEST_DROP_EFFECT', fxData);
+                }
             } else if (!cs.isHost) {
                 this._sendCoopCmd(game, 'revive_squad');
             }

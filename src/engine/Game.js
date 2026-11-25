@@ -117,12 +117,14 @@ class Game {
         this.startNewGame(heroType, gameMode);
     }
 
-    startNewGame(heroType = 'psanas', gameMode = 'story') {
+    startNewGame(heroType = 'psanas', gameMode = 'story', options = {}) {
+        const isHard = (gameMode === 'endless') && !!(options && options.isEndlessHard);
         if (typeof window !== 'undefined' && window.GameState && typeof window.GameState.syncLiveGame === 'function') {
             window.GameState.syncLiveGame(this, true);
             window.GameState.beginMatchSession(heroType, gameMode);
         }
         this.gameMode = gameMode;
+        this.isEndlessHard = isHard;
         this.player = new Player(0, 0, heroType);
         this.coinsEarnedThisRun = 0;
         if (typeof WeaponSystem !== 'undefined') this.player.weaponType = WeaponSystem.resolveEquippedWeapon(this.player.weaponType);
@@ -136,14 +138,15 @@ class Game {
 
         this.gameTime = 0;
         if (typeof EndlessMapEvolution !== 'undefined') EndlessMapEvolution.reset();
+        if (typeof EndlessHardMap !== 'undefined') EndlessHardMap.reset();
         if (typeof OutsidePerimeterRoads !== 'undefined') OutsidePerimeterRoads.reset();
         if (typeof LilXasEvent !== 'undefined') LilXasEvent.reset();
         if (this.arena && typeof this.arena.setGameMode === 'function') {
-            this.arena.setGameMode(gameMode);
+            this.arena.setGameMode(gameMode, { isEndlessHard: isHard });
         } else if (gameMode !== 'dungeons' && this.arena && this.arena.dungeonFloor) {
             this.arena.resetNormalTheme();
         }
-        this.waveManager.reset(gameMode);
+        this.waveManager.reset(gameMode, { isEndlessHard: isHard });
         if (this.waveSkipper) this.waveSkipper.reset(this);
         if (this.cutsceneOverlay) this.cutsceneOverlay.endCutscene();
         this.initLeaderboard();
@@ -225,72 +228,52 @@ class Game {
         const baseGold = wavesGold + killsGold + bossGold;
 
         const upgrades = (typeof window !== 'undefined' && window.GameState && window.GameState.player && window.GameState.player.upgrades) || {};
-        const goldBonusLvl = upgrades.goldBonus || 0;
+        const hardMult = this.isEndlessHard ? 2.0 : 1.0;
         const eventGoldMult = ((typeof EventManager !== 'undefined') ? EventManager.getGoldMultiplier() : 1.0) * ((typeof ClanBuffs !== 'undefined') ? ClanBuffs.getGoldMultiplier() : 1.0);
-        const goldMultiplier = (1 + (goldBonusLvl * 0.03)) * (typeof GearPassives !== 'undefined' ? GearPassives.getGoldMultiplier() : 1.0) * ((typeof window !== 'undefined' && window.perkSystem && window.perkSystem.getCoinMultiplier) ? window.perkSystem.getCoinMultiplier() : 1.0) * eventGoldMult;
+        const goldMultiplier = (1 + ((upgrades.goldBonus || 0) * 0.03)) * (typeof GearPassives !== 'undefined' ? GearPassives.getGoldMultiplier() : 1.0) * ((typeof window !== 'undefined' && window.perkSystem && window.perkSystem.getCoinMultiplier) ? window.perkSystem.getCoinMultiplier() : 1.0) * eventGoldMult * hardMult;
         const earnedCoins = Math.round(baseGold * goldMultiplier);
         const displayedCoins = earnedCoins + (this.coinsEarnedThisRun || 0);
+        if (this.ui && typeof this.ui.setCoins === 'function') this.ui.setCoins(this.ui.coins + earnedCoins, true);
+        else if (typeof window !== 'undefined' && window.GameState) window.GameState.addCurrency(earnedCoins, 0);
 
-        // Credit earned coins to player's persistent wallet
-        if (this.ui && typeof this.ui.setCoins === 'function') {
-            this.ui.setCoins(this.ui.coins + earnedCoins, true);
-        } else if (typeof window !== 'undefined' && window.GameState) {
-            window.GameState.addCurrency(earnedCoins, 0);
-        }
-
-        // Calculate Match Account XP (waves, kills, and bosses)
         const wavesXP = wavesCleared * 35;
         const killsXP = totalKills * 2;
         const bossXP = (kleanthisDefeated * 250) + (kiloumpasDefeated * 150) + (roufDefeated * 350) + ((this.player && this.player.endlessBossXpBonus) || 0);
         const eventXpMult = ((typeof EventManager !== 'undefined') ? EventManager.getXpMultiplier() : 1.0) * ((typeof ClanBuffs !== 'undefined') ? ClanBuffs.getXpMultiplier() : 1.0);
-        const earnedXP = Math.round((wavesXP + killsXP + bossXP) * ((typeof window !== 'undefined' && window.perkSystem && window.perkSystem.getXpMultiplier) ? window.perkSystem.getXpMultiplier() : 1.0) * eventXpMult);
-
-        // Credit earned XP to player's persistent Account Level & persist immediately
-        if (typeof window !== 'undefined' && window.GameState && earnedXP > 0) {
-            window.GameState.addAccountXP(earnedXP);
-        }
-        if (typeof window !== 'undefined' && window.SaveManager && typeof window.SaveManager.saveNow === 'function') {
-            window.SaveManager.saveNow();
-        }
+        const earnedXP = Math.round((wavesXP + killsXP + bossXP) * ((typeof window !== 'undefined' && window.perkSystem && window.perkSystem.getXpMultiplier) ? window.perkSystem.getXpMultiplier() : 1.0) * eventXpMult * hardMult);
+        if (typeof window !== 'undefined' && window.GameState && earnedXP > 0) window.GameState.addAccountXP(earnedXP);
+        if (typeof window !== 'undefined' && window.SaveManager && typeof window.SaveManager.saveNow === 'function') window.SaveManager.saveNow();
 
         if (typeof window !== 'undefined' && window.EventBus) {
             window.EventBus.emit('gameOver', {
-                score: this.player.score,
-                highScore: this.highScore,
-                wave: this.waveManager.wave,
-                fatmirsBonked,
-                casillasOutplayed,
-                skarmogyftosOutsmarted,
-                timeStr,
-                earnedCoins,
-                earnedXP
+                score: this.player.score, highScore: this.highScore, wave: this.waveManager.wave,
+                fatmirsBonked, casillasOutplayed, skarmogyftosOutsmarted, timeStr, earnedCoins, earnedXP
             });
         }
 
         if (this.cutsceneOverlay) this.cutsceneOverlay.endCutscene();
         const currentWave = this.waveManager ? this.waveManager.wave : 1;
 
-        // Award match victory chest on boss victory if an empty slot is available
-        if (typeof window !== 'undefined' && window.chestManager && (kleanthisDefeated > 0 || currentWave > 10)) {
-            const rewardRates = (typeof CHEST_DROP_RATES !== 'undefined') ? CHEST_DROP_RATES : [];
-            const tierDef = rewardRates.find(r => currentWave >= r.minWave && currentWave <= r.maxWave);
-            if (tierDef && tierDef.rates) {
-                const totalWeight = tierDef.rates.reduce((sum, item) => sum + item.weight, 0);
-                let rand = Math.random() * totalWeight;
-                let wonType = 'common';
-                for (const r of tierDef.rates) {
-                    if (rand <= r.weight) {
-                        wonType = r.id;
-                        break;
+        if (typeof window !== 'undefined' && window.chestManager && (kleanthisDefeated > 0 || currentWave > 10 || (this.isEndlessHard && currentWave >= 10))) {
+            let wonType = 'common';
+            if (this.isEndlessHard) {
+                wonType = (currentWave >= 20 || Math.random() < 0.45) ? 'apex' : 'mythic';
+            } else {
+                const rewardRates = (typeof CHEST_DROP_RATES !== 'undefined') ? CHEST_DROP_RATES : [];
+                const tierDef = rewardRates.find(r => currentWave >= r.minWave && currentWave <= r.maxWave);
+                if (tierDef && tierDef.rates) {
+                    const totalWeight = tierDef.rates.reduce((sum, item) => sum + item.weight, 0);
+                    let rand = Math.random() * totalWeight;
+                    for (const r of tierDef.rates) {
+                        if (rand <= r.weight) { wonType = r.id; break; }
+                        rand -= r.weight;
                     }
-                    rand -= r.weight;
-                }
+                } else wonType = '';
+            }
+            if (wonType) {
                 const awarded = window.chestManager.addChest(wonType);
-                if (awarded === 'inventory' && this.ui) {
-                    this.ui.addKillfeed(`Slots full — ${wonType.toUpperCase()} CHEST saved to Inventory!`);
-                } else if (awarded && this.ui) {
-                    this.ui.addKillfeed(`Earned ${wonType.toUpperCase()} CHEST!`);
-                }
+                if (awarded === 'inventory' && this.ui) this.ui.addKillfeed(`Slots full — ${wonType.toUpperCase()} CHEST saved to Inventory!`);
+                else if (awarded && this.ui) this.ui.addKillfeed(`Earned ${wonType.toUpperCase()} CHEST!`);
             }
         }
         this.ui.showGameOverModal(
@@ -337,7 +320,9 @@ class Game {
         if (typeof PlayerSkills !== 'undefined') PlayerSkills.update(this.player, dt, this.effects, this.enemies);
         if (typeof HeroUltimates !== 'undefined') HeroUltimates.update(this.player, dt, this.enemies, this.bullets, this.effects, this);
         if (typeof LilXasEvent !== 'undefined') LilXasEvent.update(dt, this);
-        const camTgt = (typeof LilXasEvent !== 'undefined' && LilXasEvent.getCameraTarget()) || this.player;
+        const camTgt = (typeof HardBossEntranceFX !== 'undefined' && HardBossEntranceFX.getCameraTarget(this.enemies))
+            || (typeof LilXasEvent !== 'undefined' && LilXasEvent.getCameraTarget())
+            || this.player;
         this.camera.follow(camTgt.x, camTgt.y);
         this.camera.update(dt);
         this.arena.update(dt);
@@ -370,6 +355,9 @@ class Game {
             let eWrite = 0;
             for (let i = 0; i < this.enemies.length; i++) {
                 const enemy = this.enemies[i];
+                if (this.gameMode === 'endless' && this.isEndlessHard && typeof HardBossEntranceFX !== 'undefined' && HardBossEntranceFX.applyHardScaling) {
+                    HardBossEntranceFX.applyHardScaling(enemy);
+                }
                 if (enemy.updateBubbleTrap && enemy.updateBubbleTrap(dt, this.effects)) {
                     if (enemy.hitFlash > 0) enemy.hitFlash -= dt;
                     if (enemy.dead) {
@@ -569,6 +557,7 @@ class Game {
                 this.effects.drawScreenSpace(ctx, this.canvas.width, this.canvas.height, this.player);
             }
             this.waveManager.renderAnnouncement(ctx, this.canvas.width, this.canvas.height);
+            if (typeof ApexBossHUD !== 'undefined') ApexBossHUD.draw(ctx, this.canvas.width, this.canvas.height, this);
             if (this.waveSkipper) this.waveSkipper.renderScreenOverlay(ctx, this.canvas.width, this.canvas.height, this);
             if (this.bossWarningOverlay) this.bossWarningOverlay.draw(ctx, this.canvas.width, this.canvas.height);
             if (this.cutsceneOverlay) this.cutsceneOverlay.draw(ctx, this.canvas.width, this.canvas.height);

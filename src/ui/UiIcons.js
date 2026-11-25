@@ -48,6 +48,9 @@ class UiIcons {
         weapon_hades_railgun: 'assets/WeaponIcons/HadesOblivionRailgun.png',
         weapon_medusa_gaze: 'assets/WeaponIcons/MedusasGorgonGaze.png',
         weapon_hyperion_glaive: 'assets/WeaponIcons/HyperionCelestialGlaive.png',
+        weapon_tempest_bow: 'assets/WeaponIcons/TempestLongbow.png',
+        weapon_void_mortar: 'assets/WeaponIcons/VoidSingularityMortar.png',
+        weapon_aurelion_scepter: 'assets/WeaponIcons/AurelionAstralScepter.png',
 
         // Custom Comic SVG Icons
         coin: 'assets/ui-icons/coin.svg',

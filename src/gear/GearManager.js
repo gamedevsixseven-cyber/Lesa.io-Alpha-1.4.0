@@ -87,17 +87,22 @@ class GearManager {
 
         const src = options && options.source;
         const isGranted = !!(options && options.free) || src === 'chest' || src === 'admin' || src === 'tribute' || src === 'boss_zeus' || src === 'boss';
-        const isBossLocked = !!(item.bossUnlock || item.rarity === 'mythic');
-        const isChestRestricted = !!(item.chestOnly || item.rarity === 'epic' || item.rarity === 'legendary' || item.rarity === 'exclusive' || isBossLocked);
+        const isBossLocked = !!(item.bossUnlock || (item.rarity === 'mythic' && !item.chestOnly) || item.rarity === 'apex');
+        const isChestRestricted = !!(item.chestOnly || item.rarity === 'epic' || item.rarity === 'legendary' || item.rarity === 'mythic' || item.rarity === 'exclusive' || isBossLocked);
 
         if (isChestRestricted && !isGranted) {
+            const bossMsg = item.bossUnlock === 'apex_sovereign_w30'
+                ? 'Defeat Wave 30 Hard Endless Apex Boss (Aethelgard) to unlock this Apex item'
+                : (item.bossUnlock === 'apex_omega_w60'
+                    ? 'Defeat Wave 60 Hard Endless Final Apex Boss (Erebus) to unlock this Apex item'
+                    : 'Defeat Zeus on Mount Olympus Floor 5 to unlock this Mythic item');
             return {
                 success: false,
                 reason: isBossLocked
-                    ? 'Defeat Zeus on Mount Olympus Floor 5 to unlock this Mythic item'
+                    ? bossMsg
                     : (item.rarity === 'exclusive'
                         ? 'Event exclusive item cannot be purchased with coins'
-                        : 'Chest drop only! Open Rare+, Epic, or Legendary chests')
+                        : 'Chest drop only! Open Epic, Legendary, Mythic, or Apex chests')
             };
         }
 

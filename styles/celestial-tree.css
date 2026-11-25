@@ -1,0 +1,269 @@
+/* ==========================================================================
+   CELESTIAL WEAPON SKILL TREE MODAL & CARDS
+   ========================================================================== */
+
+#celestial-tree-modal .modal-panel.cel-tree-panel {
+    max-width: 780px;
+    width: 94vw;
+    max-height: 92vh;
+    overflow-y: auto;
+    padding: 14px 18px;
+    background: linear-gradient(160deg, #0b0720 0%, #170e3b 52%, #0c2240 100%);
+    border: 3.5px solid #f0abfc;
+    box-shadow: 0 0 36px rgba(192, 132, 252, 0.45), 0 12px 0 #070414;
+    color: #f8fafc;
+}
+
+.cel-tree-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 10px;
+}
+
+.cel-tree-icon-wrap {
+    width: 58px;
+    height: 58px;
+    border-radius: 16px;
+    background: radial-gradient(circle, rgba(56, 189, 248, 0.35), rgba(192, 132, 252, 0.14));
+    border: 2.5px solid #fef08a;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.cel-tree-icon-wrap img {
+    width: 46px;
+    height: 46px;
+    object-fit: contain;
+    filter: drop-shadow(0 0 8px rgba(56, 189, 248, 0.8));
+}
+
+.cel-tree-title {
+    margin: 0;
+    font-family: 'Luckiest Guy', cursive;
+    font-size: 1.35rem;
+    color: #fef08a;
+    letter-spacing: 0.6px;
+    text-shadow: 0 2px 6px rgba(0, 0, 0, 0.85);
+}
+
+.cel-tree-sub {
+    margin: 2px 0 0 0;
+    font-size: 0.78rem;
+    color: #bae6fd;
+    font-weight: 600;
+}
+
+.cel-tree-summary-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 8px 12px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1.5px solid rgba(240, 171, 252, 0.35);
+    margin-bottom: 12px;
+    font-size: 0.76rem;
+    font-weight: 700;
+}
+
+.cel-tree-chip {
+    padding: 3px 9px;
+    border-radius: 999px;
+    background: rgba(56, 189, 248, 0.18);
+    border: 1px solid #38bdf8;
+    color: #e0f2fe;
+}
+
+.cel-tree-chip.is-trait {
+    background: linear-gradient(90deg, rgba(254, 240, 138, 0.25), rgba(240, 171, 252, 0.28));
+    border-color: #fef08a;
+    color: #fef08a;
+}
+
+.cel-tree-root {
+    margin: 0 auto 8px auto;
+    max-width: 280px;
+    text-align: center;
+    padding: 6px 14px;
+    border-radius: 14px;
+    background: linear-gradient(135deg, #311042, #1e3a8a);
+    border: 2px solid #fef08a;
+    font-family: 'Luckiest Guy', cursive;
+    font-size: 0.82rem;
+    color: #fef08a;
+}
+
+.cel-tree-branches {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+}
+
+.cel-path-col {
+    border-radius: 14px;
+    padding: 9px 10px;
+    background: rgba(15, 10, 38, 0.85);
+    border: 2.5px solid rgba(240, 171, 252, 0.38);
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    transition: opacity 0.2s ease, border-color 0.2s ease;
+}
+
+.cel-path-col.is-chosen {
+    border-color: #fef08a;
+    box-shadow: 0 0 18px rgba(254, 240, 138, 0.28);
+}
+
+.cel-path-col.is-sealed {
+    opacity: 0.48;
+    border-color: #ef4444;
+    background: rgba(24, 12, 22, 0.85);
+}
+
+.cel-path-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 6px;
+}
+
+.cel-path-name {
+    font-family: 'Luckiest Guy', cursive;
+    font-size: 1rem;
+    color: #fef08a;
+    margin: 0;
+}
+
+.cel-path-tag {
+    font-size: 0.72rem;
+    color: #cbd5e1;
+    margin: 2px 0 0 0;
+}
+
+.cel-path-status-badge {
+    font-family: 'Luckiest Guy', cursive;
+    font-size: 0.64rem;
+    padding: 2px 8px;
+    border-radius: 999px;
+    border: 1.5px solid #1e272e;
+    white-space: nowrap;
+}
+
+.cel-path-status-badge.is-chosen { background: #2ed573; color: #052e16; }
+.cel-path-status-badge.is-sealed { background: #ef4444; color: #ffffff; }
+.cel-path-status-badge.is-open { background: #38bdf8; color: #082f49; }
+
+.cel-node-card {
+    border-radius: 11px;
+    padding: 7px 9px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 2px solid rgba(148, 163, 184, 0.35);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    position: relative;
+}
+
+.cel-node-card.is-unlocked {
+    background: rgba(46, 213, 115, 0.14);
+    border-color: #2ed573;
+}
+
+.cel-node-card.is-available {
+    border-color: #38bdf8;
+    box-shadow: 0 0 12px rgba(56, 189, 248, 0.32);
+}
+
+.cel-node-card.is-capstone {
+    border-width: 2.5px;
+}
+
+.cel-node-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 6px;
+}
+
+.cel-node-title {
+    font-family: 'Luckiest Guy', cursive;
+    font-size: 0.88rem;
+    color: #ffffff;
+}
+
+.cel-node-tier {
+    font-size: 0.64rem;
+    font-weight: 900;
+    padding: 1px 7px;
+    border-radius: 8px;
+    background: #1e293b;
+    color: #7dd3fc;
+}
+
+.cel-node-stats {
+    font-size: 0.74rem;
+    font-weight: 700;
+    color: #38bdf8;
+}
+
+.cel-trait-callout {
+    padding: 6px 8px;
+    border-radius: 9px;
+    background: rgba(254, 240, 138, 0.14);
+    border: 1.5px solid rgba(254, 240, 138, 0.55);
+    font-size: 0.72rem;
+    line-height: 1.28;
+    color: #fef08a;
+}
+
+.cel-node-costs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+}
+
+.cel-node-btn {
+    width: 100%;
+    padding: 6px 10px;
+    border-radius: 9px;
+    border: 2px solid #141418;
+    font-family: 'Luckiest Guy', cursive;
+    font-size: 0.76rem;
+    cursor: pointer;
+    background: linear-gradient(135deg, #38bdf8, #c084fc);
+    color: #0b0720;
+    box-shadow: 0 2.5px 0 #090517;
+}
+
+.cel-node-btn.is-confirm {
+    background: linear-gradient(135deg, #fef08a, #f97316);
+    color: #141418;
+}
+
+.cel-node-btn.is-unlocked {
+    background: #2ed573;
+    color: #052e16;
+    cursor: default;
+}
+
+.cel-node-btn.is-disabled {
+    background: #334155;
+    color: #94a3b8;
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+.weapon-celestial-tree-btn {
+    margin-top: 4px;
+    background: linear-gradient(135deg, #38bdf8 0%, #c084fc 55%, #fef08a 100%);
+    color: #0f0724;
+    border-color: #fef08a;
+}
+
+@media (max-width: 680px) {
+    .cel-tree-branches { grid-template-columns: 1fr; }
+}

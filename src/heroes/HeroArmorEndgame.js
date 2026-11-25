@@ -12,6 +12,9 @@ class HeroArmorEndgame {
             case 'aegis_jacket': this.drawAegisJacket(ctx, r, flash, isBack, evolved); return true;
             case 'grandmaster_cuirass': this.drawGrandmasterCuirass(ctx, r, flash, isBack, evolved); return true;
             case 'zeus_aegis_cuirass': this.drawZeusAegisCuirass(ctx, r, flash, isBack, evolved); return true;
+            case 'apex_omega_mantle': return typeof HeroArmorApexMythic !== 'undefined' && (HeroArmorApexMythic.drawApexOmegaMantle(ctx, r, flash, isBack, evolved), true);
+            case 'mythic_chronos_cuirass': return typeof HeroArmorApexMythic !== 'undefined' && (HeroArmorApexMythic.drawChronosBrigandine(ctx, r, flash, isBack, evolved), true);
+            case 'mythic_poseidon_plate': return typeof HeroArmorApexMythic !== 'undefined' && (HeroArmorApexMythic.drawPoseidonPlate(ctx, r, flash, isBack, evolved), true);
             default: return false;
         }
     }

@@ -24,28 +24,23 @@ class EndlessBossRenderer {
         }
         for (const z of zones) {
             const p = Math.max(0, Math.min(1, 1 - (z.timer / z.maxTimer)));
+            const rim = z.color || 'rgba(255, 71, 87, 0.92)';
             ctx.save();
-            ctx.strokeStyle = z.color || 'rgba(255, 71, 87, 0.92)';
-            ctx.lineWidth = 3;
-            ctx.beginPath();
-            ctx.arc(z.x, z.y, z.radius, 0, Math.PI * 2);
-            ctx.stroke();
-
+            ctx.strokeStyle = 'rgba(7, 9, 15, 0.65)'; ctx.lineWidth = 5;
+            ctx.beginPath(); ctx.arc(z.x, z.y, z.radius, 0, Math.PI * 2); ctx.stroke();
+            ctx.strokeStyle = rim; ctx.lineWidth = 2.8; ctx.stroke();
             ctx.fillStyle = z.fillColor || 'rgba(255, 71, 87, 0.24)';
+            ctx.beginPath(); ctx.arc(z.x, z.y, z.radius * p, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = z.sparkColor || '#fed330';
             ctx.beginPath();
-            ctx.arc(z.x, z.y, z.radius * p, 0, Math.PI * 2);
-            ctx.fill();
-
-            ctx.font = '800 13px "Luckiest Guy", cursive';
-            ctx.fillStyle = '#fed330';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText(z.icon || '⚠️', z.x, z.y);
+            ctx.moveTo(z.x, z.y - 8); ctx.lineTo(z.x + 6, z.y); ctx.lineTo(z.x, z.y + 8); ctx.lineTo(z.x - 6, z.y);
+            ctx.closePath(); ctx.fill();
             ctx.restore();
         }
     }
 
     static drawBossHUD(ctx, b) {
+        if (b && b.isApexBoss) return;
         const defaultTop = ({
             frappe_baron: 22,
             traffic_warden: 12,
@@ -53,7 +48,17 @@ class EndlessBossRenderer {
             butcher_goliath: 14,
             dimarchos_boss: 26,
             syndicate_capo: 24,
-            mecha_kolossos: 40
+            mecha_kolossos: 40,
+            crimson_executioner: 24,
+            plague_sovereign: 38,
+            chrono_warden: 24,
+            abyssal_seraph: 44,
+            void_dreadnought: 34,
+            inferno_hydra: 38,
+            void_eclipse_archon: 52,
+            magnetar_forgemaster: 36,
+            chrono_reaver: 50,
+            abyssal_leviathan: 38
         })[b.type] || 0;
         const extraTop = b.hudTopOffset || defaultTop;
         const hudY = b.y - (b.radius + 32 + extraTop);

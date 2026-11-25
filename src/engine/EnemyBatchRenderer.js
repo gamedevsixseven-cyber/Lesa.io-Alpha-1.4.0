@@ -244,7 +244,7 @@ class EnemyBatchRenderer {
         for (let i = 0; i < enemies.length; i++) {
             const enemy = enemies[i];
             if (!enemy || enemy.dead) continue;
-            const isSpecial = !!(enemy.isBoss || enemy.isMiniBoss || enemy.isEndlessBoss || enemy.policeCar);
+            const isSpecial = !!(enemy.isBoss || enemy.isMiniBoss || enemy.isEndlessBoss || enemy.isApexPillar || enemy.policeCar);
             const visPad = isSpecial ? 450 : 50;
             if (!camera.isVisible(enemy.x, enemy.y, (enemy.radius || 26) + visPad)) continue;
             if (isSpecial) {

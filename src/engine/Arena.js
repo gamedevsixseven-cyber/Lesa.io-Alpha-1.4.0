@@ -101,20 +101,25 @@ class Arena {
         this.renderGroundCache();
     }
 
-    setGameMode(gameMode) {
+    setGameMode(gameMode, options = {}) {
         if (gameMode !== 'dungeons' && this.dungeonFloor) {
             this.resetNormalTheme();
         }
         if (gameMode === 'dungeons') {
             this.gameMode = 'dungeons';
+            this.isHardEndless = false;
             return;
         }
         const nextMode = (gameMode === 'endless') ? 'endless' : 'story';
-        if (this.gameMode !== nextMode) {
+        const nextHard = (nextMode === 'endless') && !!(options && options.isEndlessHard);
+        const needHardReseed = nextHard && (typeof EndlessHardMap === 'undefined' || EndlessHardMap._acidPools.length === 0);
+        if (this.gameMode !== nextMode || !!this.isHardEndless !== nextHard || needHardReseed) {
             this.gameMode = nextMode;
+            this.isHardEndless = nextHard;
             this.destroyedObsIds = new Set();
             const rng = (this.seed !== null && this.seed !== undefined) ? createArenaRng(this.seed) : Math.random;
             this.generateObstacles(rng);
+            this.renderGroundCache();
         }
     }
 
@@ -173,6 +178,10 @@ class Arena {
             if (typeof DungeonMapTheme !== 'undefined') {
                 DungeonMapTheme.applyTheme(this, this.dungeonFloor);
             }
+            return;
+        }
+        if (this.isHardEndless && typeof EndlessHardMap !== 'undefined') {
+            EndlessHardMap.renderGroundCache(this);
             return;
         }
         if (typeof MobilePerf !== 'undefined' && MobilePerf.isMobile) {
@@ -278,6 +287,10 @@ class Arena {
     }
 
     generateObstacles(rng = Math.random) {
+        if (this.isHardEndless && typeof EndlessHardMap !== 'undefined') {
+            EndlessHardMap.generateObstacles(this, rng);
+            return;
+        }
         this.obstacles = [];
         let obsId = 1;
 
@@ -444,12 +457,16 @@ class Arena {
 
     respawnCrate() {
         const pt = this.findRespawnCoord();
-        this.obstacles.push(new Obstacle(pt.x, pt.y, 'crate'));
+        const obs = new Obstacle(pt.x, pt.y, 'crate');
+        if (this.isHardEndless) obs.isHardProp = true;
+        this.obstacles.push(obs);
     }
 
     respawnBarrel() {
         const pt = this.findRespawnCoord();
-        this.obstacles.push(new Obstacle(pt.x, pt.y, 'barrel'));
+        const obs = new Obstacle(pt.x, pt.y, 'barrel');
+        if (this.isHardEndless) obs.isHardProp = true;
+        this.obstacles.push(obs);
     }
 
     update(dt = 1) {
@@ -477,6 +494,7 @@ class Arena {
     }
 
     drawGround(ctx, camera) {
+        if (this.isHardEndless && typeof EndlessHardMap !== 'undefined' && EndlessHardMap.drawGround(ctx, camera, this)) return;
         if (typeof MobilePerf !== 'undefined' && MobilePerf.isMobile) {
             if (this.dungeonFloor) {
                 if (MobilePerf.drawScaledCachedGround(ctx, camera, this)) return;
@@ -519,6 +537,9 @@ class Arena {
             DungeonMapTheme.drawBoundaries(ctx, this);
             return;
         }
+        if (typeof EndlessHardMap !== 'undefined' && EndlessHardMap.drawBoundaries(ctx, this)) {
+            return;
+        }
         if (typeof EndlessMapEvolution !== 'undefined' && EndlessMapEvolution.drawBoundaries(ctx, this)) {
             return;
         }
@@ -545,12 +566,18 @@ class Arena {
         if (typeof EndlessMapEvolution !== 'undefined') {
             EndlessMapEvolution.drawWorldGround(ctx, camera, this);
         }
+        if (typeof EndlessHardMap !== 'undefined') {
+            EndlessHardMap.drawWorldGround(ctx, camera, this);
+        }
         this.drawBoundaries(ctx);
         if (typeof OutsidePerimeterRoads !== 'undefined') {
             OutsidePerimeterRoads.drawTraffic(ctx, camera, this);
         }
         if (typeof KolossosArenaAtmosphere !== 'undefined') {
             KolossosArenaAtmosphere.drawWorldGround(ctx, camera, this);
+        }
+        if (typeof ApexW60Atmosphere !== 'undefined') {
+            ApexW60Atmosphere.drawWorldGround(ctx, camera, this);
         }
     }
 

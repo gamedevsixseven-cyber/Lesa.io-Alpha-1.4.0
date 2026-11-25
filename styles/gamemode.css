@@ -240,6 +240,65 @@
     color: #fecaca;
 }
 
+/* Endless Normal / Hard Mode Difficulty Selector */
+.mode-endless-diff-row {
+    position: absolute;
+    top: 13.2%;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 15;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px;
+    background: rgba(11, 16, 30, 0.88);
+    border: 2px solid #1a1d2b;
+    border-radius: 999px;
+    box-shadow: 0 3px 0 #070b14, 0 6px 14px rgba(0, 0, 0, 0.55);
+}
+
+.mode-diff-pill {
+    border: 1.5px solid transparent;
+    border-radius: 999px;
+    padding: 3px 10px;
+    background: transparent;
+    color: #cbd5e1;
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.4px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: transform 0.14s ease, background 0.16s ease, color 0.16s ease, border-color 0.16s ease;
+}
+
+.mode-diff-pill:hover {
+    color: #ffffff;
+}
+
+.mode-diff-pill.active {
+    background: linear-gradient(180deg, #9b59b6 0%, #6c3483 100%);
+    border-color: #d8b4fe;
+    color: #ffffff;
+    box-shadow: 0 0 10px rgba(155, 89, 182, 0.55);
+}
+
+.mode-diff-pill.is-hard.active {
+    background: linear-gradient(180deg, #ff2e4c 0%, #991b1b 100%);
+    border-color: #fed330;
+    color: #ffffff;
+    box-shadow: 0 0 12px rgba(255, 46, 76, 0.75);
+}
+
+.mode-diff-pill.is-hard.is-locked {
+    opacity: 0.72;
+    color: #94a3b8;
+}
+
+.mode-slot-endless.is-hard-selected .mode-card-hover-art {
+    filter: saturate(1.25) contrast(1.06) drop-shadow(0 12px 24px rgba(255, 46, 76, 0.65));
+}
+
 .mode-crest-notice {
     position: absolute;
     top: 67px;

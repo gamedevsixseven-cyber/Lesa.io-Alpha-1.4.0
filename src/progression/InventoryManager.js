@@ -20,9 +20,10 @@ class InventoryManager {
             rare: 0,
             epic: 0,
             legendary: 0,
-            mythic: 0
+            mythic: 0,
+            apex: 0
         };
-        this.freeChests = { common: 0, uncommon: 0, rare: 0, epic: 0, legendary: 0, mythic: 0 };
+        this.freeChests = { common: 0, uncommon: 0, rare: 0, epic: 0, legendary: 0, mythic: 0, apex: 0 };
         this.materials = (typeof MaterialRegistry !== 'undefined')
             ? MaterialRegistry.createEmptyMap()
             : { armory_shards: 0, mati_crystal: 0, olympian_bronze: 0, ambrosia_spark: 0 };
@@ -302,6 +303,66 @@ class InventoryManager {
     }
 
     /**
+     * Opens all (or all free) stored chests of a specific rarity via BatchChestModalUI.
+     */
+    openAllStoredChests(chestType, options = {}) {
+        return (typeof BatchChestModalUI !== 'undefined') ? BatchChestModalUI.openAllStoredChests(this, chestType, options) : null;
+    }
+
+    /**
+     * Opens all stored Boss Crates of a single tier via BatchChestModalUI.
+     */
+    openAllCrates(crateId) {
+        return (typeof BatchChestModalUI !== 'undefined') ? BatchChestModalUI.openAllCrates(this, crateId) : null;
+    }
+
+    /**
+     * Rolls one Boss Crate's rewards, credits the player, and optionally defers modal/save/events for batching.
+     */
+    _rollSingleCrateLoot(def, crateId, skipUiAndSave = false) {
+        const coins = Math.floor(Math.random() * (def.maxCoins - def.minCoins + 1)) + def.minCoins;
+        let gems = 0;
+        if (Math.random() < def.gemDropChance) {
+            gems = Math.floor(Math.random() * (def.maxGems - def.minGems + 1)) + def.minGems;
+        }
+        const droppedGear = [], duplicateEntries = [];
+        const rawGear = (typeof ALL_GEAR !== 'undefined' && Array.isArray(ALL_GEAR) && ALL_GEAR.length > 0)
+            ? ALL_GEAR
+            : (typeof GEAR_DATA !== 'undefined' ? Object.values(GEAR_DATA) : []);
+        const allowEpic = ((def.gearOdds && def.gearOdds.epic) || 0) > 0 || (def.guaranteedEpic || 0) > 0;
+        const allowLeg = ((def.gearOdds && def.gearOdds.legendary) || 0) > 0 || (def.guaranteedLegendary || 0) > 0;
+        const eligibleGear = rawGear.filter(g => {
+            const r = g.rarity || 'common';
+            if (r === 'exclusive' || g.excludeFromChests) return false;
+            if (r === 'epic' && !allowEpic) return false;
+            if (r === 'legendary' && !allowLeg) return false;
+            return true;
+        });
+
+        if (eligibleGear.length > 0) {
+            for (let i = 0; i < def.gearCount; i++) {
+                const targetRarity = this.rollRarity(def, i);
+                let pool = eligibleGear.filter(g => (g.rarity || 'common') === targetRarity);
+                if (pool.length === 0) pool = eligibleGear;
+                const chosen = pool[Math.floor(Math.random() * pool.length)];
+                if (chosen) {
+                    const grantRes = this.grantGearToInventory(chosen.id);
+                    droppedGear.push({ ...chosen, isDuplicate: grantRes.isDuplicate, shardBonus: grantRes.shardBonus });
+                    if (grantRes.isDuplicate && grantRes.shardBonus > 0) duplicateEntries.push(grantRes);
+                }
+            }
+        }
+        const matLoot = this.applyContainerMaterials(def.id || crateId, duplicateEntries);
+        if (window.GameState && typeof window.GameState.addCurrency === 'function') {
+            window.GameState.addCurrency(coins, gems);
+        } else if (window.uiController) {
+            if (typeof window.uiController.setCoins === 'function') window.uiController.setCoins((window.uiController.coins || 0) + coins);
+            if (typeof window.uiController.setGems === 'function') window.uiController.setGems((window.uiController.gems || 0) + gems);
+        }
+        return { coins, gems, gear: droppedGear, materials: matLoot.materials, duplicateShards: matLoot.duplicateShards };
+    }
+
+    /**
      * Awards one or more boss crates directly to the player's inventory
      */
     addCrate(crateId, count = 1) {
@@ -336,96 +397,21 @@ class InventoryManager {
      */
     openCrate(crateId) {
         if (!this.crates[crateId] || this.crates[crateId] <= 0) {
-            if (window.soundEngine && typeof window.soundEngine.playGoBack === 'function') {
-                window.soundEngine.playGoBack();
-            }
+            if (window.soundEngine && typeof window.soundEngine.playGoBack === 'function') window.soundEngine.playGoBack();
             return null;
         }
-
         const def = (typeof BOSS_CRATES !== 'undefined') ? BOSS_CRATES[crateId] : null;
         if (!def) return null;
 
-        // 1. Decrement crate from inventory
         this.crates[crateId]--;
         this.save();
 
-        // 2. Roll Gold Coins
-        const coins = Math.floor(Math.random() * (def.maxCoins - def.minCoins + 1)) + def.minCoins;
-
-        // 3. Roll Gems
-        let gems = 0;
-        if (Math.random() < def.gemDropChance) {
-            gems = Math.floor(Math.random() * (def.maxGems - def.minGems + 1)) + def.minGems;
-        }
-
-        // 4. Roll Gear Cards (respect chest rarity odds & 0% Epic/Legendary guard for low-tier crates)
-        const droppedGear = [];
-        const duplicateEntries = [];
-        const rawGear = (typeof ALL_GEAR !== 'undefined' && Array.isArray(ALL_GEAR) && ALL_GEAR.length > 0)
-            ? ALL_GEAR
-            : (typeof GEAR_DATA !== 'undefined' ? Object.values(GEAR_DATA) : []);
-        const allowEpic = ((def.gearOdds && def.gearOdds.epic) || 0) > 0 || (def.guaranteedEpic || 0) > 0;
-        const allowLeg = ((def.gearOdds && def.gearOdds.legendary) || 0) > 0 || (def.guaranteedLegendary || 0) > 0;
-        const eligibleGear = rawGear.filter(g => {
-            const r = g.rarity || 'common';
-            if (r === 'exclusive' || g.excludeFromChests) return false;
-            if (r === 'epic' && !allowEpic) return false;
-            if (r === 'legendary' && !allowLeg) return false;
-            return true;
-        });
-
-        if (eligibleGear.length > 0) {
-            for (let i = 0; i < def.gearCount; i++) {
-                const targetRarity = this.rollRarity(def, i);
-                let pool = eligibleGear.filter(g => (g.rarity || 'common') === targetRarity);
-                if (pool.length === 0) pool = eligibleGear;
-                const chosen = pool[Math.floor(Math.random() * pool.length)];
-                if (chosen) {
-                    const grantRes = this.grantGearToInventory(chosen.id);
-                    droppedGear.push({ ...chosen, isDuplicate: grantRes.isDuplicate, shardBonus: grantRes.shardBonus });
-                    if (grantRes.isDuplicate && grantRes.shardBonus > 0) duplicateEntries.push(grantRes);
-                }
-            }
-        }
-
-        // 4.5. Roll Container Materials + Duplicate Gear Salvage into Armory Shards
-        const matLoot = this.applyContainerMaterials(def.id || crateId, duplicateEntries);
-
-        // 5. Deposit Currencies
-        if (window.GameState && typeof window.GameState.addCurrency === 'function') {
-            window.GameState.addCurrency(coins, gems);
-        } else if (window.uiController) {
-            if (typeof window.uiController.setCoins === 'function') {
-                window.uiController.setCoins((window.uiController.coins || 0) + coins);
-            }
-            if (typeof window.uiController.setGems === 'function') {
-                window.uiController.setGems((window.uiController.gems || 0) + gems);
-            }
-        }
-
-        if (window.soundEngine && typeof window.soundEngine.playLevelUp === 'function') {
-            window.soundEngine.playLevelUp();
-        }
-
-        const loot = { coins, gems, gear: droppedGear, materials: matLoot.materials, duplicateShards: matLoot.duplicateShards };
-
-        // 6. Show Loot Animation Reveal
-        if (typeof ChestModalUI !== 'undefined' && typeof ChestModalUI.showLoot === 'function') {
-            ChestModalUI.showLoot(def, loot);
-        }
-
-        // 7. Fire Events & Re-render Inventory UI (GameState.addCurrency already emitted currencyChanged with total balances)
-        if (typeof window !== 'undefined' && window.EventBus) {
-            window.EventBus.emit('inventoryUpdated', { crateId, loot });
-        }
-        if (typeof window !== 'undefined' && window.SaveManager && typeof window.SaveManager.saveNow === 'function') {
-            window.SaveManager.saveNow();
-        }
-
-        if (typeof window !== 'undefined' && window.inventoryModalUI && typeof window.inventoryModalUI.render === 'function') {
-            window.inventoryModalUI.render();
-        }
-
+        const loot = this._rollSingleCrateLoot(def, crateId, false);
+        if (window.soundEngine && typeof window.soundEngine.playLevelUp === 'function') window.soundEngine.playLevelUp();
+        if (typeof ChestModalUI !== 'undefined' && typeof ChestModalUI.showLoot === 'function') ChestModalUI.showLoot(def, loot);
+        if (typeof window !== 'undefined' && window.EventBus) window.EventBus.emit('inventoryUpdated', { crateId, loot });
+        if (typeof window !== 'undefined' && window.SaveManager && typeof window.SaveManager.saveNow === 'function') window.SaveManager.saveNow();
+        if (typeof window !== 'undefined' && window.inventoryModalUI && typeof window.inventoryModalUI.render === 'function') window.inventoryModalUI.render();
         return loot;
     }
 

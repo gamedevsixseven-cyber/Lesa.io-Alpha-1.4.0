@@ -128,6 +128,22 @@ class ProceduralSynth {
             gain.gain.exponentialRampToValueAtTime(0.01, now + 0.17);
             osc.start(now);
             osc.stop(now + 0.18);
+        } else if (type === 'tempest_bow' || type === 'aurelion_scepter') {
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime((type === 'aurelion_scepter' ? 1420 : 980) + Math.random() * 120, now);
+            osc.frequency.exponentialRampToValueAtTime(type === 'aurelion_scepter' ? 2150 : 380, now + 0.10);
+            gain.gain.setValueAtTime(masterVolume * 0.60, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.11);
+            osc.start(now);
+            osc.stop(now + 0.12);
+        } else if (type === 'void_mortar') {
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(240 + Math.random() * 40, now);
+            osc.frequency.exponentialRampToValueAtTime(55, now + 0.15);
+            gain.gain.setValueAtTime(masterVolume * 0.78, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.16);
+            osc.start(now);
+            osc.stop(now + 0.17);
         } else if (type === 'spas12' || type === 'sawnoff_shotgun') {
             osc.type = 'sawtooth';
             osc.frequency.setValueAtTime((type === 'sawnoff_shotgun' ? 380 : 340) + Math.random() * 50, now);

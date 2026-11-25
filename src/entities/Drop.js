@@ -66,21 +66,13 @@ class Drop {
             if (window.soundEngine) window.soundEngine.playPickup('xp');
             if (effects) effects.addSparks(this.x, this.y, '#ffd32a', 4);
         } else if (this.type === 'heart') {
-            const g = (typeof window !== 'undefined') ? window.gameInstance : null;
-            const rp = (g && !g.isCoopGuest && g.coopSession && g.coopSession.remotePlayer && !g.coopSession.remotePlayer.isDowned && !g.coopSession.remotePlayer.isDownedDisconnected) ? g.coopSession.remotePlayer : null;
             const heartCoins = (player.hp >= player.maxHp && typeof window !== 'undefined' && window.perkSystem && typeof window.perkSystem.getFullHpHeartCoinValue === 'function')
                 ? window.perkSystem.getFullHpHeartCoinValue(player) : 0;
             if (heartCoins > 0) {
                 player.coins = (player.coins || 0) + heartCoins;
                 if (window.soundEngine) window.soundEngine.playPickup('coin');
                 if (effects) { effects.addPopup(this.x, this.y, `+${heartCoins} 🪙 ALCHEMIST`, '#f39c12', 22); effects.addSparks(this.x, this.y, '#f39c12', 8); }
-            } else if (player.hp >= player.maxHp && rp && rp.hp < rp.maxHp) {
-                const healAmt = this.value || 30;
-                rp.hp = Math.min(rp.maxHp, rp.hp + healAmt);
-                if (window.soundEngine) window.soundEngine.playPickup('heart');
-                if (effects) { effects.addPopup(rp.x, rp.y, `+${healAmt} HP`, '#2ed573', 24); effects.addSparks(rp.x, rp.y, '#2ed573', 8); }
-                if (g.coopSession && g.coopSession.net) g.coopSession.net.send('GUEST_DROP_EFFECT', { type: 'heart', amt: healAmt, hp: Math.round(rp.hp), maxHp: Math.round(rp.maxHp) });
-            } else {
+            } else if (typeof CoopDropSync === 'undefined' || !CoopDropSync.tryHostHeartShare(this, player, effects)) {
                 player.heal(this.value || 30);
                 if (window.soundEngine) window.soundEngine.playPickup('heart');
                 if (effects) { effects.addPopup(this.x, this.y, `+${this.value || 30} HP`, '#2ed573', 24); effects.addSparks(this.x, this.y, '#2ed573', 8); }

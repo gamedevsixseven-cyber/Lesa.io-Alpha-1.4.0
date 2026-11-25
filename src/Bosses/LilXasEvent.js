@@ -348,11 +348,14 @@ class LilXasEvent {
                     if (p.hp <= 0 && typeof HeroStarBlessing !== 'undefined') HeroStarBlessing.tryStarRevive(p, g.effects);
                     if (p.hp <= 0 && window.soundEngine) window.soundEngine.playGameOver();
                 }
-                const p2 = g.coopSession && g.coopSession.isHost ? g.coopSession.remotePlayer : null;
-                if (p2 && p2.hp > 0 && !p2.isDowned && !p2.isDownedDisconnected) {
-                    p2.hp = Math.max(0, p2.hp - dmg);
-                    if (p2.hp <= 0) p2.isDowned = true;
-                    if (g.effects) g.effects.addDamage(p2.x, p2.y - 12, dmg, false, true);
+                const rps = (g.coopSession && g.coopSession.isHost) ? (g.coopSession.remotePlayers || (g.coopSession.remotePlayer ? [g.coopSession.remotePlayer] : [])) : [];
+                for (let ri = 0; ri < rps.length; ri++) {
+                    const p2 = rps[ri];
+                    if (p2 && p2.hp > 0 && !p2.isDowned && !p2.isDownedDisconnected) {
+                        p2.hp = Math.max(0, p2.hp - dmg);
+                        if (p2.hp <= 0) p2.isDowned = true;
+                        if (g.effects) g.effects.addDamage(p2.x, p2.y - 12, dmg, false, true);
+                    }
                 }
             }
         } else {

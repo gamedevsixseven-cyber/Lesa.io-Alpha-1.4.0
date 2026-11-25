@@ -11,15 +11,7 @@ class CoopHostSession {
         this.mapSeed = mapSeed;
 
         guestInfo = guestInfo || (networkManager && networkManager.peerUserData) || null;
-        const heroType = (guestInfo && guestInfo.heroType) || 'petros';
-        const rawGuestName = (guestInfo && guestInfo.name) ? String(guestInfo.name).trim() : '';
-        const name = rawGuestName || 'Player 2';
-        this.remotePlayer = new RemotePlayer(game.player.x + 60, game.player.y, heroType, name);
-        this.remotePlayer.applyHeroStats(heroType, { ...guestInfo, name });
-        this.remotePlayer.isHost = false;
-        this.remotePlayer.onShieldConsumed = () => {
-            if (this.net) this.net.send('GUEST_DROP_EFFECT', { type: 'shield_break' });
-        };
+        CoopPeerRoster.initHostRoster(this, game, networkManager, guestInfo);
 
         this.netIdCounter = 1;
         this.snapshotTimer = 0;
@@ -132,9 +124,9 @@ class CoopHostSession {
         }
     }
 
-    getTotalPlayers() {
-        return (this.net && this.remotePlayer && !this.remotePlayer.isDownedDisconnected) ? 2 : 1;
-    }
+    get remotePlayer() { return CoopPeerRoster.getRemotePlayer(this); }
+    getRemotePlayer(peerId = null) { return CoopPeerRoster.getRemotePlayer(this, peerId); }
+    getTotalPlayers() { return CoopPeerRoster.getTotalPlayers(this); }
 
     handleCutsceneAdvance(playerId) {
         const co = this.game.cutsceneOverlay;
@@ -156,135 +148,134 @@ class CoopHostSession {
     }
 
     setupNetworkHandlers() {
-        this.net.onMessageCallback = (type, payload) => {
+        this.net.onMessageCallback = (type, payload, senderId = null) => {
+            const rp = this.getRemotePlayer(senderId);
             if (type === 'GUEST_STATE') {
+                if (!rp) return;
                 if (this.game.cutsceneOverlay && this.game.cutsceneOverlay.active && payload) {
                     const locked = { ...payload, isMoving: false };
                     delete locked.x; delete locked.y; delete locked.vx; delete locked.vy;
-                    this.remotePlayer.setTargetState(locked);
+                    rp.setTargetState(locked);
                 } else {
-                    this.remotePlayer.setTargetState(payload);
+                    rp.setTargetState(payload);
                 }
             } else if (type === 'NET_PAUSE') {
                 this.onNetworkPause(payload);
             } else if (type === 'NET_RESUME_READY' || type === 'NET_RESUME') {
-                this.onNetworkResumeReady(payload);
+                this.onNetworkResumeReady(payload, senderId);
             } else if (type === 'GUEST_QUIT_MATCH') {
-                this._handleGuestLeft(payload && payload.name);
+                this._handleGuestLeft(senderId, payload && payload.name);
             } else if (type === 'GUEST_SHOOT') {
-                this.handleGuestShoot(payload);
+                this.handleGuestShoot(payload, senderId);
+                if (senderId && this.net.getPeerCount() > 1 && payload) {
+                    this.net.broadcastExcept(senderId, 'HOST_SHOOT', { ...payload, fromId: senderId }, { droppable: true, maxBufferedBytes: 196608 });
+                }
             } else if (type === 'GUEST_DASH') {
-                if (!this.remotePlayer.isDowned && !this.remotePlayer.isDownedDisconnected && this.game.effects) {
+                if (rp && !rp.isDowned && !rp.isDownedDisconnected && this.game.effects) {
                     if (typeof this.game.effects.addDashTrail === 'function') {
-                        this.game.effects.addDashTrail(this.remotePlayer.x, this.remotePlayer.y, this.remotePlayer.radius, this.remotePlayer.heroColor);
+                        this.game.effects.addDashTrail(rp.x, rp.y, rp.radius, rp.heroColor);
                     } else if (typeof this.game.effects.addDust === 'function') {
-                        this.game.effects.addDust(this.remotePlayer.x, this.remotePlayer.y, 6, 8);
+                        this.game.effects.addDust(rp.x, rp.y, 6, 8);
                     }
                 }
+                if (senderId && this.net.getPeerCount() > 1) {
+                    this.net.broadcastExcept(senderId, 'HOST_DASH', { fromId: senderId });
+                }
             } else if (type === 'GUEST_SKILL') {
-                if (!this.remotePlayer.isDowned && !this.remotePlayer.isDownedDisconnected && this.game.state === 'PLAYING') {
-                    this.playRemoteSkill(this.remotePlayer, payload, true);
+                if (rp && !rp.isDowned && !rp.isDownedDisconnected && this.game.state === 'PLAYING') {
+                    const ok = this.playRemoteSkill(rp, payload, true);
+                    if (ok && senderId && this.net.getPeerCount() > 1 && payload) {
+                        this.net.broadcastExcept(senderId, 'HOST_SKILL', { ...payload, fromId: senderId });
+                    }
                 }
             } else if (type === 'GUEST_ULT') {
-                if (!this.remotePlayer.isDowned && !this.remotePlayer.isDownedDisconnected && this.game.state === 'PLAYING' && typeof CoopSkillFx !== 'undefined') {
-                    CoopSkillFx.playRemoteUlt(this.game, this.remotePlayer, payload, true);
+                if (rp && !rp.isDowned && !rp.isDownedDisconnected && this.game.state === 'PLAYING' && typeof CoopSkillFx !== 'undefined') {
+                    CoopSkillFx.playRemoteUlt(this.game, rp, payload, true);
+                    if (senderId && this.net.getPeerCount() > 1 && payload) {
+                        this.net.broadcastExcept(senderId, 'HOST_ULT', { ...payload, fromId: senderId });
+                    }
                 }
             } else if (type === 'GUEST_COLLECT_DROP') {
-                this.handleGuestCollectDrop(payload);
+                this.handleGuestCollectDrop(payload, senderId);
             } else if (type === 'GUEST_CUTSCENE_ADVANCE' || type === 'GUEST_CUTSCENE_READY') {
-                this.handleCutsceneAdvance('guest');
+                this.handleCutsceneAdvance(senderId || 'guest');
             } else if (type === 'HELIOS_BEAM' && typeof CoopCombatFx !== 'undefined') {
-                CoopCombatFx.handleRemoteBeam(this, payload, true);
+                CoopCombatFx.handleRemoteBeam(this, payload, true, senderId);
+                if (senderId && this.net.getPeerCount() > 1 && payload) {
+                    this.net.broadcastExcept(senderId, 'HELIOS_BEAM', { ...payload, fromId: senderId }, { droppable: true });
+                }
             } else if (type === 'COOP_FX' && typeof CoopCombatFx !== 'undefined') {
-                CoopCombatFx.handleRemoteFx(this, payload);
+                CoopCombatFx.handleRemoteFx(this, payload, senderId);
+                if (senderId && this.net.getPeerCount() > 1 && payload) {
+                    this.net.broadcastExcept(senderId, 'COOP_FX', { ...payload, fromId: senderId }, { droppable: true });
+                }
             } else if (type === 'COOP_CHAT' && payload && this.game && this.game.ui && this.game.ui.hud) {
-                this.game.ui.hud.receiveChatMessage(payload.name || this.remotePlayer.name, payload.text, this.remotePlayer, false);
+                const senderName = (rp && rp.name) || payload.name || 'Partner';
+                this.game.ui.hud.receiveChatMessage(senderName, payload.text, rp, false);
+                if (senderId && this.net.getPeerCount() > 1) {
+                    this.net.broadcastExcept(senderId, 'COOP_CHAT', { ...payload, name: senderName, fromId: senderId });
+                }
             } else if (type === 'DEV_COOP_CMD' && payload && typeof window !== 'undefined' && window.AdminCheats) {
                 window.AdminCheats.handleRemoteCoopCmd(this.game, payload);
-            } else if (type === 'GUEST_HEAL' && payload) {
-                const p2 = this.remotePlayer;
+            } else if (type === 'GUEST_HEAL' && payload && rp) {
                 const amt = Number(payload.amount);
-                if (p2 && p2.hp > 0 && !p2.isDowned && !p2.isDownedDisconnected && Number.isFinite(amt) && amt > 0) {
+                if (rp.hp > 0 && !rp.isDowned && !rp.isDownedDisconnected && Number.isFinite(amt) && amt > 0) {
                     const now = performance.now();
-                    if (!this._healWinStart || now - this._healWinStart > 1000) { this._healWinStart = now; this._healWinAcc = 0; }
-                    const room = Math.max(0, 120 - this._healWinAcc);
-                    const safeAmt = Math.min(amt, room, Math.max(10, (p2.maxHp || 100) * 0.5));
-                    if (safeAmt > 0) { this._healWinAcc += safeAmt; p2.hp = Math.min(p2.maxHp || 100, p2.hp + safeAmt); }
+                    if (!rp._healWinStart || now - rp._healWinStart > 1000) { rp._healWinStart = now; rp._healWinAcc = 0; }
+                    const room = Math.max(0, 120 - rp._healWinAcc);
+                    const safeAmt = Math.min(amt, room, Math.max(10, (rp.maxHp || 100) * 0.5));
+                    if (safeAmt > 0) { rp._healWinAcc += safeAmt; rp.hp = Math.min(rp.maxHp || 100, rp.hp + safeAmt); }
                 }
             }
         };
 
-        this.net.onDisconnectedCallback = (reason) => {
-            this._handleGuestLeft();
+        this.net.onDisconnectedCallback = (reason, peerId, leftUserData) => {
+            this._handleGuestLeft(peerId, leftUserData && leftUserData.name);
         };
     }
 
-    _handleGuestLeft(explicitName = null) {
-        if (typeof CoopPauseSync !== 'undefined') CoopPauseSync.hostHandleGuestLeft(this, explicitName);
+    _handleGuestLeft(peerId = null, explicitName = null) {
+        if (typeof CoopPauseSync !== 'undefined') CoopPauseSync.hostHandleGuestLeft(this, peerId, explicitName);
     }
 
-    _awardSquadDrop(drop, collectorIsGuest = false) {
-        if (typeof CoopDropSync !== 'undefined') CoopDropSync.awardSquadDrop(this, drop, collectorIsGuest);
+    _awardSquadDrop(drop, collectorOrFlag = false, collectorPeerId = null) {
+        if (typeof CoopDropSync !== 'undefined') CoopDropSync.awardSquadDrop(this, drop, collectorOrFlag, collectorPeerId);
     }
 
-    handleGuestCollectDrop(payload) {
-        if (typeof CoopDropSync !== 'undefined') CoopDropSync.handleGuestCollectDrop(this, payload);
+    handleGuestCollectDrop(payload, senderId = null) {
+        if (typeof CoopDropSync !== 'undefined') CoopDropSync.handleGuestCollectDrop(this, payload, senderId);
     }
 
-    handleGuestShoot(bData) {
-        if (typeof CoopCombatFx !== 'undefined') CoopCombatFx.spawnRemoteBullet(this, bData, true);
+    handleGuestShoot(bData, senderId = null) {
+        if (typeof CoopCombatFx !== 'undefined') CoopCombatFx.spawnRemoteBullet(this, bData, true, senderId);
     }
 
     update(dt) {
         const p1 = this.game.player;
-        const p2 = this.remotePlayer;
+        const rps = this.remotePlayers;
 
-        // 1. Update remote partner interpolation & active remote Ult FX/ticks
-        p2.update(dt);
-        if (typeof CoopSkillFx !== 'undefined' && typeof CoopSkillFx.updateRemoteUlt === 'function') {
-            CoopSkillFx.updateRemoteUlt(this.game, p2, dt, true, this.net);
+        // 1. Update all remote squadmates & active remote Ult FX/ticks
+        for (let i = 0; i < rps.length; i++) {
+            const rp = rps[i];
+            if (!rp) continue;
+            rp.update(dt);
+            if (typeof CoopSkillFx !== 'undefined' && typeof CoopSkillFx.updateRemoteUlt === 'function') {
+                CoopSkillFx.updateRemoteUlt(this.game, rp, dt, true, this.net);
+            }
         }
 
-        // 2. Intelligent Enemy Target Distribution
-        // Assign each enemy's target to the closer of (local host player vs remote guest player)
+        // 2. Intelligent Enemy Target Distribution across all alive squad members
         for (let i = 0; i < this.game.enemies.length; i++) {
             const enemy = this.game.enemies[i];
             if (!enemy || enemy.dead) continue;
-
-            // Ensure enemy has a unique network ID
-            if (!enemy._netId) {
-                enemy._netId = this.netIdCounter++;
-            }
-
-            // If partner is downed, target host; if host is downed, target partner
-            let targetPlayer = p1;
-            if (p1.hp <= 0) {
-                targetPlayer = p2;
-            } else if (p2.isDowned) {
-                targetPlayer = p1;
-            } else {
-                const dist1 = (enemy.x - p1.x) ** 2 + (enemy.y - p1.y) ** 2;
-                const dist2 = (enemy.x - p2.x) ** 2 + (enemy.y - p2.y) ** 2;
-                targetPlayer = (dist1 <= dist2) ? p1 : p2;
-            }
-            enemy.coopTarget = targetPlayer;
+            if (!enemy._netId) enemy._netId = this.netIdCounter++;
+            enemy.coopTarget = CoopPeerRoster.pickClosestAliveTarget(this, enemy, p1);
         }
 
-        // 3. Check Co-op Revive on Wave Clear
-        if (this.game.waveState === 'WAVE_CLEARED') {
-            if (this.remotePlayer.isDowned) {
-                this.remotePlayer.hp = Math.round(this.remotePlayer.maxHp * 0.5);
-                this.remotePlayer.isDowned = false;
-                if (this.game.ui) this.game.ui.addKillfeed(`🤝 ${this.remotePlayer.name} REVIVED!`);
-            }
-            if (p1.hp <= 0 && !this.remotePlayer.isDowned) {
-                p1.hp = Math.round(p1.maxHp * 0.5);
-                if (this.game.ui) this.game.ui.addKillfeed(`🤝 YOU WERE REVIVED!`);
-            }
-        }
+        // 3. Check Co-op Revive on Wave Clear & Squad KO
+        CoopPeerRoster.handleWaveClearRevives(this);
 
-        // 4. Check Double KO (Only triggers game over when BOTH players fall)
-        if (p1.hp <= 0 && this.remotePlayer.isDowned && this.game.state === 'PLAYING') {
+        if (CoopPeerRoster.areAllPlayersDowned(this) && this.game.state === 'PLAYING') {
             this.broadcastSnapshot();
             if (this.net && this.net.connected) {
                 this.net.send('COOP_GAME_OVER', { wave: this.game.waveManager ? this.game.waveManager.wave : 1 });
@@ -345,7 +336,6 @@ class CoopHostSession {
         // Collect drops (prioritize special pickups/magnetized gems & cap to keep packets lightweight on late waves)
         const dropsPayload = [];
         const xpDrops = [];
-        const p2 = this.remotePlayer;
         for (let i = 0; i < this.game.drops.length; i++) {
             const d = this.game.drops[i];
             if (!d || d.dead) continue;
@@ -356,14 +346,17 @@ class CoopHostSession {
                 x: safeInt(d.x),
                 y: safeInt(d.y),
                 v: safeInt(d.value, 1, 1000, 1),
-                m: (d._magTarget === 'host') ? 1 : (d._magTarget === 'guest' ? 2 : 0)
+                m: (d._magTarget === 'host') ? 1 : (d._magTarget ? 2 : 0)
             };
             if (entry.t !== 'xp' || entry.m > 0) {
                 if (dropsPayload.length < 90) dropsPayload.push(entry);
             } else {
-                const d1Sq = (d.x - p.x) ** 2 + (d.y - p.y) ** 2;
-                const d2Sq = p2 ? ((d.x - p2.x) ** 2 + (d.y - p2.y) ** 2) : Infinity;
-                entry._dSq = Math.min(d1Sq, d2Sq);
+                let minSq = (d.x - p.x) ** 2 + (d.y - p.y) ** 2;
+                for (let j = 0; j < this.remotePlayers.length; j++) {
+                    const rp = this.remotePlayers[j];
+                    if (rp) minSq = Math.min(minSq, (d.x - rp.x) ** 2 + (d.y - rp.y) ** 2);
+                }
+                entry._dSq = minSq;
                 xpDrops.push(entry);
             }
         }
@@ -446,8 +439,9 @@ class CoopHostSession {
                 vfAng: p.vf185Active ? safeFloat(p.vf185Angle || p.angle || 0, 2, 0) : undefined,
                 bubbleCharge: p.isChargingBubble ? Number((p.bubbleCharge || 0).toFixed(2)) : 0
             },
-            guestHp: safeInt(this.remotePlayer.hp, 0, 100000, 0),
-            guestMaxHp: safeInt(this.remotePlayer.maxHp, 25, 100000, 100),
+            guestHp: this.remotePlayer ? safeInt(this.remotePlayer.hp, 0, 100000, 0) : 0,
+            guestMaxHp: this.remotePlayer ? safeInt(this.remotePlayer.maxHp, 25, 100000, 100) : 100,
+            peers: CoopPeerRoster.buildHostPeersPayload(this, safeInt, safeFloat),
             sq: {
                 sc: safeInt(p.score, 0, 200000000, 0),
                 kl: safeInt(p.kills, 0, 1000000, 0),
@@ -469,28 +463,29 @@ class CoopHostSession {
     }
 
     playRemoteSkill(remotePlayer, skillData = {}, isHostAuthoritative = true) {
-        if (isHostAuthoritative) {
+        if (isHostAuthoritative && remotePlayer) {
             const sid = typeof skillData.skillId === 'string' ? skillData.skillId : 'blade_rush';
             const lvl = Math.max(1, Math.min(5, Math.round(Number(skillData.level) || 1)));
             const cdSec = (typeof PlayerSkills !== 'undefined') ? PlayerSkills.getEffectiveCooldown(sid, lvl) : 7.0;
             const minGapMs = Math.max(2500, cdSec * 720);
             const now = performance.now();
-            if (now - this._lastGuestSkillTime < minGapMs) return;
-            this._lastGuestSkillTime = now;
+            if (now - (remotePlayer._lastSkillTime || 0) < minGapMs) return false;
+            remotePlayer._lastSkillTime = now;
         }
         if (typeof CoopSkillFx !== 'undefined') {
             CoopSkillFx.playRemoteSkill(this.game, remotePlayer, skillData, isHostAuthoritative);
         }
+        return true;
     }
 
     syncKiloumpasEvent(action, boss, targetPlayer, extra = {}) {
         if (!this.net || !this.net.connected) return;
-        const isGuestTarget = (targetPlayer === this.remotePlayer);
         const isHostTarget = (targetPlayer === this.game.player);
-        if (!isGuestTarget && !isHostTarget) return;
+        const targetId = isHostTarget ? 'host' : (targetPlayer && targetPlayer.peerId);
+        if (!targetId) return;
         this.net.send('KILOUMPAS_GRAB', {
             action,
-            target: isGuestTarget ? 'guest' : 'host',
+            target: targetId,
             x: Number.isFinite(extra.x) ? extra.x : Math.round(targetPlayer.x),
             y: Number.isFinite(extra.y) ? extra.y : Math.round(targetPlayer.y),
             airZ: Number.isFinite(extra.airZ) ? extra.airZ : 0,
@@ -537,10 +532,11 @@ class CoopHostSession {
         if (typeof CoopPauseSync !== 'undefined') CoopPauseSync.hostEvaluatePause(this);
     }
 
-    onNetworkResumeReady(payload) {
+    onNetworkResumeReady(payload, senderId = null) {
         if (this.game.state !== 'PAUSED' || this._pauseResuming) return;
-        if (payload && payload.ready === false) this.pauseReadyPlayers.delete('guest');
-        else this.pauseReadyPlayers.add('guest');
+        const pid = senderId || 'guest';
+        if (payload && payload.ready === false) this.pauseReadyPlayers.delete(pid);
+        else this.pauseReadyPlayers.add(pid);
         if (typeof CoopPauseSync !== 'undefined') CoopPauseSync.hostEvaluatePause(this);
     }
 
@@ -563,8 +559,12 @@ class CoopHostSession {
     }
 
     render(ctx, camera) {
-        this.remotePlayer.draw(ctx);
-        this.remotePlayer.drawRadarIndicator(ctx, this.game.player, camera);
+        for (let i = 0; i < this.remotePlayers.length; i++) {
+            const rp = this.remotePlayers[i];
+            if (!rp || rp.isDownedDisconnected) continue;
+            rp.draw(ctx);
+            rp.drawRadarIndicator(ctx, this.game.player, camera);
+        }
         RemotePlayer.drawLocalDownedBanner(ctx, this.game.player);
     }
 }

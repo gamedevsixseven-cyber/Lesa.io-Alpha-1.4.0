@@ -145,7 +145,7 @@ class WeaponEvolutionManager {
         return this._getCoins() >= cost.coins && this._getStones() >= cost.evolutionStones;
     }
 
-    static getEffectiveConfig(weaponId, baseConfig = null, overrideEvolved = null) {
+    static getEffectiveConfig(weaponId, baseConfig = null, overrideEvolved = null, overrideTree = undefined) {
         const meta = this._resolveWeapon(weaponId);
         const cfg = baseConfig || meta || {};
         if (!this.isEvolvableWeapon(weaponId)) return cfg;
@@ -153,16 +153,19 @@ class WeaponEvolutionManager {
         const evolved = overrideEvolved !== null ? !!overrideEvolved : this.isEvolved(weaponId);
         if (!evolved) return cfg;
 
-        if (meta && meta.evolved) {
-            return { ...cfg, ...meta.evolved };
+        let evolvedCfg = meta && meta.evolved
+            ? { ...cfg, ...meta.evolved }
+            : {
+                ...cfg,
+                baseDamage: Math.round((cfg.baseDamage || 30) * 1.35),
+                baseDelay: Math.max(4, Math.round((cfg.baseDelay || 15) * 0.85)),
+                extraPierce: (cfg.extraPierce || 0) + 1,
+                critChanceBonus: (cfg.critChanceBonus || 0) + 0.06
+            };
+        if (typeof CelestialSkillTreeManager !== 'undefined') {
+            evolvedCfg = CelestialSkillTreeManager.applyToConfig(weaponId, evolvedCfg, overrideTree);
         }
-        return {
-            ...cfg,
-            baseDamage: Math.round((cfg.baseDamage || 30) * 1.35),
-            baseDelay: Math.max(4, Math.round((cfg.baseDelay || 15) * 0.85)),
-            extraPierce: (cfg.extraPierce || 0) + 1,
-            critChanceBonus: (cfg.critChanceBonus || 0) + 0.06
-        };
+        return evolvedCfg;
     }
 
     static evolveWeapon(weaponOrId) {
@@ -287,7 +290,15 @@ class WeaponEvolutionManager {
             const evoBox = document.createElement('div');
             evoBox.className = 'gear-upgrade-box weapon-evo-box';
             if (isEvolved) {
-                evoBox.innerHTML = `<div class="gear-upgrade-cost-line" style="color:${isCelestial ? '#fef08a' : '#b45309'};">${isCelestial ? '★ AWAKENED CELESTIAL RELIC ★' : '★ AWAKENED MYTHIC WEAPON ★'}</div>`;
+                if (isCelestial && typeof CelestialSkillTreeManager !== 'undefined' && CelestialSkillTreeManager.isTreeEligible(wt)) {
+                    const mods = CelestialSkillTreeManager.getModifiers(wt);
+                    const pathTag = mods.chosenPathName
+                        ? `${mods.chosenPathName.toUpperCase()} (${mods.unlockedCount}/3)${mods.specialTrait ? ' • ★ ' + mods.specialTrait.name : ''}`
+                        : 'CHOOSE PERMANENT SKILL TREE PATH';
+                    evoBox.innerHTML = `<div class="gear-upgrade-cost-line" style="color:#fef08a;">★ ${pathTag}</div><button type="button" class="gear-btn weapon-celestial-tree-btn" data-celestial-tree="${wt}">✦ CELESTIAL SKILL TREE (${mods.unlockedCount}/3)</button>`;
+                } else {
+                    evoBox.innerHTML = `<div class="gear-upgrade-cost-line" style="color:${isCelestial ? '#fef08a' : '#b45309'};">${isCelestial ? '★ AWAKENED CELESTIAL RELIC ★' : '★ AWAKENED MYTHIC WEAPON ★'}</div>`;
+                }
             } else {
                 const cost = this.getEvolveCost(wt);
                 const coinShort = coins < cost.coins;
@@ -319,6 +330,17 @@ class WeaponEvolutionManager {
                 }
             }
 
+            if (isCelestial && !isEvolved && typeof CelestialSkillTreeManager !== 'undefined' && CelestialSkillTreeManager.isTreeEligible(wt)) {
+                evoBox.insertAdjacentHTML('beforeend', `<button type="button" class="gear-btn weapon-celestial-tree-btn" data-celestial-tree="${wt}">✦ PREVIEW CELESTIAL SKILL TREE</button>`);
+            }
+            const treeBtn = evoBox.querySelector('[data-celestial-tree]');
+            if (treeBtn && typeof CelestialSkillTreeModalUI !== 'undefined') {
+                treeBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    CelestialSkillTreeModalUI.open(wt);
+                });
+            }
+
             const statsList = card.querySelector('.weapon-stats-list');
             if (statsList && statsList.parentNode) {
                 statsList.parentNode.insertBefore(evoRow, statsList);
@@ -340,10 +362,12 @@ class WeaponEvolutionManager {
             card.dataset.origTraitText = rows[2].textContent.trim();
         }
         const evo = wMeta.evolved || {};
+        const effTree = isEvolved && typeof CelestialSkillTreeManager !== 'undefined' ? CelestialSkillTreeManager.getModifiers(wMeta.id) : null;
         if (isEvolved && evo.uiStats) {
-            rows[0].textContent = evo.uiStats.damage || `${evo.baseDamage || wMeta.baseDamage}`;
-            rows[1].textContent = evo.uiStats.fireDelay || 'Awakened';
-            rows[2].textContent = evo.uiStats.trait || card.dataset.origTraitText;
+            const totDmg = (evo.baseDamage || wMeta.baseDamage) + (effTree ? effTree.baseDamage : 0);
+            rows[0].textContent = (effTree && effTree.baseDamage > 0) ? `${totDmg} Awakened (+${effTree.baseDamage} Tree)` : (evo.uiStats.damage || `${totDmg}`);
+            rows[1].textContent = (effTree && effTree.baseDelayDelta) ? `Awakened (${(Math.max(5, (evo.baseDelay || 14) + effTree.baseDelayDelta) / 60).toFixed(2)}s)` : (evo.uiStats.fireDelay || 'Awakened');
+            rows[2].textContent = (effTree && effTree.specialTrait) ? `${evo.uiStats.trait || card.dataset.origTraitText} • ✦ ${effTree.specialTrait.name}` : (evo.uiStats.trait || card.dataset.origTraitText);
         } else if (isEvolved) {
             const evoDmg = Math.round((wMeta.baseDamage || 30) * 1.35);
             rows[0].textContent = `${evoDmg} Awakened`;

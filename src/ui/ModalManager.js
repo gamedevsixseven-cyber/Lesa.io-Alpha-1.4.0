@@ -75,16 +75,19 @@ class ModalManager {
             });
         }
 
-        // Weapon Cards Click to Unlock / Equip
-        document.querySelectorAll('#weapons-modal .weapon-card').forEach((card) => {
-            card.addEventListener('click', (e) => {
-                if (e.target && e.target.closest('[data-weapon-evolve]')) return;
+        // Weapon Cards Click to Unlock / Equip (delegated so dynamically mounted chest cards work reliably)
+        const weaponsGrid = this.weaponsModal ? this.weaponsModal.querySelector('.weapons-grid') : null;
+        if (weaponsGrid) {
+            weaponsGrid.addEventListener('click', (e) => {
+                if (e.target && e.target.closest('[data-weapon-evolve], [data-celestial-tree]')) return;
+                const card = e.target && e.target.closest('.weapon-card');
+                if (!card) return;
                 const wt = card.getAttribute('data-weapon');
                 if (wt && typeof WeaponSystem !== 'undefined' && WeaponSystem.handleWeaponCardClick) {
                     WeaponSystem.handleWeaponCardClick(wt, this, card);
                 }
             });
-        });
+        }
 
         const closeUpgradesBtn = document.getElementById('close-upgrades-btn');
         if (closeUpgradesBtn) {

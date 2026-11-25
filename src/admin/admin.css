@@ -507,7 +507,7 @@
 .admin-dev-gift-footer { display: flex; justify-content: flex-end; margin-top: 10px; }
 
 /* Recipient Developer Gift Claim Pop-Up Modal */
-.dev-gift-modal-overlay { z-index: 9850; }
+.dev-gift-modal-overlay { z-index: 10500; }
 .dev-gift-popup-panel {
     max-width: 480px; width: 94%; padding: 20px 18px; text-align: center;
     background: linear-gradient(165deg, #1e272e 0%, #141a20 100%);
@@ -543,3 +543,31 @@
 .dev-gift-reward-amount { font-family: 'Luckiest Guy', cursive; font-size: 1.2rem; color: #ffffff; letter-spacing: 0.5px; }
 .dev-gift-reward-label { font-size: 0.72rem; font-weight: 900; color: #dfe4ea; }
 .dev-gift-claim-btn { width: 100%; padding: 12px 18px; font-size: 1.15rem; }
+
+/* Live Global Admin Broadcast Top Overlay Banner */
+.admin-global-bcast-banner {
+    position: fixed; top: 16px; left: 50%; transform: translate(-50%, -140%);
+    z-index: 10050; width: min(92vw, 640px); border-radius: 16px; overflow: hidden;
+    background: linear-gradient(135deg, rgba(17, 24, 39, 0.96), rgba(30, 41, 59, 0.96));
+    border: 2.5px solid #fed330; box-shadow: 0 12px 34px rgba(0, 0, 0, 0.75), 0 0 24px rgba(254, 211, 48, 0.45);
+    transition: transform 0.36s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.28s ease;
+    opacity: 0; pointer-events: none;
+}
+.admin-global-bcast-banner.is-visible { transform: translate(-50%, 0); opacity: 1; pointer-events: auto; }
+.admin-global-bcast-banner.theme-crimson { border-color: #ff4757; box-shadow: 0 12px 34px rgba(0,0,0,0.8), 0 0 26px rgba(255, 71, 87, 0.55); }
+.admin-global-bcast-banner.theme-celestial { border-color: #f0abfc; background: linear-gradient(135deg, rgba(15, 8, 38, 0.96), rgba(36, 18, 77, 0.96)); box-shadow: 0 12px 34px rgba(0,0,0,0.8), 0 0 26px rgba(56, 189, 248, 0.58); }
+.admin-global-bcast-banner.theme-emerald { border-color: #2ed573; box-shadow: 0 12px 34px rgba(0,0,0,0.8), 0 0 26px rgba(46, 213, 115, 0.5); }
+.agb-glow-bar { height: 4px; width: 100%; background: linear-gradient(90deg, #fed330, #ff6b81, #38bdf8, #fed330); }
+.agb-inner { display: flex; align-items: center; gap: 10px; padding: 11px 15px; }
+.admin-global-bcast-banner.is-plain .agb-inner { justify-content: center; text-align: center; }
+.agb-badge {
+    flex-shrink: 0; padding: 4px 10px; border-radius: 999px;
+    background: linear-gradient(135deg, #fed330, #f39c12); color: #141418;
+    font-family: 'Luckiest Guy', cursive; font-size: 0.76rem; letter-spacing: 0.6px;
+    box-shadow: 0 2px 8px rgba(254, 211, 48, 0.45);
+}
+.theme-crimson .agb-badge { background: linear-gradient(135deg, #ff4757, #ff6b81); color: #fff; }
+.theme-celestial .agb-badge { background: linear-gradient(135deg, #38bdf8, #c084fc, #fef08a); color: #140b2e; }
+.theme-emerald .agb-badge { background: linear-gradient(135deg, #2ed573, #00cec9); color: #06281e; }
+.agb-text { flex: 1; font-size: 0.98rem; font-weight: 800; color: #ffffff; line-height: 1.35; text-shadow: 0 2px 4px rgba(0,0,0,0.65); word-break: break-word; }
+.agb-close-btn { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.22); color: #cbd5e1; border-radius: 8px; width: 26px; height: 26px; cursor: pointer; font-weight: 900; flex-shrink: 0; }

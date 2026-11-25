@@ -112,6 +112,15 @@ class DevAccountManager {
             tasks.push(db.collection('players').where('playerName', '==', q).limit(6).get().then(s => s.forEach(addDoc)).catch(() => {}));
         }
 
+        if (typeof DevGiftTransport !== 'undefined' && typeof DevGiftTransport.lookupEdgeAccounts === 'function') {
+            tasks.push(DevGiftTransport.lookupEdgeAccounts(q, (id, d) => this._formatSummary(id, d)).then((list) => {
+                for (const s of list) {
+                    if (!foundByUid.has(s.uid)) foundByUid.set(s.uid, s);
+                    else { const ex = foundByUid.get(s.uid); if (s.highScore > ex.highScore) Object.assign(ex, { ...s, altDocIds: ex.altDocIds, pendingDevGiftsCount: Math.max(ex.pendingDevGiftsCount || 0, s.pendingDevGiftsCount || 0) }); }
+                }
+            }).catch(() => {}));
+        }
+
         await Promise.allSettled(tasks);
         return Array.from(foundByUid.values()).sort((a, b) => b.highScore - a.highScore);
     }

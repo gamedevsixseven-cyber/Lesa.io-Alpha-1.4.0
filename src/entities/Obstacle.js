@@ -101,12 +101,12 @@ class Obstacle {
                     activeGame.player.takeDamage(25, effects, activeGame.camera);
                 }
             }
-            const rp = activeGame.coopSession && activeGame.coopSession.remotePlayer;
-            if (rp && !rp.isDowned && !rp.isDownedDisconnected) {
-                const rdx = rp.x - this.x;
-                const rdy = rp.y - this.y;
-                if (rdx * rdx + rdy * rdy <= 110 * 110) {
-                    rp.takeDamage(25, effects, activeGame.camera);
+            const rps = (activeGame.coopSession && (activeGame.coopSession.remotePlayers || (activeGame.coopSession.remotePlayer ? [activeGame.coopSession.remotePlayer] : []))) || [];
+            for (let ri = 0; ri < rps.length; ri++) {
+                const rp = rps[ri];
+                if (rp && !rp.isDowned && !rp.isDownedDisconnected) {
+                    const rdx = rp.x - this.x, rdy = rp.y - this.y;
+                    if (rdx * rdx + rdy * rdy <= 110 * 110) rp.takeDamage(25, effects, activeGame.camera);
                 }
             }
 
@@ -170,7 +170,7 @@ class Obstacle {
         ctx.translate(this.x, this.y);
 
         // Shadow (trees, bushes, and buildings draw their own tailored 2.5D ground shadow)
-        if (!this.isOlympianPillar && this.type !== 'tree' && this.type !== 'bush' && this.type !== 'building') {
+        if (!this.isOlympianPillar && !this.isObsidianPillar && this.type !== 'tree' && this.type !== 'bush' && this.type !== 'building') {
             ctx.fillStyle = 'rgba(0, 0, 0, 0.22)';
             ctx.beginPath();
             ctx.ellipse(0, this.radius * 0.75, this.radius * 0.9, this.radius * 0.35, 0, 0, Math.PI * 2);
@@ -182,7 +182,10 @@ class Obstacle {
             return;
         }
 
-        if (this.isOlympianPillar) {
+        if (this.isObsidianPillar && typeof EndlessHardMap !== 'undefined') {
+            EndlessHardMap.drawPillar(ctx, this);
+        } else if (this.isHardProp && typeof EndlessHardMap !== 'undefined' && EndlessHardMap.drawProp(ctx, this)) {
+        } else if (this.isOlympianPillar) {
             this.drawOlympianPillar(ctx);
         } else if (this.type === 'building') {
             this.drawBuilding(ctx);

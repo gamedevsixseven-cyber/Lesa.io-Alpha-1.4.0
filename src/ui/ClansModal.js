@@ -131,6 +131,9 @@ class ClansModal {
         this.clearFeedback();
         if (this.service) {
             await this.service.syncMyClanMembership();
+            if (this.service.clanId && !this.service.currentClan && typeof this.service.refreshActiveClan === 'function') {
+                await this.service.refreshActiveClan();
+            }
             this.service.bindClanListener();
             this.service.flushPendingBounties();
             if (!this.service.currentClan) this.service.fetchBrowseClans();

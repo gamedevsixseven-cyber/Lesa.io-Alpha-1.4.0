@@ -6,30 +6,15 @@
  */
 
 class CoopNetTransport {
+    static TURNIX_BROKER_URL = 'https://lesaio-turnix.gamedevsixseven.workers.dev/';
+    static _cachedTurnIce = [];
+    static _cachedTurnExpiresAt = 0;
+    static _refreshPromise = null;
+
     static DEFAULT_ICE_SERVERS = [
-        { urls: 'stun:stun.relay.metered.ca:80' },
+        { urls: 'stun:stun.turnix.io:3478' },
         { urls: 'stun:stun.l.google.com:19302' },
-        { urls: 'stun:stun.cloudflare.com:3478' },
-        {
-            urls: 'turn:global.relay.metered.ca:80',
-            username: 'e8e23423d2382fb60f7a0b29',
-            credential: '6PkUXx4SXx9a4OBG'
-        },
-        {
-            urls: 'turn:global.relay.metered.ca:80?transport=tcp',
-            username: 'e8e23423d2382fb60f7a0b29',
-            credential: '6PkUXx4SXx9a4OBG'
-        },
-        {
-            urls: 'turn:global.relay.metered.ca:443',
-            username: 'e8e23423d2382fb60f7a0b29',
-            credential: '6PkUXx4SXx9a4OBG'
-        },
-        {
-            urls: 'turns:global.relay.metered.ca:443?transport=tcp',
-            username: 'e8e23423d2382fb60f7a0b29',
-            credential: '6PkUXx4SXx9a4OBG'
-        }
+        { urls: 'stun:stun.cloudflare.com:3478' }
     ];
 
     static TRANSIENT_ERRORS = new Set([
@@ -42,12 +27,18 @@ class CoopNetTransport {
     ]);
 
     static getIceServers() {
-        const list = this.DEFAULT_ICE_SERVERS.map((s) => ({ ...s }));
+        const list = [];
         if (typeof window !== 'undefined' && Array.isArray(window.LESAIO_ICE_SERVERS)) {
             window.LESAIO_ICE_SERVERS.forEach((s) => {
                 if (s && s.urls) list.push(s);
             });
         }
+        if (Array.isArray(this._cachedTurnIce) && this._cachedTurnIce.length > 0 && Date.now() < (this._cachedTurnExpiresAt || 0)) {
+            this._cachedTurnIce.forEach((s) => {
+                if (s && s.urls) list.push({ ...s });
+            });
+        }
+        this.DEFAULT_ICE_SERVERS.forEach((s) => list.push({ ...s }));
         try {
             const raw = (typeof localStorage !== 'undefined') ? localStorage.getItem('lesaio_ice_servers') : null;
             if (raw) {
@@ -58,6 +49,38 @@ class CoopNetTransport {
             }
         } catch (_) {}
         return list;
+    }
+
+    static async refreshIceServers(force = false, timeoutMs = 2200) {
+        const now = Date.now();
+        if (!force && this._cachedTurnIce.length > 0 && now < (this._cachedTurnExpiresAt - 120000)) {
+            return this._cachedTurnIce;
+        }
+        if (this._refreshPromise) return this._refreshPromise;
+        const url = (typeof window !== 'undefined' && window.LESAIO_TURN_BROKER_URL) || this.TURNIX_BROKER_URL;
+        if (!url || typeof fetch !== 'function') return this._cachedTurnIce;
+
+        this._refreshPromise = (async () => {
+            const ctrl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+            const timer = ctrl ? setTimeout(() => { try { ctrl.abort(); } catch (_) {} }, timeoutMs) : null;
+            try {
+                const res = await fetch(url, { method: 'POST', cache: 'no-store', signal: ctrl ? ctrl.signal : undefined });
+                if (!res.ok) return this._cachedTurnIce;
+                const data = await res.json();
+                if (data && Array.isArray(data.iceServers) && data.iceServers.length > 0) {
+                    this._cachedTurnIce = data.iceServers.filter(s => s && s.urls);
+                    const parsedExp = data.expiresAt ? Date.parse(data.expiresAt) : NaN;
+                    this._cachedTurnExpiresAt = Number.isFinite(parsedExp) ? parsedExp : (Date.now() + 45 * 60 * 1000);
+                }
+            } catch (_) {
+                // Keep STUN fallback cleanly if broker is unreachable
+            } finally {
+                if (timer) clearTimeout(timer);
+                this._refreshPromise = null;
+            }
+            return this._cachedTurnIce;
+        })();
+        return this._refreshPromise;
     }
 
     static buildPeerOptions() {
@@ -144,6 +167,16 @@ class CoopNetTransport {
 
     static getBufferedAmount(nm) {
         if (!nm) return 0;
+        if (nm.isHost && nm.peers && nm.peers.size > 0) {
+            let maxBuf = 0;
+            for (const p of nm.peers.values()) {
+                const b1 = (this.getDataChannel(p.fastConn) || {}).bufferedAmount || 0;
+                const b2 = (this.getDataChannel(p.conn) || {}).bufferedAmount || 0;
+                if (b1 > maxBuf) maxBuf = b1;
+                if (b2 > maxBuf) maxBuf = b2;
+            }
+            return maxBuf;
+        }
         const fastDc = this.getDataChannel(nm.fastConn);
         const mainDc = this.getDataChannel(nm.conn);
         const b1 = (fastDc && typeof fastDc.bufferedAmount === 'number') ? fastDc.bufferedAmount : 0;
@@ -151,42 +184,83 @@ class CoopNetTransport {
         return Math.max(b1, b2);
     }
 
-    static setupFastChannelHandlers(nm, conn) {
+    static sendOnConnPair(mainConn, fastConn, type, payload, opts = {}) {
+        const useFast = !!(opts.fast && fastConn && fastConn.open);
+        const targetConn = useFast ? fastConn : mainConn;
+        if (!targetConn || !targetConn.open) return false;
+        const dc = targetConn.dataChannel || targetConn._dc;
+        const maxBuf = opts.maxBufferedBytes || 98304;
+        if (opts.droppable && dc && typeof dc.bufferedAmount === 'number' && dc.bufferedAmount > maxBuf) {
+            return false;
+        }
+        try {
+            const msg = { type, payload };
+            targetConn.send(targetConn.serialization === 'json' ? JSON.stringify(msg) : msg);
+            return true;
+        } catch (err) {
+            if (useFast && mainConn && mainConn.open) {
+                try {
+                    const msg = { type, payload };
+                    mainConn.send(mainConn.serialization === 'json' ? JSON.stringify(msg) : msg);
+                    return true;
+                } catch (_) {}
+            }
+            console.warn('[CoopNetTransport] Failed to send packet:', type, err);
+            return false;
+        }
+    }
+
+    static setupFastChannelHandlers(nm, conn, peerEntry = null) {
         if (!nm || !conn || conn._fastBound) return;
         conn._fastBound = true;
-        nm.fastConn = conn;
+        const targetEntry = peerEntry || (nm.isHost && nm.peers && conn.peer ? nm.peers.get(conn.peer) : null);
+        const senderId = targetEntry ? targetEntry.id : (conn.peer || 'host');
+
+        if (targetEntry) {
+            targetEntry.fastConn = conn;
+            if (nm.conn === targetEntry.conn) nm.fastConn = conn;
+        } else {
+            nm.fastConn = conn;
+        }
 
         const markOpen = () => {
-            nm._fastConnected = true;
+            if (targetEntry) {
+                targetEntry.fastConnected = true;
+                if (nm.conn === targetEntry.conn) nm._fastConnected = true;
+            } else {
+                nm._fastConnected = true;
+            }
         };
         conn.on('open', markOpen);
         if (conn.open) markOpen();
 
         conn.on('data', (raw) => {
-            nm.lastMessageTime = performance.now();
+            const now = performance.now();
+            nm.lastMessageTime = now;
+            if (targetEntry) targetEntry.lastMessageTime = now;
             const data = nm._decodePacket(raw);
             if (!data || !data.type) return;
             if (nm.onMessageCallback) {
                 try {
-                    nm.onMessageCallback(data.type, data.payload);
+                    nm.onMessageCallback(data.type, data.payload, targetEntry ? targetEntry.id : 'host');
                 } catch (err) {
                     console.error('[CoopNetTransport] Fast message handler error:', data.type, err);
                 }
             }
         });
 
-        conn.on('close', () => {
-            if (nm.fastConn === conn) {
+        const clearFast = () => {
+            if (targetEntry && targetEntry.fastConn === conn) {
+                targetEntry.fastConn = null;
+                targetEntry.fastConnected = false;
+                if (nm.fastConn === conn) { nm.fastConn = null; nm._fastConnected = false; }
+            } else if (nm.fastConn === conn) {
                 nm.fastConn = null;
                 nm._fastConnected = false;
             }
-        });
-        conn.on('error', () => {
-            if (nm.fastConn === conn) {
-                nm.fastConn = null;
-                nm._fastConnected = false;
-            }
-        });
+        };
+        conn.on('close', clearFast);
+        conn.on('error', clearFast);
     }
 
     static openGuestFastChannel(nm) {
@@ -219,6 +293,9 @@ class CoopNetTransport {
 
 if (typeof window !== 'undefined') {
     window.CoopNetTransport = CoopNetTransport;
+    if (typeof fetch === 'function') {
+        setTimeout(() => { CoopNetTransport.refreshIceServers().catch(() => {}); }, 800);
+    }
 }
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = { CoopNetTransport };

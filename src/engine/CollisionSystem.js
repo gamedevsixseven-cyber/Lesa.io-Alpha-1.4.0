@@ -190,18 +190,16 @@ class CollisionSystem {
                     }
                 }
 
-                if (!b.dead && game.coopSession && game.coopSession.remotePlayer && !game.coopSession.remotePlayer.isDowned) {
-                    const p2 = game.coopSession.remotePlayer;
-                    const p2dx = b.x - p2.x;
-                    const p2dy = b.y - p2.y;
-                    const radSum2 = b.radius + p2.radius;
-                    if (Math.abs(p2dx) <= radSum2 && Math.abs(p2dy) <= radSum2) {
-                        if (p2dx * p2dx + p2dy * p2dy < radSum2 * radSum2) {
+                if (!b.dead && game.coopSession) {
+                    const rps = game.coopSession.remotePlayers || (game.coopSession.remotePlayer ? [game.coopSession.remotePlayer] : []);
+                    for (let ri = 0; ri < rps.length && !b.dead; ri++) {
+                        const p2 = rps[ri];
+                        if (!p2 || p2.isDowned || p2.isDownedDisconnected) continue;
+                        const p2dx = b.x - p2.x, p2dy = b.y - p2.y, radSum2 = b.radius + p2.radius;
+                        if (Math.abs(p2dx) <= radSum2 && Math.abs(p2dy) <= radSum2 && (p2dx * p2dx + p2dy * p2dy < radSum2 * radSum2)) {
                             if (!game.isCoopGuest) {
                                 p2.takeDamage(b.damage, effects, camera);
-                                if (b.frostChillFrames > 0) {
-                                    p2.speedDebuffTimer = Math.max(p2.speedDebuffTimer || 0, b.frostChillFrames);
-                                }
+                                if (b.frostChillFrames > 0) p2.speedDebuffTimer = Math.max(p2.speedDebuffTimer || 0, b.frostChillFrames);
                             }
                             b.explode(effects);
                             b.dead = true;
@@ -211,14 +209,16 @@ class CollisionSystem {
             }
         }
 
-        // 2. Player & Co-op Partner vs Enemy Body Collision
+        // 2. Player & Co-op Partners vs Enemy Body Collision
         const pBuf = hasGrid ? SpatialHashGrid._playerEnemyBuf : null;
         this._checkUnitEnemyBody(p, enemies, eGrid, useEGrid, pBuf, effects, game, camera, true);
-        const p2 = (game.coopSession && game.coopSession.remotePlayer && !game.coopSession.remotePlayer.isDowned)
-            ? game.coopSession.remotePlayer : null;
-        if (p2 && !game.isCoopGuest) {
+        if (game.coopSession && !game.isCoopGuest) {
+            const rps = game.coopSession.remotePlayers || (game.coopSession.remotePlayer ? [game.coopSession.remotePlayer] : []);
             const p2Buf = hasGrid ? SpatialHashGrid._partnerEnemyBuf : null;
-            this._checkUnitEnemyBody(p2, enemies, eGrid, useEGrid, p2Buf, effects, game, camera, false);
+            for (let ri = 0; ri < rps.length; ri++) {
+                const p2 = rps[ri];
+                if (p2 && !p2.isDowned && !p2.isDownedDisconnected) this._checkUnitEnemyBody(p2, enemies, eGrid, useEGrid, p2Buf, effects, game, camera, false);
+            }
         }
 
         // 3A. Player vs Obstacles (Mushrooms, Crates, Trees & Buildings)
@@ -321,7 +321,7 @@ class CollisionSystem {
             player.fatmirKills++;
             player.score += 250;
             if (game.ui && typeof game.ui.addKillfeed === 'function') {
-                game.ui.addKillfeed(`${heroName} BONKED Skatmir! 💥`);
+                game.ui.addKillfeed(`${heroName} BONKED ${enemy.isCrimson ? 'Crimson Fatmir 🔥' : 'Skatmir'}! 💥`);
             }
             for (let i = 0; i < 3; i++) {
                 game.drops.push(new Drop(enemy.x, enemy.y, 'xp', 25));
@@ -445,10 +445,12 @@ class CollisionSystem {
             if (Math.random() < 0.35) {
                 game.drops.push(new Drop(enemy.x, enemy.y, 'heart', 30));
             }
-        } else if (enemy.type === 'zeus_crystal') {
+        } else if (enemy.type === 'zeus_crystal' || enemy.type === 'apex_shield_pillar') {
             player.score += (enemy.scoreValue || 180);
             if (game.ui && typeof game.ui.addKillfeed === 'function') {
-                game.ui.addKillfeed(`${heroName} shattered ${enemy.name || 'Storm Crystal'}! 💎`);
+                const defaultName = enemy.type === 'apex_shield_pillar' ? 'Aegis Pillar' : 'Storm Crystal';
+                const icon = enemy.type === 'apex_shield_pillar' ? '🛡️' : '💎';
+                game.ui.addKillfeed(`${heroName} shattered ${enemy.name || defaultName}! ${icon}`);
             }
             for (let i = 0; i < 2; i++) {
                 game.drops.push(new Drop(enemy.x + (Math.random() - 0.5) * 24, enemy.y + (Math.random() - 0.5) * 24, 'xp', 30));

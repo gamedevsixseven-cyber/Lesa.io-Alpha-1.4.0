@@ -319,9 +319,11 @@ class Kleanthis extends EnemyBase {
 
         const activeGame = (typeof window !== 'undefined') ? window.gameInstance : null;
         const targets = [player];
-        if (activeGame && activeGame.coopSession && activeGame.coopSession.remotePlayer && !activeGame.coopSession.remotePlayer.isDowned) {
-            if (!targets.includes(activeGame.coopSession.remotePlayer)) {
-                targets.push(activeGame.coopSession.remotePlayer);
+        if (activeGame && activeGame.coopSession) {
+            const rps = activeGame.coopSession.remotePlayers || (activeGame.coopSession.remotePlayer ? [activeGame.coopSession.remotePlayer] : []);
+            for (let ri = 0; ri < rps.length; ri++) {
+                const rp = rps[ri];
+                if (rp && !rp.isDowned && !rp.isDownedDisconnected && !targets.includes(rp)) targets.push(rp);
             }
         }
         if (activeGame && activeGame.player && !targets.includes(activeGame.player)) {

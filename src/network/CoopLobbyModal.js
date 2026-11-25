@@ -10,6 +10,8 @@ class CoopLobbyModal {
         this.activeTab = 'host';
         this.roomCode = '';
         this.peerData = null;
+        this.connectedPeers = [];
+        this.hostInfo = null;
 
         this.init();
     }
@@ -83,7 +85,7 @@ class CoopLobbyModal {
                 <div class="coop-header">
                     <div class="coop-title-wrap">
                         <h2 class="coop-title">${typeof UiIcons !== 'undefined' ? UiIcons.i('handshake', 'ui-icon-title') : '🤝'} CO-OP SQUAD</h2>
-                        <span class="coop-badge">2P ONLINE</span>
+                        <span class="coop-badge">4P ONLINE</span>
                     </div>
                     <button id="coop-close-btn" class="coop-close-btn" title="Close">✕</button>
                 </div>
@@ -96,7 +98,7 @@ class CoopLobbyModal {
                 <!-- Host Tab -->
                 <div id="coop-content-host" class="coop-tab-content active">
                     <div class="coop-code-box">
-                        <span class="coop-code-label">YOUR ROOM CODE (SHARE WITH FRIEND)</span>
+                        <span class="coop-code-label">YOUR ROOM CODE (UP TO 4 PLAYERS)</span>
                         <span id="coop-host-code" class="coop-code-digits">----</span>
                         <button id="coop-copy-code-btn" class="coop-copy-btn">${typeof UiIcons !== 'undefined' ? UiIcons.i('copy', 'ui-icon-sm') : '📋'} COPY CODE</button>
                     </div>
@@ -111,8 +113,10 @@ class CoopLobbyModal {
 
                     <div class="coop-status-row">
                         <div id="coop-host-dot" class="coop-status-dot"></div>
-                        <span id="coop-host-status">Waiting for partner to join...</span>
+                        <span id="coop-host-status">Waiting for squadmates (1/4)...</span>
                     </div>
+
+                    <div id="coop-host-roster" class="coop-squad-roster"></div>
 
                     <div id="coop-friend-quicklist" class="coop-friend-quicklist"></div>
 
@@ -130,6 +134,8 @@ class CoopLobbyModal {
                         <div id="coop-join-dot" class="coop-status-dot"></div>
                         <span id="coop-join-status">Enter code and click Connect</span>
                     </div>
+
+                    <div id="coop-join-roster" class="coop-squad-roster"></div>
 
                     <button id="coop-connect-btn" class="coop-launch-btn">CONNECT TO HOST</button>
                 </div>
@@ -252,12 +258,18 @@ class CoopLobbyModal {
     bindNetworkCallbacks() {
         if (!window.networkManager) return;
 
-        window.networkManager.onConnectedCallback = (isHost, peerInfo) => {
-            this.handlePeerConnected(isHost, peerInfo);
+        window.networkManager.onConnectedCallback = (isHost, peerInfo, peerId, roster) => {
+            this.handlePeerConnected(isHost, peerInfo, peerId, roster);
         };
 
-        window.networkManager.onDisconnectedCallback = (reason) => {
-            this.handlePeerDisconnected(reason);
+        window.networkManager.onRosterCallback = (roster, hostInfo) => {
+            this.connectedPeers = Array.isArray(roster) ? roster : [];
+            if (hostInfo) this.hostInfo = hostInfo;
+            this.renderSquadRoster(false);
+        };
+
+        window.networkManager.onDisconnectedCallback = (reason, peerId, leftInfo, remaining) => {
+            this.handlePeerDisconnected(reason, peerId, leftInfo, remaining);
         };
 
         window.networkManager.onErrorCallback = (err) => {
@@ -293,9 +305,12 @@ class CoopLobbyModal {
             connectBtn.textContent = 'CONNECT TO HOST';
             connectBtn.disabled = false;
         }
+        const jr = document.getElementById('coop-join-roster');
+        if (jr) jr.textContent = '';
     }
 
     setupHostRoom() {
+        this.connectedPeers = [];
         const userData = this.getLocalUserData();
         this.roomCode = window.networkManager.host(null, userData);
 
@@ -308,7 +323,8 @@ class CoopLobbyModal {
 
         if (statusEl) statusEl.textContent = '⏳ Opening room on server...';
         if (dotEl) dotEl.classList.remove('connected');
-        if (startBtn) startBtn.disabled = true;
+        if (startBtn) { startBtn.disabled = true; startBtn.textContent = 'START CO-OP BATTLE'; }
+        this.renderSquadRoster(true);
 
         window.networkManager.waitUntilReady(6500).then((ready) => {
             if (!window.networkManager || !window.networkManager.isHost || window.networkManager.connected) return;
@@ -364,8 +380,36 @@ class CoopLobbyModal {
         if (btn) btn.click();
     }
 
-    handlePeerConnected(isHost, peerInfo) {
+    renderSquadRoster(isHostView) {
+        const container = document.getElementById(isHostView ? 'coop-host-roster' : 'coop-join-roster');
+        if (!container) return;
+        container.textContent = '';
+        const localUser = this.getLocalUserData();
+        const hostData = isHostView ? localUser : (this.hostInfo || this.peerData || { name: 'Host', heroType: 'psanas' });
+        const guests = isHostView && window.networkManager && typeof window.networkManager.getConnectedPeers === 'function'
+            ? window.networkManager.getConnectedPeers()
+            : (Array.isArray(this.connectedPeers) ? this.connectedPeers : []);
+
+        const makeSlot = (tag, label, extraCls = '') => {
+            const cell = document.createElement('div');
+            cell.className = `coop-squad-slot ${extraCls}`.trim();
+            const tagEl = document.createElement('span'); tagEl.className = 'coop-slot-tag'; tagEl.textContent = tag;
+            const nameEl = document.createElement('span'); nameEl.className = 'coop-slot-name'; nameEl.textContent = label;
+            cell.append(tagEl, nameEl); container.appendChild(cell);
+        };
+        makeSlot('P1 HOST', `${hostData.name || 'Host'} (${hostData.heroType || 'psanas'})`, 'filled is-host');
+        for (let i = 0; i < 3; i++) {
+            const g = guests[i];
+            if (g) makeSlot(`P${i + 2}`, `${g.name || 'Teammate'} (${g.heroType || 'petros'})`, 'filled');
+            else makeSlot(`P${i + 2}`, 'Open Slot...', '');
+        }
+    }
+
+    handlePeerConnected(isHost, peerInfo, peerId = null, roster = null) {
         this.peerData = peerInfo;
+        const guests = Array.isArray(roster) ? roster : (window.networkManager && typeof window.networkManager.getConnectedPeers === 'function' ? window.networkManager.getConnectedPeers() : (peerInfo ? [{ id: peerId || 'p2', ...peerInfo }] : []));
+        this.connectedPeers = guests;
+        if (!isHost) this.hostInfo = peerInfo;
         const partnerName = (peerInfo && peerInfo.name) || 'Teammate';
         const partnerHero = (peerInfo && peerInfo.heroType) || 'petros';
         if (!isHost && window.friendService && typeof window.friendService.dismissPendingInvite === 'function') {
@@ -376,35 +420,62 @@ class CoopLobbyModal {
             const statusEl = document.getElementById('coop-host-status');
             const dotEl = document.getElementById('coop-host-dot');
             const startBtn = document.getElementById('coop-start-btn');
-
-            if (statusEl) { if (typeof UiIcons !== 'undefined') UiIcons.setRichText(statusEl, `✅ Partner Connected: ${partnerName} (${partnerHero})!`, 'ui-icon-sm'); else statusEl.textContent = `✅ Partner Connected: ${partnerName} (${partnerHero})!`; }
+            const count = Math.min(4, 1 + guests.length);
+            if (statusEl) {
+                const msg = guests.length > 1
+                    ? `✅ ${count}/4 Squad Ready! Latest: ${partnerName} (${partnerHero})`
+                    : `✅ ${count}/4 Squad Ready! ${partnerName} (${partnerHero}) joined!`;
+                if (typeof UiIcons !== 'undefined') UiIcons.setRichText(statusEl, msg, 'ui-icon-sm');
+                else statusEl.textContent = msg;
+            }
             if (dotEl) dotEl.classList.add('connected');
-            if (startBtn) startBtn.disabled = false;
+            if (startBtn) {
+                startBtn.disabled = guests.length === 0;
+                startBtn.textContent = guests.length > 0 ? `START CO-OP (${count}/4)` : 'START CO-OP BATTLE';
+            }
+            this.renderSquadRoster(true);
         } else {
             const statusEl = document.getElementById('coop-join-status');
             const dotEl = document.getElementById('coop-join-dot');
             const connectBtn = document.getElementById('coop-connect-btn');
-
-            if (statusEl) { if (typeof UiIcons !== 'undefined') UiIcons.setRichText(statusEl, '✅ Connected to Host! Waiting for match start...', 'ui-icon-sm'); else statusEl.textContent = `✅ Connected to Host! Waiting for match start...`; }
+            const count = Math.min(4, 1 + Math.max(1, guests.length));
+            if (statusEl) {
+                const msg = `✅ Connected (${count}/4 in squad)! Waiting for Host...`;
+                if (typeof UiIcons !== 'undefined') UiIcons.setRichText(statusEl, msg, 'ui-icon-sm');
+                else statusEl.textContent = msg;
+            }
             if (dotEl) dotEl.classList.add('connected');
             if (connectBtn) {
                 connectBtn.textContent = 'READY & WAITING...';
                 connectBtn.disabled = true;
             }
+            this.renderSquadRoster(false);
         }
     }
 
-    handlePeerDisconnected(reason) {
+    handlePeerDisconnected(reason, peerId = null, leftInfo = null, remaining = 0) {
+        const leftName = (leftInfo && leftInfo.name) || 'Squadmate';
         if (window.gameInstance && window.gameInstance.ui) {
-            window.gameInstance.ui.addKillfeed('⚠️ Co-op partner disconnected');
+            window.gameInstance.ui.addKillfeed(`⚠️ ${leftName} left Co-op`);
         }
         if (this.activeTab === 'host') {
+            const guests = window.networkManager && typeof window.networkManager.getConnectedPeers === 'function'
+                ? window.networkManager.getConnectedPeers() : [];
+            this.connectedPeers = guests;
             const statusEl = document.getElementById('coop-host-status');
             const dotEl = document.getElementById('coop-host-dot');
             const startBtn = document.getElementById('coop-start-btn');
-            if (statusEl) statusEl.textContent = 'Partner disconnected. Waiting for friend...';
-            if (dotEl) dotEl.classList.remove('connected');
-            if (startBtn) startBtn.disabled = true;
+            const count = 1 + guests.length;
+            if (guests.length > 0) {
+                if (statusEl) statusEl.textContent = `${leftName} left. ${count}/4 Squad Ready!`;
+                if (dotEl) dotEl.classList.add('connected');
+                if (startBtn) { startBtn.disabled = false; startBtn.textContent = `START CO-OP (${count}/4)`; }
+            } else {
+                if (statusEl) statusEl.textContent = 'Squadmates disconnected. Waiting (1/4)...';
+                if (dotEl) dotEl.classList.remove('connected');
+                if (startBtn) { startBtn.disabled = true; startBtn.textContent = 'START CO-OP BATTLE'; }
+            }
+            this.renderSquadRoster(true);
         } else {
             const statusEl = document.getElementById('coop-join-status');
             const dotEl = document.getElementById('coop-join-dot');
@@ -415,17 +486,24 @@ class CoopLobbyModal {
                 connectBtn.textContent = 'CONNECT TO HOST';
                 connectBtn.disabled = false;
             }
+            this.connectedPeers = [];
+            this.renderSquadRoster(false);
         }
     }
 
     launchMatchAsHost() {
         const u = this.getLocalUserData();
         const mapSeed = Math.floor(100000 + Math.random() * 900000);
+        const roster = (window.networkManager && typeof window.networkManager.getConnectedPeers === 'function')
+            ? window.networkManager.getConnectedPeers() : (Array.isArray(this.connectedPeers) ? this.connectedPeers : []);
+        const initPeers = roster.length > 0 ? roster : (this.peerData ? [{ id: 'p2', ...this.peerData }] : []);
+
         window.networkManager.send('MATCH_START', {
             gameMode: this.selectedMode,
             hostName: u.name,
             hostHero: u.heroType,
             hostInfo: u,
+            peers: initPeers,
             mapSeed: mapSeed
         });
 
@@ -442,9 +520,9 @@ class CoopLobbyModal {
             if (window.gameInstance.arena && typeof window.gameInstance.arena.reseed === 'function') {
                 window.gameInstance.arena.reseed(mapSeed);
             }
-            window.gameInstance.coopSession = new CoopHostSession(window.gameInstance, window.networkManager, this.peerData, mapSeed);
+            window.gameInstance.coopSession = new CoopHostSession(window.gameInstance, window.networkManager, initPeers, mapSeed);
             if (window.gameInstance.ui) {
-                window.gameInstance.ui.addKillfeed(`🤝 CO-OP MATCH STARTED (${this.selectedMode.toUpperCase()})`);
+                window.gameInstance.ui.addKillfeed(`🤝 ${1 + initPeers.length}P CO-OP MATCH STARTED (${this.selectedMode.toUpperCase()})`);
             }
         }
     }
@@ -460,7 +538,8 @@ class CoopLobbyModal {
         const u = this.getLocalUserData();
         const gameMode = payload.gameMode || 'story';
         const mapSeed = payload.mapSeed || 123456;
-        const hostData = payload.hostInfo || this.peerData || { name: payload.hostName || 'Host', heroType: payload.hostHero || 'psanas' };
+        const hostData = payload.hostInfo || this.hostInfo || this.peerData || { name: payload.hostName || 'Host', heroType: payload.hostHero || 'psanas' };
+        const initPeers = Array.isArray(payload.peers) ? payload.peers : (Array.isArray(this.connectedPeers) ? this.connectedPeers : []);
 
         if (window.gameInstance) {
             window.gameInstance.isCoopGuest = true;
@@ -468,9 +547,12 @@ class CoopLobbyModal {
             if (window.gameInstance.arena && typeof window.gameInstance.arena.reseed === 'function') {
                 window.gameInstance.arena.reseed(mapSeed);
             }
-            window.gameInstance.coopSession = new CoopGuestSession(window.gameInstance, window.networkManager, hostData, mapSeed);
+            window.gameInstance.coopSession = new CoopGuestSession(window.gameInstance, window.networkManager, hostData, mapSeed, {
+                peers: initPeers,
+                myPeerId: (window.networkManager && window.networkManager.assignedPeerId) || null
+            });
             if (window.gameInstance.ui) {
-                window.gameInstance.ui.addKillfeed(`🤝 CO-OP MATCH STARTED (${gameMode.toUpperCase()})`);
+                window.gameInstance.ui.addKillfeed(`🤝 ${Math.max(2, 1 + initPeers.length)}P CO-OP MATCH STARTED (${gameMode.toUpperCase()})`);
             }
         }
     }

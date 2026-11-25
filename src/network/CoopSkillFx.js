@@ -7,7 +7,8 @@ class CoopSkillFx {
     static playRemoteSkill(game, remotePlayer, skillData = {}, isHostAuthoritative = false) {
         if (!remotePlayer || !game || remotePlayer.isDowned || remotePlayer.isDownedDisconnected) return;
         const skillId = typeof skillData.skillId === 'string' ? skillData.skillId : 'blade_rush';
-        const level = Math.max(1, Math.min(5, Math.round(Number(skillData.level) || 1)));
+        const maxSkillLvl = (typeof SKILLS !== 'undefined' && SKILLS[skillId] && SKILLS[skillId].maxLevel) ? SKILLS[skillId].maxLevel : 5;
+        const level = Math.max(1, Math.min(maxSkillLvl, Math.round(Number(skillData.level) || 1)));
         let x = Number.isFinite(skillData.x) ? skillData.x : remotePlayer.x;
         let y = Number.isFinite(skillData.y) ? skillData.y : remotePlayer.y;
         const offsetDist = Math.hypot(x - remotePlayer.x, y - remotePlayer.y);
@@ -142,7 +143,7 @@ class CoopSkillFx {
         } else if (skillId === 'bouzouki_decoy' && typeof BouzoukiDecoySkill !== 'undefined') {
             BouzoukiDecoySkill.execute({ x, y, angle, damageMultiplier: 1, skillCooldown: 0, maxSkillCooldown: 0 }, level, isHostAuthoritative && game ? game.enemies : [], fx, cam, game);
         } else if (skillId === 'chrono_hourglass' && typeof ChronosHourglassSkill !== 'undefined') {
-            ChronosHourglassSkill.execute({ x, y, angle, damageMultiplier: 1, skillCooldown: 0, maxSkillCooldown: 0 }, level, isHostAuthoritative && game ? game.enemies : [], fx, cam, game);
+            ChronosHourglassSkill.execute({ x, y, angle, damageMultiplier: 1, skillCooldown: 0, maxSkillCooldown: 0, _isRemoteCaster: true }, level, isHostAuthoritative && game ? game.enemies : [], fx, cam, game);
         } else {
             // Blade Rush (default)
             const reach = 75 + (level - 1) * 8;

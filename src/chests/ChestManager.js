@@ -309,11 +309,13 @@ class ChestManager {
             : (typeof GEAR_DATA !== 'undefined' ? Object.values(GEAR_DATA) : []);
         const allowEpic = ((def.gearOdds && def.gearOdds.epic) || 0) > 0 || (def.guaranteedEpic || 0) > 0;
         const allowLeg = ((def.gearOdds && def.gearOdds.legendary) || 0) > 0 || (def.guaranteedLegendary || 0) > 0;
+        const allowMythic = ((def.gearOdds && def.gearOdds.mythic) || 0) > 0 || (def.guaranteedMythic || 0) > 0;
         const eligibleGear = rawGear.filter(g => {
             const r = g.rarity || 'common';
-            if (r === 'exclusive' || r === 'mythic' || r === 'apex' || g.excludeFromChests || g.bossUnlock) return false;
+            if (r === 'exclusive' || r === 'apex' || g.excludeFromChests || g.bossUnlock) return false;
             if (r === 'epic' && !allowEpic) return false;
             if (r === 'legendary' && !allowLeg) return false;
+            if (r === 'mythic' && !allowMythic) return false;
             return true;
         });
 

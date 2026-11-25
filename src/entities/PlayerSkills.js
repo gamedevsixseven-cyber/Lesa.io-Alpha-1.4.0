@@ -20,6 +20,9 @@ class PlayerSkills {
     static getEffectiveCooldown(skillId, level) {
         if (typeof SKILLS === 'undefined' || !SKILLS[skillId]) return 8.0;
         const skill = SKILLS[skillId];
+        if (skill.levels && skill.levels[level] && skill.levels[level].cooldown) {
+            return skill.levels[level].cooldown;
+        }
         if ((skillId === 'frappes' || skillId === 'chrono_hourglass') && level >= 5 && skill.masteryCooldown) {
             return skill.masteryCooldown; // Permanent Mastery CDR
         }

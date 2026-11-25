@@ -60,12 +60,12 @@ class CoopPauseSync {
             pill.classList.remove('hidden', 'is-one-ready', 'is-all-ready');
             if (resuming || readyCount >= total) {
                 pill.classList.add('is-all-ready');
-                pill.textContent = `✅ UNPAUSING (${readyCount}/${total}) — BOTH PLAYERS READY!`;
+                pill.textContent = `✅ UNPAUSING (${readyCount}/${total}) — ALL PLAYERS READY!`;
             } else if (readyCount > 0) {
                 pill.classList.add('is-one-ready');
-                pill.textContent = `⏳ CO-OP UNPAUSE READY: ${readyCount}/${total} (${localReady ? 'Waiting for partner' : 'Partner is ready!'})`;
+                pill.textContent = `⏳ CO-OP UNPAUSE READY: ${readyCount}/${total} (${localReady ? 'Waiting for squadmates' : 'Click Unpause when ready'})`;
             } else {
-                pill.textContent = `⏸ CO-OP UNPAUSE READY: 0/${total} (Both players must unpause)`;
+                pill.textContent = `⏸ CO-OP UNPAUSE READY: 0/${total} (All players must unpause)`;
             }
         }
 
@@ -177,23 +177,45 @@ class CoopPauseSync {
         }
     }
 
-    static hostHandleGuestLeft(s, explicitName = null) {
+    static hostHandleGuestLeft(s, peerId = null, explicitName = null) {
         if (s._peerLeftNotified) return;
-        s._peerLeftNotified = true;
-        if (s._resumeTimer) { clearTimeout(s._resumeTimer); s._resumeTimer = null; }
-        s._pauseResuming = false;
-        s.pauseReadyPlayers.clear();
-        const leftName = explicitName || (s.remotePlayer && s.remotePlayer.name) || 'Player 2';
-        s.remotePlayer.hp = 0;
-        s.remotePlayer.isDowned = true;
-        s.remotePlayer.isDownedDisconnected = true;
-        if (s.game.cutsceneOverlay) {
-            s.game.cutsceneOverlay.totalPlayers = 1;
-            s.game.cutsceneOverlay.setReadyState(0, 1, false);
-            if (s.cutsceneReadyPlayers && s.cutsceneReadyPlayers.has('host')) s.game.cutsceneOverlay.forceAdvance();
+        const rp = (peerId && s.remotePlayersMap && s.remotePlayersMap.get(peerId)) || s.remotePlayer;
+        if (!rp || rp.isDownedDisconnected) return;
+        const leftName = explicitName || rp.name || 'Squadmate';
+        rp.hp = 0;
+        rp.isDowned = true;
+        rp.isDownedDisconnected = true;
+        if (peerId) s.pauseReadyPlayers.delete(peerId);
+        if (peerId && s.cutsceneReadyPlayers) s.cutsceneReadyPlayers.delete(peerId);
+
+        const activeRemotes = (typeof CoopPeerRoster !== 'undefined') ? CoopPeerRoster.getActiveRemoteCount(s) : 0;
+        if (activeRemotes <= 0) {
+            s._peerLeftNotified = true;
+            if (s._resumeTimer) { clearTimeout(s._resumeTimer); s._resumeTimer = null; }
+            s._pauseResuming = false;
+            s.pauseReadyPlayers.clear();
+            if (s.game.cutsceneOverlay) {
+                s.game.cutsceneOverlay.totalPlayers = 1;
+                s.game.cutsceneOverlay.setReadyState(0, 1, false);
+                if (s.cutsceneReadyPlayers && s.cutsceneReadyPlayers.has('host')) s.game.cutsceneOverlay.forceAdvance();
+            }
+            s.game.coopSession = null;
+            if (s.game.state === 'PAUSED') this.updatePauseModalUI(null);
+        } else {
+            const newTotal = 1 + activeRemotes;
+            if (s.game.cutsceneOverlay) {
+                s.game.cutsceneOverlay.totalPlayers = newTotal;
+                const readyCount = s.cutsceneReadyPlayers ? s.cutsceneReadyPlayers.size : 0;
+                if (readyCount >= newTotal && s.game.cutsceneOverlay.promptAdvance) {
+                    s.cutsceneReadyPlayers.clear();
+                    s.game.cutsceneOverlay.forceAdvance();
+                } else {
+                    s.game.cutsceneOverlay.setReadyState(readyCount, newTotal, !!(s.cutsceneReadyPlayers && s.cutsceneReadyPlayers.has('host')));
+                    s.net.send('CUTSCENE_READY_UPDATE', { readyCount, totalPlayers: newTotal });
+                }
+            }
+            if (s.game.state === 'PAUSED') this.hostEvaluatePause(s);
         }
-        s.game.coopSession = null;
-        if (s.game.state === 'PAUSED') this.updatePauseModalUI(null);
         this.showPlayerLeftPopup(leftName);
     }
 
@@ -201,11 +223,12 @@ class CoopPauseSync {
     static guestApplyPauseState(s, payload = {}) {
         if (s._resumeTimer) { clearTimeout(s._resumeTimer); s._resumeTimer = null; }
         const readyIds = Array.isArray(payload.readyIds) ? payload.readyIds : [];
+        const myId = s.myPeerId || 'guest';
         s.pauseReadyState = {
             by: payload.by || s.pauseReadyState.by || (s.remotePlayer && s.remotePlayer.name) || 'Host',
             readyCount: Number.isFinite(payload.readyCount) ? payload.readyCount : readyIds.length,
-            totalPlayers: Number.isFinite(payload.totalPlayers) ? payload.totalPlayers : 2,
-            localReady: readyIds.includes('guest'),
+            totalPlayers: Number.isFinite(payload.totalPlayers) ? payload.totalPlayers : (typeof s.getTotalPlayers === 'function' ? s.getTotalPlayers() : 2),
+            localReady: readyIds.includes(myId),
             resuming: !!payload.resuming
         };
         if (s.game.state === 'PLAYING') s.game.pauseGame(s.pauseReadyState.by, true);

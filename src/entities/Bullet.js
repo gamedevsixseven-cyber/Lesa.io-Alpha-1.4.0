@@ -131,6 +131,7 @@ class Bullet {
     explode(effects) {
         if (this.type === 'helios_cannon' && typeof HeliosOmegaCannon !== 'undefined') HeliosOmegaCannon.onExpire(this, effects);
         if (this.type === 'vulcan_minigun' && typeof HephaestusVulcanMinigun !== 'undefined') HephaestusVulcanMinigun.onExpire(this, effects);
+        if (this.type === 'void_mortar' && typeof VoidSingularityMortar !== 'undefined') VoidSingularityMortar.onExpire(this, effects);
         if (!effects) return;
         if (typeof BossProjectileFX !== 'undefined' && BossProjectileFX.explodeBullet(this, effects)) {
         } else if (this.type === 'watermelon') {
@@ -170,6 +171,10 @@ class Bullet {
             effects.addSparks(this.x, this.y, '#0d5eaf', 6); effects.addSparks(this.x, this.y, '#ffffff', 5);
         } else if (this.type === 'dialtone' || this.type === 'soundwave') {
             effects.addShockwave(this.x, this.y, 52, 'rgba(0, 210, 211, 0.65)'); effects.addSparks(this.x, this.y, '#fed330', 6);
+        } else if (this.type === 'tempest_bow' || this.type === 'tempest_seeker') {
+            effects.addSparks(this.x, this.y, this.type === 'tempest_seeker' ? '#fde047' : '#38bdf8', 7); effects.addSparks(this.x, this.y, '#ffffff', 4);
+        } else if (this.type === 'aurelion_scepter' || this.type === 'aurelion_prism_bolt') {
+            effects.addSparks(this.x, this.y, this.isStarfallShot ? '#fef08a' : '#38bdf8', 7); effects.addSparks(this.x, this.y, '#f0abfc', 5);
         } else {
             effects.addSparks(this.x, this.y, this.isEnemy ? '#ff3b30' : '#7bed9f', 5);
         }
@@ -232,7 +237,7 @@ class Bullet {
             watermelon: '#eb4d4b', bubble: '#70a1ff', pepper: '#ff6b6b', soccer: '#ffffff',
             smoke: '#9b59b6', money_gun: '#f39c12', euro: '#f39c12', carbine: '#f39c12',
             soundwave: '#fed330', dialtone: '#fed330', burger: '#e59b52', lightning: '#00d2d3',
-            greek_flag: '#1e90ff', m4_carbine: '#ffa502', spas12: '#ff6348', rusty_smg: '#ff9f43', nail_gun: '#fed330', plasma_pistol: '#00f5ff', sawnoff_shotgun: '#ff9f43', frost_cannon: '#00f5ff', cryo_shard: '#70a1ff', boomerang_saw: '#ff9f43', chrono_rifle: '#a55eea', symbiote: '#ff2e63', symbiote_tendril: '#e056fd', zeus_thunderbolt: '#fed330', helios_cannon: '#ff9f43', skewer_rifle: '#ff6b35', vulcan_minigun: '#ff9f43', hades_railgun: '#a855f7', medusa_gaze: '#2ed573', medusa_serpent: '#4ade80', medusa_shard: '#6ee7b7'
+            greek_flag: '#1e90ff', m4_carbine: '#ffa502', spas12: '#ff6348', rusty_smg: '#ff9f43', nail_gun: '#fed330', plasma_pistol: '#00f5ff', sawnoff_shotgun: '#ff9f43', frost_cannon: '#00f5ff', cryo_shard: '#70a1ff', boomerang_saw: '#ff9f43', chrono_rifle: '#a55eea', symbiote: '#ff2e63', symbiote_tendril: '#e056fd', zeus_thunderbolt: '#fed330', helios_cannon: '#ff9f43', skewer_rifle: '#ff6b35', vulcan_minigun: '#ff9f43', hades_railgun: '#a855f7', medusa_gaze: '#2ed573', medusa_serpent: '#4ade80', medusa_shard: '#6ee7b7', tempest_bow: '#38bdf8', tempest_seeker: '#fde047', void_mortar: '#c084fc', aurelion_scepter: '#38bdf8', aurelion_prism_bolt: '#f0abfc'
         };
         return map[this.type] || this.color || (this.isEnemy ? '#ff4757' : '#2ed573');
     }

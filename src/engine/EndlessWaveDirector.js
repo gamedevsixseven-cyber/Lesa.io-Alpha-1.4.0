@@ -227,6 +227,10 @@ class EndlessWaveDirector {
     }
 
     static startEndlessWave(waveManager, waveNum, player, enemies, effects) {
+        if (waveManager && waveManager.isEndlessHard) {
+            EndlessWaveDirector.startHardWave(waveManager, waveNum, player, enemies, effects);
+            return;
+        }
         waveManager.wave = waveNum;
         waveManager.waveState = 'IN_PROGRESS';
         waveManager.waveEnemiesKilled = 0;
@@ -292,38 +296,146 @@ class EndlessWaveDirector {
         if (effects) effects.addComicSplash(player.x, player.y - 50, `ENDLESS ${waveNum}!`);
     }
 
+    static startHardWave(waveManager, waveNum, player, enemies, effects) {
+        waveManager.wave = waveNum;
+        waveManager.waveState = 'IN_PROGRESS';
+        waveManager.waveEnemiesKilled = 0;
+        waveManager.waveChronoDrops = 0;
+        waveManager.waveMatDrops = 0;
+        if (typeof window !== 'undefined' && window.GameState && typeof window.GameState.recordWaveProgress === 'function') {
+            window.GameState.recordWaveProgress('endless_hard', waveNum);
+        }
+
+        const waveMult = 1.15 + (waveNum - 1) * 0.23;
+        const isBoss = EndlessWaveDirector.isBossWave(waveNum);
+        const isMini = !isBoss && EndlessWaveDirector.isMiniBossWave(waveNum);
+        const game = (typeof window !== 'undefined') ? window.gameInstance : null;
+
+        if (isBoss || isMini) {
+            if (typeof HardBossEntranceFX !== 'undefined' && HardBossEntranceFX.spawnHardEncounter(waveManager, waveNum, player, enemies, effects)) return;
+            const ang = Math.random() * Math.PI * 2;
+            const bx = player.x + Math.cos(ang) * 460;
+            const by = player.y + Math.sin(ang) * 460;
+            const guardCount = Math.min(8, (isBoss ? 4 : 2) + Math.floor(waveNum / 10));
+            if (typeof Fatmir === 'function') {
+                const warlord = new Fatmir(bx, by, waveMult * (isBoss ? 2.9 : 1.9), { isCrimson: true });
+                warlord.name = isBoss ? 'FATMIR OVERLORD' : 'CRIMSON WARLORD FATMIR';
+                warlord.radius = isBoss ? 50 : 42;
+                warlord.damage = Math.round(warlord.damage * (isBoss ? 1.45 : 1.25));
+                warlord.isEndlessBoss = true;
+                warlord.isMiniBoss = isMini;
+                warlord.scoreValue = isBoss ? 2400 : 1200;
+                warlord.goldBonus = isBoss ? 750 : 380;
+                warlord.xpBonus = isBoss ? 520 : 260;
+                warlord.crateId = waveNum >= 30 ? 'boss_crate_insane' : (waveNum >= 20 ? 'boss_crate_very_hard' : 'boss_crate_hard');
+                if (typeof HardBossEntranceFX !== 'undefined' && HardBossEntranceFX.applyHardScaling) HardBossEntranceFX.applyHardScaling(warlord);
+                enemies.push(warlord);
+                const guardPool = EndlessWaveDirector._getHardEnemyPool(waveNum);
+                for (let g = 0; g < guardCount; g++) {
+                    const ga = ang + ((g + 1) / (guardCount + 1)) * Math.PI * 1.4 - 0.7;
+                    const gx = player.x + Math.cos(ga) * 560, gy = player.y + Math.sin(ga) * 560;
+                    const pick = guardPool[g % guardPool.length];
+                    if (pick) {
+                        const guard = pick.spawn(gx, gy, waveMult);
+                        if (guard && typeof HardBossEntranceFX !== 'undefined' && HardBossEntranceFX.applyHardScaling) HardBossEntranceFX.applyHardScaling(guard);
+                        if (guard) enemies.push(guard);
+                    }
+                }
+            }
+            waveManager.waveTotalEnemies = enemies.length || 1;
+            if (game && game.bossWarningOverlay) {
+                game.bossWarningOverlay.trigger(isBoss ? (waveNum === 60 ? 'FINAL APEX OVERLORD' : 'FATMIR OVERLORD') : 'CRIMSON WARLORD FATMIR', isBoss ? (waveNum === 60 ? 'FINAL APEX BOSS' : 'HARD BOSS') : 'HARD MINI-BOSS');
+            }
+            if (effects) effects.addComicSplash(bx, by - 60, isBoss ? '🔥 HARD OVERLORD! 🔥' : '🔥 CRIMSON WARLORD! 🔥');
+            return;
+        }
+
+        const enemyCount = Math.min(120, 6 + Math.floor(waveNum * 2.5));
+        const pool = EndlessWaveDirector._getHardEnemyPool(waveNum);
+        const totalW = pool.reduce((s, e) => s + e.weight, 0) || 1;
+        for (let i = 0; i < enemyCount; i++) {
+            const angle = (i / enemyCount) * Math.PI * 2 + (Math.random() * 0.35);
+            const dist = 540 + Math.random() * 290;
+            const ex = player.x + Math.cos(angle) * dist, ey = player.y + Math.sin(angle) * dist;
+            let roll = Math.random() * totalW, chosen = pool[0];
+            for (const entry of pool) { roll -= entry.weight; if (roll <= 0) { chosen = entry; break; } }
+            if (chosen) {
+                const mob = chosen.spawn(ex, ey, waveMult);
+                if (mob && typeof HardBossEntranceFX !== 'undefined' && HardBossEntranceFX.applyHardScaling) HardBossEntranceFX.applyHardScaling(mob);
+                if (mob) enemies.push(mob);
+            }
+        }
+        waveManager.waveTotalEnemies = enemies.length;
+        const hardDebuts = {
+            2: '🔮 VOID ACOLYTES ARRIVE!', 4: '🌋 OBSIDIAN JUGGERNAUTS!', 6: '🩸 BLOOD WRAITHS STALK!',
+            9: '⚡ AETHER TEMPESTS DESCEND!', 14: '⚔️ ECLIPSE HARBINGERS AWAKEN!',
+            18: '☣️ PLAGUE WEAVERS EMERGE!', 23: '❄️ GLACIAL MARKSMEN LOCK ON!', 28: '💣 HELLFIRE MORTARS DEPLOYED!'
+        };
+        const banner = hardDebuts[waveNum] || `🔥 HARD ENDLESS ${waveNum}`;
+        waveManager.showWaveAnnouncement(banner, '#ff2e4c', hardDebuts[waveNum] ? 210 : 170);
+        if (effects) effects.addComicSplash(player.x, player.y - 50, `🔥 HARD WAVE ${waveNum}!`);
+    }
+
+    static _getHardEnemyPool(waveNum) {
+        const pool = [];
+        if (typeof Fatmir === 'function') pool.push({ weight: 2.8, spawn: (x, y, m) => new Fatmir(x, y, m, { isCrimson: true }) });
+        if (waveNum >= 2 && typeof VoidAcolyte === 'function') pool.push({ weight: 2.2, spawn: (x, y, m) => new VoidAcolyte(x, y, m) });
+        if (waveNum >= 4 && typeof ObsidianGolem === 'function') pool.push({ weight: 1.9, spawn: (x, y, m) => new ObsidianGolem(x, y, m) });
+        if (waveNum >= 6 && typeof CrimsonWraith === 'function') pool.push({ weight: 2.1, spawn: (x, y, m) => new CrimsonWraith(x, y, m) });
+        if (waveNum >= 9 && typeof StormTempest === 'function') pool.push({ weight: 1.8, spawn: (x, y, m) => new StormTempest(x, y, m) });
+        if (waveNum >= 14 && typeof EclipseHarbinger === 'function') pool.push({ weight: 1.6, spawn: (x, y, m) => new EclipseHarbinger(x, y, m) });
+        if (waveNum >= 18 && typeof BlightNecromancer === 'function') pool.push({ weight: 1.5, spawn: (x, y, m) => new BlightNecromancer(x, y, m) });
+        if (waveNum >= 23 && typeof CryoSniper === 'function') pool.push({ weight: 1.6, spawn: (x, y, m) => new CryoSniper(x, y, m) });
+        if (waveNum >= 28 && typeof InfernoArtillery === 'function') pool.push({ weight: 1.5, spawn: (x, y, m) => new InfernoArtillery(x, y, m) });
+        return pool;
+    }
+
     static onEndlessWaveCleared(waveManager, game) {
         const waveNum = waveManager.wave;
+        const isHard = !!(waveManager && waveManager.isEndlessHard);
         const bossCfg = EndlessWaveDirector.getBossConfig(waveNum);
         const miniCfg = EndlessWaveDirector.getMiniBossConfig(waveNum);
         const encounter = bossCfg || miniCfg;
 
         const isBoss = !!bossCfg;
         const isMini = !!miniCfg;
-        const msg = isBoss
-            ? `👑 ${bossCfg.title} DEFEATED! 👑`
-            : (isMini ? `💥 ${miniCfg.title} DEFEATED! 💥` : `ENDLESS ${waveNum} CLEARED!`);
+        const hardEncounter = (isHard && typeof HardBossEntranceFX !== 'undefined') ? HardBossEntranceFX.getHardEncounterConfig(waveNum) : null;
+        const hardTitle = hardEncounter ? hardEncounter.title : (isHard && waveNum === 60 ? 'FINAL APEX OVERLORD' : (isBoss ? 'FATMIR OVERLORD' : 'CRIMSON WARLORD FATMIR'));
+        const msg = isHard
+            ? (isBoss ? `👑 ${hardTitle} VANQUISHED! 🔥` : (isMini ? `🔥 ${hardTitle} CRUSHED! 🔥` : `🔥 HARD WAVE ${waveNum} CLEARED!`))
+            : (isBoss ? `👑 ${bossCfg.title} DEFEATED! 👑` : (isMini ? `💥 ${miniCfg.title} DEFEATED! 💥` : `ENDLESS ${waveNum} CLEARED!`));
 
-        waveManager.showWaveAnnouncement(msg, encounter ? encounter.rankColor : '#2ed573', encounter ? 250 : 165);
+        waveManager.showWaveAnnouncement(msg, isHard ? '#ff2e4c' : (encounter ? encounter.rankColor : '#2ed573'), encounter ? 250 : 165);
 
         if (encounter && game.effects) {
             game.effects.addConfetti(game.player.x, game.player.y, isBoss ? 105 : 75);
             game.effects.addComicSplash(game.player.x, game.player.y - 60, isBoss ? 'BOSS VANQUISHED! 🏆' : 'MINI-BOSS VANQUISHED! 💥');
         }
 
-        const xpCount = isBoss ? 12 : (isMini ? 8 : 4);
+        const xpCount = (isBoss ? 12 : (isMini ? 8 : 4)) * (isHard ? 2 : 1);
+        const xpVal = (encounter ? 50 : 30) * (isHard ? 2 : 1);
         const dropOff = game.coopSession ? 95 : 25;
         for (let i = 0; i < xpCount; i++) {
             const rx = game.player.x + (Math.random() * 220 - 110);
             const ry = game.player.y + (Math.random() * 220 - 110);
-            game.drops.push(new Drop(rx, ry, 'xp', encounter ? 50 : 30));
+            game.drops.push(new Drop(rx, ry, 'xp', xpVal));
         }
         if (encounter || Math.random() < 0.7) {
             game.drops.push(new Drop(game.player.x + dropOff, game.player.y + 45, 'heart', 55));
             if (game.coopSession) game.drops.push(new Drop(game.player.x - dropOff, game.player.y + 45, 'heart', 55));
         }
-        if (encounter || Math.random() < 0.45) {
-            game.drops.push(new Drop(game.player.x - dropOff, game.player.y - 45, 'star', isBoss ? 6 : (isMini ? 3 : 1)));
+        if (encounter || Math.random() < (isHard ? 0.75 : 0.45)) {
+            const starVal = (isBoss ? 6 : (isMini ? 3 : 1)) * (isHard ? 2 : 1);
+            game.drops.push(new Drop(game.player.x - dropOff, game.player.y - 45, 'star', starVal));
+        }
+        if (isHard && encounter && !game.isCoopGuest && typeof window !== 'undefined' && window.chestManager) {
+            const bonusChest = isBoss ? (waveNum >= 20 ? 'apex' : 'mythic') : (waveNum >= 25 ? 'apex' : 'legendary');
+            if (isBoss || Math.random() < 0.45) {
+                const res = window.chestManager.addChest(bonusChest);
+                if (res && game.ui && typeof game.ui.addKillfeed === 'function') {
+                    game.ui.addKillfeed(`🔥 Hard Bounty: ${bonusChest.toUpperCase()} CHEST ${res === 'inventory' ? 'saved to Vault!' : 'earned!'}`);
+                }
+            }
         }
     }
 
@@ -382,25 +494,28 @@ class EndlessWaveDirector {
                     game.ui.addKillfeed(`📦 ${heroName} conquered ${enemy.name}! Earned ${crateName}!`);
                 }
             }
-            if (enemy.type === 'mecha_kolossos' && !game.isCoopGuest && typeof BossRewardManager !== 'undefined') {
-                const q = BossRewardManager.queueBossDrops('mecha_kolossos', { effects: game.effects, x: enemy.x, y: enemy.y, game });
-                if (q.queued.length > 0 && game.ui && typeof game.ui.addKillfeed === 'function') {
-                    game.ui.addKillfeed(`☀️ Boss Drop: Helios Omega Cannon (Claim in Menu)!`);
-                }
+            if (!game.isCoopGuest && typeof BossRewardManager !== 'undefined' && typeof BossRewardManager.handleEndlessBossDrop === 'function') {
+                BossRewardManager.handleEndlessBossDrop(enemy, game);
             }
             if (!enemy.materialsAwarded && !game.isCoopGuest && typeof MaterialRegistry !== 'undefined' && typeof window !== 'undefined' && window.inventoryManager) {
                 enemy.materialsAwarded = true;
                 const wNum = game.waveManager ? game.waveManager.wave : 5;
-                const bossMats = MaterialRegistry.getEndlessBossRewards(wNum, !!enemy.isMiniBoss);
+                let bossMats = MaterialRegistry.getEndlessBossRewards(wNum, !!enemy.isMiniBoss);
+                if (bossMats && game.isEndlessHard) {
+                    const scaled = {};
+                    for (const [k, v] of Object.entries(bossMats)) scaled[k] = v * 2;
+                    bossMats = scaled;
+                }
                 if (bossMats) {
                     window.inventoryManager.awardBattleMaterials(bossMats, { game, x: enemy.x, y: enemy.y, source: 'endless_boss', sourceName: `${enemy.name} Bounty` });
                 }
             }
             const wNum = game.waveManager ? game.waveManager.wave : 0;
-            if (wNum === 40 && !enemy.isMiniBoss && !enemy._starStoneChecked && !game.isCoopGuest) {
+            const isStarWave = game.isEndlessHard ? (wNum === 30 || wNum === 40 || wNum === 60) : (wNum === 40);
+            if (isStarWave && !enemy.isMiniBoss && !enemy._starStoneChecked && !game.isCoopGuest) {
                 enemy._starStoneChecked = true;
                 if (typeof DungeonManager !== 'undefined' && typeof DungeonManager.rollOlympianStarStone === 'function') {
-                    DungeonManager.rollOlympianStarStone(game, 0.015, `${enemy.name || 'W40 Boss'} (W40)`);
+                    DungeonManager.rollOlympianStarStone(game, wNum === 60 ? 0.03 : 0.015, `${enemy.name || `W${wNum} Boss`} (W${wNum})`);
                 }
             }
 
@@ -421,7 +536,15 @@ class EndlessWaveDirector {
             bio_alchemist: { score: 520, msg: `${heroName} neutralized Bio-Alchemist! ☣️`, starChance: 0.50 },
             kolossos_drone: { score: 220, msg: `${heroName} shot down Kolossos Drone! 🤖`, starChance: 0.15 },
             kolossos_trooper: { score: 420, msg: `${heroName} dismantled Helios Trooper! 🤖`, starChance: 0.25 },
-            lil_xas_speaker: { score: 300, msg: `${heroName} smashed Lil Xas Concert Speaker! 🔇`, starChance: 0.25 }
+            lil_xas_speaker: { score: 300, msg: `${heroName} smashed Lil Xas Concert Speaker! 🔇`, starChance: 0.25 },
+            void_acolyte: { score: 420, msg: `${heroName} shattered Void Acolyte! 🔮`, starChance: 0.40 },
+            obsidian_golem: { score: 540, msg: `${heroName} cracked Obsidian Juggernaut! 🌋`, starChance: 0.50 },
+            crimson_wraith: { score: 480, msg: `${heroName} banished Blood Wraith! 🩸`, starChance: 0.45 },
+            storm_tempest: { score: 560, msg: `${heroName} grounded Aether Tempest! ⚡`, starChance: 0.50 },
+            eclipse_harbinger: { score: 680, msg: `${heroName} felled Eclipse Harbinger! ⚔️`, starChance: 0.60 },
+            blight_necromancer: { score: 590, msg: `${heroName} purged Plague Weaver! ☣️`, starChance: 0.50 },
+            cryo_sniper: { score: 550, msg: `${heroName} outsniped Glacial Marksman! ❄️`, starChance: 0.50 },
+            inferno_artillery: { score: 660, msg: `${heroName} demolished Hellfire Mortar! 💣`, starChance: 0.60 }
         };
         const info = regularInfo[enemy.type];
         if (!info) return false;
@@ -457,7 +580,7 @@ class EndlessWaveDirector {
 
         const totalEnemies = Math.max(8, (wm && wm.waveTotalEnemies) ? wm.waveTotalEnemies : 12);
         const baseChance = Math.min(0.032, 0.36 / totalEnemies);
-        const eliteTypes = new Set(['kafeneio_tank', 'dimotiki_enforcer', 'psaltis', 'bio_alchemist']);
+        const eliteTypes = new Set(['kafeneio_tank', 'dimotiki_enforcer', 'psaltis', 'bio_alchemist', 'obsidian_golem', 'crimson_wraith', 'storm_tempest', 'eclipse_harbinger', 'blight_necromancer', 'inferno_artillery']);
         const chance = eliteTypes.has(enemy.type) ? Math.min(0.055, baseChance * 1.6) : baseChance;
         if (Math.random() < chance) {
             if (wm) wm.waveChronoDrops = (wm.waveChronoDrops || 0) + 1;

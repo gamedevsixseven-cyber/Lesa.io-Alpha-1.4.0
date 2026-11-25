@@ -26,6 +26,8 @@ class PerkProgression {
         return {
             storyMaxWave: 1,
             endlessMaxWave: 0,
+            endlessHardMaxWave: 0,
+            hardEndlessUnlocked: false,
             olympusMaxFloor: 0,
             defeatedBosses: {},
             endlessMiniBossKills: 0
@@ -43,6 +45,9 @@ class PerkProgression {
 
         base.storyMaxWave = cleanInt(raw.storyMaxWave, 1);
         base.endlessMaxWave = cleanInt(raw.endlessMaxWave, 0);
+        base.endlessHardMaxWave = cleanInt(raw.endlessHardMaxWave, 0);
+        const lsHardFlag = (typeof localStorage !== 'undefined' && localStorage.getItem('lesaio_hard_endless_unlocked') === 'true');
+        base.hardEndlessUnlocked = !!(raw.hardEndlessUnlocked || lsHardFlag || base.endlessMaxWave >= 30 || base.endlessHardMaxWave >= 1);
         base.olympusMaxFloor = Math.min(5, cleanInt(raw.olympusMaxFloor, 0));
         base.endlessMiniBossKills = cleanInt(raw.endlessMiniBossKills, 0);
 
@@ -61,6 +66,8 @@ class PerkProgression {
         const merged = {
             storyMaxWave: Math.max(fa.storyMaxWave, fb.storyMaxWave),
             endlessMaxWave: Math.max(fa.endlessMaxWave, fb.endlessMaxWave),
+            endlessHardMaxWave: Math.max(fa.endlessHardMaxWave, fb.endlessHardMaxWave),
+            hardEndlessUnlocked: !!(fa.hardEndlessUnlocked || fb.hardEndlessUnlocked || Math.max(fa.endlessMaxWave, fb.endlessMaxWave) >= 30 || Math.max(fa.endlessHardMaxWave, fb.endlessHardMaxWave) >= 1),
             olympusMaxFloor: Math.max(fa.olympusMaxFloor, fb.olympusMaxFloor),
             endlessMiniBossKills: Math.max(fa.endlessMiniBossKills, fb.endlessMiniBossKills),
             defeatedBosses: { ...fa.defeatedBosses }
@@ -84,7 +91,7 @@ class PerkProgression {
     static saveFeats(feats) {
         const clean = this.normalizeFeats(feats);
         if (typeof localStorage !== 'undefined') {
-            try { localStorage.setItem(this.FEATS_STORAGE_KEY, JSON.stringify(clean)); } catch (e) {}
+            try { localStorage.setItem(this.FEATS_STORAGE_KEY, JSON.stringify(clean)); } catch (e) { }
         }
         return clean;
     }
@@ -101,7 +108,7 @@ class PerkProgression {
 
     static savePerkRanks(ranks) {
         if (typeof localStorage !== 'undefined') {
-            try { localStorage.setItem(this.RANKS_STORAGE_KEY, JSON.stringify(ranks || {})); } catch (e) {}
+            try { localStorage.setItem(this.RANKS_STORAGE_KEY, JSON.stringify(ranks || {})); } catch (e) { }
         }
     }
 
@@ -214,13 +221,20 @@ class PerkProgression {
             changed = true;
         } else if (mode === 'endless' && wave > feats.endlessMaxWave) {
             feats.endlessMaxWave = wave;
+            if (wave >= 30) feats.hardEndlessUnlocked = true;
             changed = true;
+        } else if (mode === 'endless_hard') {
+            if (wave > feats.endlessHardMaxWave) { feats.endlessHardMaxWave = wave; changed = true; }
+            if (!feats.hardEndlessUnlocked) { feats.hardEndlessUnlocked = true; changed = true; }
         } else if (mode === 'dungeons') {
             const floor = Math.min(5, wave);
             if (floor > feats.olympusMaxFloor) {
                 feats.olympusMaxFloor = floor;
                 changed = true;
             }
+        }
+        if (feats.hardEndlessUnlocked && typeof localStorage !== 'undefined') {
+            try { localStorage.setItem('lesaio_hard_endless_unlocked', 'true'); } catch (_) {}
         }
 
         if (changed) {
@@ -333,7 +347,7 @@ class PerkProgression {
                 const inv = JSON.parse(localStorage.getItem('lesaio_inventory') || '{}');
                 inv.materials = { ...gs.player.materials };
                 localStorage.setItem('lesaio_inventory', JSON.stringify(inv));
-            } catch (e) {}
+            } catch (e) { }
         }
         return { success: true };
     }

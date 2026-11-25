@@ -205,8 +205,9 @@ class HyperionCelestialGlaive extends WeaponBase {
         const aim = player.angle || 0;
         const dmgMult = player.damageMultiplier || 1;
         const baseDmg = (config.baseDamage || 80) * dmgMult;
+        const tMods = config.celestialMods || null;
         const waveRange = (config.range || (isEvolved ? 410 : 360));
-        const cleaveRadius = isEvolved ? 235 : 205;
+        const cleaveRadius = Math.round((isEvolved ? 235 : 205) * (1 + (tMods ? tMods.cleaveRadiusBonus : 0)));
         const pr = player.radius || 25;
         const originX = player.x + Math.cos(aim) * 18;
         const originY = (player.y - pr * 0.25) + Math.sin(aim) * 18;
@@ -248,11 +249,16 @@ class HyperionCelestialGlaive extends WeaponBase {
             hitSet: new Set()
         });
 
-        // 4. Refresh Orbiting Celestial Star-Blades (2 base, 3 evolved)
+        // 4. Refresh Orbiting Celestial Star-Blades (2 base, 3 evolved, up to 5 with Astral Flock)
         this._orbitOwner = player;
         this._orbitTimer = 270;
         this._orbitEvolved = !!isEvolved;
-        this._orbitDamage = Math.max(18, Math.round(baseDmg * 0.38));
+        this._orbitBonusCount = tMods ? (tMods.orbitBladesBonus || 0) : 0;
+        this._orbitDamage = Math.max(18, Math.round(baseDmg * 0.38 * (1 + (tMods ? tMods.orbitDamageMultBonus : 0))));
+
+        if (typeof HyperionSkillTreeTraits !== 'undefined') {
+            HyperionSkillTreeTraits.onSwing(originX, originY, aim, baseDmg, critChance, critMult, config, player, g);
+        }
 
         // 5. Every Nth Swing: Celestial Supernova Rift Anchor that pulls + chain-tethers nearby enemies
         if (isRiftSwing) {
@@ -261,10 +267,11 @@ class HyperionCelestialGlaive extends WeaponBase {
             this._rifts.push({
                 x: rx,
                 y: ry,
-                radius: isEvolved ? 275 : 235,
+                radius: Math.round((isEvolved ? 275 : 235) * (1 + (tMods ? tMods.cleaveRadiusBonus : 0))),
                 damage: Math.round(baseDmg * (isEvolved ? 1.75 : 1.45)),
                 maxChains: isEvolved ? 9 : 6,
                 isEvolved,
+                celestialTraitId: config.celestialTraitId || null,
                 timer: 16,
                 maxTimer: 16,
                 chained: false,
@@ -334,6 +341,7 @@ class HyperionCelestialGlaive extends WeaponBase {
             }
             if (effects) effects.addSparks(e.x, e.y, isCrit ? '#fef08a' : '#f0abfc', isCrit ? 6 : 3);
         });
+        if (typeof HyperionSkillTreeTraits !== 'undefined') HyperionSkillTreeTraits.damageObstaclesInArc(ox, oy, aim, radius, halfConeRad, baseDmg, g, effects);
     }
 
     static update(dt = 1, game = null) {
@@ -343,7 +351,8 @@ class HyperionCelestialGlaive extends WeaponBase {
         const isGuest = !!(g && g.isCoopGuest);
 
         if (g && g.player && g.player._glaiveSwingTimer > 0) g.player._glaiveSwingTimer = Math.max(0, g.player._glaiveSwingTimer - dt);
-        if (g && g.remotePlayer && g.remotePlayer._glaiveSwingTimer > 0) g.remotePlayer._glaiveSwingTimer = Math.max(0, g.remotePlayer._glaiveSwingTimer - dt);
+        const rps = (g && g.coopSession && (g.coopSession.remotePlayers || (g.coopSession.remotePlayer ? [g.coopSession.remotePlayer] : []))) || [];
+        for (let ri = 0; ri < rps.length; ri++) { if (rps[ri] && rps[ri]._glaiveSwingTimer > 0) rps[ri]._glaiveSwingTimer = Math.max(0, rps[ri]._glaiveSwingTimer - dt); }
 
         for (let i = this._slashes.length - 1; i >= 0; i--) {
             this._slashes[i].timer -= dt;
@@ -365,6 +374,7 @@ class HyperionCelestialGlaive extends WeaponBase {
                     if (typeof e.takeDamage === 'function') e.takeDamage(dmg, effects, isCrit, false);
                     if (effects) effects.addSparks(e.x, e.y, '#38bdf8', 4);
                 });
+                if (typeof HyperionSkillTreeTraits !== 'undefined') HyperionSkillTreeTraits.damageObstaclesInCircle(w.x, w.y, curHalf, w.damage, g, effects, w.hitSet);
             }
             if (w.traveled >= w.maxRange) this._waves.splice(i, 1);
         }
@@ -375,7 +385,7 @@ class HyperionCelestialGlaive extends WeaponBase {
             if (this._orbitTick >= 20) {
                 this._orbitTick -= 20;
                 if (!isGuest && enemies) {
-                    const count = this._orbitEvolved ? 3 : 2;
+                    const count = (this._orbitEvolved ? 3 : 2) + (this._orbitBonusCount || 0);
                     const px = this._orbitOwner.x, py = this._orbitOwner.y - (this._orbitOwner.radius || 25) * 0.2;
                     for (let k = 0; k < count; k++) {
                         const a = this._orbitPhase + (k * Math.PI * 2) / count;
@@ -388,6 +398,11 @@ class HyperionCelestialGlaive extends WeaponBase {
                         if (best && typeof best.takeDamage === 'function') {
                             best.takeDamage(this._orbitDamage, effects, false, false);
                             this._tethers.push({ x1: bx, y1: by, x2: best.x, y2: best.y, timer: 8, maxTimer: 8, color: k % 2 === 0 ? '#38bdf8' : '#f0abfc' });
+                        } else if (typeof HyperionSkillTreeTraits !== 'undefined') {
+                            HyperionSkillTreeTraits.damageOrbitObstacles(bx, by, 165, this._orbitDamage, g, effects, this._tethers, k % 2 === 0 ? '#38bdf8' : '#f0abfc');
+                        }
+                        if (best && typeof HyperionSkillTreeTraits !== 'undefined') {
+                            HyperionSkillTreeTraits.damageOrbitObstacles(bx, by, 34, this._orbitDamage, g, effects, null);
                         }
                     }
                 }
@@ -425,12 +440,14 @@ class HyperionCelestialGlaive extends WeaponBase {
                             e.takeDamage(rf.damage, effects, true, false);
                         }
                     });
+                    if (typeof HyperionSkillTreeTraits !== 'undefined') HyperionSkillTreeTraits.damageObstaclesInCircle(rf.x, rf.y, hitDist, rf.damage, g, effects);
                 }
                 if (effects) {
                     effects.addShockwave(rf.x, rf.y, rf.radius * 0.85, 'rgba(56, 189, 248, 0.92)');
                     effects.addSparks(rf.x, rf.y, '#fef08a', 12);
                     effects.addSparks(rf.x, rf.y, '#c084fc', 10);
                 }
+                if (typeof HyperionSkillTreeTraits !== 'undefined') HyperionSkillTreeTraits.onRiftDetonate(rf, g, effects);
                 this._rifts.splice(i, 1);
             }
         }
@@ -439,6 +456,7 @@ class HyperionCelestialGlaive extends WeaponBase {
             this._tethers[i].timer -= dt;
             if (this._tethers[i].timer <= 0) this._tethers.splice(i, 1);
         }
+        if (typeof HyperionSkillTreeTraits !== 'undefined') HyperionSkillTreeTraits.update(dt, g);
     }
 
     static drawWorld(ctx, cam) {
@@ -520,7 +538,7 @@ class HyperionCelestialGlaive extends WeaponBase {
         // 4. Orbiting Celestial Star-Blades
         if (this._orbitTimer > 0 && this._orbitOwner && !this._orbitOwner.dead && this._orbitOwner.weaponType === 'hyperion_glaive') {
             const px = this._orbitOwner.x, py = this._orbitOwner.y - (this._orbitOwner.radius || 25) * 0.2;
-            const count = this._orbitEvolved ? 3 : 2;
+            const count = (this._orbitEvolved ? 3 : 2) + (this._orbitBonusCount || 0);
             for (let k = 0; k < count; k++) {
                 const a = this._orbitPhase + (k * Math.PI * 2) / count;
                 const bx = px + Math.cos(a) * 90, by = py + Math.sin(a) * 90;
@@ -560,6 +578,7 @@ class HyperionCelestialGlaive extends WeaponBase {
             ctx.stroke();
             ctx.restore();
         }
+        if (typeof HyperionSkillTreeTraits !== 'undefined') HyperionSkillTreeTraits.drawWorld(ctx);
     }
 
     static clear() {
@@ -569,6 +588,7 @@ class HyperionCelestialGlaive extends WeaponBase {
         this._tethers.length = 0;
         this._orbitOwner = null;
         this._orbitTimer = 0;
+        if (typeof HyperionSkillTreeTraits !== 'undefined') HyperionSkillTreeTraits.clear();
     }
 }
 

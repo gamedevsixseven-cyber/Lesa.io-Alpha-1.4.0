@@ -321,7 +321,7 @@ const SKILLS_EXT = {
         category: 'Temporal Stasis / Haste',
         unlockedDefault: false,
         unlockCost: 5000,
-        maxLevel: 5,
+        maxLevel: 6,
         cooldown: 13.5,
         masteryCooldown: 11.0,
         hasMastery: true,
@@ -332,6 +332,13 @@ const SKILLS_EXT = {
         masteryDoneLabel: '⭐ MASTERED: ETERNITY ⏳',
         masteryTitleHtml: 'Chronos Hourglass <span class="mastery-sub" style="background:linear-gradient(135deg,#fed330,#a55eea);color:#1a1d2b;">Eternity ⏳</span>',
         masteryDesc: '⭐ MASTERED ETERNITY SHATTER: Permanent -2.5s Cooldown (11.0s), -85% Enemy & Projectile Time Slow, +40% Speed / +55% Fire Haste inside Dome, and triggers a 360+ DMG Temporal Shatter Explosion when ending!',
+        bonusBadgeText: 'CHRONOS+',
+        bonusIcon: '💫',
+        bonusLabel: 'Chronos Bonus Awakening',
+        bonusButtonLabel: 'OVERCLOCK',
+        bonusDoneLabel: '💫 BONUS OVERCLOCK MAX ⏳',
+        bonusTitleHtml: 'Chronos Hourglass <span class="mastery-sub" style="background:linear-gradient(135deg,#2ed573,#fed330);color:#1a1d2b;">Overclock+ 💫</span>',
+        bonusDesc: '💫 BONUS OVERCLOCK: 9.5s CD, 390px Dome (7.0s), -90% Slow, +50% Spd/+65% Fire, heals you every 2s (+22 + 6% Max HP), and revives a downed teammate inside the zone (60% HP)!',
         desc: 'Slam a golden Chronos Hourglass to conjure a glowing Time Sanctuary Dome! Heavily slows enemies and enemy projectiles inside while accelerating your movement and firing speed.',
         levels: {
             1: {
@@ -372,14 +379,32 @@ const SKILLS_EXT = {
                 ]
             },
             5: {
-                level: 5, upgradeCost: 0, gemCost: 0, radius: 340, duration: 360, slowMultiplier: 0.15, bulletSlow: 0.88, speedBuff: 1.40, fireHaste: 0.55, shatterDamage: 360, stunDuration: 1.5,
+                level: 5, upgradeCost: 45000, gemCost: 500, radius: 340, duration: 360, slowMultiplier: 0.15, bulletSlow: 0.88, speedBuff: 1.40, fireHaste: 0.55, shatterDamage: 360, stunDuration: 1.5,
                 cooldown: 11.0,
                 isMastered: true,
+                isBonusNext: true,
                 stats: [
                     { label: 'Time Slow', value: '-85% Stasis Field ⏳' },
                     { label: 'Cooldown', value: '11.0s (-2.5s CDR)' },
                     { label: 'Player Haste', value: '+40% Spd / +55% Fire' },
-                    { label: 'Mastery Perk', value: '360+ AoE Shatter & 1.5s Stun ⭐' }
+                    { label: 'Next Bonus', value: '💫 2s Heal + Zone Revive' }
+                ]
+            },
+            6: {
+                level: 6, upgradeCost: 0, gemCost: 0, radius: 390, duration: 420, slowMultiplier: 0.10, bulletSlow: 0.92, speedBuff: 1.50, fireHaste: 0.65, shatterDamage: 520, stunDuration: 2.0,
+                cooldown: 9.5,
+                healIntervalSec: 2,
+                healFlat: 22,
+                healPct: 0.06,
+                reviveInZone: true,
+                reviveHpRatio: 0.60,
+                isMastered: true,
+                isBonusUpgraded: true,
+                stats: [
+                    { label: 'Time Slow', value: '-90% Field (390px / 7s)' },
+                    { label: 'CD & Haste', value: '9.5s CD • +50% Spd/+65% Fire' },
+                    { label: 'Bonus Heal', value: '+22+6% Max HP / 2s 💚' },
+                    { label: 'Zone Revive', value: 'Revives Ally Inside (60% HP) 🤝' }
                 ]
             }
         },

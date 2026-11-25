@@ -174,7 +174,7 @@ class PublicProfileModal {
         const wReg = (typeof WEAPONS !== 'undefined' && WEAPONS) ? WEAPONS : {};
         const rawWep = wReg[loadout.weapon] || wReg.pea || { id: 'pea', name: 'Pea Slingshot', rarity: 'Common', image: 'assets/WeaponIcons/PeaSlingshot.png', baseDamage: 25, baseDelay: 16 };
         const effWep = (typeof WeaponEvolutionManager !== 'undefined')
-            ? WeaponEvolutionManager.getEffectiveConfig(rawWep.id, rawWep, !!loadout.weaponEvolved)
+            ? WeaponEvolutionManager.getEffectiveConfig(rawWep.id, rawWep, !!loadout.weaponEvolved, {})
             : rawWep;
         const wepRar = String(rawWep.rarity || 'Common').toLowerCase();
         const defIcons = (typeof GearModalUI !== 'undefined' && GearModalUI.SLOT_DEFAULT_ICONS) || {
@@ -345,7 +345,7 @@ class PublicProfileModal {
         let inspHtml = '';
         if (inspWep) {
             const isOwn = ownedSet.has(inspWep.id), isEvo = isOwn && evolvedSet.has(inspWep.id);
-            const cfg = (typeof WeaponEvolutionManager !== 'undefined') ? WeaponEvolutionManager.getEffectiveConfig(inspWep.id, inspWep, isEvo) : inspWep;
+            const cfg = (typeof WeaponEvolutionManager !== 'undefined') ? WeaponEvolutionManager.getEffectiveConfig(inspWep.id, inspWep, isEvo, {}) : inspWep;
             const delaySec = ((cfg.baseDelay || 16) / 60).toFixed(2);
             inspHtml = `
                 <div class="pub-item-inspector">

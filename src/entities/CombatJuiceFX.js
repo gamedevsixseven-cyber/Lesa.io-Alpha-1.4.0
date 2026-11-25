@@ -328,6 +328,23 @@ class CombatJuiceFX {
             ctx.beginPath(); ctx.arc(7, 0, 3.8, 0, Math.PI * 2); ctx.fill();
             ctx.fillStyle = '#ffffff';
             ctx.beginPath(); ctx.arc(5, 0, 2.0, 0, Math.PI * 2); ctx.fill();
+        } else if (m.type === 'tempest_bow') {
+            ctx.strokeStyle = '#38bdf8'; ctx.lineWidth = 2.6;
+            ctx.beginPath(); ctx.moveTo(0, -10); ctx.lineTo(14, 0); ctx.lineTo(0, 10); ctx.stroke();
+            ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1.4;
+            ctx.beginPath(); ctx.moveTo(4, -5); ctx.lineTo(22, 0); ctx.lineTo(4, 5); ctx.stroke();
+        } else if (m.type === 'void_mortar') {
+            ctx.fillStyle = 'rgba(168, 85, 247, 0.55)';
+            ctx.beginPath(); ctx.arc(5, 0, 11 * t + 3, 0, Math.PI * 2); ctx.fill();
+            ctx.strokeStyle = '#f0abfc'; ctx.lineWidth = 2.4;
+            ctx.beginPath(); ctx.arc(7, 0, 9, -1.1, 1.1); ctx.stroke();
+            ctx.fillStyle = '#070210'; ctx.beginPath(); ctx.arc(3, 0, 4.2, 0, Math.PI * 2); ctx.fill();
+        } else if (m.type === 'aurelion_scepter') {
+            ctx.fillStyle = '#38bdf8';
+            ctx.beginPath(); ctx.moveTo(0, -5); ctx.lineTo(28, 0); ctx.lineTo(0, 5); ctx.closePath(); ctx.fill();
+            ctx.fillStyle = '#fef08a';
+            ctx.beginPath(); ctx.moveTo(5, -10); ctx.lineTo(9, 0); ctx.lineTo(5, 10); ctx.lineTo(1, 0); ctx.closePath(); ctx.fill();
+            ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(5, 0, 3.4, 0, Math.PI * 2); ctx.fill();
         } else if (m.type === 'dialtone' || m.type === 'soundwave') {
             ctx.strokeStyle = '#00d2d3';
             ctx.lineWidth = 2.4;
@@ -400,6 +417,11 @@ class CombatJuiceFX {
             medusa_shard: ['#6ee7b7', '#2ed573'],
             dialtone: ['#00d2d3', '#fed330'],
             soundwave: ['#00d2d3', '#fed330'],
+            tempest_bow: ['#38bdf8', '#e0f2fe'],
+            tempest_seeker: ['#fde047', '#38bdf8'],
+            void_mortar: ['#7e22ce', '#f0abfc'],
+            aurelion_scepter: ['#38bdf8', '#fef08a'],
+            aurelion_prism_bolt: ['#f0abfc', '#7dd3fc'],
             ice_spike: ['rgba(116, 185, 255, 0.75)', '#ffffff']
         };
         const bossPair = (typeof BossProjectileFX !== 'undefined') ? BossProjectileFX.getSplatPalette(s.type) : null;

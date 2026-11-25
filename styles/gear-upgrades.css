@@ -188,11 +188,62 @@
 }
 
 /* Awakened / Evolved Mythic Card Aura */
-.gear-card.is-evolved-card,
-.weapon-card.is-evolved-card {
+.gear-card.is-evolved-card:not(.rarity-apex),
+.weapon-card.is-evolved-card:not(.rarity-apex) {
     background: linear-gradient(155deg, #fff5f5 0%, #fef9c3 55%, #ecfeff 100%);
     border-color: #e74c3c;
     box-shadow: 0 0 0 2px #fbbf24, 0 5px 0 #991b1b, 0 8px 18px rgba(245, 158, 11, 0.35);
+}
+
+@keyframes apexRelicPulse {
+    0%, 100% { box-shadow: 0 4px 0 #140b12, 0 0 15px rgba(255, 46, 76, 0.58), 0 0 6px rgba(254, 211, 48, 0.42); }
+    50% { box-shadow: 0 4px 0 #140b12, 0 0 25px rgba(255, 46, 76, 0.90), 0 0 14px rgba(254, 211, 48, 0.78); }
+}
+@keyframes apexArmorSweep {
+    0% { transform: translateX(-165%) rotate(22deg); opacity: 0; }
+    22% { opacity: 0.72; }
+    56% { opacity: 0.55; }
+    100% { transform: translateX(285%) rotate(22deg); opacity: 0; }
+}
+
+.gear-card.rarity-apex:not(.is-locked),
+.gear-slot-card.gear-slot-apex,
+.gear-tab-btn.is-apex-tab {
+    position: relative;
+    overflow: hidden;
+    animation: apexRelicPulse 2.8s ease-in-out infinite;
+}
+.gear-card.rarity-apex:not(.is-locked)::after,
+.gear-slot-card.gear-slot-apex::after,
+.gear-tab-btn.is-apex-tab::after {
+    content: '';
+    position: absolute;
+    top: -45%;
+    left: -35%;
+    width: 44%;
+    height: 195%;
+    background: linear-gradient(90deg, transparent 0%, rgba(255, 46, 76, 0.24) 34%, rgba(254, 211, 48, 0.44) 52%, rgba(255, 46, 76, 0.20) 70%, transparent 100%);
+    pointer-events: none;
+    z-index: 2;
+    animation: apexArmorSweep 3.1s ease-in-out infinite;
+}
+.gear-card.rarity-apex.is-evolved-card:not(.is-locked) {
+    background: linear-gradient(145deg, #211528 0%, #3a1220 55%, #181a24 100%);
+    border-color: #fed330;
+}
+.gear-card.rarity-apex:not(.is-locked) .gear-card-icon-wrap.rarity-apex img,
+.gear-slot-card.gear-slot-apex .gear-slot-icon-img {
+    filter: drop-shadow(0 0 9px rgba(255, 46, 76, 0.65)) drop-shadow(0 0 4px rgba(254, 211, 48, 0.55));
+}
+.gear-tab-btn.is-apex-tab {
+    background: linear-gradient(135deg, #1b1720 0%, #3a1220 60%, #18131d 100%);
+    color: #fed330;
+    border-color: #ff2e4c;
+}
+.gear-tab-btn.is-apex-tab.active {
+    background: linear-gradient(135deg, #4b1224 0%, #831843 50%, #f59e0b 140%);
+    color: #ffffff;
+    border-color: #fed330;
 }
 
 .weapon-card.rarity-apex.is-evolved-card {

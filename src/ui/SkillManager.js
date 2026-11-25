@@ -181,7 +181,7 @@ class SkillManager {
             try {
                 const parsed = JSON.parse(localStorage.getItem('lesaio_unlocked_skills') || '["blade_rush","nerobalonaki"]');
                 if (Array.isArray(parsed)) unlocked = parsed;
-            } catch (err) {}
+            } catch (err) { }
         }
 
         const alreadyOwned = unlocked.includes(skillId);
@@ -240,7 +240,7 @@ class SkillManager {
         // Dual-currency verification
         if (currentCoins < cost || currentGems < gemCost) {
             if (gemCost > 0) {
-                const mLabel = skill.masteryLabel || 'Pagakia Mastery';
+                const mLabel = (currentLevelData.isBonusNext && skill.bonusLabel) ? skill.bonusLabel : (skill.masteryLabel || 'Pagakia Mastery');
                 this._notifyInsufficient(skillId, `⚠️ Need 🪙 ${cost.toLocaleString()} Coins & 💎 ${gemCost} Diamonds for ${mLabel}!`);
             } else {
                 const needed = Math.max(0, cost - currentCoins);
@@ -298,7 +298,8 @@ class SkillManager {
             const currentLevel = isUnlocked ? this.getSkillLevel(skill.id) : 1;
             const maxLevel = skill.maxLevel || 3;
             const isMaxLevel = currentLevel >= maxLevel;
-            const isMastered = !!(skill.masteryBadgeText || skill.id === 'frappes' || skill.id === 'wrath_of_olympus') && isMaxLevel;
+            const isBonusMax = !!(skill.bonusBadgeText && isMaxLevel);
+            const isMastered = !!(skill.masteryBadgeText || skill.id === 'frappes' || skill.id === 'wrath_of_olympus') && (skill.bonusBadgeText ? currentLevel >= 5 : isMaxLevel);
 
             const matchesFilter =
                 this.activeFilter === 'ALL' ||
@@ -312,7 +313,7 @@ class SkillManager {
             const rarityData = (typeof RarityRegistry !== 'undefined') ? RarityRegistry.get(skill.rarity) : { color: '#f39c12', badgeClass: 'badge-legendary' };
 
             const card = document.createElement('div');
-            card.className = `skill-card ${isEquipped ? 'equipped' : ''} ${!isUnlocked ? 'locked' : ''} ${skill.id} rarity-${(skill.rarity || 'common').toLowerCase()} ${isMastered ? 'mastered-card' : ''}`;
+            card.className = `skill-card ${isEquipped ? 'equipped' : ''} ${!isUnlocked ? 'locked' : ''} ${skill.id} rarity-${(skill.rarity || 'common').toLowerCase()} ${isBonusMax ? 'mastered-card bonus-mastered-card' : (isMastered ? 'mastered-card' : '')}`;
             card.setAttribute('data-skill', skill.id);
 
             // Level Badge (Top Left)
@@ -325,7 +326,9 @@ class SkillManager {
             const gemIc = typeof UiIcons !== 'undefined' ? UiIcons.i('gem', 'ui-icon-sm') : '💎';
             const checkIc = typeof UiIcons !== 'undefined' ? UiIcons.i('check', 'ui-icon-sm') : '✅';
             if (isUnlocked && skill.levels) {
-                if (isMastered) {
+                if (isBonusMax) {
+                    levelBadgeHtml = `<div class="skill-level-badge mastery-level-badge bonus-level-badge">${starIc} ${skill.bonusBadgeText} ${skill.bonusIcon || '💫'}</div>`;
+                } else if (isMastered) {
                     const mBadge = skill.masteryBadgeText || 'PAGAKIA';
                     const mBadgeIc = skill.masteryIcon || (skill.id === 'wrath_of_olympus' ? '⚡' : iceIc);
                     levelBadgeHtml = `<div class="skill-level-badge mastery-level-badge">${starIc} ${mBadge} ${mBadgeIc}</div>`;
@@ -335,12 +338,13 @@ class SkillManager {
                     levelBadgeHtml = `<div class="skill-level-badge">LVL ${currentLevel}/${maxLevel}</div>`;
                 }
 
-                // Dynamic Pips (3, 4, or 5 pips matching rarity tier)
+                // Dynamic Pips (3, 4, 5, or 6 pips matching rarity tier)
                 pipsHtml = '<div class="skill-level-pips">';
                 for (let l = 1; l <= maxLevel; l++) {
                     let pipClass = '';
                     if (currentLevel >= l) {
-                        if (isMastered && l === maxLevel) pipClass = 'mastery';
+                        if (isBonusMax && l === maxLevel) pipClass = 'bonus';
+                        else if (isMastered && l === (skill.bonusBadgeText ? 5 : maxLevel)) pipClass = 'mastery';
                         else if (isMaxLevel) pipClass = 'max';
                         else pipClass = 'filled';
                     }
@@ -376,7 +380,9 @@ class SkillManager {
 
             // Title & Icon Display
             let displayName = skill.name;
-            if (isMastered) {
+            if (isBonusMax && skill.bonusTitleHtml) {
+                displayName = skill.bonusTitleHtml;
+            } else if (isMastered) {
                 if (skill.masteryTitleHtml) {
                     displayName = skill.masteryTitleHtml;
                 } else if (skill.id === 'wrath_of_olympus') {
@@ -393,9 +399,9 @@ class SkillManager {
                 iconHtml = `<span class="skill-icon-fallback">${typeof UiIcons !== 'undefined' ? UiIcons.renderDefIcon(skill, '') : (skill.icon || '✨')}</span>`;
             }
 
-            const displayDesc = isMastered
+            const displayDesc = (isBonusMax && skill.bonusDesc) ? skill.bonusDesc : (isMastered
                 ? (skill.masteryDesc || `${starIc} MASTERED FRAPPES+ WITH PAGAKIA: Permanent -3.0s CDR, Sub-Zero Ice Aura that slows enemies by 50%, and kills extend frenzy duration!`)
-                : (skill.desc || 'Battle ability');
+                : (skill.desc || 'Battle ability'));
 
             // Dynamic Stats for current level
             let statsHtml = '<div class="skill-stats-grid">';
@@ -404,7 +410,7 @@ class SkillManager {
 
             if (statsList.length > 0) {
                 statsList.forEach((st) => {
-                    const isHighlight = st.label.includes('Slow') || st.label.includes('Amp') || st.label.includes('Special') || st.label.includes('Mastery') || st.label.includes('Bonus');
+                    const isHighlight = st.label.includes('Slow') || st.label.includes('Amp') || st.label.includes('Special') || st.label.includes('Mastery') || st.label.includes('Bonus') || st.label.includes('Revive');
                     statsHtml += `
                         <div class="skill-stat-pill">
                             <span class="skill-stat-label">${st.label}</span>
@@ -431,7 +437,9 @@ class SkillManager {
             }
 
             if (isUnlocked && skill.levels) {
-                if (isMastered) {
+                if (isBonusMax) {
+                    actionsHtml += `<button class="comic-btn comic-btn-sm skill-upgrade-btn mastery-btn bonus-mastery-btn" disabled>${skill.bonusDoneLabel || `${starIc} BONUS OVERCLOCK MAX`}</button>`;
+                } else if (isMastered && isMaxLevel) {
                     const mDoneLbl = skill.masteryDoneLabel || (skill.id === 'wrath_of_olympus' ? `${starIc} OLYMPIAN MASTERED ⚡` : `${starIc} MASTERED: PAGAKIA ${iceIc}`);
                     actionsHtml += `<button class="comic-btn comic-btn-sm skill-upgrade-btn mastery-btn" disabled>${mDoneLbl}</button>`;
                 } else if (isMaxLevel) {
@@ -442,8 +450,9 @@ class SkillManager {
                     const canAffordUpgrade = currentCoins >= nextCost && currentGems >= nextGems;
                     const affordCls = canAffordUpgrade ? '' : 'is-insufficient';
                     if (nextGems > 0) {
-                        const mBtnLbl = skill.masteryButtonLabel || 'MASTER: PAGAKIA';
-                        actionsHtml += `<button class="comic-btn comic-btn-sm skill-upgrade-btn mastery-unlock-btn upgrade-action-btn ${affordCls}">${starIc} ${mBtnLbl} (${coinIc} ${nextCost.toLocaleString()} + ${gemIc} ${nextGems})</button>`;
+                        const isBNext = !!(levelData && levelData.isBonusNext);
+                        const mBtnLbl = (isBNext && skill.bonusButtonLabel) ? skill.bonusButtonLabel : (skill.masteryButtonLabel || 'MASTER: PAGAKIA');
+                        actionsHtml += `<button class="comic-btn comic-btn-sm skill-upgrade-btn mastery-unlock-btn ${isBNext ? 'bonus-unlock-btn' : ''} upgrade-action-btn ${affordCls}">${starIc} ${mBtnLbl} (${coinIc} ${nextCost.toLocaleString()} + ${gemIc} ${nextGems})</button>`;
                     } else {
                         actionsHtml += `<button class="comic-btn comic-btn-sm skill-upgrade-btn upgrade-action-btn ${affordCls}">${starIc} UPGRADE (${coinIc} ${nextCost.toLocaleString()})</button>`;
                     }
@@ -524,7 +533,7 @@ class SkillManager {
         if (this.summaryBar && typeof ModalManager !== 'undefined' && ModalManager.renderTabSummaryBar) {
             const eqSkill = SKILLS[this.selectedSkill];
             const eqMax = eqSkill && this.getSkillLevel(this.selectedSkill) >= (eqSkill.maxLevel || 3);
-            const eqName = (this.selectedSkill === 'frappes' && eqMax) ? 'Frappes+' : ((eqSkill && eqSkill.name) || 'Skill');
+            const eqName = (this.selectedSkill === 'frappes' && eqMax) ? 'Frappes+' : ((this.selectedSkill === 'chrono_hourglass' && eqMax) ? 'Chronos+' : ((eqSkill && eqSkill.name) || 'Skill'));
             ModalManager.renderTabSummaryBar(this.summaryBar, [
                 { icon: '🪙', label: 'COINS', val: currentCoins.toLocaleString(), cls: 'tab-pill-gold' },
                 { icon: '💎', label: 'GEMS', val: currentGems.toLocaleString(), cls: 'tab-pill-gems' },
@@ -566,11 +575,12 @@ class SkillManager {
         const maxLvl = skill.maxLevel || 3;
         const isMax = currentLvl >= maxLvl;
         const isMastered = (skillId === 'frappes' && isMax);
-        const lvlSuffix = isMastered ? '' : (isMax ? ' [MAX]' : ` [LVL ${currentLvl}]`);
-        const displayName = isMastered ? 'FRAPPES+' : skill.name.toUpperCase();
+        const isBonusChronos = (skillId === 'chrono_hourglass' && isMax);
+        const lvlSuffix = (isMastered || isBonusChronos) ? '' : (isMax ? ' [MAX]' : ` [LVL ${currentLvl}]`);
+        const displayName = isMastered ? 'FRAPPES+' : (isBonusChronos ? 'CHRONOS+' : skill.name.toUpperCase());
         const iconSrc = skill.iconImg || 'assets/SkillsIcons/BladeRushSkill.png';
 
-        skillBadge.title = isMastered ? 'Frappes+ (Press E to activate)' : `${skill.name}${lvlSuffix} (Press E to activate)`;
+        skillBadge.title = isMastered ? 'Frappes+ (Press E to activate)' : (isBonusChronos ? 'Chronos+ Overclock (Press E to activate)' : `${skill.name}${lvlSuffix} (Press E to activate)`);
         const textSpan = skillBadge.querySelector('span');
         if (textSpan) {
             textSpan.innerHTML = `<img src="${iconSrc}" class="hud-skill-thumb" alt="${displayName}"> ${displayName}${lvlSuffix ? ' ' + lvlSuffix : ''} (E)`;

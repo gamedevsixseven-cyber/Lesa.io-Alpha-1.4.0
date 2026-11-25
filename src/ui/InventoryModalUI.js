@@ -110,7 +110,7 @@ class InventoryModalUI {
             </div>
         `;
 
-        const chestOrder = ['mythic', 'legendary', 'epic', 'rare', 'uncommon', 'common'];
+        const chestOrder = ['apex', 'mythic', 'legendary', 'epic', 'rare', 'uncommon', 'common'];
         const chestDefinitions = (typeof CHEST_TYPES !== 'undefined') ? CHEST_TYPES : {};
         const ownedChestKeys = chestOrder.filter(k => (storedChests[k] || 0) > 0 && chestDefinitions[k]);
 
@@ -127,6 +127,17 @@ class InventoryModalUI {
                 const openLabel = isFreeOpen
                     ? `🎁 OPEN FREE${freeCount > 1 ? ` (${freeCount})` : ''}`
                     : `${typeof UiIcons !== 'undefined' ? UiIcons.i('gem', 'ui-icon-sm') : ''} OPEN (${gemCost})`;
+
+                const paidCount = Math.max(0, count - freeCount);
+                const allGemCost = paidCount * gemCost;
+                const openAllFreeOnly = (freeCount >= 2 && gems < allGemCost);
+                const openAllCount = openAllFreeOnly ? freeCount : count;
+                const openAllCost = openAllFreeOnly ? 0 : allGemCost;
+                const canOpenAll = openAllCost === 0 || gems >= openAllCost;
+                const openAllLabel = openAllCost === 0
+                    ? `🎁 OPEN ALL FREE (x${openAllCount})`
+                    : `${typeof UiIcons !== 'undefined' ? UiIcons.i('gem', 'ui-icon-sm') : ''} OPEN ALL x${openAllCount} (${openAllCost})`;
+                const openAllBtnHtml = count >= 2 ? `<button class="comic-btn inv-open-btn inv-chest-btn ${canOpenAll ? 'btn-open-all-active btn-open-all-chests' : 'btn-open-disabled'}" data-chest-type="${chestType}" data-free-only="${openAllFreeOnly ? '1' : '0'}" ${canOpenAll ? '' : 'disabled'}><span>${openAllLabel}</span></button>` : '';
 
                 html += `
                     <div class="inv-crate-card crate-available tier-${def.rarity}" style="--crate-color: ${borderCol};">
@@ -153,6 +164,7 @@ class InventoryModalUI {
                                         data-chest-type="${chestType}" ${canAffordGems ? '' : 'disabled'}>
                                     <span>${openLabel}</span>
                                 </button>
+                                ${openAllBtnHtml}
                             </div>
                         </div>
                     </div>
@@ -217,6 +229,7 @@ class InventoryModalUI {
                                 data-crate-id="${key}" ${hasCrate ? '' : 'disabled'}>
                             <span>${hasCrate ? (typeof UiIcons !== 'undefined' ? `${UiIcons.i('sparkle', 'ui-icon-sm')} OPEN` : '✨ OPEN') : 'LOCKED'}</span>
                         </button>
+                        ${count >= 2 ? `<button class="comic-btn inv-open-btn inv-chest-btn btn-open-all-active btn-open-all-crates" data-crate-id="${key}"><span>⚡ OPEN ALL (x${count})</span></button>` : ''}
                     </div>
                 </div>
             `;
@@ -289,6 +302,17 @@ class InventoryModalUI {
             });
         });
 
+        mount.querySelectorAll('.btn-open-all-chests').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const chestType = btn.getAttribute('data-chest-type');
+                const freeOnly = btn.getAttribute('data-free-only') === '1';
+                if (chestType && window.inventoryManager && typeof window.inventoryManager.openAllStoredChests === 'function') {
+                    window.inventoryManager.openAllStoredChests(chestType, { freeOnly });
+                }
+            });
+        });
+
         // Bind Open Crate Buttons
         mount.querySelectorAll('.btn-open-active').forEach(btn => {
             btn.addEventListener('click', (e) => {
@@ -296,6 +320,16 @@ class InventoryModalUI {
                 const crateId = btn.getAttribute('data-crate-id');
                 if (crateId && window.inventoryManager) {
                     window.inventoryManager.openCrate(crateId);
+                }
+            });
+        });
+
+        mount.querySelectorAll('.btn-open-all-crates').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const crateId = btn.getAttribute('data-crate-id');
+                if (crateId && window.inventoryManager && typeof window.inventoryManager.openAllCrates === 'function') {
+                    window.inventoryManager.openAllCrates(crateId);
                 }
             });
         });

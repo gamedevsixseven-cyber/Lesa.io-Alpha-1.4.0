@@ -98,7 +98,7 @@ class ClanService {
                     };
                 }
             }
-        } catch (_) {}
+        } catch (_) { }
         this._ensureTodayReset();
     }
 
@@ -112,7 +112,7 @@ class ClanService {
                 lastLeftAt: this.lastLeftAt,
                 pendingBounties: this._pendingBounties
             }));
-        } catch (_) {}
+        } catch (_) { }
     }
 
     _ensureTodayReset() {
@@ -165,39 +165,62 @@ class ClanService {
         const uid = this.getMyUid();
         if (!uid) return;
         const cached = (typeof window !== 'undefined' && window.cloudSave && window.cloudSave.lastCloudData) ? window.cloudSave.lastCloudData : null;
-        if (cached && 'clanId' in cached) {
-            if ((cached.clanId || null) !== (this.clanId || null)) { this.clanId = cached.clanId || null; this.saveLocal(); }
+        if (cached && cached.clanId) {
+            if (cached.clanId !== this.clanId) { this.clanId = cached.clanId; this.saveLocal(); }
             return;
         }
         const edge = this.getEdge(), db = this.getDb();
         if (edge) {
             const er = await edge.get(`/player/${encodeURIComponent(uid)}`).catch(() => null);
-            if (er && er.ok && er.doc && typeof er.doc.clanId === 'string') {
-                if (er.doc.clanId !== (this.clanId || '')) { this.clanId = er.doc.clanId || null; this.saveLocal(); }
+            if (er && er.ok && er.doc && er.doc.clanId) {
+                if (er.doc.clanId !== this.clanId) { this.clanId = er.doc.clanId; this.saveLocal(); }
                 return;
             }
         }
-        if (!db) return;
-        try {
-            const pDoc = await db.collection('players').doc(uid).get();
-            if (pDoc && pDoc.exists) {
-                const pData = pDoc.data() || {};
-                if (typeof pData.clanId === 'string' && pData.clanId !== (this.clanId || '')) { this.clanId = pData.clanId || null; this.saveLocal(); }
+        if (!this.clanId && db) {
+            try {
+                const pDoc = await db.collection('players').doc(uid).get();
+                if (pDoc && pDoc.exists && (pDoc.data() || {}).clanId) {
+                    this.clanId = pDoc.data().clanId; this.saveLocal(); return;
+                }
+            } catch (_) {}
+        }
+        if (!this.clanId) await this._recoverMembershipFromClans(uid, edge, db);
+    }
+
+    async _recoverMembershipFromClans(uid, edge, db) {
+        let found = null;
+        if (edge) {
+            const mr = await edge.get(`/clans/member/${encodeURIComponent(uid)}`).catch(() => null);
+            if (mr && !mr.fallback && mr.ok && mr.clan && mr.clan.members && mr.clan.members[uid]) found = mr.clan;
+            if (!found) {
+                const list = await edge.get('/clans').catch(() => null);
+                if (list && list.ok && Array.isArray(list.clans)) found = list.clans.find(c => c && c.members && c.members[uid]) || null;
             }
-        } catch (_) {}
+        }
+        if (!found && db) {
+            try {
+                const snap = await db.collection('clans').where(`members.${uid}.uid`, '==', uid).limit(1).get();
+                if (snap && !snap.empty) { const d = snap.docs[0]; found = { id: d.id, ...d.data() }; }
+            } catch (_) {}
+        }
+        if (found && found.id) {
+            this.clanId = found.id; this.currentClan = found; this.saveLocal();
+            await this._syncPlayerClanBadge(found);
+        }
     }
 
     async _syncPlayerClanBadge(clanDoc = null) {
         const uid = this.getMyUid();
         if (!uid) return;
         const badge = { clanId: clanDoc ? clanDoc.id : null, clanTag: clanDoc ? clanDoc.tag : null, clanName: clanDoc ? clanDoc.name : null };
-        const edge = this.getEdge();
-        if (edge) {
-            const er = await edge.post(`/player/${encodeURIComponent(uid)}`, badge).catch(() => null);
-            if (er && !er.fallback && er.ok) return;
+        if (typeof window !== 'undefined' && window.cloudSave && window.cloudSave.lastCloudData && typeof window.cloudSave.lastCloudData === 'object') {
+            Object.assign(window.cloudSave.lastCloudData, badge);
         }
-        const db = this.getDb();
-        if (db) { try { await db.collection('players').doc(uid).set(badge, { merge: true }); } catch (_) {} }
+        if (typeof window !== 'undefined' && window.friendService) window.friendService._lastSocialHash = '';
+        const edge = this.getEdge(), db = this.getDb();
+        if (edge) edge.post(`/player/${encodeURIComponent(uid)}`, { ...badge, _clearClan: !clanDoc }).catch(() => {});
+        if (db) db.collection('players').doc(uid).set(badge, { merge: true }).catch(() => {});
     }
 
     async refreshActiveClan() {
@@ -209,12 +232,16 @@ class ClanService {
             if (migrated) er = { ok: true, fallback: false, clan: migrated };
         }
         if (!er || er.fallback) return false;
-        if (!er.ok && er.status === 404) { this.clanId = null; this.currentClan = null; this.saveLocal(); this._emitUpdate(); return true; }
+        if (!er.ok && er.status === 404) { this.clanId = null; this.currentClan = null; this.saveLocal(); this._syncPlayerClanBadge(null); this._emitUpdate(); return true; }
         if (er.ok && er.clan) {
             const uid = this.getMyUid();
             if (uid && (!er.clan.members || !er.clan.members[uid])) {
                 this.clanId = null; this.currentClan = null; this.saveLocal(); this._syncPlayerClanBadge(null);
-            } else { this.currentClan = er.clan; }
+            } else {
+                this.currentClan = er.clan;
+                const lcd = (typeof window !== 'undefined' && window.cloudSave && window.cloudSave.lastCloudData) || null;
+                if (!lcd || lcd.clanId !== er.clan.id) this._syncPlayerClanBadge(er.clan);
+            }
             this._emitUpdate();
             return true;
         }
@@ -222,7 +249,7 @@ class ClanService {
     }
 
     bindClanListener() {
-        if (this._unsubClan) { try { this._unsubClan(); } catch (_) {} this._unsubClan = null; }
+        if (this._unsubClan) { try { this._unsubClan(); } catch (_) { } this._unsubClan = null; }
         const db = this.getDb(), edge = this.getEdge();
         if ((!db && !edge) || !this.clanId) { this.currentClan = null; this._emitUpdate(); return; }
         if (edge) {
@@ -235,10 +262,17 @@ class ClanService {
     _bindFirestoreClanDoc(db) {
         if (!db || !this.clanId) return;
         this._unsubClan = db.collection('clans').doc(this.clanId).onSnapshot((doc) => {
-            if (!doc || !doc.exists) { this.clanId = null; this.currentClan = null; this.saveLocal(); this._emitUpdate(); return; }
+            if (!doc || !doc.exists) {
+                if (this.getEdge()) { this.refreshActiveClan(); return; }
+                this.clanId = null; this.currentClan = null; this.saveLocal(); this._syncPlayerClanBadge(null); this._emitUpdate(); return;
+            }
             const data = { id: doc.id, ...doc.data() }, uid = this.getMyUid();
-            if (uid && (!data.members || !data.members[uid])) { this.clanId = null; this.currentClan = null; this.saveLocal(); this._syncPlayerClanBadge(null); }
-            else { this.currentClan = data; }
+            if (uid && (!data.members || !data.members[uid])) {
+                if (this.getEdge()) { this.refreshActiveClan(); return; }
+                this.clanId = null; this.currentClan = null; this.saveLocal(); this._syncPlayerClanBadge(null);
+            } else {
+                this.currentClan = data;
+            }
             this._emitUpdate();
         }, (err) => { this.lastError = this._describeError(err); });
     }
@@ -265,10 +299,10 @@ class ClanService {
                             if (!doc.exists || byId.has(doc.id)) return;
                             const c = { id: doc.id, ...doc.data() };
                             byId.set(doc.id, c);
-                            if (edge && edgeOk) edge.post('/clans/migrate', { clan: c }).catch(() => {});
+                            if (edge && edgeOk) edge.post('/clans/migrate', { clan: c }).catch(() => { });
                         });
                     }
-                } catch (_) {}
+                } catch (_) { }
             }
             const list = Array.from(byId.values()).sort((a, b) => (Number(b.xp) || 0) - (Number(a.xp) || 0)).slice(0, 25);
             this.browseList = list; this._emitUpdate();

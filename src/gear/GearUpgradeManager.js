@@ -14,46 +14,20 @@ class GearUpgradeManager {
     static STORAGE_ASCENDED = 'lesaio_ascended_gear';
     static STORAGE_STONES = 'lesaio_evolution_stones';
 
-    static MAX_LEVEL_BY_RARITY = {
-        common: 1,
-        uncommon: 1,
-        rare: 2,
-        epic: 3,
-        legendary: 4,
-        mythic: 4,
-        exclusive: 1
+    static MAX_LEVEL_BY_RARITY = (typeof GearUpgradeConfig !== 'undefined') ? GearUpgradeConfig.MAX_LEVEL_BY_RARITY : {
+        common: 1, uncommon: 1, rare: 2, epic: 3, legendary: 4, mythic: 5, apex: 6, exclusive: 1
     };
 
-    static LEVEL_STAT_MULTIPLIERS = {
-        1: 1.00,
-        2: 1.18,
-        3: 1.38,
-        4: 1.60
+    static LEVEL_STAT_MULTIPLIERS = (typeof GearUpgradeConfig !== 'undefined') ? GearUpgradeConfig.LEVEL_STAT_MULTIPLIERS : {
+        1: 1.00, 2: 1.18, 3: 1.38, 4: 1.60, 5: 1.82, 6: 2.08
     };
 
     static ASCENDED_STAT_MULTIPLIER = 1.80;
-    static EVOLVED_STAT_MULTIPLIER = 2.00;
+    static EVOLVED_STAT_MULTIPLIER = 2.05;
+    static APEX_EVOLVED_STAT_MULTIPLIER = 2.38;
     static ASCEND_COST = { coins: 30000, starStones: 1 };
 
-    static UPGRADE_COSTS = {
-        rare: {
-            1: { coins: 2500, materials: { armory_shards: 15, mati_crystal: 2 } }
-        },
-        epic: {
-            1: { coins: 4500, materials: { armory_shards: 25, mati_crystal: 5 } },
-            2: { coins: 7500, materials: { armory_shards: 40, mati_crystal: 8, olympian_bronze: 3 } }
-        },
-        legendary: {
-            1: { coins: 8000, materials: { armory_shards: 35, mati_crystal: 8, olympian_bronze: 4 } },
-            2: { coins: 14000, materials: { armory_shards: 55, mati_crystal: 12, olympian_bronze: 8 } },
-            3: { coins: 22000, materials: { armory_shards: 80, mati_crystal: 18, olympian_bronze: 14, ambrosia_spark: 1 } }
-        },
-        mythic: {
-            1: { coins: 15000, materials: { armory_shards: 60, mati_crystal: 14, olympian_bronze: 10, ambrosia_spark: 1 } },
-            2: { coins: 25000, materials: { armory_shards: 90, mati_crystal: 22, olympian_bronze: 16, ambrosia_spark: 2 } },
-            3: { coins: 40000, materials: { armory_shards: 130, mati_crystal: 30, olympian_bronze: 24, ambrosia_spark: 3 } }
-        }
-    };
+    static UPGRADE_COSTS = (typeof GearUpgradeConfig !== 'undefined') ? GearUpgradeConfig.UPGRADE_COSTS : {};
 
     static EVOLVE_COST = {
         coins: 20000,
@@ -116,7 +90,8 @@ class GearUpgradeManager {
     }
 
     static isEvolvableRarity(itemOrId) {
-        return this.getEffectiveRarity(itemOrId) === 'mythic';
+        const eff = this.getEffectiveRarity(itemOrId);
+        return eff === 'mythic' || eff === 'apex';
     }
 
     static getAllLevels() {
@@ -357,7 +332,9 @@ class GearUpgradeManager {
         if (curLvl >= maxLvl) return null;
         const table = this.UPGRADE_COSTS[rarity];
         return (table && table[curLvl]) ? {
-            coins: table[curLvl].coins,
+            coins: table[curLvl].coins || 0,
+            gems: table[curLvl].gems || 0,
+            isDiamondBonus: !!table[curLvl].isDiamondBonus,
             materials: { ...(table[curLvl].materials || {}) }
         } : null;
     }
@@ -365,18 +342,25 @@ class GearUpgradeManager {
     static getEvolveCost(itemOrId) {
         const item = this._resolveItem(itemOrId);
         if (!item || !this.isEvolvableRarity(item)) return null;
+        const r = this.getEffectiveRarity(item);
+        const byRar = (typeof GearUpgradeConfig !== 'undefined' && GearUpgradeConfig.EVOLVE_COSTS && GearUpgradeConfig.EVOLVE_COSTS[r]) || this.EVOLVE_COST;
         return {
-            coins: this.EVOLVE_COST.coins,
-            evolutionStones: this.EVOLVE_COST.evolutionStones
+            coins: byRar.coins,
+            evolutionStones: byRar.evolutionStones
         };
     }
 
     static hasUpgradeResources(itemOrId) {
         const cost = this.getUpgradeCost(itemOrId);
         if (!cost) return false;
-        if (this._getCoins() < cost.coins) return false;
-        const inv = (typeof window !== 'undefined') ? window.inventoryManager : null;
-        return !!(inv && typeof inv.hasMaterials === 'function' && inv.hasMaterials(cost.materials));
+        if (cost.coins > 0 && this._getCoins() < cost.coins) return false;
+        if (cost.gems > 0 && (typeof GearUpgradeConfig === 'undefined' || GearUpgradeConfig.getGems() < cost.gems)) return false;
+        const mats = cost.materials || {};
+        if (Object.keys(mats).length > 0) {
+            const inv = (typeof window !== 'undefined') ? window.inventoryManager : null;
+            if (!inv || typeof inv.hasMaterials !== 'function' || !inv.hasMaterials(mats)) return false;
+        }
+        return true;
     }
 
     static hasEvolveResources(itemOrId) {
@@ -385,13 +369,14 @@ class GearUpgradeManager {
         return this._getCoins() >= cost.coins && this.getEvolutionStones() >= cost.evolutionStones;
     }
 
-    static scaleStatValue(baseVal, level = 1, evolved = false, ascended = false) {
+    static scaleStatValue(baseVal, level = 1, evolved = false, ascended = false, rarity = '') {
         if (typeof baseVal !== 'number' || !Number.isFinite(baseVal)) return baseVal;
         const lvl = Math.max(1, Math.floor(level || 1));
         const evo = !!evolved, asc = !!ascended;
         if (lvl <= 1 && !evo && !asc) return baseVal;
         if (baseVal <= 0) return baseVal;
-        const mult = evo ? this.EVOLVED_STAT_MULTIPLIER : (asc ? this.ASCENDED_STAT_MULTIPLIER : (this.LEVEL_STAT_MULTIPLIERS[lvl] || 1.0));
+        const evoMult = (rarity === 'apex') ? this.APEX_EVOLVED_STAT_MULTIPLIER : this.EVOLVED_STAT_MULTIPLIER;
+        const mult = evo ? evoMult : (asc ? this.ASCENDED_STAT_MULTIPLIER : (this.LEVEL_STAT_MULTIPLIERS[lvl] || 1.0));
         const minStep = (lvl - 1) + (asc ? 2 : 0) + (evo ? 2 : 0);
         return Math.max(Math.round(baseVal * mult), baseVal + minStep);
     }
@@ -399,6 +384,7 @@ class GearUpgradeManager {
     static getEffectiveStats(itemOrId, overrideLevel = null, overrideEvolved = null, overrideAscended = null) {
         const item = this._resolveItem(itemOrId);
         if (!item || !item.stats) return {};
+        const rarity = this.normalizeRarity(item.rarity);
         const maxLvl = this.getMaxLevel(item);
         const lvl = overrideLevel !== null
             ? Math.min(maxLvl, Math.max(1, Math.floor(overrideLevel)))
@@ -412,7 +398,7 @@ class GearUpgradeManager {
 
         const result = {};
         for (const [key, val] of Object.entries(item.stats)) {
-            result[key] = this.scaleStatValue(val, lvl, evo, asc);
+            result[key] = this.scaleStatValue(val, lvl, evo, asc, rarity);
         }
         return result;
     }
@@ -435,18 +421,27 @@ class GearUpgradeManager {
 
         const cost = this.getUpgradeCost(item);
         if (!cost) return { success: false, reason: 'No upgrade path available.' };
-        if (this._getCoins() < cost.coins) {
+        if (cost.coins > 0 && this._getCoins() < cost.coins) {
             return { success: false, reason: 'Not enough Coins.' };
         }
+        if (cost.gems > 0 && (typeof GearUpgradeConfig === 'undefined' || GearUpgradeConfig.getGems() < cost.gems)) {
+            return { success: false, reason: `Requires ${cost.gems.toLocaleString()} Diamonds.` };
+        }
+        const mats = cost.materials || {};
         const inv = (typeof window !== 'undefined') ? window.inventoryManager : null;
-        if (!inv || typeof inv.hasMaterials !== 'function' || !inv.hasMaterials(cost.materials)) {
+        if (Object.keys(mats).length > 0 && (!inv || typeof inv.hasMaterials !== 'function' || !inv.hasMaterials(mats))) {
             return { success: false, reason: 'Not enough crafting materials.' };
         }
 
-        if (!this._spendCoins(cost.coins)) {
+        if (cost.coins > 0 && !this._spendCoins(cost.coins)) {
             return { success: false, reason: 'Not enough Coins.' };
         }
-        inv.consumeMaterials(cost.materials, { source: 'gear_upgrade', itemId: item.id, targetLevel: curLvl + 1 });
+        if (cost.gems > 0 && (typeof GearUpgradeConfig === 'undefined' || !GearUpgradeConfig.spendGems(cost.gems))) {
+            return { success: false, reason: 'Not enough Diamonds.' };
+        }
+        if (Object.keys(mats).length > 0 && inv) {
+            inv.consumeMaterials(mats, { source: 'gear_upgrade', itemId: item.id, targetLevel: curLvl + 1 });
+        }
 
         const nextLvl = curLvl + 1;
         const levels = this.getAllLevels();
@@ -461,7 +456,7 @@ class GearUpgradeManager {
         const item = this._resolveItem(itemOrId);
         if (!item) return { success: false, reason: 'Item not found.' };
         if (!this.isEvolvableRarity(item)) {
-            return { success: false, reason: 'Only Mythic gear can be evolved.' };
+            return { success: false, reason: 'Only Mythic and Apex gear can be evolved.' };
         }
         if (typeof GearManager !== 'undefined' && !GearManager.isUnlocked(item.id)) {
             return { success: false, reason: 'Unlock this gear item first.' };

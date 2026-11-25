@@ -38,15 +38,17 @@ class CoopCombatFx {
         if (batch.length > 0) net.send(msgType, { batch }, sendOpts);
     }
 
-    static spawnRemoteBullet(session, bData, isHostAuthoritative = false) {
+    static spawnRemoteBullet(session, bData, isHostAuthoritative = false, fromId = null) {
+        const effFrom = (bData && bData.fromId) || fromId || null;
         if (bData && Array.isArray(bData.batch)) {
             for (let i = 0; i < bData.batch.length; i++) {
-                this.spawnRemoteBullet(session, bData.batch[i], isHostAuthoritative);
+                this.spawnRemoteBullet(session, bData.batch[i], isHostAuthoritative, effFrom);
             }
             return;
         }
         const game = session && session.game;
-        const rp = session && session.remotePlayer;
+        const rp = (session && typeof session.getRemotePlayer === 'function')
+            ? session.getRemotePlayer(effFrom) : (session && session.remotePlayer);
         if (!game || !bData || !rp || rp.isDowned || rp.isDownedDisconnected) return;
         if (game.state !== 'PLAYING' || (game.isCutsceneActive && game.isCutsceneActive())) return;
         if (typeof Bullet === 'undefined') return;
@@ -64,9 +66,9 @@ class CoopCombatFx {
 
         if (isHostAuthoritative) {
             const now = performance.now();
-            session._guestShootBurst = (session._guestShootBurst || []).filter(t => (now - t) < 200);
-            if (session._guestShootBurst.length >= 44) return;
-            session._guestShootBurst.push(now);
+            rp._shootBurst = (rp._shootBurst || []).filter(t => (now - t) < 200);
+            if (rp._shootBurst.length >= 44) return;
+            rp._shootBurst.push(now);
             if (Math.hypot(bx - rp.x, by - rp.y) > 130) { bx = rp.x; by = rp.y; }
             const mag = Math.hypot(vx, vy);
             if (mag > 42) { vx = (vx / mag) * 42; vy = (vy / mag) * 42; }
@@ -139,13 +141,15 @@ class CoopCombatFx {
         }, { droppable: true });
     }
 
-    static handleRemoteBeam(session, data, isHostAuthoritative = false) {
+    static handleRemoteBeam(session, data, isHostAuthoritative = false, fromId = null) {
         const game = session && session.game;
-        const rp = session && session.remotePlayer;
+        const effFrom = (data && data.fromId) || fromId || null;
+        const rp = (session && typeof session.getRemotePlayer === 'function')
+            ? session.getRemotePlayer(effFrom) : (session && session.remotePlayer);
         if (!game || !data || !rp || rp.isDowned || rp.isDownedDisconnected || typeof HeliosOmegaCannon === 'undefined') return;
         const now = performance.now();
-        if (isHostAuthoritative && now - this._lastBeamRelayMs < 400) return;
-        this._lastBeamRelayMs = now;
+        if (isHostAuthoritative && now - (rp._lastBeamMs || 0) < 400) return;
+        rp._lastBeamMs = now;
         const angle = Number.isFinite(data.angle) ? data.angle : rp.angle;
         const dmg = isHostAuthoritative ? Math.max(10, Math.min(450, Number(data.damage) || 60)) : (Number(data.damage) || 60);
         rp._isRemoteBeam = true;
@@ -191,11 +195,14 @@ class CoopCombatFx {
         }, { droppable: true });
     }
 
-    static handleRemoteFx(session, data) {
+    static handleRemoteFx(session, data, fromId = null) {
         const fx = session && session.game && session.game.effects;
         if (!fx || !data) return;
-        if (data.t === 'glaive' && session.remotePlayer && typeof HyperionCelestialGlaive !== 'undefined') {
-            HyperionCelestialGlaive.spawnRemoteSwing(session.remotePlayer, Number(data.a) || 0, !!data.e, !!data.r, fx);
+        const effFrom = data.fromId || fromId || null;
+        const rp = (session && typeof session.getRemotePlayer === 'function')
+            ? session.getRemotePlayer(effFrom) : (session && session.remotePlayer);
+        if (data.t === 'glaive' && rp && typeof HyperionCelestialGlaive !== 'undefined') {
+            HyperionCelestialGlaive.spawnRemoteSwing(rp, Number(data.a) || 0, !!data.e, !!data.r, fx);
         } else if (data.t === 'chain' && typeof fx.addLightningChain === 'function') {
             fx.addLightningChain(data.x1, data.y1, data.x2, data.y2, data.c || '#00d2d3');
         } else if (data.t === 'ring') {

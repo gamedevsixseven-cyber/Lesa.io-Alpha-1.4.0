@@ -27,6 +27,7 @@ class GearPassives {
             charcoalTimer: 45,
             steadyRhythmTimer: 0,
             sonicCritTimer: 0,
+            ruinBuffTimer: 0,
             shockAbsorberTimer: 0,
             throttleStacks: 0,
             throttleDecayTimer: 0,
@@ -36,7 +37,8 @@ class GearPassives {
             wasDashing: false,
             sonicDashHitSet: null
         };
-        player.aegisBarrier = this.has('blessed_shield') ? 30 : 0;
+        if (typeof GearPassiveHandlersExt !== 'undefined') GearPassiveHandlersExt.initState(player._gearPassiveState);
+        player.aegisBarrier = this.has('omega_aegis_barrier') ? 70 : (this.has('blessed_shield') ? 30 : 0);
     }
 
     static _ensureState(player) {
@@ -51,12 +53,14 @@ class GearPassives {
     }
 
     static isSlowImmune() {
-        return this.has('sure_footed');
+        return this.has('sure_footed') || this.has('eclipse_phase_step') || (typeof GearPassiveHandlersExt !== 'undefined' && GearPassiveHandlersExt.isSlowImmune());
     }
 
     static getSpeedMultiplier(player) {
         const s = player && player._gearPassiveState;
-        return (s && s.shockAbsorberTimer > 0) ? 1.25 : 1.0;
+        let m = (s && s.shockAbsorberTimer > 0) ? 1.25 : 1.0;
+        if (typeof GearPassiveHandlersExt !== 'undefined') m *= GearPassiveHandlersExt.getSpeedBonusMult(player);
+        return m;
     }
 
     static getFireRateMultiplier(player) {
@@ -64,23 +68,32 @@ class GearPassives {
         if (!s) return 1.0;
         let mult = 1.0;
         if (s.steadyRhythmTimer > 0) mult *= 1.12;
+        if (s.ruinBuffTimer > 0) mult *= 1.12;
         if (this.has('throttle_grip') && s.throttleStacks > 0) {
             mult *= (1 + s.throttleStacks * 0.02);
         }
+        if (typeof GearPassiveHandlersExt !== 'undefined') mult *= GearPassiveHandlersExt.getFireRateBonusMult(player);
         return mult;
     }
 
     static getCritBonus(player) {
         const s = player && player._gearPassiveState;
-        return (s && s.sonicCritTimer > 0) ? 0.20 : 0;
+        if (!s) return 0;
+        const extCrit = (typeof GearPassiveHandlersExt !== 'undefined') ? GearPassiveHandlersExt.getCritBonus(player) : 0;
+        return (s.sonicCritTimer > 0 ? 0.20 : 0) + (s.ruinBuffTimer > 0 ? 0.22 : 0) + extCrit;
     }
 
     static getDamageMultiplier(player, targetEnemy, isCrit = false) {
         let mult = 1.0;
         const isBossOrElite = this._isBossOrElite(targetEnemy);
         if (isCrit && isBossOrElite && this.has('sharp_focus')) mult *= 1.15;
-        if (targetEnemy && (targetEnemy.isBoss || targetEnemy.isMiniBoss) && this.has('charcoal_aura')) {
-            mult *= 1.15;
+        if (isCrit && isBossOrElite && this.has('sovereign_execution')) mult *= 1.22;
+        if (targetEnemy && (targetEnemy.isBoss || targetEnemy.isMiniBoss)) {
+            if (this.has('charcoal_aura')) mult *= 1.15;
+            if (this.has('omega_aegis_barrier')) mult *= 1.18;
+        }
+        if (typeof GearPassiveHandlersExt !== 'undefined') {
+            mult *= GearPassiveHandlersExt.getDamageMult(player, targetEnemy, isCrit, isBossOrElite);
         }
         return mult;
     }
@@ -101,7 +114,9 @@ class GearPassives {
         // Decay timed buffs
         if (s.steadyRhythmTimer > 0) s.steadyRhythmTimer = Math.max(0, s.steadyRhythmTimer - dt);
         if (s.sonicCritTimer > 0) s.sonicCritTimer = Math.max(0, s.sonicCritTimer - dt);
+        if (s.ruinBuffTimer > 0) s.ruinBuffTimer = Math.max(0, s.ruinBuffTimer - dt);
         if (s.shockAbsorberTimer > 0) s.shockAbsorberTimer = Math.max(0, s.shockAbsorberTimer - dt);
+        if (typeof GearPassiveHandlersExt !== 'undefined') GearPassiveHandlersExt.updateTimers(dt, s);
         if (s.throttleDecayTimer > 0) {
             s.throttleDecayTimer -= dt;
             if (s.throttleDecayTimer <= 0) s.throttleStacks = 0;
@@ -117,24 +132,27 @@ class GearPassives {
             }
         }
 
-        // Stormborn Aegis (45 HP / 10s, or Awakened ★ 75 HP / 8s) or Blessed Shield (30 HP / 12s)
+        // Omega Eclipse (70 HP / 8s), Stormborn Aegis (45 HP / 10s, or Awakened 75 HP / 8s), Chronos (50 HP / 10s), or Blessed Shield (30 HP / 12s)
+        const hasOmegaBarrier = this.has('omega_aegis_barrier');
         const hasStormBarrier = this.has('stormborn_aegis');
         const awakenedStorm = hasStormBarrier && this.isAwakenedStormborn();
         const hasBlessedBarrier = this.has('blessed_shield');
-        if (hasStormBarrier || hasBlessedBarrier) {
-            const barrierCap = awakenedStorm ? 75 : (hasStormBarrier ? 45 : 30);
-            const barrierPeriod = awakenedStorm ? 480 : (hasStormBarrier ? 600 : 720);
+        const extBarrier = (typeof GearPassiveHandlersExt !== 'undefined') ? GearPassiveHandlersExt.getBarrierSpec() : null;
+        if (hasOmegaBarrier || hasStormBarrier || hasBlessedBarrier || extBarrier) {
+            const barrierCap = awakenedStorm ? 75 : (hasOmegaBarrier ? 70 : (extBarrier ? extBarrier.cap : (hasStormBarrier ? 45 : 30)));
+            const barrierPeriod = (awakenedStorm || hasOmegaBarrier) ? 480 : ((hasStormBarrier || extBarrier) ? 600 : 720);
             if ((player.aegisBarrier || 0) < barrierCap) {
                 s.aegisShieldTimer += dt;
                 if (s.aegisShieldTimer >= barrierPeriod) {
                     s.aegisShieldTimer = 0;
                     player.aegisBarrier = barrierCap;
                     if (effects) {
-                        const rCol = awakenedStorm ? 'rgba(251, 191, 36, 0.9)' : (hasStormBarrier ? 'rgba(0, 245, 255, 0.85)' : 'rgba(243, 156, 18, 0.75)');
-                        const rMsg = awakenedStorm ? '⚡ AWAKENED BARRIER +75!' : (hasStormBarrier ? '⚡ STORM BARRIER +45!' : '🛡️ AEGIS +30!');
-                        effects.addShockwave(player.x, player.y, awakenedStorm ? 98 : (hasStormBarrier ? 85 : 70), rCol);
+                        const rCol = hasOmegaBarrier ? 'rgba(255, 46, 76, 0.92)' : (awakenedStorm ? 'rgba(251, 191, 36, 0.9)' : (extBarrier ? extBarrier.col : (hasStormBarrier ? 'rgba(0, 245, 255, 0.85)' : 'rgba(243, 156, 18, 0.75)')));
+                        const rRad = hasOmegaBarrier ? 106 : (awakenedStorm ? 98 : (extBarrier ? extBarrier.rad : (hasStormBarrier ? 85 : 70)));
+                        const rMsg = hasOmegaBarrier ? '♦️ OMEGA BARRIER +70!' : (awakenedStorm ? '⚡ AWAKENED BARRIER +75!' : (extBarrier ? extBarrier.msg : (hasStormBarrier ? '⚡ STORM BARRIER +45!' : '🛡️ AEGIS +30!')));
+                        effects.addShockwave(player.x, player.y, rRad, rCol);
                         effects.addComicSplash(player.x, player.y - 36, rMsg);
-                        if (typeof CoopCombatFx !== 'undefined') CoopCombatFx.relayRing(player, awakenedStorm ? 98 : (hasStormBarrier ? 85 : 70), rCol, rMsg);
+                        if (typeof CoopCombatFx !== 'undefined') CoopCombatFx.relayRing(player, rRad, rCol, rMsg);
                     }
                 }
             }
@@ -142,32 +160,45 @@ class GearPassives {
             player.aegisBarrier = 0;
         }
 
-        // Untouchable Stride: dash recharges 25% faster while moving
-        if (this.has('untouchable_stride') && player.isMoving && player.dashCooldown > 0) {
-            player.dashCooldown = Math.max(0, player.dashCooldown - 0.25 * dt);
+        // Faster dash recharge while moving
+        const extDashRate = (typeof GearPassiveHandlersExt !== 'undefined') ? GearPassiveHandlersExt.getMoveDashRate() : 0;
+        const moveDashRate = Math.max(this.has('eclipse_phase_step') ? 0.30 : (this.has('untouchable_stride') ? 0.25 : 0), extDashRate);
+        if (moveDashRate > 0 && player.isMoving && player.dashCooldown > 0) {
+            player.dashCooldown = Math.max(0, player.dashCooldown - moveDashRate * dt);
         }
 
-        // Sonic Slipstream: deal damage while dashing through enemies
-        if (player.isDashing && this.has('sonic_slipstream') && enemies.length > 0) {
+        // Sonic Slipstream / Ruin Slipstream: deal damage while dashing through enemies
+        const hasRuinSlip = this.has('ruin_slipstream');
+        const hasSonicSlip = this.has('sonic_slipstream');
+        if (player.isDashing && (hasRuinSlip || hasSonicSlip) && enemies.length > 0) {
             if (!s.sonicDashHitSet) s.sonicDashHitSet = new Set();
-            const slipDmg = Math.round(35 * (player.damageMultiplier || 1));
-            const reach = (player.radius || 22) + 18;
+            const slipDmg = Math.round((hasRuinSlip ? 55 : 35) * (player.damageMultiplier || 1));
+            const slipCol = hasRuinSlip ? '#ff2e4c' : '#fed330';
+            const reach = (player.radius || 22) + (hasRuinSlip ? 26 : 18);
             const visitSlip = (e) => {
                 if (!e || e.dead || e.isDying || s.sonicDashHitSet.has(e)) return;
                 if (Math.hypot(e.x - player.x, e.y - player.y) <= reach + (e.radius || 22)) {
                     s.sonicDashHitSet.add(e);
                     if (typeof e.takeDamage === 'function') e.takeDamage(slipDmg, effects, false);
-                    if (effects) effects.addSparks(e.x, e.y, '#fed330', 6);
+                    if (effects) effects.addSparks(e.x, e.y, slipCol, 6);
                 }
             };
             if (typeof SpatialHashGrid !== 'undefined') SpatialHashGrid.forEachEnemyNear(player.x, player.y, reach, enemies, visitSlip);
             else for (let i = 0; i < enemies.length; i++) visitSlip(enemies[i]);
         }
 
-        // Seismic Step: landing a dash triggers quake stomp stunning enemies for 0.8s
-        if (s.wasDashing && !player.isDashing && this.has('seismic_step')) {
-            this._triggerRadialStomp(player, enemies, effects, 160, 32 * (player.damageMultiplier || 1), 48, '🥾 SEISMIC STEP!', '#e67e22');
-            if (typeof CoopCombatFx !== 'undefined') CoopCombatFx.relayRing(player, 160, '#e67e22', '🥾 SEISMIC STEP!');
+        if (s.wasDashing && !player.isDashing) {
+            if (this.has('eclipse_phase_step') || this.has('seismic_step')) {
+                const isEclipse = this.has('eclipse_phase_step');
+                const stompRad = isEclipse ? 180 : 160;
+                const stompDmg = (isEclipse ? 48 : 32) * (player.damageMultiplier || 1);
+                const stompStun = isEclipse ? 54 : 48;
+                const stompLbl = isEclipse ? '🌑 ECLIPSE QUAKE!' : '🥾 SEISMIC STEP!';
+                const stompCol = isEclipse ? '#ff2e4c' : '#e67e22';
+                this._triggerRadialStomp(player, enemies, effects, stompRad, stompDmg, stompStun, stompLbl, stompCol);
+                if (typeof CoopCombatFx !== 'undefined') CoopCombatFx.relayRing(player, stompRad, stompCol, stompLbl);
+            }
+            if (typeof GearPassiveHandlersExt !== 'undefined') GearPassiveHandlersExt.onDashLand(player, effects, game);
         }
         s.wasDashing = !!player.isDashing;
 
@@ -209,11 +240,22 @@ class GearPassives {
             s.sonicCritTimer = 90;
             if (effects) effects.addComicSplash(player.x, player.y - 54, '⚡ +20% CRIT!');
         }
+        if (this.has('ruin_slipstream')) {
+            s.ruinBuffTimer = 120;
+            const g = typeof window !== 'undefined' ? window.gameInstance : null;
+            if (g && Array.isArray(g.drops)) {
+                for (let i = 0; i < g.drops.length; i++) {
+                    if (Math.hypot(g.drops[i].x - player.x, g.drops[i].y - player.y) <= 340) g.drops[i].magnetized = true;
+                }
+            }
+            if (effects) effects.addComicSplash(player.x, player.y - 56, '♦️ RUIN SLIPSTREAM!');
+        }
         if (this.has('double_sixes') && s.dashCount % 6 === 0) {
             const game = typeof window !== 'undefined' ? window.gameInstance : null;
             this._triggerRadialStomp(player, game ? game.enemies : [], effects, 165, 30 * (player.damageMultiplier || 1), 50, '🎲 DOUBLE SIXES!', '#9b59b6');
             if (typeof CoopCombatFx !== 'undefined') CoopCombatFx.relayRing(player, 165, '#9b59b6', '🎲 DOUBLE SIXES!');
         }
+        if (typeof GearPassiveHandlersExt !== 'undefined') GearPassiveHandlersExt.onDash(player, s, effects);
     }
 
     static onShoot(player, bullets, effects) {
@@ -238,18 +280,29 @@ class GearPassives {
             lead.damage = Math.round((lead.damage || 25) * 1.35);
             if (effects) effects.addComicSplash(player.x, player.y - 36, '🧤 TOO HOT!');
         }
+        if (this.has('pylon_overload') && s.shotCount % 6 === 0) {
+            const lead = bullets[0];
+            lead.isPylonOvercharge = true;
+            lead.radius = Math.round((lead.radius || 8) * 1.55);
+            lead.pierce = (lead.pierce || 1) + 1;
+            lead.damage = Math.round((lead.damage || 25) * 1.45);
+            if (effects) effects.addComicSplash(player.x, player.y - 38, '🔺 OVERCHARGE!');
+        }
+        if (typeof GearPassiveHandlersExt !== 'undefined') GearPassiveHandlersExt.onShoot(player, s, bullets, effects);
     }
 
     static tryAvoidHit(player, effects) {
         const s = this._ensureState(player);
-        if (this.has('untouchable_stride') && player.isMoving && Math.random() < 0.15) {
+        const dodgeChance = this.has('eclipse_phase_step') ? 0.18 : (this.has('untouchable_stride') ? 0.15 : 0);
+        if (dodgeChance > 0 && player.isMoving && Math.random() < dodgeChance) {
             player.invulnerableTimer = 18;
             if (effects) {
-                effects.addComicSplash(player.x, player.y - 25, '🪽 DODGED!');
-                effects.addSparks(player.x, player.y, '#fed330', 6);
+                effects.addComicSplash(player.x, player.y - 25, this.has('eclipse_phase_step') ? '🌑 ECLIPSE DODGE!' : '🪽 DODGED!');
+                effects.addSparks(player.x, player.y, this.has('eclipse_phase_step') ? '#ff2e4c' : '#fed330', 6);
             }
             return true;
         }
+        if (typeof GearPassiveHandlersExt !== 'undefined' && GearPassiveHandlersExt.tryAvoidHit(player, effects)) return true;
         if (this.has('evil_eye_ward') && s.evilEyeReady) {
             s.evilEyeReady = false;
             s.evilEyeTimer = 0;
@@ -275,14 +328,15 @@ class GearPassives {
 
     static tryPreventFatalHit(player, effects) {
         const s = this._ensureState(player);
-        if (this.has('blessed_shield') && !s.aegisFatalUsed && player.hp <= 0) {
+        const hasOmegaSave = this.has('omega_aegis_barrier');
+        if ((hasOmegaSave || this.has('blessed_shield')) && !s.aegisFatalUsed && player.hp <= 0) {
             s.aegisFatalUsed = true;
             player.hp = 1;
             player.invulnerableTimer = 120;
             if (effects) {
-                effects.addComicSplash(player.x, player.y - 40, '🛡️ AEGIS REVIVE!');
-                effects.addShockwave(player.x, player.y, 145, 'rgba(243, 156, 18, 0.95)');
-                effects.addSparks(player.x, player.y, '#fed330', 14);
+                effects.addComicSplash(player.x, player.y - 40, hasOmegaSave ? '♦️ OMEGA REVIVE!' : '🛡️ AEGIS REVIVE!');
+                effects.addShockwave(player.x, player.y, 165, hasOmegaSave ? 'rgba(255, 46, 76, 0.95)' : 'rgba(243, 156, 18, 0.95)');
+                effects.addSparks(player.x, player.y, hasOmegaSave ? '#ff2e4c' : '#fed330', 14);
             }
             return true;
         }
@@ -294,6 +348,9 @@ class GearPassives {
         if (this.has('shock_absorber')) {
             s.shockAbsorberTimer = 120;
             if (effects) effects.addComicSplash(player.x, player.y - 34, '⚡ +25% SPEED!');
+        }
+        if (this.has('omega_aegis_barrier')) {
+            this._triggerRadialStomp(player, game ? game.enemies : [], effects, 225, 95 * (player.damageMultiplier || 1), 45, '♦️ OMEGA ECLIPSE BLAST!', '#ff2e4c');
         }
         if (this.has('stormborn_aegis')) {
             const awakened = this.isAwakenedStormborn();
@@ -327,77 +384,110 @@ class GearPassives {
                 effects.addComicSplash(player.x, player.y - 46, '🔥 HOT COALS!');
             }
         }
+        if (typeof GearPassiveHandlersExt !== 'undefined') GearPassiveHandlersExt.onPlayerDamaged(player, effects, game);
     }
 
     static onBulletHit(bullet, targetEnemy, damageDealt, enemies, effects, game) {
         if (!bullet || !targetEnemy) return;
         const player = game ? game.player : bullet.shooter;
 
-        // Bolt of Criticism: 20% chance on crit to lightning bolt target
-        if (bullet.isCrit && this.has('bolt_of_criticism') && Math.random() < 0.20) {
-            const boltDmg = Math.max(8, Math.round(damageDealt * 0.35));
-            if (typeof targetEnemy.takeDamage === 'function') targetEnemy.takeDamage(boltDmg, effects, false);
-            if (game && game.isCoopGuest) targetEnemy.dead = false;
-            if (effects) {
-                effects.addLightningChain(player ? player.x : targetEnemy.x, (player ? player.y : targetEnemy.y) - 40, targetEnemy.x, targetEnemy.y, '#f39c12');
-                effects.addComicSplash(targetEnemy.x, targetEnemy.y - 32, '👑 CRIT BOLT!');
-            }
-            if (typeof CoopCombatFx !== 'undefined') CoopCombatFx.relayChain(bullet.shooter, player ? player.x : targetEnemy.x, (player ? player.y : targetEnemy.y) - 40, targetEnemy.x, targetEnemy.y, '#f39c12');
+        // Sovereign Execution / Bolt of Criticism: crit lightning smite
+        if (bullet.isCrit && this.has('sovereign_execution') && Math.random() < 0.22) {
+            this._strikeCritSmite(bullet, targetEnemy, player, Math.max(12, Math.round(damageDealt * 0.42)), '#ff2e4c', '👑 EXECUTION SMITE!', effects, game);
+        } else if (bullet.isCrit && this.has('bolt_of_criticism') && Math.random() < 0.20) {
+            this._strikeCritSmite(bullet, targetEnemy, player, Math.max(8, Math.round(damageDealt * 0.35)), '#f39c12', '👑 CRIT BOLT!', effects, game);
         }
 
-        // Chain Shock: 15% chance on hit to arc lightning to 2 nearby enemies for 40% dmg
-        if (this.has('chain_shock') && Array.isArray(enemies) && Math.random() < 0.15) {
-            let lastX = targetEnemy.x, lastY = targetEnemy.y, jumps = 0;
-            const visited = new Set([targetEnemy]);
-            for (let step = 0; step < 2; step++) {
-                let best = null, bestSq = 240 * 240;
-                const pick = (cand) => {
-                    if (!cand || cand.dead || cand.isDying || cand.isAirborneImmune || visited.has(cand)) return;
-                    const dSq = (cand.x - lastX) ** 2 + (cand.y - lastY) ** 2;
-                    if (dSq < bestSq) { bestSq = dSq; best = cand; }
-                };
-                if (typeof SpatialHashGrid !== 'undefined') SpatialHashGrid.forEachEnemyNear(lastX, lastY, 240, enemies, pick);
-                else for (let i = 0; i < enemies.length; i++) pick(enemies[i]);
-                if (!best) break;
-                visited.add(best);
-                jumps++;
-                if (typeof best.takeDamage === 'function') best.takeDamage(Math.max(4, Math.round(damageDealt * 0.40)), effects, false);
-                if (game && game.isCoopGuest) best.dead = false;
-                if (effects) effects.addLightningChain(lastX, lastY, best.x, best.y, '#feca57');
-                if (typeof CoopCombatFx !== 'undefined') CoopCombatFx.relayChain(bullet.shooter, lastX, lastY, best.x, best.y, '#feca57');
-                lastX = best.x; lastY = best.y;
+        // Pylon Overload / Chain Shock: arc lightning to 2 nearby enemies
+        if (Array.isArray(enemies)) {
+            if (this.has('pylon_overload') && Math.random() < 0.18) {
+                this._arcChainLightning(bullet, targetEnemy, Math.max(6, Math.round(damageDealt * 0.48)), '#ff2e4c', '🔺 PYLON ARC!', enemies, effects, game);
+            } else if (this.has('chain_shock') && Math.random() < 0.15) {
+                this._arcChainLightning(bullet, targetEnemy, Math.max(4, Math.round(damageDealt * 0.40)), '#feca57', '⚡ CHAIN SHOCK!', enemies, effects, game);
             }
-            if (jumps > 0 && effects) effects.addComicSplash(targetEnemy.x, targetEnemy.y - 26, '⚡ CHAIN SHOCK!');
         }
 
-        // Too Hot to Handle: oversized explosive 8th shot AoE
-        if (bullet.isExplosiveMitts && Array.isArray(enemies)) {
-            const blastDmg = Math.max(10, Math.round(damageDealt * 0.50));
-            const visitMitts = (e) => {
-                if (!e || e.dead || e.isDying || e.isAirborneImmune || e === targetEnemy) return;
-                if (Math.hypot(e.x - bullet.x, e.y - bullet.y) <= 95 + (e.radius || 20)) {
-                    if (typeof e.takeDamage === 'function') e.takeDamage(blastDmg, effects, false);
-                    if (game && game.isCoopGuest) e.dead = false;
-                }
+        // Too Hot to Handle / Pylon Overload explosive overcharge AoE
+        if (Array.isArray(enemies) && (bullet.isPylonOvercharge || bullet.isExplosiveMitts)) {
+            const isOvercharge = !!bullet.isPylonOvercharge;
+            this._triggerBulletBlast(bullet, targetEnemy, Math.max(12, Math.round(damageDealt * (isOvercharge ? 0.58 : 0.50))), isOvercharge ? 110 : 95, isOvercharge ? '#ff2e4c' : '#ff9f43', enemies, effects, game);
+        }
+        if (typeof GearPassiveHandlersExt !== 'undefined' && player) {
+            GearPassiveHandlersExt.onBulletHit(bullet, targetEnemy, damageDealt, enemies, player, this._ensureState(player), effects, game);
+        }
+    }
+
+    static _strikeCritSmite(bullet, targetEnemy, player, dmg, color, label, effects, game) {
+        if (typeof targetEnemy.takeDamage === 'function') targetEnemy.takeDamage(dmg, effects, false);
+        if (game && game.isCoopGuest) targetEnemy.dead = false;
+        const sx = player ? player.x : targetEnemy.x, sy = (player ? player.y : targetEnemy.y) - 40;
+        if (effects) {
+            effects.addLightningChain(sx, sy, targetEnemy.x, targetEnemy.y, color);
+            effects.addComicSplash(targetEnemy.x, targetEnemy.y - 32, label);
+        }
+        if (typeof CoopCombatFx !== 'undefined') CoopCombatFx.relayChain(bullet.shooter, sx, sy, targetEnemy.x, targetEnemy.y, color);
+    }
+
+    static _arcChainLightning(bullet, targetEnemy, jumpDmg, color, label, enemies, effects, game) {
+        let lastX = targetEnemy.x, lastY = targetEnemy.y, jumps = 0;
+        const visited = new Set([targetEnemy]);
+        for (let step = 0; step < 2; step++) {
+            let best = null, bestSq = 250 * 250;
+            const pick = (cand) => {
+                if (!cand || cand.dead || cand.isDying || cand.isAirborneImmune || visited.has(cand)) return;
+                const dSq = (cand.x - lastX) ** 2 + (cand.y - lastY) ** 2;
+                if (dSq < bestSq) { bestSq = dSq; best = cand; }
             };
-            if (typeof SpatialHashGrid !== 'undefined') SpatialHashGrid.forEachEnemyNear(bullet.x, bullet.y, 95, enemies, visitMitts);
-            else for (let i = 0; i < enemies.length; i++) visitMitts(enemies[i]);
-            if (effects) {
-                effects.addShockwave(bullet.x, bullet.y, 95, 'rgba(255, 159, 67, 0.9)');
-                effects.addSparks(bullet.x, bullet.y, '#ff9f43', 10);
+            if (typeof SpatialHashGrid !== 'undefined') SpatialHashGrid.forEachEnemyNear(lastX, lastY, 250, enemies, pick);
+            else for (let i = 0; i < enemies.length; i++) pick(enemies[i]);
+            if (!best) break;
+            visited.add(best);
+            jumps++;
+            if (typeof best.takeDamage === 'function') best.takeDamage(jumpDmg, effects, false);
+            if (game && game.isCoopGuest) best.dead = false;
+            if (effects) effects.addLightningChain(lastX, lastY, best.x, best.y, color);
+            if (typeof CoopCombatFx !== 'undefined') CoopCombatFx.relayChain(bullet.shooter, lastX, lastY, best.x, best.y, color);
+            lastX = best.x; lastY = best.y;
+        }
+        if (jumps > 0 && effects) effects.addComicSplash(targetEnemy.x, targetEnemy.y - 26, label);
+    }
+
+    static _triggerBulletBlast(bullet, targetEnemy, blastDmg, rad, color, enemies, effects, game) {
+        const visitBlast = (e) => {
+            if (!e || e.dead || e.isDying || e.isAirborneImmune || e === targetEnemy) return;
+            if (Math.hypot(e.x - bullet.x, e.y - bullet.y) <= rad + (e.radius || 20)) {
+                if (typeof e.takeDamage === 'function') e.takeDamage(blastDmg, effects, false);
+                if (game && game.isCoopGuest) e.dead = false;
             }
+        };
+        if (typeof SpatialHashGrid !== 'undefined') SpatialHashGrid.forEachEnemyNear(bullet.x, bullet.y, rad, enemies, visitBlast);
+        else for (let i = 0; i < enemies.length; i++) visitBlast(enemies[i]);
+        if (effects) {
+            effects.addShockwave(bullet.x, bullet.y, rad, color);
+            effects.addSparks(bullet.x, bullet.y, color, 10);
         }
     }
 
     static onEnemyKilled(player, enemy, game) {
-        if (!player || !this.has('encore')) return;
+        if (!player) return;
         const s = this._ensureState(player);
+        if (typeof GearPassiveHandlersExt !== 'undefined') GearPassiveHandlersExt.onEnemyKilled(player, s, game);
+        const hasExec = this.has('sovereign_execution');
+        const hasEncore = this.has('encore');
+        if (!hasExec && !hasEncore) return;
         s.killCount = (s.killCount || 0) + 1;
         if (s.killCount % 15 === 0) {
-            player.heal(4);
+            player.heal(hasExec ? 6 : 4);
             const effects = game ? game.effects : null;
             const enemies = game ? game.enemies : [];
-            this._triggerRadialStomp(player, enemies, effects, 165, 45 * (player.damageMultiplier || 1), 0, '🎩 ENCORE +4 HP!', '#f39c12');
+            this._triggerRadialStomp(
+                player, enemies, effects,
+                hasExec ? 185 : 165,
+                (hasExec ? 75 : 45) * (player.damageMultiplier || 1),
+                0,
+                hasExec ? '👑 SOVEREIGN EXECUTION +6 HP!' : '🎩 ENCORE +4 HP!',
+                hasExec ? '#ff2e4c' : '#f39c12'
+            );
         }
     }
 

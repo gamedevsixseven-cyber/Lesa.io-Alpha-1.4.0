@@ -16,7 +16,10 @@ class HeroArmorRenderer {
         mat_riot_vest: { preserveSleeve: true, cuffColor: '#0f172a', cuffStripeColor: '#00f5ff' },
         aegis_jacket: { sleeveColor: '#163876', sleevePanelColor: '#facc15', sleeveStripeColor: '#fef08a', cuffColor: '#d97706', cuffStripeColor: '#fef08a' },
         grandmaster_cuirass: { sleeveColor: '#30323b', sleevePanelColor: '#4c4f5c', sleeveStripeColor: '#facc15', cuffColor: '#ca8a04', cuffStripeColor: '#ff6b1a' },
-        zeus_aegis_cuirass: { sleeveColor: '#1e3a8a', sleevePanelColor: '#fbbf24', sleeveStripeColor: '#7dd3fc', cuffColor: '#f59e0b', cuffStripeColor: '#00f5ff' }
+        zeus_aegis_cuirass: { sleeveColor: '#1e3a8a', sleevePanelColor: '#fbbf24', sleeveStripeColor: '#7dd3fc', cuffColor: '#f59e0b', cuffStripeColor: '#00f5ff' },
+        apex_omega_mantle: { sleeveColor: '#1b1d26', sleevePanelColor: '#7f1d1d', sleeveStripeColor: '#fde047', cuffColor: '#f59e0b', cuffStripeColor: '#ff2e4c' },
+        mythic_chronos_cuirass: { sleeveColor: '#1e293b', sleevePanelColor: '#991b1b', sleeveStripeColor: '#f59e0b', cuffColor: '#f59e0b', cuffStripeColor: '#38bdf8' },
+        mythic_poseidon_plate: { sleeveColor: '#0369a1', sleevePanelColor: '#0f766e', sleeveStripeColor: '#fde047', cuffColor: '#f59e0b', cuffStripeColor: '#22d3ee' }
     };
 
     static getEquippedArmorId(player) {
@@ -44,7 +47,7 @@ class HeroArmorRenderer {
         if (player && player.armorEvolved !== undefined) return !!player.armorEvolved;
         return !!(typeof GearUpgradeManager !== 'undefined' &&
             ((typeof GearUpgradeManager.isEvolved === 'function' && GearUpgradeManager.isEvolved(armorId)) ||
-             (typeof GearUpgradeManager.isAscended === 'function' && GearUpgradeManager.isAscended(armorId))));
+                (typeof GearUpgradeManager.isAscended === 'function' && GearUpgradeManager.isAscended(armorId))));
     }
 
     static getArmOverride(player, arm, flash) {

@@ -16,8 +16,9 @@ class WaveManager {
         this.dungeonManager = null;
     }
 
-    reset(gameMode = 'story') {
+    reset(gameMode = 'story', options = {}) {
         this.gameMode = gameMode;
+        this.isEndlessHard = (gameMode === 'endless') && !!(options && options.isEndlessHard);
         this.wave = 1;
         this.waveTotalEnemies = 0;
         this.waveEnemiesKilled = 0;

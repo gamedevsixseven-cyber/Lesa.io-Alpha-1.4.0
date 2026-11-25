@@ -329,6 +329,7 @@ class SaveMigration {
             this._repairJsonKey('lesaio_evolved_gear', 'array', p.evolvedGear, []);
             this._repairJsonKey('lesaio_ascended_gear', 'array', p.ascendedGear, []);
             this._repairJsonKey('lesaio_evolved_weapons', 'array', p.evolvedWeapons, []);
+            this._repairJsonKey('lesaio_celestial_trees', 'object', p.celestialTrees, {});
             this._repairJsonKey('lesaio_star_blessed_heroes', 'array', p.starBlessedHeroes, []);
             this._repairJsonKey('lesaio_hero_plays', 'object', s.heroPlays, { psanas: 0, psogas: 0, petros: 0 });
             this._repairJsonKey('lesaio_battle_pass_s1', 'object', p.battlePass, undefined);
@@ -485,6 +486,7 @@ class SaveMigration {
             evolvedGear: this._unionArr(pp.evolvedGear, bp.evolvedGear),
             ascendedGear: this._unionArr(pp.ascendedGear, bp.ascendedGear),
             evolvedWeapons: this._unionArr(pp.evolvedWeapons, bp.evolvedWeapons),
+            celestialTrees: (typeof CelestialSkillTreeManager !== 'undefined') ? CelestialSkillTreeManager.mergeMaps(pp.celestialTrees, bp.celestialTrees) : (pp.celestialTrees || bp.celestialTrees || {}),
             starBlessedHeroes: this._unionArr(pp.starBlessedHeroes, bp.starBlessedHeroes),
             skillLevels: this._maxObj(pp.skillLevels, bp.skillLevels, 1),
             upgrades: this._maxObj(pp.upgrades, bp.upgrades, 0),

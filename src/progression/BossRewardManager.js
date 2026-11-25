@@ -26,8 +26,49 @@ class BossRewardManager {
         mecha_kolossos: {
             bossName: 'Endless Wave 40: Kolossos MK-IV',
             items: [{ category: 'weapon', id: 'helios_cannon' }]
+        },
+        apex_sovereign_w30: {
+            bossName: 'Hard Endless Wave 30: Aethelgard, Sovereign of Ruin',
+            items: [
+                { category: 'gear', id: 'apex_ruin_cord' },
+                { category: 'gear', id: 'apex_rift_gauntlets' }
+            ]
+        },
+        apex_omega_w60: {
+            bossName: 'Hard Endless Wave 60: Erebus, Sovereign of the End',
+            items: [
+                { category: 'gear', id: 'apex_omega_mantle' },
+                { category: 'gear', id: 'apex_omega_crown' },
+                { category: 'gear', id: 'apex_eclipse_greaves' }
+            ]
         }
     };
+
+    /**
+     * Dispatch first-time Hard/Standard Endless boss weapon & Apex gear rewards cleanly.
+     */
+    static handleEndlessBossDrop(enemy, game) {
+        if (!enemy || !game || game.isCoopGuest) return { queued: [] };
+        const bossType = enemy.type;
+        if (!this.BOSS_DROP_BUNDLES[bossType]) return { queued: [] };
+        const q = this.queueBossDrops(bossType, {
+            effects: game.effects,
+            x: enemy.x,
+            y: enemy.y,
+            game,
+            bossName: enemy.name
+        });
+        if (q.queued.length > 0 && game.ui && typeof game.ui.addKillfeed === 'function') {
+            if (bossType === 'mecha_kolossos') {
+                game.ui.addKillfeed('☀️ Boss Drop: Helios Omega Cannon (Claim in Menu)!');
+            } else if (bossType === 'apex_sovereign_w30') {
+                game.ui.addKillfeed('♦️ W30 Apex Drop: Sovereign War-Cord & Pylon Rift Gauntlets (Claim in Menu)!');
+            } else if (bossType === 'apex_omega_w60') {
+                game.ui.addKillfeed('👑 W60 Final Apex Drops: Mantle of the End, Crown of Oblivion & Eclipse Greaves!');
+            }
+        }
+        return q;
+    }
 
     static getPending() {
         if (typeof localStorage === 'undefined') return [];
@@ -177,8 +218,13 @@ class BossRewardManager {
                 if (g.stats.maxHp) lines.push({ label: 'Max HP', val: `+${g.stats.maxHp}` });
                 if (g.stats.damageReduction) lines.push({ label: 'DEF', val: `+${g.stats.damageReduction}%` });
                 if (g.stats.bulletDamage) lines.push({ label: 'Bullet DMG', val: `+${g.stats.bulletDamage}%` });
+                if (g.stats.fireRate) lines.push({ label: 'Fire Rate', val: `+${g.stats.fireRate}%` });
+                if (g.stats.critChance) lines.push({ label: 'Crit Chance', val: `+${g.stats.critChance}%` });
+                if (g.stats.critDamage) lines.push({ label: 'Crit DMG', val: `+${g.stats.critDamage}%` });
+                if (g.stats.dashCooldown) lines.push({ label: 'Dash CD', val: `-${g.stats.dashCooldown}%` });
                 if (g.stats.speed) lines.push({ label: 'Move Speed', val: `+${g.stats.speed}%` });
             }
+            const defaultRarityDesc = (g.rarity === 'apex') ? 'Apex Boss Gear' : 'Mythic Boss Gear';
             return {
                 category,
                 id,
@@ -186,7 +232,7 @@ class BossRewardManager {
                 name: g.name || id,
                 rarity: g.rarity ? (g.rarity.charAt(0).toUpperCase() + g.rarity.slice(1)) : 'Mythic',
                 iconImg: g.iconImg || 'assets/GearUIIcons/ARMOR.png',
-                desc: g.passive ? `${g.passive.name}: ${g.passive.desc}` : (g.desc || 'Mythic Boss Gear'),
+                desc: g.passive ? `${g.passive.name}: ${g.passive.desc}` : (g.desc || defaultRarityDesc),
                 stats: lines
             };
         }

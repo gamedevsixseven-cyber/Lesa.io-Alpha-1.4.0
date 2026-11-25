@@ -100,8 +100,8 @@ class ChestModalUI {
 
         let actionBtnHtml = '';
         if (slot.state === 'LOCKED') {
-            const unlockDurationStr = (typeof manager.formatDuration === 'function') 
-                ? manager.formatDuration(def.unlockTimeSec) 
+            const unlockDurationStr = (typeof manager.formatDuration === 'function')
+                ? manager.formatDuration(def.unlockTimeSec)
                 : manager.formatTime(def.unlockTimeSec);
 
             actionBtnHtml = `
@@ -456,8 +456,8 @@ class ChestModalUI {
             `;
         }
 
-        const remainingText = remainingCount > 0 
-            ? `<div class="cr-remaining-badge">${typeof UiIcons !== 'undefined' ? UiIcons.i('bolt', 'ui-icon-sm') : '⚡'} ${remainingCount} ${remainingCount === 1 ? 'REWARD' : 'REWARDS'} LEFT</div>` 
+        const remainingText = remainingCount > 0
+            ? `<div class="cr-remaining-badge">${typeof UiIcons !== 'undefined' ? UiIcons.i('bolt', 'ui-icon-sm') : '⚡'} ${remainingCount} ${remainingCount === 1 ? 'REWARD' : 'REWARDS'} LEFT</div>`
             : `<div class="cr-remaining-badge" style="background: #2ed573; color: #ffffff;">${typeof UiIcons !== 'undefined' ? `${UiIcons.i('sparkle', 'ui-icon-sm')} LAST REWARD! ${UiIcons.i('sparkle', 'ui-icon-sm')}` : '✨ LAST REWARD! ✨'}</div>`;
 
         bodyEl.innerHTML = `

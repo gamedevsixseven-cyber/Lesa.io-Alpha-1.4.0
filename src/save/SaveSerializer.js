@@ -106,6 +106,7 @@ class SaveSerializer {
                 evolvedGear: (typeof GearUpgradeManager !== 'undefined') ? GearUpgradeManager.getEvolvedList() : Array.from(state.player.evolvedGear || []),
                 ascendedGear: (typeof GearUpgradeManager !== 'undefined') ? GearUpgradeManager.getAscendedList() : Array.from(state.player.ascendedGear || []),
                 evolvedWeapons: (typeof WeaponEvolutionManager !== 'undefined') ? WeaponEvolutionManager.getEvolvedList() : Array.from(state.player.evolvedWeapons || []),
+                celestialTrees: (typeof CelestialSkillTreeManager !== 'undefined') ? CelestialSkillTreeManager.getState() : (state.player.celestialTrees || {}),
                 evolutionStones: (typeof GearUpgradeManager !== 'undefined') ? GearUpgradeManager.getEvolutionStones() : (state.player.evolutionStones || 0),
                 starBlessedHeroes: (typeof HeroStarBlessing !== 'undefined') ? HeroStarBlessing.getBlessedList() : Array.from(state.player.starBlessedHeroes || []),
                 cosmetics: (typeof CosmeticManager !== 'undefined') ? CosmeticManager.getState() : (state.player.cosmetics || null),
@@ -261,7 +262,6 @@ class SaveSerializer {
             state.player.combatFeats = (typeof PerkProgression !== 'undefined')
                 ? PerkProgression.mergeFeats(state.player.combatFeats, p.combatFeats)
                 : { ...(state.player.combatFeats || {}), ...p.combatFeats };
-            if (ls) ls.setItem('lesaio_combat_feats', JSON.stringify(state.player.combatFeats));
         }
         if (p.equippedGear && typeof p.equippedGear === 'object') {
             const curEq = state.player.equippedGear || { helmet: null, armor: null, belt: null, gloves: null, boots: null };
@@ -303,6 +303,14 @@ class SaveSerializer {
             const mergedWepEvo = Array.from(new Set([...(state.player.evolvedWeapons || []), ...p.evolvedWeapons]));
             if (typeof WeaponEvolutionManager !== 'undefined') state.player.evolvedWeapons = WeaponEvolutionManager.setEvolvedList(mergedWepEvo);
             else { state.player.evolvedWeapons = mergedWepEvo; if (ls) ls.setItem('lesaio_evolved_weapons', JSON.stringify(mergedWepEvo)); }
+        }
+        if (p.celestialTrees && typeof p.celestialTrees === 'object' && !Array.isArray(p.celestialTrees)) {
+            if (typeof CelestialSkillTreeManager !== 'undefined') {
+                state.player.celestialTrees = CelestialSkillTreeManager.setState(CelestialSkillTreeManager.mergeMaps(state.player.celestialTrees, p.celestialTrees));
+            } else {
+                state.player.celestialTrees = { ...(state.player.celestialTrees || {}), ...p.celestialTrees };
+                if (ls) ls.setItem('lesaio_celestial_trees', JSON.stringify(state.player.celestialTrees));
+            }
         }
         if (typeof p.evolutionStones === 'number' && Number.isFinite(p.evolutionStones)) {
             const mergedStones = Math.max(state.player.evolutionStones || 0, Math.floor(p.evolutionStones));
@@ -426,6 +434,16 @@ class SaveSerializer {
                 ls.setItem('lesaio_hero_plays', JSON.stringify(cur.heroPlays));
             }
         }
+        const cf = (typeof PerkProgression !== 'undefined')
+            ? PerkProgression.normalizeFeats(state.player.combatFeats || {})
+            : { ...(state.player.combatFeats || {}) };
+        const stMax = (state.player.stats && state.player.stats.maxWave) || 1;
+        const bestE = Math.max(Number(cf.endlessMaxWave) || 0, Number(opts.lbEndlessWave) || 0, Number(socialSrc.endlessMaxWave) || 0, stMax > 20 ? stMax : 0);
+        if (bestE > (cf.endlessMaxWave || 0)) cf.endlessMaxWave = bestE;
+        if (bestE >= 30 || (cf.endlessHardMaxWave || 0) >= 1) { cf.hardEndlessUnlocked = true; if (ls) ls.setItem('lesaio_hard_endless_unlocked', 'true'); }
+        state.player.combatFeats = cf;
+        if (ls) ls.setItem('lesaio_combat_feats', JSON.stringify(cf));
+        if (typeof window !== 'undefined' && window.EventBus) window.EventBus.emit('combatFeatsUpdated', { combatFeats: cf });
     }
 
     /**
@@ -434,7 +452,7 @@ class SaveSerializer {
     static mergeProgressOnly(data, state) {
         if (!data || !data.player || !state || !state.player) return false;
         try {
-            this._applyNonDestructiveProgress(data.player, state, { syncCurrencies: false, syncSelections: false });
+            this._applyNonDestructiveProgress(data.player, state, { syncCurrencies: false, syncSelections: false, lbEndlessWave: data.lbEndlessWave });
             return true;
         } catch (err) {
             console.warn('[SaveSerializer] Non-fatal mergeProgressOnly notice:', err);
@@ -451,7 +469,7 @@ class SaveSerializer {
         if (!data || !data.player || !state) return false;
 
         try {
-            this._applyNonDestructiveProgress(data.player, state, { syncCurrencies: true, syncSelections: true });
+            this._applyNonDestructiveProgress(data.player, state, { syncCurrencies: true, syncSelections: true, lbEndlessWave: data.lbEndlessWave });
 
             if (data.settings) {
                 state.settings.musicVolume = data.settings.musicVolume ?? state.settings.musicVolume;
@@ -508,7 +526,7 @@ class SaveSerializer {
             'unlockedHeroes', 'selectedHero', 'heroStyles', 'selectedWeapon', 'unlockedWeapons',
             'unlockedSkills', 'skillLevels', 'upgrades', 'unlockedPerks', 'equippedPerks',
             'perkRanks', 'combatFeats', 'equippedGear', 'unlockedGear', 'gearLevels',
-            'evolvedGear', 'ascendedGear', 'evolvedWeapons', 'evolutionStones', 'olympianStarStones',
+            'evolvedGear', 'ascendedGear', 'evolvedWeapons', 'celestialTrees', 'evolutionStones', 'olympianStarStones',
             'starBlessedHeroes', 'ascentCrests', 'ascentCrestsDate', 'cosmetics', 'heroSkins',
             'battlePass', 'materials', 'inventory', 'chestSlots', 'dailyFreeSkipDate',
             'pendingBossRewards', 'quests', 'flags'
@@ -534,49 +552,29 @@ class SaveSerializer {
         const statsHigh = Math.max(0, Number(statsObj.highScore) || 0, Number(input.highScore) || 0, ls ? (parseInt(ls.getItem('lesaio_highscore') || '0', 10) || 0) : 0);
         const statsKills = Math.max(0, Number(statsObj.totalKills) || 0, ls ? (parseInt(ls.getItem('lesaio_total_kills') || '0', 10) || 0) : 0);
         const statsWave = Math.max(1, Number(statsObj.maxWave) || 1, Number(input.maxWave) || 1, ls ? (parseInt(ls.getItem('lesaio_max_wave') || '1', 10) || 1) : 1);
-        const endlessWave = Math.max(
-            0,
-            Number((basePlayer.combatFeats && basePlayer.combatFeats.endlessMaxWave) || 0),
-            Number((inputPlayer.combatFeats && inputPlayer.combatFeats.endlessMaxWave) || 0),
-            statsWave > 20 ? statsWave : 0
-        );
+        const endlessWave = Math.max(0, Number((basePlayer.combatFeats && basePlayer.combatFeats.endlessMaxWave) || 0), Number((inputPlayer.combatFeats && inputPlayer.combatFeats.endlessMaxWave) || 0), statsWave > 20 ? statsWave : 0);
         const olympusFloor = Math.max(0, Number((basePlayer.combatFeats && basePlayer.combatFeats.olympusMaxFloor) || 0), Number((inputPlayer.combatFeats && inputPlayer.combatFeats.olympusMaxFloor) || 0));
+        const endlessHardWave = Math.max(0, Number((basePlayer.combatFeats && basePlayer.combatFeats.endlessHardMaxWave) || 0), Number((inputPlayer.combatFeats && inputPlayer.combatFeats.endlessHardMaxWave) || 0));
+
+        const cs = (typeof window !== 'undefined' && window.clanService) ? window.clanService : null;
+        const cObj = cs && cs.currentClan ? cs.currentClan : null;
+        const clanId = cObj ? cObj.id : ((cs && cs.clanId) || (cloudBaseline && cloudBaseline.clanId) || null);
+        const clanTag = cObj ? cObj.tag : ((clanId && cloudBaseline && cloudBaseline.clanTag) || null);
+        const clanName = cObj ? cObj.name : ((clanId && cloudBaseline && cloudBaseline.clanName) || null);
 
         let result = {
-            ...cleanRoot,
-            playerName: pName,
-            playerNameLower: String(pName).toLowerCase(),
-            friendTag: fTag,
-            friendTagClean: fTagClean,
-            coins: pCoins,
-            gold: pCoins,
-            gems: pGems,
-            diamonds: pGems,
-            level: pLevel,
-            xp: pXp,
-            highScore: statsHigh,
-            maxWave: statsWave,
-            lbHighScore: statsHigh,
-            lbEndlessWave: endlessWave,
-            lbTotalKills: statsKills,
-            socialStats: { highScore: statsHigh, maxWave: statsWave, totalKills: statsKills, endlessMaxWave: endlessWave, olympusMaxFloor: olympusFloor },
+            ...cleanRoot, playerName: pName, playerNameLower: String(pName).toLowerCase(),
+            friendTag: fTag, friendTagClean: fTagClean,
+            ...(clanId ? { clanId, clanTag, clanName } : {}),
+            coins: pCoins, gold: pCoins, gems: pGems, diamonds: pGems, level: pLevel, xp: pXp,
+            highScore: statsHigh, maxWave: statsWave, lbHighScore: statsHigh, lbEndlessWave: endlessWave, lbTotalKills: statsKills,
+            socialStats: { highScore: statsHigh, maxWave: statsWave, totalKills: statsKills, endlessMaxWave: endlessWave, endlessHardMaxWave: endlessHardWave, olympusMaxFloor: olympusFloor },
             ...(typeof PlayerLoadoutExtractor !== 'undefined' ? { publicLoadout: PlayerLoadoutExtractor.serializeForPublicCloud() } : {}),
             skillLevels: pSkills,
-            player: {
-                ...basePlayer,
-                ...partialPlayerOverrides,
-                ...inputPlayer,
-                name: pName,
-                coins: pCoins,
-                gold: pCoins,
-                gems: pGems,
-                diamonds: pGems,
-                accountLevel: pLevel,
-                accountXp: pXp,
-                skillLevels: pSkills
-            },
+            player: { ...basePlayer, ...partialPlayerOverrides, ...inputPlayer, name: pName, coins: pCoins, gold: pCoins, gems: pGems, diamonds: pGems, accountLevel: pLevel, accountXp: pXp, skillLevels: pSkills },
             ...(user && user.email && !(typeof PlayerIdentity !== 'undefined' && PlayerIdentity.isGuestUid && PlayerIdentity.isGuestUid(user.uid)) ? { email: user.email } : {})
         };
+        delete result.devGifts;
         if (user && user.uid && typeof PlayerIdentity !== 'undefined' && PlayerIdentity.isGuestUid && PlayerIdentity.isGuestUid(user.uid)) {
             delete result.email;
         }

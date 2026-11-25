@@ -215,6 +215,25 @@ class CombatRenderFX {
                 ctx.beginPath();
                 ctx.arc(pt.x, pt.y, Math.max(2.4, (bullet.radius || 11) * ratio * (bullet.isSingularityCore ? 0.72 : 0.54)), 0, Math.PI * 2);
                 ctx.fill();
+            } else if (type === 'tempest_bow' || type === 'tempest_seeker') {
+                ctx.save();
+                ctx.translate(pt.x, pt.y);
+                ctx.rotate(Math.atan2(bullet.vy, bullet.vx));
+                ctx.fillStyle = type === 'tempest_seeker' ? (i % 2 === 0 ? '#fde047' : '#38bdf8') : (i % 2 === 0 ? '#38bdf8' : '#e0f2fe');
+                ctx.fillRect(-7 * ratio, -1.6 * ratio, 14 * ratio, 3.2 * ratio);
+                ctx.restore();
+            } else if (type === 'void_mortar') {
+                ctx.fillStyle = i % 2 === 0 ? '#9333ea' : '#f0abfc';
+                ctx.beginPath();
+                ctx.arc(pt.x, pt.y, Math.max(2.6, (bullet.radius || 13) * ratio * 0.62), 0, Math.PI * 2);
+                ctx.fill();
+            } else if (type === 'aurelion_scepter' || type === 'aurelion_prism_bolt') {
+                ctx.save();
+                ctx.translate(pt.x, pt.y);
+                ctx.rotate(Math.atan2(bullet.vy, bullet.vx));
+                ctx.fillStyle = bullet.isStarfallShot ? '#fef08a' : (i % 2 === 0 ? '#38bdf8' : '#f0abfc');
+                ctx.fillRect(-8 * ratio, -1.9 * ratio, 16 * ratio, 3.8 * ratio);
+                ctx.restore();
             } else if (type === 'boomerang_saw') {
                 ctx.strokeStyle = bullet._returning ? (i % 2 === 0 ? '#00f5ff' : '#dfe6e9') : (i % 2 === 0 ? '#ff9f43' : '#feca57');
                 ctx.lineWidth = Math.max(1.5, 3.0 * ratio);

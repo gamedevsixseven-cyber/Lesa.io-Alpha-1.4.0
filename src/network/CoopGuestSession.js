@@ -4,18 +4,14 @@
  */
 
 class CoopGuestSession {
-    constructor(game, networkManager, hostInfo, mapSeed = 123456) {
+    constructor(game, networkManager, hostInfo, mapSeed = 123456, matchMeta = null) {
         this.game = game;
         this.net = networkManager;
         this.isHost = false;
         this.appliedMapSeed = mapSeed;
 
-        const heroType = (hostInfo && hostInfo.heroType) || 'psanas';
-        const rawHostName = (hostInfo && hostInfo.name) ? String(hostInfo.name).trim() : '';
-        const name = rawHostName || 'Host';
-        this.remotePlayer = new RemotePlayer(game.player.x - 60, game.player.y, heroType, name);
-        this.remotePlayer.applyHeroStats(heroType, { ...hostInfo, name });
-        this.remotePlayer.isHost = true;
+        CoopPeerRoster.initGuestRoster(this, game, networkManager, hostInfo, matchMeta);
+        this._syncedTotalPlayers = CoopPeerRoster.getActiveRemoteCount(this) + 1;
 
         this.inputSyncTimer = 0;
         this.lastSnapshotTime = performance.now();
@@ -23,18 +19,22 @@ class CoopGuestSession {
         this._pendingHealUntil = 0;
         this._preHealHp = 0;
         this._trackedHp = (game && game.player && Number.isFinite(game.player.hp)) ? game.player.hp : 100;
-        this.pauseReadyState = { by: '', readyCount: 0, totalPlayers: 2, localReady: false, resuming: false };
+        this.pauseReadyState = { by: '', readyCount: 0, totalPlayers: this._syncedTotalPlayers, localReady: false, resuming: false };
         this._resumeTimer = null;
         this._hostLeftNotified = false;
 
         if (this.game.cutsceneOverlay) {
-            this.game.cutsceneOverlay.totalPlayers = 2;
+            this.game.cutsceneOverlay.totalPlayers = this._syncedTotalPlayers;
             this.game.cutsceneOverlay.onRequestAdvance = () => this.handleGuestCutsceneAdvance();
         }
 
         this.setupNetworkHandlers();
         this.hookGuestInput();
     }
+
+    get remotePlayer() { return CoopPeerRoster.getRemotePlayer(this, 'host'); }
+    getRemotePlayer(peerId = null) { return CoopPeerRoster.getRemotePlayer(this, peerId || 'host'); }
+    getTotalPlayers() { return CoopPeerRoster.getTotalPlayers(this); }
 
     handleGuestCutsceneAdvance() {
         const co = this.game.cutsceneOverlay;
@@ -52,17 +52,20 @@ class CoopGuestSession {
             } else if (type === 'HOST_SHOOT') {
                 this.handleHostShoot(payload);
             } else if (type === 'HOST_DASH') {
-                if (this.game.effects) {
+                const actor = this.getRemotePlayer((payload && payload.fromId) || 'host');
+                if (actor && this.game.effects) {
                     if (typeof this.game.effects.addDashTrail === 'function') {
-                        this.game.effects.addDashTrail(this.remotePlayer.x, this.remotePlayer.y, this.remotePlayer.radius, this.remotePlayer.heroColor);
+                        this.game.effects.addDashTrail(actor.x, actor.y, actor.radius, actor.heroColor);
                     } else if (typeof this.game.effects.addDust === 'function') {
-                        this.game.effects.addDust(this.remotePlayer.x, this.remotePlayer.y, 6, 8);
+                        this.game.effects.addDust(actor.x, actor.y, 6, 8);
                     }
                 }
             } else if (type === 'HOST_SKILL') {
-                this.playRemoteSkill(this.remotePlayer, payload);
+                const actor = this.getRemotePlayer((payload && payload.fromId) || 'host');
+                if (actor) this.playRemoteSkill(actor, payload);
             } else if (type === 'HOST_ULT') {
-                if (typeof CoopSkillFx !== 'undefined') CoopSkillFx.playRemoteUlt(this.game, this.remotePlayer, payload, false);
+                const actor = this.getRemotePlayer((payload && payload.fromId) || 'host');
+                if (actor && typeof CoopSkillFx !== 'undefined') CoopSkillFx.playRemoteUlt(this.game, actor, payload, false);
             } else if (type === 'KILOUMPAS_GRAB') {
                 this._handleKiloumpasGrab(payload);
             } else if (type === 'HOST_QUIT_MATCH') {
@@ -157,7 +160,8 @@ class CoopGuestSession {
                 if (payload && Number.isFinite(payload.wave) && this.game.waveManager) this.game.waveManager.wave = Math.max(this.game.waveManager.wave || 1, payload.wave);
                 if (this.game && (this.game.state === 'PLAYING' || this.game.state === 'PAUSED')) this.game.gameOver();
             } else if (type === 'COOP_CHAT' && payload && this.game && this.game.ui && this.game.ui.hud) {
-                this.game.ui.hud.receiveChatMessage(payload.name || this.remotePlayer.name, payload.text, this.remotePlayer, false);
+                const speaker = this.getRemotePlayer((payload && payload.fromId) || 'host');
+                this.game.ui.hud.receiveChatMessage(payload.name || (speaker && speaker.name) || 'Partner', payload.text, speaker, false);
             } else if (type === 'DEV_COOP_SYNC' && payload && payload.kind === 'warp' && this.game) {
                 if (payload.mode && this.game.gameMode !== payload.mode) {
                     this.game.gameMode = payload.mode;
@@ -184,7 +188,8 @@ class CoopGuestSession {
     }
 
     handleHostShoot(bData) {
-        if (typeof CoopCombatFx !== 'undefined') CoopCombatFx.spawnRemoteBullet(this, bData, false);
+        const fromId = (bData && bData.fromId) || 'host';
+        if (typeof CoopCombatFx !== 'undefined') CoopCombatFx.spawnRemoteBullet(this, bData, false, fromId);
     }
 
     handleHostQuit(explicitName = null) {
@@ -268,8 +273,9 @@ class CoopGuestSession {
 
     _handleKiloumpasGrab(data) {
         if (!data) return;
-        const isHostTarget = (data.target === 'host');
-        const tgt = isHostTarget ? this.remotePlayer : (this.game && this.game.player);
+        const isLocalTarget = (this.myPeerId && data.target === this.myPeerId) || (!this.myPeerId && data.target === 'guest');
+        const tgt = isLocalTarget ? (this.game && this.game.player) : this.getRemotePlayer(data.target || 'host');
+        const isHostTarget = !isLocalTarget;
         const fx = this.game && this.game.effects;
         if (!tgt) return;
         const bx = Number.isFinite(data.bx) ? data.bx : tgt.x, by = Number.isFinite(data.by) ? data.by : tgt.y;
@@ -341,31 +347,42 @@ class CoopGuestSession {
             }
         }
 
-        // 1. Sync Host Remote Player State
+        // 1. Sync Host & Fellow Guest Remote Player States
         if (data.host) {
             this.remotePlayer.setTargetState(data.host);
         }
+        const myEntry = CoopPeerRoster.applyGuestPeersSnapshot(this, data);
+        if (Array.isArray(data.peers)) {
+            let liveRemotes = 1;
+            for (let i = 0; i < data.peers.length; i++) {
+                if (data.peers[i] && !data.peers[i].disc) liveRemotes++;
+            }
+            this._syncedTotalPlayers = liveRemotes;
+            if (this.game.cutsceneOverlay) this.game.cutsceneOverlay.totalPlayers = liveRemotes;
+        }
 
-        // 2. Sync Local Guest Health from Host Authority
-        if (typeof data.guestMaxHp === 'number' && Number.isFinite(data.guestMaxHp) && data.guestMaxHp >= 25) this.game.player.maxHp = data.guestMaxHp;
-        if (typeof data.guestHp === 'number' && Number.isFinite(data.guestHp)) {
+        // 2. Sync Local Guest Health from Host Authority (per-peer entry with 2P fallback)
+        const authMaxHp = myEntry && typeof myEntry.maxHp === 'number' ? myEntry.maxHp : data.guestMaxHp;
+        const authHp = myEntry && typeof myEntry.hp === 'number' ? myEntry.hp : data.guestHp;
+        if (typeof authMaxHp === 'number' && Number.isFinite(authMaxHp) && authMaxHp >= 25) this.game.player.maxHp = authMaxHp;
+        if (typeof authHp === 'number' && Number.isFinite(authHp)) {
             this._syncLocalHeal();
             const p = this.game.player, wasDowned = p.hp <= 0;
             const pendingHeal = performance.now() < (this._pendingHealUntil || 0);
-            if (data.guestHp > (this._preHealHp || 0)) this._pendingHealUntil = 0;
-            if (!(pendingHeal && data.guestHp >= (this._preHealHp || 0) && data.guestHp < p.hp)) {
-                if (data.guestHp < p.hp - 0.5) {
+            if (authHp > (this._preHealHp || 0)) this._pendingHealUntil = 0;
+            if (!(pendingHeal && authHp >= (this._preHealHp || 0) && authHp < p.hp)) {
+                if (authHp < p.hp - 0.5) {
                     p.hitFlash = 12;
                     if (this.game.effects) {
-                        this.game.effects.addDamage(p.x, p.y, Math.max(1, Math.round(p.hp - data.guestHp)), false, false);
+                        this.game.effects.addDamage(p.x, p.y, Math.max(1, Math.round(p.hp - authHp)), false, false);
                         this.game.effects.addSparks(p.x, p.y, '#ff4757', 6);
                     }
                     if (window.soundEngine && typeof window.soundEngine.playHit === 'function') window.soundEngine.playHit(false, true);
                     if (this.game.camera && typeof this.game.camera.addShake === 'function') this.game.camera.addShake(8);
                 }
-                p.hp = data.guestHp;
+                p.hp = authHp;
                 this._trackedHp = p.hp;
-                if (wasDowned && data.guestHp > 0 && this.game.ui) this.game.ui.addKillfeed('🤝 YOU WERE REVIVED!');
+                if (wasDowned && authHp > 0 && this.game.ui) this.game.ui.addKillfeed('🤝 YOU WERE REVIVED!');
             }
         }
 
@@ -488,8 +505,8 @@ class CoopGuestSession {
             CoopDropSync.applyGuestDrops(this, data.drops);
         }
 
-        // 5. Double KO check
-        if (this.game.player.hp <= 0 && this.remotePlayer.isDowned && this.game.state === 'PLAYING') this.game.gameOver();
+        // 5. Squad KO check
+        if (CoopPeerRoster.areAllPlayersDowned(this) && this.game.state === 'PLAYING') this.game.gameOver();
     }
 
     _syncLocalHeal() {
@@ -505,9 +522,13 @@ class CoopGuestSession {
     }
 
     update(dt) {
-        this.remotePlayer.update(dt);
-        if (typeof CoopSkillFx !== 'undefined' && typeof CoopSkillFx.updateRemoteUlt === 'function') {
-            CoopSkillFx.updateRemoteUlt(this.game, this.remotePlayer, dt, false, null);
+        for (let i = 0; i < this.remotePlayers.length; i++) {
+            const rp = this.remotePlayers[i];
+            if (!rp) continue;
+            rp.update(dt);
+            if (typeof CoopSkillFx !== 'undefined' && typeof CoopSkillFx.updateRemoteUlt === 'function') {
+                CoopSkillFx.updateRemoteUlt(this.game, rp, dt, false, null);
+            }
         }
         this._syncLocalHeal();
         this.inputSyncTimer++;
@@ -534,9 +555,13 @@ class CoopGuestSession {
     }
 
     render(ctx, camera) {
-        // Render host remote partner
-        this.remotePlayer.draw(ctx);
-        this.remotePlayer.drawRadarIndicator(ctx, this.game.player, camera);
+        // Render all remote squadmates (Host + fellow Guests)
+        for (let i = 0; i < this.remotePlayers.length; i++) {
+            const rp = this.remotePlayers[i];
+            if (!rp || rp.isDownedDisconnected) continue;
+            rp.draw(ctx);
+            rp.drawRadarIndicator(ctx, this.game.player, camera);
+        }
         RemotePlayer.drawLocalDownedBanner(ctx, this.game.player);
     }
 

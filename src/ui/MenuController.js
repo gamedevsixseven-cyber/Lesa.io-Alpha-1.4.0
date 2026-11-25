@@ -12,17 +12,21 @@ class MenuController {
         this.menuAvatarImg = document.getElementById('menu-avatar-img');
         this.hudAvatarImg = document.getElementById('hud-avatar-img');
         this.gameModeModal = document.getElementById('game-mode-modal');
+        this.endlessHardSelected = false;
 
         this.initButtons();
         this.updateHeroAvatarUI();
         this.updateAscentCrestBadge();
+        this.updateEndlessHardUnlockUI();
         this.startStarterPackTimer();
 
-        // Listen for hero and crest changes
+        // Listen for hero, crest, and feat/unlock changes
         if (typeof window !== 'undefined' && window.EventBus) {
             window.EventBus.on('heroSelected', () => this.updateHeroAvatarUI());
             window.EventBus.on('heroSkinChanged', () => this.updateHeroAvatarUI());
             window.EventBus.on('crestsUpdated', () => this.updateAscentCrestBadge());
+            window.EventBus.on('combatFeatsUpdated', () => this.updateEndlessHardUnlockUI());
+            window.EventBus.on('statsUpdated', () => this.updateEndlessHardUnlockUI());
         }
     }
 
@@ -60,12 +64,13 @@ class MenuController {
         };
 
         const handleEndless = () => {
+            const useHard = !!(this.endlessHardSelected && this.isEndlessHardUnlocked());
             if (window.soundEngine && typeof window.soundEngine.playStartGame === 'function') {
                 window.soundEngine.playStartGame();
             } else if (window.soundEngine) {
                 window.soundEngine.playSelect();
             }
-            this.startGame('endless');
+            this.startGame('endless', { isEndlessHard: useHard });
         };
 
         const handleDungeons = () => {
@@ -96,9 +101,33 @@ class MenuController {
 
         const modeEndlessBtn = document.getElementById('mode-select-endless-btn');
         if (modeEndlessBtn) modeEndlessBtn.addEventListener('click', handleEndless);
+        const endlessNormBtn = document.getElementById('mode-endless-normal-btn');
+        const endlessHardBtn = document.getElementById('mode-endless-hard-btn');
+        if (endlessNormBtn) {
+            endlessNormBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (window.soundEngine) window.soundEngine.playSelect();
+                this.endlessHardSelected = false;
+                this.updateEndlessHardUnlockUI();
+            });
+        }
+        if (endlessHardBtn) {
+            endlessHardBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (!this.isEndlessHardUnlocked()) {
+                    if (window.soundEngine && typeof window.soundEngine.playGoBack === 'function') window.soundEngine.playGoBack();
+                    else if (window.soundEngine) window.soundEngine.playSelect();
+                    this.showEndlessHardLockedNotice();
+                    return;
+                }
+                if (window.soundEngine) window.soundEngine.playSelect();
+                this.endlessHardSelected = true;
+                this.updateEndlessHardUnlockUI();
+            });
+        }
         const modeEndlessSlot = document.querySelector('.mode-slot-endless');
         if (modeEndlessSlot) modeEndlessSlot.addEventListener('click', (e) => {
-            if (e.target !== modeEndlessBtn) handleEndless();
+            if (e.target !== modeEndlessBtn && e.target !== endlessNormBtn && e.target !== endlessHardBtn) handleEndless();
         });
 
         const modeDungeonsBtn = document.getElementById('mode-select-dungeons-btn');
@@ -347,6 +376,7 @@ class MenuController {
     showGameModeModal() {
         if (!this.gameModeModal) this.gameModeModal = document.getElementById('game-mode-modal');
         this.updateAscentCrestBadge();
+        this.updateEndlessHardUnlockUI();
         const noticeEl = document.getElementById('mode-crest-notice');
         if (noticeEl) noticeEl.classList.add('hidden');
         if (this._crestNoticeTimer) {
@@ -413,7 +443,65 @@ class MenuController {
         }
     }
 
-    startGame(gameMode = 'story') {
+    isEndlessHardUnlocked() {
+        if (typeof window !== 'undefined' && window.AdminAuth && typeof window.AdminAuth.isTestingOverrideEnabled === 'function' && window.AdminAuth.isTestingOverrideEnabled()) {
+            return true;
+        }
+        if (typeof localStorage !== 'undefined' && localStorage.getItem('lesaio_hard_endless_unlocked') === 'true') {
+            return true;
+        }
+        const gs = this.gameState || (typeof window !== 'undefined' ? window.GameState : null);
+        const cf = (gs && gs.player && gs.player.combatFeats) || {};
+        const statsMax = Math.max(
+            (gs && gs.player && gs.player.stats && Number(gs.player.stats.maxWave)) || 0,
+            typeof localStorage !== 'undefined' ? (parseInt(localStorage.getItem('lesaio_max_wave') || '0', 10) || 0) : 0
+        );
+        const storedFeats = (typeof PerkProgression !== 'undefined' && typeof PerkProgression.loadFeats === 'function') ? PerkProgression.loadFeats() : {};
+        const snap = (typeof PerkProgression !== 'undefined' && typeof PerkProgression.getPlayerProgress === 'function' && gs)
+            ? PerkProgression.getPlayerProgress(gs) : {};
+        const bestEndless = Math.max(cf.endlessMaxWave || 0, storedFeats.endlessMaxWave || 0, snap.endlessMaxWave || 0, statsMax > 20 ? statsMax : 0);
+        const hardPlayed = Math.max(cf.endlessHardMaxWave || 0, storedFeats.endlessHardMaxWave || 0, snap.endlessHardMaxWave || 0);
+        const unlocked = !!(cf.hardEndlessUnlocked || storedFeats.hardEndlessUnlocked || snap.hardEndlessUnlocked || bestEndless >= 30 || hardPlayed >= 1);
+        if (unlocked && typeof localStorage !== 'undefined') {
+            try { localStorage.setItem('lesaio_hard_endless_unlocked', 'true'); } catch (_) {}
+        }
+        return unlocked;
+    }
+
+    updateEndlessHardUnlockUI() {
+        const unlocked = this.isEndlessHardUnlocked();
+        if (!unlocked) this.endlessHardSelected = false;
+        const normBtn = document.getElementById('mode-endless-normal-btn');
+        const hardBtn = document.getElementById('mode-endless-hard-btn');
+        const slotEl = document.querySelector('.mode-slot-endless');
+        if (normBtn) normBtn.classList.toggle('active', !this.endlessHardSelected);
+        if (hardBtn) {
+            hardBtn.classList.toggle('is-locked', !unlocked);
+            hardBtn.classList.toggle('active', unlocked && this.endlessHardSelected);
+            hardBtn.textContent = unlocked ? '🔥 HARD' : '🔒 HARD • W30';
+            hardBtn.title = unlocked ? 'Endless Hard Mode (2x Rewards + Apex Chest)' : 'Reach Wave 30 in Normal Endless to unlock Hard Mode';
+        }
+        if (slotEl) slotEl.classList.toggle('is-hard-selected', unlocked && this.endlessHardSelected);
+    }
+
+    showEndlessHardLockedNotice() {
+        const noticeEl = document.getElementById('mode-crest-notice');
+        if (noticeEl) {
+            noticeEl.textContent = '🔒 Reach Wave 30 in Normal Endless to unlock Hard Mode!';
+            noticeEl.classList.remove('hidden');
+            if (this._crestNoticeTimer) clearTimeout(this._crestNoticeTimer);
+            this._crestNoticeTimer = setTimeout(() => { noticeEl.classList.add('hidden'); this._crestNoticeTimer = null; }, 3800);
+        }
+        const slotEl = document.querySelector('.mode-slot-endless');
+        if (slotEl) {
+            slotEl.classList.remove('crest-shake');
+            void slotEl.offsetWidth;
+            slotEl.classList.add('crest-shake');
+            setTimeout(() => slotEl.classList.remove('crest-shake'), 450);
+        }
+    }
+
+    startGame(gameMode = 'story', options = {}) {
         if (gameMode === 'dungeons' && window.ascentCrestManager) {
             if (!window.ascentCrestManager.consumeCrest()) {
                 this.showCrestShortageNotice();
@@ -430,14 +518,14 @@ class MenuController {
         }
         this.ui.hud.show();
         if (window.friendService) {
-            const label = gameMode === 'dungeons' ? 'Climbing Mt. Olympus' : (gameMode === 'endless' ? 'Playing Endless' : 'Playing Story');
+            const label = gameMode === 'dungeons' ? 'Climbing Mt. Olympus' : (gameMode === 'endless' ? (options.isEndlessHard ? 'Endless Hard Mode' : 'Playing Endless') : 'Playing Story');
             window.friendService.setPresenceStatus(label, null);
         }
 
         if (window.gameInstance) {
             const hero = this.gameState ? this.gameState.player.selectedHero : 'psanas';
             if (typeof window.gameInstance.startNewGame === 'function') {
-                window.gameInstance.startNewGame(hero, gameMode);
+                window.gameInstance.startNewGame(hero, gameMode, options);
             } else if (typeof window.gameInstance.start === 'function') {
                 window.gameInstance.start(hero, gameMode);
             }

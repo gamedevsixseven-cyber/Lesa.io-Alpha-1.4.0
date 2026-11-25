@@ -333,10 +333,14 @@ class ZeusBoss extends EnemyBase {
                 ctx.arc(strike.x, strike.y, strike.radius * progress, 0, Math.PI * 2);
                 ctx.fill();
 
-                ctx.font = '800 12px "Luckiest Guy", cursive';
-                ctx.fillStyle = '#f1c40f';
-                ctx.textAlign = 'center';
-                ctx.fillText('⚡', strike.x, strike.y + 4);
+                // Vector lightning sigil in center (zero emoji glyph)
+                ctx.fillStyle = '#fed330';
+                ctx.strokeStyle = '#07090f';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(strike.x + 2, strike.y - 9); ctx.lineTo(strike.x - 5, strike.y + 1); ctx.lineTo(strike.x, strike.y + 1);
+                ctx.lineTo(strike.x - 2, strike.y + 9); ctx.lineTo(strike.x + 5, strike.y - 1); ctx.lineTo(strike.x, strike.y - 1);
+                ctx.closePath(); ctx.fill(); ctx.stroke();
                 ctx.restore();
             }
         }

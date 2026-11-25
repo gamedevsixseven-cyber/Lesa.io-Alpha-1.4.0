@@ -45,6 +45,7 @@ class AdminPanelController {
         this.bindEconomyControls();
         this.bindAdminManagement();
         this.bindDevAccountControls();
+        if (typeof window !== 'undefined' && window.DevPowerTools) window.DevPowerTools.bindAdminPanelControls(this);
     }
 
     /**

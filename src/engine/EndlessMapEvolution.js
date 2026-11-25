@@ -128,7 +128,7 @@ class EndlessMapEvolution {
 
     static update(dt = 1, game = null) {
         const g = game || (typeof window !== 'undefined' ? window.gameInstance : null);
-        const isEndless = !!(g && g.gameMode === 'endless' && (g.state === 'PLAYING' || g.state === 'PAUSED'));
+        const isEndless = !!(g && g.gameMode === 'endless' && !g.isEndlessHard && (g.state === 'PLAYING' || g.state === 'PAUSED'));
         this.active = isEndless;
         if (!isEndless) {
             this.duskLevel = 0;
