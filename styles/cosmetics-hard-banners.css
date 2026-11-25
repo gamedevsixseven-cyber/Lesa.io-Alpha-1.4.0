@@ -1,0 +1,136 @@
+/* ==========================================================================
+   Lesa.io - Endless Hard Animated Banners (Caustic, Pylon, Void Archon, Omega)
+   Distinct multi-layer SVG + kinetic CSS showcase shaders
+   ========================================================================== */
+
+@keyframes cosHcCrackPulse {
+    0%, 100% { stroke-opacity: 0.55; filter: drop-shadow(0 0 3px #f97316); }
+    50% { stroke-opacity: 1; filter: drop-shadow(0 0 8px #a3e635); }
+}
+@keyframes cosHcBubbleRise {
+    0% { transform: translateY(6px) scale(0.5); opacity: 0; }
+    25% { opacity: 0.95; }
+    85% { transform: translateY(-48px) scale(1.15); opacity: 0.85; }
+    100% { transform: translateY(-58px) scale(0.2); opacity: 0; }
+}
+@keyframes cosHpFloat {
+    0%, 100% { transform: translateY(-2px); }
+    50% { transform: translateY(3px); }
+}
+@keyframes cosHpLaserZap {
+    0%, 74%, 100% { opacity: 0.3; stroke-width: 1.4; }
+    80%, 90% { opacity: 1; stroke-width: 3.4; filter: drop-shadow(0 0 8px #ff2e4c); }
+}
+@keyframes cosHpShockExpand {
+    0% { transform: scaleX(0.55); opacity: 0.95; }
+    100% { transform: scaleX(1.65); opacity: 0; }
+}
+@keyframes cosHvTearGlitch {
+    0%, 100% { stroke-dashoffset: 0; opacity: 0.55; }
+    50% { stroke-dashoffset: -42; opacity: 1; filter: drop-shadow(0 0 6px #d946ef); }
+}
+@keyframes cosHvEyeBlink {
+    0%, 44%, 56%, 100% { transform: scaleY(1); }
+    50% { transform: scaleY(0.14); }
+}
+@keyframes cosHoBeamSweep {
+    0%, 100% { transform: rotate(-7deg); opacity: 0.42; }
+    50% { transform: rotate(9deg); opacity: 0.92; filter: drop-shadow(0 0 8px #fde047); }
+}
+
+/* 1. Caustic Fissure */
+.cos-banner-hard-caustic {
+    background: linear-gradient(112deg, transparent 28%, rgba(163, 230, 53, 0.34) 48%, rgba(249, 115, 22, 0.28) 56%, transparent 74%),
+                repeating-linear-gradient(-45deg, rgba(250, 204, 21, 0.08) 0 6px, transparent 6px 14px),
+                linear-gradient(135deg, #0b1109 0%, #1a2e05 46%, #451a03 82%, #090d0a 100%) !important;
+    background-size: 215% 100%, 100% 100%, 165% 165% !important;
+    animation: cosGleamTrack 3.4s ease-in-out infinite, cosCrPulse 2.8s ease-in-out infinite;
+    border-color: #a3e635 !important;
+}
+.cos-hc-crack { animation: cosHcCrackPulse 2.2s ease-in-out infinite; }
+.cos-hc-crack.c2 { animation-delay: 1.1s; }
+.cos-hc-bubble { transform-box: fill-box; transform-origin: center; animation: cosHcBubbleRise 2.8s linear infinite; }
+.cos-hc-bubble.b2 { animation-delay: 0.6s; animation-duration: 2.4s; }
+.cos-hc-bubble.b3 { animation-delay: 1.2s; animation-duration: 3.1s; }
+.cos-hc-bubble.b4 { animation-delay: 1.8s; animation-duration: 2.2s; }
+.cos-hc-bubble.b5 { animation-delay: 2.3s; animation-duration: 2.7s; }
+
+/* 2. Aethelgard's Pylon */
+.cos-banner-hard-pylon {
+    background: linear-gradient(110deg, transparent 26%, rgba(255, 46, 76, 0.42) 48%, rgba(254, 240, 138, 0.34) 54%, transparent 74%),
+                radial-gradient(circle at 79% 50%, rgba(220, 38, 38, 0.55), transparent 56%),
+                linear-gradient(135deg, #160409 0%, #4c0519 48%, #7f1d1d 84%, #18181b 100%) !important;
+    background-size: 210% 100%, 100% 100%, 175% 175% !important;
+    animation: cosGleamTrack 3s ease-in-out infinite, cosEmberPulse 2.4s ease-in-out infinite;
+    border-color: #ff4757 !important;
+}
+.cos-hp-pylon.p1 { animation: cosHpFloat 2.4s ease-in-out infinite; }
+.cos-hp-pylon.p2 { animation: cosHpFloat 2.4s ease-in-out infinite reverse; }
+.cos-hp-ring { transform-box: fill-box; transform-origin: center; animation: cosCrSpinCW 6s linear infinite; }
+.cos-hp-laser { animation: cosHpLaserZap 2.6s ease-in-out infinite; }
+.cos-hp-shock { transform-box: fill-box; transform-origin: center; animation: cosHpShockExpand 1.9s ease-out infinite; }
+
+/* 3. Void Archon */
+.cos-banner-hard-void {
+    background: linear-gradient(114deg, transparent 26%, rgba(217, 70, 239, 0.38) 47%, rgba(56, 189, 248, 0.35) 55%, transparent 74%),
+                radial-gradient(circle at 76% 50%, rgba(147, 51, 234, 0.62), rgba(59, 7, 100, 0.25) 44%, transparent 66%),
+                linear-gradient(135deg, #05020f 0%, #2e1065 48%, #0f172a 86%, #05020f 100%) !important;
+    background-size: 210% 100%, 100% 100%, 180% 180% !important;
+    animation: cosGleamTrack 3.1s ease-in-out infinite, cosLxPulse 2.8s ease-in-out infinite;
+    border-color: #d946ef !important;
+}
+.cos-hv-orbit { transform-box: fill-box; transform-origin: center; animation: cosCrSpinCW 5.2s linear infinite; }
+.cos-hv-eye { transform-box: fill-box; transform-origin: center; animation: cosHvEyeBlink 4.8s ease-in-out infinite; }
+.cos-hv-tear { animation: cosHvTearGlitch 2.2s linear infinite; }
+.cos-hv-tear.t2 { animation-direction: reverse; animation-duration: 2.7s; }
+
+/* 4. Omega Oblivion */
+.cos-banner-hard-omega {
+    background: linear-gradient(108deg, transparent 22%, rgba(254, 240, 138, 0.5) 44%, rgba(255, 46, 76, 0.52) 52%, rgba(217, 70, 239, 0.4) 60%, transparent 78%),
+                radial-gradient(circle at 78% 50%, rgba(255, 46, 76, 0.65), rgba(250, 204, 21, 0.28) 42%, transparent 68%),
+                linear-gradient(135deg, #06020b 0%, #3b0764 34%, #7f1d1d 68%, #78350f 100%) !important;
+    background-size: 220% 100%, 100% 100%, 190% 190% !important;
+    animation: cosGleamTrack 2.5s ease-in-out infinite, cosPrismaticPulse 2.4s ease-in-out infinite;
+    border-color: #fde047 !important;
+}
+.cos-ho-ring1 { transform-box: fill-box; transform-origin: center; animation: cosCrSpinCW 5s linear infinite; }
+.cos-ho-ring2 { transform-box: fill-box; transform-origin: center; animation: cosCrSpinCCW 3.2s linear infinite; }
+.cos-ho-beam.b1 { transform-origin: 232px 45px; animation: cosHoBeamSweep 2.6s ease-in-out infinite; }
+.cos-ho-beam.b2 { transform-origin: 232px 45px; animation: cosHoBeamSweep 2.6s ease-in-out infinite reverse; }
+
+/* Keep compact list items crisp & legible */
+.lb-item .cos-hp-pylon,
+.friend-card .cos-hp-pylon { opacity: 0.72; }
+
+/* ==================== 4 HARD ENDLESS ANIMATED FRAMES ==================== */
+.cos-frame-hard-caustic {
+    border: 3.5px solid transparent !important;
+    background-image: linear-gradient(#0b1109, #0b1109), conic-gradient(from var(--cos-angle), #a3e635, #f97316, #22d3ee, #4d7c0f, #a3e635) !important;
+    animation: cosAngleSpin 3.2s linear infinite;
+    box-shadow: 0 0 15px rgba(163, 230, 53, 0.8) !important;
+}
+.cos-frame-hard-pylon {
+    border: 4px solid transparent !important;
+    background-image: linear-gradient(#160409, #160409), conic-gradient(from var(--cos-angle), #ff4757, #fde047, #7f1d1d, #fb7185, #ff4757) !important;
+    animation: cosAngleSpin 2.5s linear infinite, cosEmberPulse 2.2s ease-in-out infinite;
+}
+.cos-frame-hard-void {
+    border: 4px solid transparent !important;
+    background-image: linear-gradient(#05020f, #05020f), conic-gradient(from var(--cos-angle), #d946ef, #38bdf8, #4c1d95, #f0abfc, #d946ef) !important;
+    animation: cosAngleSpin 2.2s linear infinite, cosLxPulse 2.6s ease-in-out infinite;
+}
+.cos-frame-hard-omega {
+    border: 4px solid transparent !important;
+    background-image: linear-gradient(#06020b, #06020b), conic-gradient(from var(--cos-angle), #fde047, #ff2e4c, #ffffff, #d946ef, #f97316, #fde047) !important;
+    animation: cosAngleSpin 1.7s linear infinite, cosPrismaticPulse 2s ease-in-out infinite;
+}
+.cos-frame-fx-svg.cos-frame-fx-fast { animation-duration: 3.8s; }
+
+@media (prefers-reduced-motion: reduce) {
+    .cos-banner-hard-caustic, .cos-banner-hard-pylon, .cos-banner-hard-void, .cos-banner-hard-omega,
+    .cos-hc-crack, .cos-hc-bubble, .cos-hp-pylon, .cos-hp-ring, .cos-hp-laser, .cos-hp-shock,
+    .cos-hv-orbit, .cos-hv-eye, .cos-hv-tear, .cos-ho-ring1, .cos-ho-ring2, .cos-ho-beam,
+    .cos-frame-hard-caustic, .cos-frame-hard-pylon, .cos-frame-hard-void, .cos-frame-hard-omega {
+        animation: none !important;
+    }
+}

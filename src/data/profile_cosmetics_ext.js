@@ -157,6 +157,54 @@
             targetVal: () => 1,
             currentVal: () => (typeof ClanBuffs !== 'undefined' && ClanBuffs.hasBanner('banner_clan_obsidian')) ? 1 : 0,
             isUnlocked: () => typeof ClanBuffs !== 'undefined' && ClanBuffs.hasBanner('banner_clan_obsidian')
+        },
+        {
+            id: 'banner_hard_caustic',
+            name: 'Caustic Fissure',
+            rarity: 'epic',
+            cssClass: 'cos-banner-hard-caustic',
+            fxTheme: 'hard_caustic',
+            desc: 'Endless Hard Hazard: Jagged lava cracks leaking glowing neon bio-acid bubbles.',
+            unlockHint: 'Reach Wave 15 in Endless Hard',
+            targetVal: () => 15,
+            currentVal: (s) => Math.min(15, s.endlessHardMaxWave || 0),
+            isUnlocked: (s) => (s.endlessHardMaxWave || 0) >= 15
+        },
+        {
+            id: 'banner_hard_sovereign',
+            name: 'Aethelgard’s Pylon',
+            rarity: 'mythic',
+            cssClass: 'cos-banner-hard-pylon',
+            fxTheme: 'hard_pylon',
+            desc: 'Levitating crimson Ruin Pylons locking orbital laser tethers across fractured obsidian.',
+            unlockHint: 'Reach Endless Hard Wave 30 OR Defeat Aethelgard',
+            targetVal: () => 30,
+            currentVal: (s) => ((s.defeatedBosses.apex_sovereign_w30 || 0) > 0 || (s.endlessHardMaxWave || 0) >= 30) ? 30 : Math.min(29, s.endlessHardMaxWave || 0),
+            isUnlocked: (s) => (s.defeatedBosses.apex_sovereign_w30 || 0) > 0 || (s.endlessHardMaxWave || 0) >= 30
+        },
+        {
+            id: 'banner_hard_void_archon',
+            name: 'Void Archon',
+            rarity: 'mythic',
+            cssClass: 'cos-banner-hard-void',
+            fxTheme: 'hard_void',
+            desc: 'Watchful Abyssal Eye tearing open glitching gravity rifts and spiraling void shards.',
+            unlockHint: 'Reach Wave 45 in Endless Hard',
+            targetVal: () => 45,
+            currentVal: (s) => Math.min(45, s.endlessHardMaxWave || 0),
+            isUnlocked: (s) => (s.endlessHardMaxWave || 0) >= 45
+        },
+        {
+            id: 'banner_hard_omega',
+            name: 'Omega Oblivion',
+            rarity: 'celestial',
+            cssClass: 'cos-banner-hard-omega',
+            fxTheme: 'hard_omega',
+            desc: 'HARD ENDLESS APEX: Spinning eclipse crown rings, sweeping devastation lasers & supernova flares.',
+            unlockHint: 'Reach Endless Hard Wave 60 OR Defeat Apex Omega',
+            targetVal: () => 60,
+            currentVal: (s) => ((s.defeatedBosses.apex_omega_w60 || 0) > 0 || (s.endlessHardMaxWave || 0) >= 60) ? 60 : Math.min(59, s.endlessHardMaxWave || 0),
+            isUnlocked: (s) => (s.defeatedBosses.apex_omega_w60 || 0) > 0 || (s.endlessHardMaxWave || 0) >= 60
         }
     ];
 
@@ -264,6 +312,58 @@
             targetVal: () => 60,
             currentVal: (s) => ((s.defeatedBosses.zeus || 0) >= 10) ? 60 : Math.min(60, s.endlessMaxWave),
             isUnlocked: (s) => s.endlessMaxWave >= 60 || (s.defeatedBosses.zeus || 0) >= 10
+        },
+        {
+            id: 'frame_hard_caustic',
+            name: 'Caustic Hazard',
+            rarity: 'epic',
+            cssClass: 'cos-frame-hard-caustic',
+            accent: '#a3e635',
+            fxRing: 'hard_caustic',
+            desc: 'Orbiting toxic acid droplets & hazard chevrons over dark magma alloy.',
+            unlockHint: 'Reach Wave 15 in Endless Hard',
+            targetVal: () => 15,
+            currentVal: (s) => Math.min(15, s.endlessHardMaxWave || 0),
+            isUnlocked: (s) => (s.endlessHardMaxWave || 0) >= 15
+        },
+        {
+            id: 'frame_hard_pylon',
+            name: 'Sovereign Crown',
+            rarity: 'mythic',
+            cssClass: 'cos-frame-hard-pylon',
+            accent: '#ff4757',
+            fxRing: 'hard_pylon',
+            desc: 'Spinning Ruin Pylon diamonds locked by crimson orbital laser ticks.',
+            unlockHint: 'Reach Endless Hard Wave 30 OR Defeat Aethelgard',
+            targetVal: () => 30,
+            currentVal: (s) => ((s.defeatedBosses.apex_sovereign_w30 || 0) > 0 || (s.endlessHardMaxWave || 0) >= 30) ? 30 : Math.min(29, s.endlessHardMaxWave || 0),
+            isUnlocked: (s) => (s.defeatedBosses.apex_sovereign_w30 || 0) > 0 || (s.endlessHardMaxWave || 0) >= 30
+        },
+        {
+            id: 'frame_hard_void',
+            name: 'Abyssal Watcher',
+            rarity: 'mythic',
+            cssClass: 'cos-frame-hard-void',
+            accent: '#d946ef',
+            fxRing: 'hard_void',
+            desc: 'Ultraviolet Void Archon rift ring with orbiting obsidian monolith shards.',
+            unlockHint: 'Reach Wave 45 in Endless Hard',
+            targetVal: () => 45,
+            currentVal: (s) => Math.min(45, s.endlessHardMaxWave || 0),
+            isUnlocked: (s) => (s.endlessHardMaxWave || 0) >= 45
+        },
+        {
+            id: 'frame_hard_omega',
+            name: 'Oblivion Apex',
+            rarity: 'celestial',
+            cssClass: 'cos-frame-hard-omega',
+            accent: '#fde047',
+            fxRing: 'hard_omega',
+            desc: 'HARD ENDLESS APEX: Twin counter-spinning Omega rings crowned with solar-crimson flares.',
+            unlockHint: 'Reach Endless Hard Wave 60 OR Defeat Apex Omega',
+            targetVal: () => 60,
+            currentVal: (s) => ((s.defeatedBosses.apex_omega_w60 || 0) > 0 || (s.endlessHardMaxWave || 0) >= 60) ? 60 : Math.min(59, s.endlessHardMaxWave || 0),
+            isUnlocked: (s) => (s.defeatedBosses.apex_omega_w60 || 0) > 0 || (s.endlessHardMaxWave || 0) >= 60
         }
     ];
 
@@ -379,6 +479,62 @@
             targetVal: () => 60,
             currentVal: (s) => Math.min(60, s.endlessMaxWave),
             isUnlocked: (s) => s.endlessMaxWave >= 60
+        },
+        {
+            id: 'coin_hard_15',
+            name: 'Caustic Survivor Seal',
+            shortTag: 'HARD W15',
+            rarity: 'epic',
+            rim: '#a3e635',
+            core: '#1a2e05',
+            glyph: 'caustic',
+            desc: 'Toxic neon crest tempered through Endless Hard Wave 15 fissures.',
+            unlockHint: 'Reach Wave 15 in Endless Hard',
+            targetVal: () => 15,
+            currentVal: (s) => Math.min(15, s.endlessHardMaxWave || 0),
+            isUnlocked: (s) => (s.endlessHardMaxWave || 0) >= 15
+        },
+        {
+            id: 'coin_hard_30',
+            name: 'Aethelgard Slayer Coin',
+            shortTag: 'HARD W30',
+            rarity: 'mythic',
+            rim: '#ff4757',
+            core: '#450a0a',
+            glyph: 'pylon',
+            desc: 'Forged from the shattered Ruin Pylons of Endless Hard Wave 30.',
+            unlockHint: 'Reach Endless Hard Wave 30 OR Defeat Aethelgard',
+            targetVal: () => 30,
+            currentVal: (s) => ((s.defeatedBosses.apex_sovereign_w30 || 0) > 0 || (s.endlessHardMaxWave || 0) >= 30) ? 30 : Math.min(29, s.endlessHardMaxWave || 0),
+            isUnlocked: (s) => (s.defeatedBosses.apex_sovereign_w30 || 0) > 0 || (s.endlessHardMaxWave || 0) >= 30
+        },
+        {
+            id: 'coin_hard_45',
+            name: 'Archon Bane Coin',
+            shortTag: 'HARD W45',
+            rarity: 'mythic',
+            rim: '#d946ef',
+            core: '#2e1065',
+            glyph: 'void_eye',
+            desc: 'Ultraviolet Abyssal Eye sigil earned at Endless Hard Wave 45.',
+            unlockHint: 'Reach Wave 45 in Endless Hard',
+            targetVal: () => 45,
+            currentVal: (s) => Math.min(45, s.endlessHardMaxWave || 0),
+            isUnlocked: (s) => (s.endlessHardMaxWave || 0) >= 45
+        },
+        {
+            id: 'coin_hard_60',
+            name: 'Oblivion Crown Coin',
+            shortTag: 'HARD W60',
+            rarity: 'celestial',
+            rim: '#fde047',
+            core: '#140418',
+            glyph: 'abyss_omega',
+            desc: 'HARD ENDLESS APEX: Living crimson-gold Oblivion Omega coin from conquering Wave 60.',
+            unlockHint: 'Reach Endless Hard Wave 60 OR Defeat Apex Omega',
+            targetVal: () => 60,
+            currentVal: (s) => ((s.defeatedBosses.apex_omega_w60 || 0) > 0 || (s.endlessHardMaxWave || 0) >= 60) ? 60 : Math.min(59, s.endlessHardMaxWave || 0),
+            isUnlocked: (s) => (s.defeatedBosses.apex_omega_w60 || 0) > 0 || (s.endlessHardMaxWave || 0) >= 60
         }
     ];
 

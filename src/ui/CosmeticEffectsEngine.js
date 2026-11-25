@@ -214,6 +214,63 @@ class CosmeticEffectsEngine {
             <div class="cos-lx-vinyl" aria-hidden="true"></div>
             <img class="cos-lilxas-face" src="assets/Cosmetics/LilXasBannerFace.png" alt="Lil Xas" draggable="false">`;
         }
+        if (theme === 'hard_caustic') {
+            return `<svg viewBox="0 0 300 90" preserveAspectRatio="none" class="cos-fx-svg">
+                <path class="cos-hc-crack c1" d="M0,74 L38,60 L66,68 L112,48 L148,58 L195,38 L244,54 L300,40" fill="none" stroke="#f97316" stroke-width="2.4" stroke-linejoin="round"/>
+                <path class="cos-hc-crack c2" d="M24,88 L78,74 L126,82 L176,66 L236,78 L300,66" fill="none" stroke="#a3e635" stroke-width="2.2" stroke-linejoin="round"/>
+                <ellipse cx="222" cy="82" rx="44" ry="7" fill="rgba(163, 230, 53, 0.35)"/>
+                <circle class="cos-hc-bubble b1" cx="56" cy="74" r="3.4" fill="#bef264"/>
+                <circle class="cos-hc-bubble b2" cx="142" cy="78" r="2.6" fill="#22d3ee"/>
+                <circle class="cos-hc-bubble b3" cx="212" cy="74" r="4.1" fill="#a3e635"/>
+                <circle class="cos-hc-bubble b4" cx="242" cy="76" r="2.8" fill="#fde047"/>
+                <circle class="cos-hc-bubble b5" cx="272" cy="79" r="3.2" fill="#84cc16"/>
+            </svg>`;
+        }
+        if (theme === 'hard_pylon') {
+            return `<svg viewBox="0 0 300 90" preserveAspectRatio="xMidYMid slice" class="cos-fx-svg">
+                <line class="cos-hp-laser l1" x1="64" y1="44" x2="236" y2="44" stroke="#ff2e4c" stroke-width="2.4"/>
+                <line class="cos-hp-laser l2" x1="64" y1="44" x2="236" y2="44" stroke="#fde047" stroke-width="1"/>
+                <g class="cos-hp-pylon p1" transform="translate(64,44)">
+                    <ellipse class="cos-hp-shock" cx="0" cy="30" rx="22" ry="5" fill="none" stroke="#ff4757" stroke-width="1.6"/>
+                    <polygon points="0,-24 12,0 0,24 -12,0" fill="#7f1d1d" stroke="#fbbf24" stroke-width="1.8"/>
+                    <polygon points="0,-13 5,0 0,13 -5,0" fill="#ff4757"/>
+                </g>
+                <g class="cos-hp-pylon p2" transform="translate(236,44)">
+                    <circle class="cos-hp-ring" r="26" fill="none" stroke="#fbbf24" stroke-width="1.6" stroke-dasharray="10 6"/>
+                    <polygon points="0,-26 14,0 0,26 -14,0" fill="#450a0a" stroke="#ff4757" stroke-width="2"/>
+                    <polygon points="0,-14 6,0 0,14 -6,0" fill="#fde047"/>
+                </g>
+            </svg>`;
+        }
+        if (theme === 'hard_void') {
+            return `<svg viewBox="0 0 300 90" preserveAspectRatio="xMidYMid slice" class="cos-fx-svg">
+                <path class="cos-hv-tear t1" d="M-10,24 L76,24 L92,16 L154,28 L310,20" fill="none" stroke="#d946ef" stroke-width="2" stroke-dasharray="28 14"/>
+                <path class="cos-hv-tear t2" d="M-10,70 L108,70 L124,78 L186,64 L310,72" fill="none" stroke="#38bdf8" stroke-width="1.8" stroke-dasharray="22 18"/>
+                <g transform="translate(226,45)">
+                    <g class="cos-hv-orbit"><circle r="32" fill="none" stroke="#a855f7" stroke-width="2" stroke-dasharray="16 8 5 8"/><polygon points="-36,0 -28,-4 -28,4" fill="#f0abfc"/><polygon points="36,0 28,-4 28,4" fill="#38bdf8"/></g>
+                    <g class="cos-hv-eye">
+                        <path d="M-24,0 Q0,-17 24,0 Q0,17 -24,0 Z" fill="#1e0638" stroke="#f0abfc" stroke-width="2"/>
+                        <circle r="8.5" fill="#9333ea" stroke="#ffffff" stroke-width="1.2"/>
+                        <ellipse rx="2.6" ry="7" fill="#05020f"/>
+                    </g>
+                </g>
+            </svg>`;
+        }
+        if (theme === 'hard_omega') {
+            return `<svg viewBox="0 0 300 90" preserveAspectRatio="xMidYMid slice" class="cos-fx-svg">
+                <polygon class="cos-ho-beam b1" points="232,45 -20,10 -20,34" fill="rgba(255,46,76,0.34)"/>
+                <polygon class="cos-ho-beam b2" points="232,45 -20,58 -20,82" fill="rgba(254,240,138,0.3)"/>
+                <circle class="cos-ember p1" cx="46" cy="78" r="2.6" fill="#fde047"/>
+                <circle class="cos-ember p2" cx="108" cy="80" r="2.8" fill="#ff2e4c"/>
+                <circle class="cos-ember p3" cx="164" cy="76" r="2.4" fill="#f0abfc"/>
+                <g transform="translate(232,45)">
+                    <g class="cos-ho-ring1"><circle r="36" fill="none" stroke="#fde047" stroke-width="2.2" stroke-dasharray="18 7 4 7"/><polygon points="0,-40 -5,-32 5,-32" fill="#fde047"/><polygon points="0,40 -5,32 5,32" fill="#ff2e4c"/></g>
+                    <g class="cos-ho-ring2"><circle r="24" fill="none" stroke="#ff2e4c" stroke-width="2.4" stroke-dasharray="12 6"/></g>
+                    <circle r="13" fill="#09030e" stroke="#fde047" stroke-width="2.5"/>
+                    <path class="cos-ho-omega" d="M-5.5,5.5 L-2.5,5.5 L-2.5,3 C-4.4,1.8 -5.5,-0.2 -5.5,-2.5 A5.5,5.5 0 1 1 5.5,-2.5 C5.5,-0.2 4.4,1.8 2.5,3 L2.5,5.5 L5.5,5.5" fill="none" stroke="#fde047" stroke-width="2.2" stroke-linecap="round"/>
+                </g>
+            </svg>`;
+        }
         if (theme === 'cosmic' || theme === 'apex_nova') {
             const isApex = theme === 'apex_nova';
             return `<svg viewBox="0 0 300 90" preserveAspectRatio="none" class="cos-fx-svg">
@@ -228,6 +285,35 @@ class CosmeticEffectsEngine {
 
     static _frameRingSvg(theme) {
         if (!theme) return '';
+        if (theme === 'hard_caustic') {
+            return `<svg viewBox="0 0 100 100" class="cos-frame-fx-svg">
+                <circle cx="50" cy="50" r="46" fill="none" stroke="#a3e635" stroke-width="2.1" stroke-dasharray="12 10" stroke-linecap="round"/>
+                <circle cx="50" cy="4" r="3.4" fill="#bef264"/><circle cx="50" cy="96" r="3.4" fill="#f97316"/>
+                <polygon points="4,50 11,46 11,54" fill="#22d3ee"/><polygon points="96,50 89,46 89,54" fill="#a3e635"/>
+            </svg>`;
+        }
+        if (theme === 'hard_pylon') {
+            return `<svg viewBox="0 0 100 100" class="cos-frame-fx-svg">
+                <circle cx="50" cy="50" r="46" fill="none" stroke="#ff4757" stroke-width="2" stroke-dasharray="18 12"/>
+                <polygon points="50,0 54,7 50,14 46,7" fill="#fde047"/><polygon points="50,86 54,93 50,100 46,93" fill="#ff4757"/>
+                <polygon points="0,50 7,46 14,50 7,54" fill="#fde047"/><polygon points="86,50 93,46 100,50 93,54" fill="#ff4757"/>
+            </svg>`;
+        }
+        if (theme === 'hard_void') {
+            return `<svg viewBox="0 0 100 100" class="cos-frame-fx-svg">
+                <circle cx="50" cy="50" r="46" fill="none" stroke="#d946ef" stroke-width="2.2" stroke-dasharray="20 8 4 8"/>
+                <circle cx="50" cy="4" r="3.6" fill="#38bdf8"/><circle cx="50" cy="96" r="3.6" fill="#f0abfc"/>
+                <polygon points="16,16 23,19 19,23" fill="#38bdf8"/><polygon points="84,84 77,81 81,77" fill="#d946ef"/>
+            </svg>`;
+        }
+        if (theme === 'hard_omega') {
+            return `<svg viewBox="0 0 100 100" class="cos-frame-fx-svg cos-frame-fx-fast">
+                <circle cx="50" cy="50" r="46" fill="none" stroke="#fde047" stroke-width="2.3" stroke-dasharray="16 8 4 8"/>
+                <circle cx="50" cy="50" r="41" fill="none" stroke="#ff2e4c" stroke-width="1.4" stroke-dasharray="10 14"/>
+                <polygon points="50,1 54,8 46,8" fill="#fde047"/><polygon points="50,99 54,92 46,92" fill="#ff2e4c"/>
+                <circle cx="5" cy="50" r="3.4" fill="#fde047"/><circle cx="95" cy="50" r="3.4" fill="#ff2e4c"/>
+            </svg>`;
+        }
         if (theme === 'orbital' || theme === 'apex') {
             const c1 = theme === 'apex' ? '#ff2e4c' : '#fde047';
             const c2 = theme === 'apex' ? '#fed330' : '#38bdf8';
@@ -343,7 +429,11 @@ class CosmeticEffectsEngine {
             swords: `<path d="M7 17l10-10M14 7h3v3M17 17L7 7M7 10V7h3" stroke="${stroke}" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" fill="none"/>`,
             vf185: `<circle cx="7.5" cy="15.5" r="2.3" fill="none" stroke="${stroke}" stroke-width="1.6"/><circle cx="16.5" cy="15.5" r="2.3" fill="none" stroke="${stroke}" stroke-width="1.6"/><path d="M7.5 15.5L11 10h3.8l2.2 5.5M12.5 8l3-1.2" stroke="${stroke}" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" fill="none"/>`,
             helios: `<circle cx="12" cy="12" r="3.4" fill="${stroke}"/><path d="M12 4.5v2.2M12 17.3v2.2M4.5 12h2.2M17.3 12h2.2M6.7 6.7l1.6 1.6M15.7 15.7l1.6 1.6M17.3 6.7l-1.6 1.6M8.3 15.7l-1.6 1.6" stroke="${stroke}" stroke-width="1.8" stroke-linecap="round"/>`,
-            omega: `<path d="M7.2 17h3v-2c-1.5-.9-2.4-2.3-2.4-4a4.2 4.2 0 118.4 0c0 1.7-.9 3.1-2.4 4v2h3" fill="none" stroke="${stroke}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>`
+            omega: `<path d="M7.2 17h3v-2c-1.5-.9-2.4-2.3-2.4-4a4.2 4.2 0 118.4 0c0 1.7-.9 3.1-2.4 4v2h3" fill="none" stroke="${stroke}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>`,
+            caustic: `<path d="M12 6.2C9.5 9.6 8 11.7 8 14a4 4 0 008 0c0-2.3-1.5-4.4-4-7.8z" fill="none" stroke="${stroke}" stroke-width="1.9" stroke-linejoin="round"/><circle cx="10.8" cy="14.5" r="1.1" fill="${stroke}"/>`,
+            pylon: `<polygon points="12,5.5 16.5,12 12,18.5 7.5,12" fill="none" stroke="${stroke}" stroke-width="1.9" stroke-linejoin="round"/><line x1="12" y1="9" x2="12" y2="15" stroke="${stroke}" stroke-width="1.8" stroke-linecap="round"/>`,
+            void_eye: `<path d="M5.5 12 Q12 7 18.5 12 Q12 17 5.5 12 Z" fill="none" stroke="${stroke}" stroke-width="1.8"/><circle cx="12" cy="12" r="2.2" fill="${stroke}"/>`,
+            abyss_omega: `<path d="M7 9l2.5-2.2L12 9l2.5-2.2L17 9" fill="none" stroke="${stroke}" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M8.5 17h2.1v-1.3c-1.1-.6-1.7-1.6-1.7-2.8a3.1 3.1 0 116.2 0c0 1.2-.6 2.2-1.7 2.8V17h2.1" fill="none" stroke="${stroke}" stroke-width="1.8" stroke-linecap="round"/>`
         };
         return extra[glyph] || null;
     }

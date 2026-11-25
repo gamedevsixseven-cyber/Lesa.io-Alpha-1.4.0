@@ -155,6 +155,7 @@ class CosmeticManager {
         return {
             storyMaxWave: Math.max(1, featSnap.storyMaxWave || 1),
             endlessMaxWave: Math.max(0, featSnap.endlessMaxWave || 0),
+            endlessHardMaxWave: Math.max(0, featSnap.endlessHardMaxWave || 0),
             olympusMaxFloor: Math.max(0, featSnap.olympusMaxFloor || 0),
             defeatedBosses: { ...(featSnap.defeatedBosses || {}) },
             endlessMiniBossKills: featSnap.endlessMiniBossKills || 0,
