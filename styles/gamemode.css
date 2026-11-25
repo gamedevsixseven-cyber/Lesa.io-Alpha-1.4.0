@@ -492,9 +492,45 @@
 .ediff-play-btn.is-hard { background: linear-gradient(180deg, #ff4757, #b91c1c); }
 .ediff-play-btn.is-hard.is-locked { background: #475569; color: #cbd5e1; cursor: not-allowed; }
 .friend-status-text.is-hard-status, .pub-status-chip.online.is-hard-status { color: #ff6b81; font-weight: 900; text-shadow: 0 0 8px rgba(255, 71, 87, 0.4); }
-@media (max-width: 680px), (max-height: 520px) {
-    .ediff-panel { padding: 12px 14px 14px; border-radius: 18px; }
-    .ediff-grid { grid-template-columns: 1fr; gap: 12px; }
-    .ediff-card { padding: 16px 12px 12px; }
-    .ediff-card-icon { width: 42px; height: 42px; font-size: 1.4rem; margin: 2px 0 6px; }
+@media screen and (max-height: 540px), screen and (max-width: 768px), screen and (pointer: coarse) and (max-height: 720px) {
+    #endless-diff-modal.modal-overlay { padding: 6px; align-items: center; justify-content: center; }
+    .ediff-panel {
+        width: min(94vw, 600px); max-height: 92dvh;
+        padding: 9px 12px 10px; border-width: 2.5px; border-radius: 15px;
+    }
+    .ediff-header { gap: 8px; }
+    .ediff-title { font-size: clamp(0.92rem, 2.5vw, 1.15rem); -webkit-text-stroke: 0.8px #0f172a; text-shadow: 0 2px 0 #0f172a; }
+    .ediff-back-btn { padding: 3px 9px; font-size: 0.68rem; border-width: 2px; border-radius: 8px; box-shadow: 0 2px 0 #0f172a; }
+    .ediff-close-x { width: 26px !important; height: 26px !important; font-size: 0.85rem !important; }
+    .ediff-subtitle { margin: 2px 0 7px; font-size: 0.68rem; }
+    .ediff-notice { margin: 0 auto 6px; padding: 4px 10px; font-size: 0.68rem; border-width: 2px; }
+    .ediff-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+    .ediff-card {
+        padding: 11px 9px 9px; border-radius: 13px; border-width: 2.5px;
+        box-shadow: 0 4px 0 #0f172a, 0 8px 16px rgba(0, 0, 0, 0.5);
+    }
+    .ediff-card-ribbon { top: -8px; padding: 1.5px 8px; font-size: 0.56rem; border-width: 2px; }
+    .ediff-card-icon { width: 32px; height: 32px; font-size: 1.1rem; margin: 2px 0 4px; border-radius: 9px; border-width: 2px; box-shadow: 0 2px 0 #0f172a; }
+    .ediff-card-title { font-size: 0.94rem; }
+    .ediff-card-desc { margin: 2px 0 5px; font-size: 0.63rem; line-height: 1.2; }
+    .ediff-perks { gap: 3px; margin: 0 0 6px; }
+    .ediff-perks li { padding: 3px 6px; font-size: 0.58rem; border-radius: 6px; line-height: 1.2; }
+    .ediff-record-chip { margin-bottom: 6px; padding: 2px 8px; font-size: 0.58rem; }
+    .ediff-lock-progress { margin-bottom: 6px; }
+    .ediff-lock-bar-bg { height: 7px; margin-bottom: 2px; }
+    #ediff-hard-lock-label { font-size: 0.58rem; }
+    .ediff-play-btn {
+        padding: 6px 8px; font-size: 0.82rem; border-radius: 9px; border-width: 2px;
+        box-shadow: 0 3px 0 #0f172a; -webkit-text-stroke: 0.5px #0f172a;
+    }
+}
+@media screen and (max-height: 410px), screen and (max-width: 480px) {
+    .ediff-panel { padding: 7px 9px 8px; }
+    .ediff-subtitle { display: none; }
+    .ediff-grid { gap: 7px; margin-top: 6px; }
+    .ediff-card { padding: 9px 6px 7px; }
+    .ediff-card-icon { width: 26px; height: 26px; font-size: 0.92rem; margin: 1px 0 3px; }
+    .ediff-card-title { font-size: 0.82rem; }
+    .ediff-perks li { padding: 2px 5px; font-size: 0.54rem; }
+    .ediff-play-btn { padding: 5px 6px; font-size: 0.74rem; }
 }

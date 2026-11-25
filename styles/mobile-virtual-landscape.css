@@ -56,6 +56,11 @@ html.vl-active #olympus-victory-modal .olympus-victory-panel {
     max-height: calc(var(--vl-h, 390px) * 0.94) !important;
 }
 
+html.vl-active .ediff-panel {
+    width: min(calc(var(--vl-w, 844px) * 0.92), 600px) !important;
+    max-height: calc(var(--vl-h, 390px) * 0.92) !important;
+}
+
 html.vl-active #game-over-modal .modal-panel {
     max-width: min(calc(var(--vl-w, 844px) * 0.92), 540px) !important;
     max-height: calc(var(--vl-h, 390px) * 0.94) !important;

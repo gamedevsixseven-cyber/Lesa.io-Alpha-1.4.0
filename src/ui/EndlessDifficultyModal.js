@@ -55,7 +55,8 @@ class EndlessDifficultyModal {
                 </div>
             </div>
         `;
-        document.body.appendChild(el);
+        const host = document.getElementById('game-container') || document.body;
+        host.appendChild(el);
         this._bindEvents(el);
         this._modalEl = el;
         return el;
