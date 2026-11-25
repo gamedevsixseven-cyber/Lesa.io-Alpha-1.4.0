@@ -334,7 +334,7 @@ class FriendService {
         if (ps) ps.watchUids(accepted.map(f => f.otherUid));
         this.emitUpdate();
         const missingProfile = uidsToRefresh.some(u => !this.friendProfiles[u]);
-        if (uidsToRefresh.length > 0 && (missingProfile || Date.now() - this._lastFriendsLoadedAt > 120000)) {
+        if (uidsToRefresh.length > 0 && (missingProfile || Date.now() - this._lastFriendsLoadedAt > 25000)) {
             this._lastFriendsLoadedAt = Date.now();
             this.refreshFriendStatuses(uidsToRefresh);
         }
@@ -357,17 +357,44 @@ class FriendService {
 
     async refreshFriendStatuses(uids = null) {
         const db = this.getDb(), ps = this.getPresence();
+        const edge = (typeof window !== 'undefined' && window.edgeApi && window.edgeApi.isEnabled()) ? window.edgeApi : null;
         if (db && this.getMyUid() && (!this._unsubInvites || !this._unsubFriendships)) this.attachListeners();
         const list = uids || this.friends.map(f => f.otherUid);
         if (!list.length) return;
         try {
-            const [docs] = await Promise.all([
-                db ? Promise.all(list.map(uid => db.collection('players').doc(uid).get().catch(() => null))) : Promise.resolve([]),
+            const [edgeRes, fsDocs] = await Promise.all([
+                edge ? Promise.all(list.map(u => edge.get(`/player/${encodeURIComponent(u)}`).catch(() => null))) : Promise.resolve([]),
+                db ? Promise.all(list.map(u => db.collection('players').doc(u).get().catch(() => null))) : Promise.resolve([]),
                 ps ? ps.fetchOnce(list).catch(() => {}) : Promise.resolve()
             ]);
             this._lastFriendsLoadedAt = Date.now();
-            docs.forEach((doc) => { if (doc && doc.exists) this.friendProfiles[doc.id] = this._formatPlayerDoc(doc.id, doc.data() || {}); });
-            list.forEach((uid) => this._syncFriendFromPresence(uid));
+            list.forEach((uid, i) => {
+                const er = edgeRes[i], eRaw = (er && !er.fallback && er.ok && er.doc) ? er.doc : null;
+                const doc = fsDocs[i], fRaw = (doc && doc.exists) ? (doc.data() || {}) : null;
+                const wiped = fRaw && typeof SaveMigration !== 'undefined' && SaveMigration.wasWipedByDev(fRaw);
+                const eFmt = (!wiped && eRaw) ? this._formatPlayerDoc(uid, eRaw) : null;
+                const fFmt = fRaw ? this._formatPlayerDoc(uid, fRaw) : null;
+                if (eFmt && fFmt) {
+                    const edgeNewer = (Number(eFmt.lastSeenAt) || 0) >= (Number(fFmt.lastSeenAt) || 0);
+                    const base = edgeNewer ? fFmt : eFmt, top = edgeNewer ? eFmt : fFmt;
+                    this.friendProfiles[uid] = {
+                        ...base, ...top,
+                        name: (!top._isUnnamedGhost || base._isUnnamedGhost) ? top.name : base.name,
+                        hero: top.hero || base.hero,
+                        cosmetics: (top.cosmetics && Object.keys(top.cosmetics).length) ? top.cosmetics : base.cosmetics,
+                        loadout: top.loadout || base.loadout,
+                        level: FriendService._maxNum(1, eFmt.level, fFmt.level),
+                        highScore: FriendService._maxNum(0, eFmt.highScore, fFmt.highScore),
+                        maxWave: FriendService._maxNum(1, eFmt.maxWave, fFmt.maxWave),
+                        endlessMaxWave: FriendService._maxNum(0, eFmt.endlessMaxWave, fFmt.endlessMaxWave),
+                        olympusMaxFloor: FriendService._maxNum(0, eFmt.olympusMaxFloor, fFmt.olympusMaxFloor),
+                        totalKills: FriendService._maxNum(0, eFmt.totalKills, fFmt.totalKills)
+                    };
+                } else if (eFmt || fFmt) {
+                    this.friendProfiles[uid] = eFmt || fFmt;
+                }
+                this._syncFriendFromPresence(uid);
+            });
             this.emitUpdate();
         } catch (_) {}
     }
@@ -378,7 +405,7 @@ class FriendService {
             ? PlayerIdentity.resolvePublicDisplay(uid, data)
             : { name: data.playerName || p.name || 'Hero', tag: data.friendTag || '#HERO00', _isUnnamedGhost: false, leaderboardHidden: Boolean(data.leaderboardHidden) };
         const { name, tag, _isUnnamedGhost, leaderboardHidden } = idMeta;
-        const level = parseInt(data.level || data.accountLevel || p.accountLevel || 1, 10) || 1;
+        const level = FriendService._maxNum(1, data.level, data.accountLevel, p.accountLevel, p.level);
         const hero = data.selectedHero || p.selectedHero || 'psanas';
         const ps = this.getPresence();
         const pres = (typeof PresenceService !== 'undefined') ? PresenceService.resolve(uid, data, ps ? ps.cache : null) : (() => {
@@ -408,12 +435,9 @@ class FriendService {
 
     getRelationState(otherUid) {
         if (otherUid === this.getMyUid()) return { state: 'self' };
-        const acc = this.friends.find(f => f.otherUid === otherUid);
-        if (acc) return { state: 'accepted', id: acc.id };
-        const inc = this.incomingRequests.find(f => f.otherUid === otherUid);
-        if (inc) return { state: 'pending_incoming', id: inc.id };
-        const out = this.outgoingRequests.find(f => f.otherUid === otherUid);
-        if (out) return { state: 'pending_outgoing', id: out.id };
+        const acc = this.friends.find(f => f.otherUid === otherUid); if (acc) return { state: 'accepted', id: acc.id };
+        const inc = this.incomingRequests.find(f => f.otherUid === otherUid); if (inc) return { state: 'pending_incoming', id: inc.id };
+        const out = this.outgoingRequests.find(f => f.otherUid === otherUid); if (out) return { state: 'pending_outgoing', id: out.id };
         return { state: 'none' };
     }
 
@@ -512,24 +536,16 @@ class FriendService {
         try {
             const snap = await docRef.get();
             if (snap.exists) {
-                const existing = snap.data() || {};
-                if (existing.status === 'accepted') return { ok: true, status: 'accepted', message: 'Already friends!' };
-                if (existing.status === 'pending' && existing.requestedBy !== me.uid) {
-                    await this.acceptFriendRequest(relId);
-                    return { ok: true, status: 'accepted', message: `Accepted ${targetProfile.name}!` };
-                }
+                const ex = snap.data() || {};
+                if (ex.status === 'accepted') return { ok: true, status: 'accepted', message: 'Already friends!' };
+                if (ex.status === 'pending' && ex.requestedBy !== me.uid) { await this.acceptFriendRequest(relId); return { ok: true, status: 'accepted', message: `Accepted ${targetProfile.name}!` }; }
                 return { ok: true, status: 'pending_outgoing', message: 'Friend request already sent!' };
             }
             const now = Date.now(), targetObj = { name: targetProfile.name, tag: targetProfile.tag, hero: targetProfile.hero, level: targetProfile.level };
             await docRef.set({ users: [me.uid, targetProfile.uid].sort(), status: 'pending', requestedBy: me.uid, profiles: { [me.uid]: { name: me.name, tag: me.tag, hero: me.selectedHero, level: me.level }, [targetProfile.uid]: targetObj }, createdAt: now, updatedAt: now });
-            if (!this.outgoingRequests.some(r => r.id === relId)) {
-                this.outgoingRequests.push({ id: relId, otherUid: targetProfile.uid, status: 'pending', requestedBy: me.uid, createdAt: now, updatedAt: now, profile: { uid: targetProfile.uid, ...targetObj } });
-                this.emitUpdate();
-            }
+            if (!this.outgoingRequests.some(r => r.id === relId)) { this.outgoingRequests.push({ id: relId, otherUid: targetProfile.uid, status: 'pending', requestedBy: me.uid, createdAt: now, updatedAt: now, profile: { uid: targetProfile.uid, ...targetObj } }); this.emitUpdate(); }
             return { ok: true, status: 'pending_outgoing', message: `Friend request sent to ${targetProfile.name}!` };
-        } catch (err) {
-            return { ok: false, message: this._describeDbError(err) };
-        }
+        } catch (err) { return { ok: false, message: this._describeDbError(err) }; }
     }
 
     async acceptFriendRequest(relId) {
@@ -537,10 +553,7 @@ class FriendService {
         if (!db || !relId) return false;
         try {
             const now = Date.now();
-            await db.collection('friendships').doc(relId).update({
-                status: 'accepted', acceptedAt: now, updatedAt: now,
-                [`profiles.${me.uid}`]: { name: me.name, tag: me.tag, hero: me.selectedHero, level: me.level }
-            });
+            await db.collection('friendships').doc(relId).update({ status: 'accepted', acceptedAt: now, updatedAt: now, [`profiles.${me.uid}`]: { name: me.name, tag: me.tag, hero: me.selectedHero, level: me.level } });
             const req = this.incomingRequests.find(r => r.id === relId);
             if (req) {
                 this.incomingRequests = this.incomingRequests.filter(r => r.id !== relId);
@@ -558,20 +571,15 @@ class FriendService {
             this.friends = this.friends.filter(f => f.id !== relId);
             this.incomingRequests = this.incomingRequests.filter(r => r.id !== relId);
             this.outgoingRequests = this.outgoingRequests.filter(r => r.id !== relId);
-            this.emitUpdate();
-            return true;
+            this.emitUpdate(); return true;
         } catch (err) { this.lastError = this._describeDbError(err); return false; }
     }
-
     async sendCoopInvite(targetUid, roomCode, gameMode = 'story') {
         const db = this.getDb(), me = this.getMySummary();
         if (!db || !me.uid || !targetUid || !roomCode) return false;
         const now = Date.now();
         try {
-            await db.collection('friend_invites').doc(`${me.uid}__${targetUid}`).set({
-                fromUid: me.uid, fromName: me.name, fromTag: me.tag, fromHero: me.selectedHero, toUid: targetUid,
-                roomCode: String(roomCode).trim().toUpperCase(), gameMode, createdAt: now, expiresAt: now + 600000
-            });
+            await db.collection('friend_invites').doc(`${me.uid}__${targetUid}`).set({ fromUid: me.uid, fromName: me.name, fromTag: me.tag, fromHero: me.selectedHero, toUid: targetUid, roomCode: String(roomCode).trim().toUpperCase(), gameMode, createdAt: now, expiresAt: now + 600000 });
             return true;
         } catch (err) { this.lastError = this._describeDbError(err); return false; }
     }
@@ -579,11 +587,7 @@ class FriendService {
     dismissPendingInvite() { const id = this._pendingAcceptedInviteId; this._pendingAcceptedInviteId = null; if (id) return this.dismissInvite(id); }
     async dismissInvite(inviteId) { const db = this.getDb(); if (!db || !inviteId) return; try { await db.collection('friend_invites').doc(inviteId).delete(); } catch (_) {} }
     getTotalNotificationCount() { return this.incomingRequests.length + this.incomingInvites.length; }
-    emitUpdate() {
-        if (typeof window !== 'undefined' && window.EventBus) {
-            window.EventBus.emit('friendsUpdated', { friendsCount: this.friends.length, requestsCount: this.incomingRequests.length, invitesCount: this.incomingInvites.length });
-        }
-    }
+    emitUpdate() { if (typeof window !== 'undefined' && window.EventBus) window.EventBus.emit('friendsUpdated', { friendsCount: this.friends.length, requestsCount: this.incomingRequests.length, invitesCount: this.incomingInvites.length }); }
 }
 
 if (typeof window !== 'undefined') window.FriendService = FriendService;

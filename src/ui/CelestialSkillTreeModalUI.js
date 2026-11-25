@@ -1,8 +1,24 @@
 /**
- * Lesa.io - Celestial Weapon Skill Tree Interactive Modal UI
- * Renders branching 2-path tree diagram with irreversible path lock confirmation,
- * cost chips, live affordability checks, and Capstone +1 Special Trait highlight.
+ * Lesa.io - Celestial Weapon Skill Tree Interactive Constellation Modal UI
+ * Renders a cosmic branching 2-path constellation tree (Awakened Core -> Tier I -> Tier II -> Tier III Finale)
+ * for Hyperion Celestial Glaive & Aurelion Astral Scepter with conduit lines, stat pills,
+ * permanent branch lock confirmation, and Capstone +1 Special Trait showcase.
  */
+
+const CELESTIAL_NODE_GLYPHS = {
+    hg_sup_1: '☀️',
+    hg_sup_2: '🔭',
+    hg_sup_3: '💥',
+    hg_tmp_1: '⚡',
+    hg_tmp_2: '💠',
+    hg_tmp_3: '🌀',
+    au_stf_1: '🌟',
+    au_stf_2: '🚀',
+    au_stf_3: '☄️',
+    au_prm_1: '🔮',
+    au_prm_2: '🌈',
+    au_prm_3: '✨'
+};
 
 class CelestialSkillTreeModalUI {
     static _modalEl = null;
@@ -16,7 +32,7 @@ class CelestialSkillTreeModalUI {
                 el = document.createElement('div');
                 el.id = 'celestial-tree-modal';
                 el.className = 'modal-overlay hidden';
-                const layer = document.querySelector('.ui-layer') || document.body;
+                const layer = document.getElementById('game-container') || document.querySelector('.ui-layer') || document.body;
                 layer.appendChild(el);
                 el.addEventListener('click', (e) => {
                     if (e.target === el) this.hide();
@@ -42,6 +58,10 @@ class CelestialSkillTreeModalUI {
         if (modal) modal.classList.add('hidden');
     }
 
+    static _esc(s) {
+        return String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    }
+
     static _formatCostHtml(cost) {
         if (!cost) return '';
         const chips = [];
@@ -51,10 +71,12 @@ class CelestialSkillTreeModalUI {
         const stoneIc = typeof UiIcons !== 'undefined' ? UiIcons.i('evolution_stone', 'ui-icon-sm') : '💎';
 
         if (cost.coins) {
-            chips.push(`<span class="gear-cost-chip ${coins < cost.coins ? 'is-short' : ''}">${coinIc} ${cost.coins.toLocaleString()}</span>`);
+            const ok = coins >= cost.coins;
+            chips.push(`<span class="cel-cost-pill ${ok ? 'is-ok' : 'is-short'}">${coinIc} ${cost.coins.toLocaleString()}</span>`);
         }
         if (cost.evolutionStones) {
-            chips.push(`<span class="gear-cost-chip ${stones < cost.evolutionStones ? 'is-short' : ''}">${stoneIc} ${cost.evolutionStones} Evo Stone</span>`);
+            const ok = stones >= cost.evolutionStones;
+            chips.push(`<span class="cel-cost-pill ${ok ? 'is-ok' : 'is-short'}">${stoneIc} ${cost.evolutionStones} Evo Stone</span>`);
         }
         if (cost.materials && typeof MaterialRegistry !== 'undefined') {
             const im = (typeof window !== 'undefined' && window.inventoryManager) ? window.inventoryManager : null;
@@ -64,9 +86,40 @@ class CelestialSkillTreeModalUI {
                 if (!m || !qty) continue;
                 const have = heldMap[matId] || 0;
                 const ic = m.iconImg ? `<img src="${m.iconImg}" class="ui-icon ui-icon-sm" alt="">` : (m.icon || '⚙️');
-                chips.push(`<span class="gear-cost-chip ${have < qty ? 'is-short' : ''}">${ic} ${qty} ${m.shortName || m.name}</span>`);
+                chips.push(`<span class="cel-cost-pill ${have >= qty ? 'is-ok' : 'is-short'}">${ic} ${have}/${qty} ${this._esc(m.shortName || m.name)}</span>`);
             }
         }
+        return chips.join('');
+    }
+
+    static _buildStatPills(statSummary) {
+        return String(statSummary || '')
+            .split('•')
+            .map(s => s.trim())
+            .filter(Boolean)
+            .map(part => {
+                const isTrait = /special trait/i.test(part);
+                return `<span class="cel-stat-pill ${isTrait ? 'is-trait' : ''}">${this._esc(part)}</span>`;
+            })
+            .join('');
+    }
+
+    static _buildSummaryChips(mods, st, isAwakened) {
+        const chips = [];
+        if (!isAwakened) {
+            chips.push('<span class="cel-tree-chip is-warn">⚠ REQUIRES ★ AWAKENING FIRST</span>');
+        } else if (st.chosenPath) {
+            chips.push(`<span class="cel-tree-chip is-active-path">✦ ${this._esc((mods.chosenPathName || '').toUpperCase())} (${mods.unlockedCount}/3)</span>`);
+        } else {
+            chips.push('<span class="cel-tree-chip is-choose">CHOOSE 1 CONSTELLATION BRANCH (PERMANENT)</span>');
+        }
+        if (mods.baseDamage) chips.push(`<span class="cel-tree-chip">+${mods.baseDamage} DMG</span>`);
+        if (mods.baseDelayDelta) chips.push(`<span class="cel-tree-chip">${mods.baseDelayDelta}F Delay</span>`);
+        if (mods.critChanceBonus) chips.push(`<span class="cel-tree-chip">+${Math.round(mods.critChanceBonus * 100)}% Crit</span>`);
+        if (mods.range) chips.push(`<span class="cel-tree-chip">+${mods.range} Range</span>`);
+        if (mods.extraPierce) chips.push(`<span class="cel-tree-chip">+${mods.extraPierce} Pierce</span>`);
+        if (mods.orbitBladesBonus) chips.push(`<span class="cel-tree-chip">+${mods.orbitBladesBonus} Blades</span>`);
+        if (mods.specialTrait) chips.push(`<span class="cel-tree-chip is-trait">★ ${this._esc(mods.specialTrait.name)}</span>`);
         return chips.join('');
     }
 
@@ -80,72 +133,90 @@ class CelestialSkillTreeModalUI {
         const st = CelestialSkillTreeManager.getWeaponState(weaponId);
         const mods = CelestialSkillTreeManager.getModifiers(weaponId);
         const isAwakened = CelestialSkillTreeManager.isAwakened(weaponId);
+        const themeCls = weaponId === 'aurelion_scepter' ? 'is-aurelion' : 'is-hyperion';
+        const romanTiers = { 1: 'I', 2: 'II', 3: 'III' };
 
-        const summaryChips = [];
-        if (!isAwakened) {
-            summaryChips.push('<span class="cel-tree-chip" style="border-color:#f97316;color:#fed7aa;">⚠ Requires ★ Awakening First</span>');
-        } else if (st.chosenPath) {
-            summaryChips.push(`<span class="cel-tree-chip">LOCKED PATH: ${mods.chosenPathName.toUpperCase()} (${mods.unlockedCount}/3)</span>`);
-        } else {
-            summaryChips.push('<span class="cel-tree-chip">PICK 1 PATH — CHOICE IS PERMANENT</span>');
-        }
-        if (mods.baseDamage) summaryChips.push(`<span class="cel-tree-chip">+${mods.baseDamage} DMG</span>`);
-        if (mods.baseDelayDelta) summaryChips.push(`<span class="cel-tree-chip">${mods.baseDelayDelta}F Delay</span>`);
-        if (mods.critChanceBonus) summaryChips.push(`<span class="cel-tree-chip">+${Math.round(mods.critChanceBonus * 100)}% Crit</span>`);
-        if (mods.specialTrait) summaryChips.push(`<span class="cel-tree-chip is-trait">✦ TRAIT: ${mods.specialTrait.name}</span>`);
+        const leftPath = def.paths[0];
+        const rightPath = def.paths[1];
+        const leftActive = st.chosenPath === leftPath?.id;
+        const rightActive = st.chosenPath === rightPath?.id;
+        const leftColor = leftPath?.accent || '#fbbf24';
+        const rightColor = rightPath?.accent || '#38bdf8';
 
-        const branchesHtml = def.paths.map((pathObj) => {
+        const corePipsHtml = [1, 2, 3].map((t) =>
+            `<span class="cel-core-pip ${mods.unlockedCount >= t ? 'is-lit' : ''}" title="Tier ${t}"></span>`
+        ).join('');
+
+        const forkSvgHtml = `
+            <div class="cel-fork-bridge" aria-hidden="true">
+                <svg viewBox="0 0 600 48" preserveAspectRatio="none">
+                    <path d="M 300 0 C 300 24, 150 18, 150 48" class="cel-fork-line ${leftActive ? 'is-lit' : (st.chosenPath ? 'is-dead' : 'is-idle')}" style="--fork-accent:${leftColor};" />
+                    <path d="M 300 0 C 300 24, 450 18, 450 48" class="cel-fork-line ${rightActive ? 'is-lit' : (st.chosenPath ? 'is-dead' : 'is-idle')}" style="--fork-accent:${rightColor};" />
+                    <circle cx="300" cy="4" r="4.5" class="cel-fork-hub" />
+                </svg>
+            </div>
+        `;
+
+        const branchesHtml = def.paths.map((pathObj, pIdx) => {
             const isChosen = st.chosenPath === pathObj.id;
             const isSealed = !!(st.chosenPath && st.chosenPath !== pathObj.id);
             const badgeCls = isChosen ? 'is-chosen' : (isSealed ? 'is-sealed' : 'is-open');
-            const badgeTxt = isChosen ? 'CHOSEN PATH' : (isSealed ? '🔒 SEALED' : 'SELECTABLE');
+            const badgeTxt = isChosen ? '✦ ACTIVE PATH' : (isSealed ? '🔒 SEALED' : 'AVAILABLE');
+            const branchGlyph = pIdx === 0 ? (weaponId === 'aurelion_scepter' ? '☄️' : '🔥') : (weaponId === 'aurelion_scepter' ? '🌈' : '🌀');
 
-            const nodesHtml = pathObj.nodes.map((node) => {
+            const nodesHtml = pathObj.nodes.map((node, nIdx) => {
                 const status = CelestialSkillTreeManager.getNodeStatus(weaponId, pathObj.id, node.id);
                 const isCapstone = !!node.specialTrait;
                 const canBuy = status === 'available' && CelestialSkillTreeManager.canAfford(node.cost);
                 const isConfirming = this._pendingConfirmNodeId === node.id && !st.chosenPath && status === 'available';
+                const glyph = CELESTIAL_NODE_GLYPHS[node.id] || (isCapstone ? '★' : '✦');
 
                 let btnCls = 'cel-node-btn';
-                let btnLabel = 'UPGRADE NODE';
+                let btnLabel = 'AWAKEN NODE';
                 let disabled = false;
                 if (status === 'unlocked') {
-                    btnCls += ' is-unlocked';
-                    btnLabel = '✓ UNLOCKED';
-                    disabled = true;
+                    btnCls += ' is-unlocked'; btnLabel = '✓ NODE MASTERED'; disabled = true;
                 } else if (status === 'locked_unawakened') {
-                    btnCls += ' is-disabled';
-                    btnLabel = '🔒 AWAKEN WEAPON FIRST';
-                    disabled = true;
+                    btnCls += ' is-disabled'; btnLabel = '🔒 AWAKEN WEAPON FIRST'; disabled = true;
                 } else if (status === 'locked_path') {
-                    btnCls += ' is-disabled';
-                    btnLabel = '🔒 PATH SEALED FOREVER';
-                    disabled = true;
+                    btnCls += ' is-disabled'; btnLabel = '🔒 BRANCH SEALED'; disabled = true;
                 } else if (status === 'locked_tier') {
-                    btnCls += ' is-disabled';
-                    btnLabel = `REQUIRES TIER ${node.tier - 1}`;
-                    disabled = true;
+                    btnCls += ' is-disabled'; btnLabel = `UNLOCK TIER ${romanTiers[node.tier - 1] || (node.tier - 1)} FIRST`; disabled = true;
                 } else if (!canBuy) {
-                    btnCls += ' is-disabled';
-                    btnLabel = st.chosenPath ? 'NEED RESOURCES' : 'LOCK PATH (NEED RESOURCES)';
+                    btnCls += ' is-disabled'; btnLabel = st.chosenPath ? 'INSUFFICIENT MATERIALS' : 'NEED RESOURCES TO LOCK';
                 } else if (isConfirming) {
-                    btnCls += ' is-confirm';
-                    btnLabel = `⚠ CONFIRM LOCK: ${pathObj.name.toUpperCase()}!`;
+                    btnCls += ' is-confirm'; btnLabel = `⚠ CONFIRM PERMANENT LOCK: ${pathObj.name.toUpperCase()}!`;
                 } else if (!st.chosenPath) {
-                    btnLabel = `CHOOSE & LOCK PATH (${pathObj.name.toUpperCase()})`;
+                    btnLabel = `CHOOSE & LOCK (${pathObj.name.toUpperCase()})`;
                 }
 
-                const traitHtml = node.specialTrait
-                    ? `<div class="cel-trait-callout"><strong>✦ ${node.specialTrait.name}:</strong> ${node.specialTrait.desc}</div>`
+                const prevUnlocked = nIdx > 0 && st.unlockedNodes.includes(pathObj.nodes[nIdx - 1].id);
+                const conduitHtml = nIdx > 0
+                    ? `<div class="cel-node-link ${status === 'unlocked' || (prevUnlocked && !isSealed) ? 'is-lit' : ''} ${status === 'unlocked' ? 'is-charged' : ''}"><span class="cel-link-spark"></span></div>`
                     : '';
 
+                const traitHtml = node.specialTrait
+                    ? `<div class="cel-trait-callout"><div class="cel-trait-head">★ FINALE ABILITY · ${this._esc(node.specialTrait.name)}</div><div class="cel-trait-desc">${this._esc(node.specialTrait.desc)}</div></div>`
+                    : '';
+
+                const statusCls = status === 'unlocked' ? 'is-unlocked' : (status === 'available' ? 'is-available' : (isSealed ? 'is-sealed' : 'is-locked'));
+
                 return `
-                    <div class="cel-node-card ${status === 'unlocked' ? 'is-unlocked' : ''} ${status === 'available' ? 'is-available' : ''} ${isCapstone ? 'is-capstone' : ''}">
-                        <div class="cel-node-top">
-                            <span class="cel-node-title">${node.name}</span>
-                            <span class="cel-node-tier">${isCapstone ? '★ FINALE TIER 3' : `TIER ${node.tier}`}</span>
+                    ${conduitHtml}
+                    <div class="cel-node-card ${statusCls} ${isCapstone ? 'is-capstone' : ''} ${canBuy ? 'can-afford' : ''}">
+                        <div class="cel-node-row">
+                            <div class="cel-node-orb ${statusCls} ${isCapstone ? 'is-capstone' : ''}">
+                                <span class="cel-orb-glyph">${glyph}</span>
+                                <span class="cel-orb-tier">${romanTiers[node.tier] || node.tier}</span>
+                            </div>
+                            <div class="cel-node-main">
+                                <div class="cel-node-top">
+                                    <span class="cel-node-title">${this._esc(node.name)}</span>
+                                    <span class="cel-node-tier">${isCapstone ? '★ FINALE III' : `TIER ${romanTiers[node.tier] || node.tier}`}</span>
+                                </div>
+                                <div class="cel-stat-pills">${this._buildStatPills(node.statSummary)}</div>
+                            </div>
                         </div>
-                        <div class="cel-node-stats">${node.statSummary}</div>
                         ${traitHtml}
                         ${status !== 'unlocked' ? `<div class="cel-node-costs">${this._formatCostHtml(node.cost)}</div>` : ''}
                         <button type="button" class="${btnCls}" data-cel-path="${pathObj.id}" data-cel-node="${node.id}" ${disabled ? 'disabled' : ''}>${btnLabel}</button>
@@ -154,36 +225,53 @@ class CelestialSkillTreeModalUI {
             }).join('');
 
             return `
-                <div class="cel-path-col ${isChosen ? 'is-chosen' : ''} ${isSealed ? 'is-sealed' : ''}">
+                <div class="cel-path-col ${isChosen ? 'is-chosen' : ''} ${isSealed ? 'is-sealed' : ''}" style="--path-accent:${pathObj.accent};">
                     <div class="cel-path-head">
-                        <div>
-                            <h3 class="cel-path-name" style="color:${pathObj.accent};">${pathObj.name}</h3>
-                            <p class="cel-path-tag">${pathObj.tagline}</p>
+                        <div class="cel-path-title-row">
+                            <span class="cel-path-emblem">${branchGlyph}</span>
+                            <div>
+                                <h3 class="cel-path-name">${this._esc(pathObj.name)}</h3>
+                                <p class="cel-path-tag">${this._esc(pathObj.tagline)}</p>
+                            </div>
                         </div>
                         <span class="cel-path-status-badge ${badgeCls}">${badgeTxt}</span>
                     </div>
-                    ${nodesHtml}
+                    <div class="cel-path-nodes">${nodesHtml}</div>
                 </div>
             `;
         }).join('');
 
         modal.innerHTML = `
-            <div class="modal-panel cel-tree-panel">
-                <button class="modal-close-x-btn" id="cel-tree-close-x" title="Close">✕</button>
+            <div class="modal-panel cel-tree-panel ${themeCls}">
+                <div class="cel-cosmos-bg" aria-hidden="true"></div>
+                <button class="modal-close-x-btn cel-close-x" id="cel-tree-close-x" title="Close">✕</button>
                 <div class="cel-tree-header">
                     <div class="cel-tree-icon-wrap">
-                        <img src="${wMeta.image || 'assets/WeaponIcons/HyperionCelestialGlaive.png'}" alt="${wMeta.name || ''}">
+                        <div class="cel-core-halo"></div>
+                        <img src="${wMeta.image || 'assets/WeaponIcons/HyperionCelestialGlaive.png'}" alt="${this._esc(wMeta.name || '')}">
                     </div>
-                    <div>
-                        <h2 class="cel-tree-title">✦ ${def.title}</h2>
-                        <p class="cel-tree-sub">${def.subtitle}</p>
+                    <div class="cel-header-copy">
+                        <h2 class="cel-tree-title">✦ ${this._esc(def.title)}</h2>
+                        <p class="cel-tree-sub">${this._esc(def.subtitle)}</p>
+                    </div>
+                    <div class="cel-mastery-box">
+                        <span class="cel-mastery-lbl">CONSTELLATION</span>
+                        <div class="cel-core-pips">${corePipsHtml}</div>
+                        <span class="cel-mastery-count">${mods.unlockedCount} / 3</span>
                     </div>
                 </div>
-                <div class="cel-tree-summary-bar">${summaryChips.join('')}</div>
-                <div class="cel-tree-root">★ AWAKENED ${(wMeta.name || 'CELESTIAL RELIC').toUpperCase()} CORE ★</div>
-                <div class="cel-tree-branches">${branchesHtml}</div>
-                <div style="margin-top:14px;display:flex;justify-content:center;">
-                    <button type="button" id="cel-tree-done-btn" class="gear-done-btn">CLOSE SKILL TREE</button>
+                <div class="cel-tree-summary-bar">${this._buildSummaryChips(mods, st, isAwakened)}</div>
+                <div class="cel-tree-stage">
+                    <div class="cel-tree-root ${isAwakened ? 'is-awakened' : 'is-unawakened'}">
+                        <span class="cel-root-star">✦</span>
+                        <span>${isAwakened ? `AWAKENED ${this._esc((wMeta.name || 'CELESTIAL RELIC').toUpperCase())} CORE` : `UNAWAKENED CORE (EVOLVE ★ FIRST)`}</span>
+                        <span class="cel-root-star">✦</span>
+                    </div>
+                    ${forkSvgHtml}
+                    <div class="cel-tree-branches">${branchesHtml}</div>
+                </div>
+                <div class="cel-footer-actions">
+                    <button type="button" id="cel-tree-done-btn" class="gear-done-btn cel-done-btn">CLOSE CONSTELLATION</button>
                 </div>
             </div>
         `;
@@ -200,9 +288,8 @@ class CelestialSkillTreeModalUI {
 
                 if (!curState.chosenPath && this._pendingConfirmNodeId !== nodeId) {
                     const status = CelestialSkillTreeManager.getNodeStatus(weaponId, pathId, nodeId);
-                    if (status === 'available' && CelestialSkillTreeManager.canAfford(
-                        def.paths.find(p => p.id === pathId)?.nodes.find(n => n.id === nodeId)?.cost
-                    )) {
+                    const cost = def.paths.find(p => p.id === pathId)?.nodes.find(n => n.id === nodeId)?.cost;
+                    if (status === 'available' && CelestialSkillTreeManager.canAfford(cost)) {
                         this._pendingConfirmNodeId = nodeId;
                         this.render();
                         return;

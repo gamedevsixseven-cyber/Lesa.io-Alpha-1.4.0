@@ -137,12 +137,16 @@ class FriendsModal {
         if (this.activeTab === 'requests' && this.reqToastEl) this.reqToastEl.classList.add('hidden');
         if (this.service) {
             this.service.syncMyProfile(false);
-            if (!this._lastFriendsSyncAt || Date.now() - this._lastFriendsSyncAt > 120000) {
+            if (!this._lastFriendsSyncAt || Date.now() - this._lastFriendsSyncAt > 20000) {
                 this._lastFriendsSyncAt = Date.now();
                 this.service.pollFriendships();
                 this.service.refreshFriendStatuses();
             } else if (typeof window !== 'undefined' && window.presenceService) {
-                window.presenceService.fetchOnce(this.service.friends.map(f => f.otherUid)).then(() => this.render());
+                const uids = this.service.friends.map(f => f.otherUid);
+                window.presenceService.fetchOnce(uids).then(() => {
+                    if (typeof this.service._syncFriendFromPresence === 'function') uids.forEach(u => this.service._syncFriendFromPresence(u));
+                    this.render();
+                });
             }
         }
         if (window.chatService) { window.chatService.syncSubscriptions(); if (typeof window.chatService.pollDmThreads === 'function') window.chatService.pollDmThreads(true); }
@@ -153,9 +157,9 @@ class FriendsModal {
             if (!this.service || !this.modal || this.modal.classList.contains('hidden')) return;
             const now = Date.now();
             if (this.service._friendshipsErrored || !this.service._unsubFriendships) this.service.pollFriendships();
-            if (!this._lastFriendsSyncAt || now - this._lastFriendsSyncAt >= 120000) { this._lastFriendsSyncAt = now; this.service.refreshFriendStatuses(); }
+            if (!this._lastFriendsSyncAt || now - this._lastFriendsSyncAt >= 30000) { this._lastFriendsSyncAt = now; this.service.refreshFriendStatuses(); }
             else this.render();
-        }, 60000);
+        }, 30000);
     }
     hide() {
         this.closeDm(false);
@@ -223,15 +227,20 @@ class FriendsModal {
     }
 
     _getEnrichedFriends() {
+        const ps = (typeof window !== 'undefined') ? window.presenceService : null;
+        const psCache = ps ? ps.cache : null;
         return this.service.friends.map((f) => {
             const live = this.service.friendProfiles[f.otherUid] || {};
+            const pres = (typeof PresenceService !== 'undefined' && psCache) ? PresenceService.resolve(f.otherUid, live, psCache) : live;
+            const isOnline = Boolean(pres.isOnline);
             return {
                 relId: f.id, uid: f.otherUid,
                 name: live.name || f.profile.name, tag: live.tag || f.profile.tag,
-                hero: live.hero || f.profile.hero, level: live.level || f.profile.level,
-                isOnline: Boolean(live.isOnline), status: live.currentStatus || (live.isOnline ? 'In Lobby' : 'Offline'),
-                lastSeenAt: Number(live.lastSeenAt || (f.profile && f.profile.lastSeenAt) || 0),
-                coopRoomCode: live.coopRoomCode || null,
+                hero: live.hero || f.profile.hero,
+                level: live.uid ? Math.max(1, Number(live.level) || 1) : Math.max(1, Number(live.level) || 0, Number(f.profile && f.profile.level) || 1),
+                isOnline, status: pres.currentStatus || live.currentStatus || (isOnline ? 'In Lobby' : 'Offline'),
+                lastSeenAt: Number(pres.lastSeenAt || live.lastSeenAt || (f.profile && f.profile.lastSeenAt) || 0),
+                coopRoomCode: isOnline ? (pres.coopRoomCode || live.coopRoomCode || null) : null,
                 highScore: live.highScore || 0, maxWave: live.maxWave || 1, totalKills: live.totalKills || 0,
                 endlessMaxWave: live.endlessMaxWave || 0, olympusMaxFloor: live.olympusMaxFloor || 0,
                 cosmetics: live.cosmetics || f.profile.cosmetics || {},
@@ -445,19 +454,11 @@ class FriendsModal {
         body.appendChild(wrap);
 
         const acceptAll = document.getElementById('friends-accept-all-btn');
-        if (acceptAll) {
-            acceptAll.addEventListener('click', async () => {
-                acceptAll.disabled = true;
-                for (const req of inc) await this.service.acceptFriendRequest(req.id);
-                this.setFeedback(`Accepted ${inc.length} friend requests!`);
-            });
-        }
+        if (acceptAll) acceptAll.addEventListener('click', async () => { acceptAll.disabled = true; for (const req of inc) await this.service.acceptFriendRequest(req.id); this.setFeedback(`Accepted ${inc.length} friend requests!`); });
         wrap.querySelectorAll('[data-accept]').forEach(b => b.addEventListener('click', () => this.service.acceptFriendRequest(b.dataset.accept)));
         wrap.querySelectorAll('[data-decline]').forEach(b => b.addEventListener('click', () => this.service.removeOrDeclineFriendship(b.dataset.decline)));
         wrap.querySelectorAll('[data-dismiss]').forEach(b => b.addEventListener('click', () => this.service.dismissInvite(b.dataset.dismiss)));
-        wrap.querySelectorAll('[data-join]').forEach(b => b.addEventListener('click', () => {
-            this.joinRoomCode(b.dataset.join, b.dataset.inv);
-        }));
+        wrap.querySelectorAll('[data-join]').forEach(b => b.addEventListener('click', () => this.joinRoomCode(b.dataset.join, b.dataset.inv)));
     }
 
     _renderAddTab(body) {
@@ -514,23 +515,15 @@ class FriendsModal {
         });
         FriendsCardRenderer.applySocialCosmetics(container);
 
-        container.querySelectorAll('[data-add-uid]').forEach((btn) => {
-            btn.addEventListener('click', async () => {
-                const profile = this.searchResults.find(r => r.uid === btn.dataset.addUid);
-                btn.disabled = true;
-                const resp = await this.service.sendFriendRequest(profile);
-                this.setFeedback(resp.message);
-                this._paintSearchResults(container);
-            });
-        });
-        container.querySelectorAll('[data-accept-id]').forEach((btn) => {
-            btn.addEventListener('click', async () => {
-                btn.disabled = true;
-                await this.service.acceptFriendRequest(btn.dataset.acceptId);
-                this.setFeedback('Friend added!');
-                this._paintSearchResults(container);
-            });
-        });
+        container.querySelectorAll('[data-add-uid]').forEach((btn) => btn.addEventListener('click', async () => {
+            const profile = this.searchResults.find(r => r.uid === btn.dataset.addUid);
+            btn.disabled = true; const resp = await this.service.sendFriendRequest(profile);
+            this.setFeedback(resp.message); this._paintSearchResults(container);
+        }));
+        container.querySelectorAll('[data-accept-id]').forEach((btn) => btn.addEventListener('click', async () => {
+            btn.disabled = true; await this.service.acceptFriendRequest(btn.dataset.acceptId);
+            this.setFeedback('Friend added!'); this._paintSearchResults(container);
+        }));
     }
 
     async inviteFriendToCoop(friendUid, friendName) {
