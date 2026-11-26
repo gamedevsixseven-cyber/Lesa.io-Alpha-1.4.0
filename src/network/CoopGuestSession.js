@@ -30,6 +30,7 @@ class CoopGuestSession {
 
         this.setupNetworkHandlers();
         this.hookGuestInput();
+        if (typeof CoopCombatFx !== 'undefined' && typeof CoopCombatFx.hookDamageSync === 'function') CoopCombatFx.hookDamageSync(this.game);
     }
 
     get remotePlayer() { return CoopPeerRoster.getRemotePlayer(this, 'host'); }
@@ -381,7 +382,7 @@ class CoopGuestSession {
                 if (authHp < p.hp - 0.5) {
                     p.hitFlash = 12;
                     if (this.game.effects) {
-                        this.game.effects.addDamage(p.x, p.y, Math.max(1, Math.round(p.hp - authHp)), false, false);
+                        this.game.effects.addDamage(p.x, p.y, Math.max(1, Math.round(p.hp - authHp)), false, true);
                         this.game.effects.addSparks(p.x, p.y, '#ff4757', 6);
                     }
                     if (window.soundEngine && typeof window.soundEngine.playHit === 'function') window.soundEngine.playHit(false, true);
@@ -434,6 +435,9 @@ class CoopGuestSession {
         // 4. Synchronize Enemies with zero-GC delta reconstruction & interpolation
         if (Array.isArray(data.enemies) && typeof CoopSnapshotSync !== 'undefined') {
             CoopSnapshotSync.applyGuestEnemies(this, data.enemies);
+        }
+        if (Array.isArray(data.dmgs) && typeof CoopCombatFx !== 'undefined' && typeof CoopCombatFx.applyGuestDamageNums === 'function') {
+            CoopCombatFx.applyGuestDamageNums(this, data.dmgs);
         }
 
         // 4.5. Synchronize Enemy Projectiles smoothly without wiping player bullets or teleporting

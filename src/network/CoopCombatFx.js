@@ -234,6 +234,98 @@ class CoopCombatFx {
             if (data.sc && data.sn > 0) fx.addSparks(data.x, data.y, data.sc, Math.min(16, Number(data.sn)));
         }
     }
+
+    /**
+     * Hook EffectsManager.addDamage idempotently on Co-op Host/Guest so Guest receives
+     * all authoritative enemy damage numbers (Glaive, Starfall, Mortar, Skills, Host hits)
+     * without duplicating locally predicted projectile hits.
+     */
+    static hookDamageSync(game) {
+        const fx = game && game.effects;
+        if (!fx || typeof fx.addDamage !== 'function' || fx._coopOrigAddDamage) return;
+        const origAdd = fx.addDamage.bind(fx);
+        fx._coopOrigAddDamage = origAdd;
+        fx.addDamage = (x, y, amount, isCrit = false, isPlayer = false, isDrenched = false) => {
+            const g = (typeof window !== 'undefined') ? window.gameInstance : game;
+            const sess = g && g.coopSession;
+            if (sess && !isPlayer && Number.isFinite(amount) && amount > 0) {
+                if (g.isCoopGuest) {
+                    const log = sess._localPredDmgs || (sess._localPredDmgs = []);
+                    const now = performance.now();
+                    while (log.length > 40) log.shift();
+                    log.push({ x, y, a: Math.round(amount), t: now });
+                } else if (sess.isHost && sess.net && sess.net.connected) {
+                    CoopCombatFx.queueHostDamageNum(sess, x, y, amount, isCrit, isDrenched);
+                }
+            }
+            origAdd(x, y, amount, isCrit, isPlayer, isDrenched);
+        };
+    }
+
+    static queueHostDamageNum(session, x, y, amount, isCrit = false, isDrenched = false) {
+        if (!session || !Number.isFinite(x) || !Number.isFinite(y)) return;
+        const amt = Math.max(1, Math.round(amount));
+        const rx = Math.round(x), ry = Math.round(y);
+        const flags = (isCrit ? 1 : 0) | (isDrenched ? 2 : 0);
+        const q = session._pendingDmgNums || (session._pendingDmgNums = []);
+        if (flags === 0) {
+            for (let i = q.length - 1; i >= Math.max(0, q.length - 8); i--) {
+                const prev = q[i];
+                if (prev[3] === 0 && Math.abs(prev[0] - rx) <= 24 && Math.abs(prev[1] - ry) <= 24) {
+                    prev[2] += amt;
+                    return;
+                }
+            }
+        }
+        if (q.length >= 40) {
+            if (!(flags & 1)) return;
+            q.shift();
+        }
+        q.push([rx, ry, amt, flags]);
+    }
+
+    static flushHostDamageNums(session) {
+        const q = session && session._pendingDmgNums;
+        if (!q || q.length === 0) return {};
+        session._pendingDmgNums = [];
+        return { dmgs: q };
+    }
+
+    static applyGuestDamageNums(session, dmgs) {
+        const fx = session && session.game && session.game.effects;
+        if (!fx || !Array.isArray(dmgs) || dmgs.length === 0) return;
+        const addFn = fx._coopOrigAddDamage || fx.addDamage.bind(fx);
+        const log = session._localPredDmgs;
+        const now = performance.now();
+        if (log && log.length > 0) {
+            let w = 0;
+            for (let i = 0; i < log.length; i++) {
+                if (now - log[i].t <= 650) log[w++] = log[i];
+            }
+            log.length = w;
+        }
+        for (let i = 0; i < dmgs.length; i++) {
+            const d = dmgs[i];
+            if (!Array.isArray(d) || d.length < 3) continue;
+            const x = Number(d[0]), y = Number(d[1]), amt = Number(d[2]), flags = Number(d[3]) || 0;
+            if (!Number.isFinite(x) || !Number.isFinite(y) || !(amt > 0)) continue;
+            let matched = false;
+            if (log && log.length > 0) {
+                const tol = Math.max(10, amt * 0.48);
+                for (let j = log.length - 1; j >= 0; j--) {
+                    const entry = log[j];
+                    if (Math.abs(entry.a - amt) <= tol && Math.hypot(entry.x - x, entry.y - y) <= 95) {
+                        log.splice(j, 1);
+                        matched = true;
+                        break;
+                    }
+                }
+            }
+            if (!matched) {
+                addFn(x, y, amt, !!(flags & 1), false, !!(flags & 2));
+            }
+        }
+    }
 }
 
 if (typeof window !== 'undefined') window.CoopCombatFx = CoopCombatFx;

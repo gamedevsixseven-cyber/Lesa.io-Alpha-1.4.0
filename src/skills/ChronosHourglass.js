@@ -18,6 +18,7 @@ class ChronosHourglassHazard {
         this.isMastered = !!isMastered;
         this.isBonus = !!(opts && opts.isBonus) || !!cfg.isBonusUpgraded;
         this.isRemoteCaster = !!(opts && opts.isRemoteCaster);
+        this.casterPlayer = (opts && opts.casterPlayer) || null;
         this.healInterval = (cfg.healIntervalSec > 0) ? Math.round(cfg.healIntervalSec * 60) : (this.isBonus ? 120 : 0);
         this.healFlat = cfg.healFlat || (this.isBonus ? 22 : 0);
         this.healPct = cfg.healPct || (this.isBonus ? 0.06 : 0);
@@ -84,6 +85,12 @@ class ChronosHourglassHazard {
         target.hp = reviveHp;
         target.invulnerableTimer = Math.max(target.invulnerableTimer || 0, 90);
         target.happyTimer = 50;
+        target.isGrabbed = false;
+        target.isAirborne = false;
+        target.airZ = 0;
+        target.stunTimer = 0;
+        target.speedDebuffTimer = 0;
+        if ('dead' in target) target.dead = false;
         if (isRemoteTarget) target.isDowned = false;
 
         if (effects) {
@@ -103,7 +110,7 @@ class ChronosHourglassHazard {
                 t: 'ring', x: Math.round(target.x), y: Math.round(target.y),
                 r: 150, c: 'rgba(46, 213, 115, 0.92)', m: '⏳ CHRONOS REVIVE!',
                 sc: '#fed330', sn: 14
-            }, { droppable: true });
+            });
         }
         if (cs && typeof cs.broadcastSnapshot === 'function') {
             cs.broadcastSnapshot();
@@ -140,19 +147,25 @@ class ChronosHourglassHazard {
             const g = this.game || (typeof window !== 'undefined' ? window.gameInstance : null);
             const cs = (g && !g.isCoopGuest) ? g.coopSession : null;
             if (!cs) return;
-            const rSq = this.radius * this.radius;
-            if (!this.isRemoteCaster) {
-                const rps = cs.remotePlayers || (cs.remotePlayer ? [cs.remotePlayer] : []);
-                for (let ri = 0; ri < rps.length; ri++) {
-                    const rp = rps[ri];
-                    if (rp && rp.isDowned && !rp.isDownedDisconnected && ((rp.x - this.x) ** 2 + (rp.y - this.y) ** 2 <= rSq)) {
-                        this._reviveTeammate(rp, true, g, cs, effects);
-                        break;
-                    }
+            const candidates = [];
+            if (player && player !== this.casterPlayer && player.hp <= 0) {
+                candidates.push({ target: player, isRemote: false });
+            }
+            const rps = cs.remotePlayers || (cs.remotePlayer ? [cs.remotePlayer] : []);
+            for (let ri = 0; ri < rps.length; ri++) {
+                const rp = rps[ri];
+                if (rp && rp !== this.casterPlayer && (rp.isDowned || rp.hp <= 0) && !rp.isDownedDisconnected) {
+                    candidates.push({ target: rp, isRemote: true });
                 }
-            } else if (player && player.hp <= 0) {
-                const dx = player.x - this.x, dy = player.y - this.y;
-                if (dx * dx + dy * dy <= rSq) this._reviveTeammate(player, false, g, cs, effects);
+            }
+            for (let ci = 0; ci < candidates.length; ci++) {
+                const { target, isRemote } = candidates[ci];
+                const reach = this.radius + (target.radius || 24);
+                const dx = target.x - this.x, dy = target.y - this.y;
+                if (dx * dx + dy * dy <= reach * reach) {
+                    this._reviveTeammate(target, isRemote, g, cs, effects);
+                    break;
+                }
             }
         }
     }
@@ -335,7 +348,7 @@ class ChronosHourglassSkill {
             if (!activeGame.hazards) activeGame.hazards = [];
             activeGame.hazards.push(new ChronosHourglassHazard(
                 player.x, player.y, ld, isMastered, player.damageMultiplier || 1, activeGame,
-                { isBonus, isRemoteCaster: !!(player && player._isRemoteCaster) }
+                { isBonus, isRemoteCaster: !!(player && player._isRemoteCaster), casterPlayer: (player && player._casterPlayer) || (!(player && player._isRemoteCaster) ? player : null) }
             ));
         }
     }

@@ -12,7 +12,7 @@ class CoopSkillFx {
         let x = Number.isFinite(skillData.x) ? skillData.x : remotePlayer.x;
         let y = Number.isFinite(skillData.y) ? skillData.y : remotePlayer.y;
         const offsetDist = Math.hypot(x - remotePlayer.x, y - remotePlayer.y);
-        if (offsetDist > 220) { x = remotePlayer.x; y = remotePlayer.y; }
+        if (offsetDist > 420) { x = remotePlayer.x; y = remotePlayer.y; }
         const angle = Number.isFinite(skillData.angle) ? skillData.angle : (remotePlayer.angle || 0);
         const fx = game.effects;
         const cam = game.camera;
@@ -143,7 +143,7 @@ class CoopSkillFx {
         } else if (skillId === 'bouzouki_decoy' && typeof BouzoukiDecoySkill !== 'undefined') {
             BouzoukiDecoySkill.execute({ x, y, angle, damageMultiplier: 1, skillCooldown: 0, maxSkillCooldown: 0 }, level, isHostAuthoritative && game ? game.enemies : [], fx, cam, game);
         } else if (skillId === 'chrono_hourglass' && typeof ChronosHourglassSkill !== 'undefined') {
-            ChronosHourglassSkill.execute({ x, y, angle, damageMultiplier: 1, skillCooldown: 0, maxSkillCooldown: 0, _isRemoteCaster: true }, level, isHostAuthoritative && game ? game.enemies : [], fx, cam, game);
+            ChronosHourglassSkill.execute({ x, y, angle, damageMultiplier: 1, skillCooldown: 0, maxSkillCooldown: 0, _isRemoteCaster: true, _casterPlayer: remotePlayer }, level, isHostAuthoritative && game ? game.enemies : [], fx, cam, game);
         } else {
             // Blade Rush (default)
             const reach = 75 + (level - 1) * 8;

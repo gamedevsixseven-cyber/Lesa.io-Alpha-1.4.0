@@ -73,7 +73,8 @@ class CollisionSystem {
                         let dmgMult = (typeof window !== 'undefined' && window.perkSystem) ? window.perkSystem.getDamageMultiplier(e) : 1.0;
                         if (typeof GearPassives !== 'undefined') dmgMult *= GearPassives.getDamageMultiplier(p, e, b.isCrit);
                         const finalDmg = b.damage * dmgMult;
-                        e.takeDamage(finalDmg, effects, b.isCrit);
+                        const hitFx = (game.isCoopGuest && b.shooter && b.shooter !== p) ? null : effects;
+                        e.takeDamage(finalDmg, hitFx, b.isCrit);
                         if (typeof HeroUltimates !== 'undefined') HeroUltimates.onDamageDealt(p, finalDmg);
                         if (game.isCoopGuest) e.dead = false;
                         if (b.isChargedBubble) {

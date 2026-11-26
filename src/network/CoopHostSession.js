@@ -26,6 +26,7 @@ class CoopHostSession {
 
         this.setupNetworkHandlers();
         this.hookHostInput();
+        if (typeof CoopCombatFx !== 'undefined' && typeof CoopCombatFx.hookDamageSync === 'function') CoopCombatFx.hookDamageSync(this.game);
     }
 
     hookHostInput() {
@@ -457,7 +458,8 @@ class CoopHostSession {
             },
             enemies: enemiesPayload,
             drops: dropsPayload,
-            enemyBullets: enemyBulletsPayload
+            enemyBullets: enemyBulletsPayload,
+            ...(typeof CoopCombatFx !== 'undefined' && typeof CoopCombatFx.flushHostDamageNums === 'function' ? CoopCombatFx.flushHostDamageNums(this) : {})
         };
 
         this.net.send('HOST_SNAPSHOT', snapshot, { droppable: true, fast: true });
@@ -466,9 +468,10 @@ class CoopHostSession {
     playRemoteSkill(remotePlayer, skillData = {}, isHostAuthoritative = true) {
         if (isHostAuthoritative && remotePlayer) {
             const sid = typeof skillData.skillId === 'string' ? skillData.skillId : 'blade_rush';
-            const lvl = Math.max(1, Math.min(5, Math.round(Number(skillData.level) || 1)));
+            const maxSkillLvl = (typeof SKILLS !== 'undefined' && SKILLS[sid] && SKILLS[sid].maxLevel) ? SKILLS[sid].maxLevel : 6;
+            const lvl = Math.max(1, Math.min(maxSkillLvl, Math.round(Number(skillData.level) || 1)));
             const cdSec = (typeof PlayerSkills !== 'undefined') ? PlayerSkills.getEffectiveCooldown(sid, lvl) : 7.0;
-            const minGapMs = Math.max(2500, cdSec * 720);
+            const minGapMs = Math.max(1200, cdSec * 360);
             const now = performance.now();
             if (now - (remotePlayer._lastSkillTime || 0) < minGapMs) return false;
             remotePlayer._lastSkillTime = now;
