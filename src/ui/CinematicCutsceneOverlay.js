@@ -46,6 +46,7 @@ class CinematicCutsceneOverlay {
             });
 
             window.addEventListener('keydown', (e) => {
+                if (e.repeat) return;
                 if (this.active && this.promptAdvance) {
                     if (e.code === 'Space' || e.code === 'Enter' || e.code === 'KeyE') {
                         this.advance();
@@ -113,9 +114,9 @@ class CinematicCutsceneOverlay {
     advance() {
         if (!this.active || !this.promptAdvance) return false;
         const now = performance.now();
-        // Strict Debounce: ignore touches within 320ms of last advance OR 250ms of new dialogue appearing
-        if (this.lastAdvanceTime > 0 && (now - this.lastAdvanceTime) < 320) return false;
-        if (this.dialogueStartTime > 0 && (now - this.dialogueStartTime) < 250) return false;
+        // Strict Debounce: ignore touches within 380ms of last advance OR 480ms of new dialogue/prompt appearing
+        if (this.lastAdvanceTime > 0 && (now - this.lastAdvanceTime) < 380) return false;
+        if (this.dialogueStartTime > 0 && (now - this.dialogueStartTime) < 480) return false;
         this.lastAdvanceTime = now;
 
         // Cooperative multi-player advance coordination

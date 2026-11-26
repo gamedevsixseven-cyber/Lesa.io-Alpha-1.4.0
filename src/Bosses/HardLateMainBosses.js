@@ -48,7 +48,7 @@ class CelestialEclipseArchon extends EndlessBossBase {
                 avatar: '🌑',
                 color: '#c084fc',
                 shockColor: 'rgba(168, 85, 247, 0.94)',
-                line1: 'YOU SURVIVED AETHELGARD... YET THE TRUE CITADEL AWAKENS AT WAVE 60!',
+                line1: 'YOU SURVIVED ALPHA... YET THE TRUE CITADEL AWAKENS AT WAVE 60!',
                 surgeSub: 'VOID MONOLITHS ALIGNING AN ASTRAL ECLIPSE...',
                 line2: 'NONE PASS THE OUTER GATE ALIVE!'
             });

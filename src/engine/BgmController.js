@@ -218,6 +218,7 @@ class BgmController {
         try { if (se.menuMusic && !se.menuMusic.paused) se.menuMusic.pause(); } catch (_) {}
         try { if (se.creditsMusic && !se.creditsMusic.paused) se.creditsMusic.pause(); } catch (_) {}
         if (typeof LilXasEvent !== 'undefined' && typeof LilXasEvent.setPaused === 'function') LilXasEvent.setPaused(true);
+        if (typeof ApexW60Audio !== 'undefined' && typeof ApexW60Audio.setPaused === 'function') ApexW60Audio.setPaused(true);
         if (se.ctx && se.ctx.state === 'running') se.ctx.suspend().catch(() => {});
     }
 

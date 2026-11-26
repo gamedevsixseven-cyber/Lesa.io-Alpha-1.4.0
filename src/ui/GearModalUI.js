@@ -333,8 +333,8 @@ class GearModalUI {
                     }
                 } else if (isBossOnly || isChestOnly || isExclusive) {
                     let bossHint = `⚡ ${item.name} unlocks on your first victory over Zeus (Mount Olympus Floor 5)!`;
-                    if (item.bossUnlock === 'apex_sovereign_w30') bossHint = `♦️ ${item.name} unlocks on your first victory over Wave 30 Hard Endless Apex Boss (Aethelgard)!`;
-                    else if (item.bossUnlock === 'apex_omega_w60') bossHint = `👑 ${item.name} unlocks on your first victory over Wave 60 Hard Endless Final Apex Boss (Erebus)!`;
+                    if (item.bossUnlock === 'apex_sovereign_w30') bossHint = `♦️ ${item.name} unlocks on your first victory over Wave 30 Hard Endless Apex Boss (Alpha)!`;
+                    else if (item.bossUnlock === 'apex_omega_w60') bossHint = `👑 ${item.name} unlocks on your first victory over Wave 60 Hard Endless Final Apex Boss (Omega)!`;
                     const msg = isBossOnly
                         ? bossHint
                         : (isExclusive

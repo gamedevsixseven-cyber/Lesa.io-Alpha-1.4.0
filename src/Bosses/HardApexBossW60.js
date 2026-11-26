@@ -1,5 +1,5 @@
 /**
- * Lesa.io - Wave 60 Final Apex Boss: "Erebus, Sovereign of the End"
+ * Lesa.io - Wave 60 Final Apex Boss: "Omega, Sovereign of the End"
  * By far the strongest encounter in the game:
  *   - 6-Stage Delay-Reveal Entrance (weather & map transform BEFORE boss materializes in full aura)
  *   - 4 Escalating Combat Phases + 50% HP Invulnerable Omega Aegis Shield with 4 Pillars
@@ -10,8 +10,8 @@
 class OmegaApocalypse extends EndlessBossBase {
     constructor(x, y, waveMultiplier = 1.0, extra = {}) {
         super(x, y, 'apex_omega_w60', waveMultiplier, {
-            name: 'Erebus, Sovereign of the End',
-            hudLabel: extra.hudLabel || '🔥 EREBUS, SOVEREIGN OF THE END [FINAL APEX] 🔥',
+            name: 'Omega, Sovereign of the End',
+            hudLabel: extra.hudLabel || '🔥 OMEGA, SOVEREIGN OF THE END [FINAL APEX] 🔥',
             isMiniBoss: false,
             bossRank: 'apex',
             rankColor: extra.rankColor || '#ff2e4c',
@@ -29,7 +29,7 @@ class OmegaApocalypse extends EndlessBossBase {
         this.isHardMainBoss = true;
         this.isApexBoss = true;
         this.fixedHardHp = 5000000;
-        this.apexTitle = 'Erebus, Sovereign of the End';
+        this.apexTitle = 'Omega, Sovereign of the End';
         this.apexBadgeText = '🔥 W60 FINAL APEX 🔥';
         this.phaseNotches = [0.75, 0.50, 0.25];
         this.phase = 1;
@@ -62,11 +62,15 @@ class OmegaApocalypse extends EndlessBossBase {
         this._pendingShieldSpawn = false;
         this._pillarHealTimer = 48;
         this.phase4Triggered = false;
+        this.isDefeated = false;
+        this.isDying = false;
+        this.defeatAge = 0;
+        this._defeatFade = 1.0;
     }
 
     takeDamage(amount, effects = null, fromCrit = null, playSound = true) {
-        if (this.cutsceneState !== 'COMBAT') {
-            if (effects && Math.random() < 0.4) effects.addSparks(this.x, this.y, '#c084fc', 4);
+        if (this.isDefeated || this.cutsceneState !== 'COMBAT') {
+            if (effects && !this.isDefeated && Math.random() < 0.4) effects.addSparks(this.x, this.y, '#c084fc', 4);
             return false;
         }
         if (this.shieldActive) {
@@ -81,11 +85,12 @@ class OmegaApocalypse extends EndlessBossBase {
             return false;
         }
 
+        let dmgScale = 1.0;
+        if (this.waterDrenchedTimer > 0) dmgScale *= (this.damageVulnerabilityMultiplier || 1.30);
+        if (this.shockedTimer > 0) dmgScale *= (this.shockVulnerabilityMultiplier || 1.12);
+
         const halfFloor = Math.max(1, Math.ceil(this.maxHp * 0.50));
         if (!this.halfShieldTriggered && this.hp > halfFloor) {
-            let dmgScale = 1.0;
-            if (this.waterDrenchedTimer > 0) dmgScale *= (this.damageVulnerabilityMultiplier || 1.30);
-            if (this.shockedTimer > 0) dmgScale *= (this.shockVulnerabilityMultiplier || 1.12);
             if (this.hp - amount * dmgScale <= halfFloor) {
                 const clampedRaw = Math.max(0, Math.floor((this.hp - halfFloor) / dmgScale));
                 super.takeDamage(clampedRaw, effects, fromCrit, playSound);
@@ -95,13 +100,71 @@ class OmegaApocalypse extends EndlessBossBase {
             }
         }
 
+        // Intercept lethal damage so EnemyBase does not skip the Defeat Cutscene
+        if (this.hp - amount * dmgScale <= 0) {
+            const clampedRaw = Math.max(0, Math.floor((this.hp - 1) / dmgScale));
+            if (clampedRaw > 0) super.takeDamage(clampedRaw, effects, fromCrit, playSound);
+            else if (playSound && typeof window !== 'undefined' && window.soundEngine) window.soundEngine.playHit(true, !!fromCrit);
+            this.triggerDefeatCutscene(effects);
+            return false;
+        }
+
         const res = super.takeDamage(amount, effects, fromCrit, playSound);
         if (!this.halfShieldTriggered && this.hp <= halfFloor) {
             this.hp = halfFloor; this.dead = false;
             this._activateHalfHpShield();
             return false;
         }
+        if (this.hp <= 0) {
+            this.triggerDefeatCutscene(effects);
+            return false;
+        }
         return res;
+    }
+
+    triggerDefeatCutscene(effects = null) {
+        if (this.isDefeated) return;
+        this.isDefeated = true;
+        this.isDying = true;
+        this.hp = 0;
+        this.dead = false;
+        this.vx = 0;
+        this.vy = 0;
+        this.shieldActive = false;
+        this.telegraphs = [];
+        this._riftLines = [];
+        this._starBeams = [];
+        this.blinkTarget = null;
+        this.blinkWindup = 0;
+
+        this.cutsceneState = 'DEFEAT_KNEEL';
+        this.cutsceneTimer = 68;
+        this.defeatAge = 0;
+        this._defeatFade = 1.0;
+        this.auraScale = 0.72;
+
+        const g = (typeof window !== 'undefined') ? window.gameInstance : null;
+        if (g) {
+            if (Array.isArray(g.enemies)) {
+                for (let i = 0; i < g.enemies.length; i++) {
+                    const e = g.enemies[i];
+                    if (e && e !== this && !e.dead) {
+                        e.dead = true;
+                        if (effects && typeof effects.addDust === 'function') effects.addDust(e.x, e.y, 8, 12);
+                    }
+                }
+            }
+            if (Array.isArray(g.bullets)) g.bullets = g.bullets.filter(b => !b.isEnemy);
+            if (g.camera && typeof g.camera.addShake === 'function') g.camera.addShake(14);
+        }
+        if (effects) {
+            effects.addShockwave(this.x, this.y, 320, 'rgba(255, 255, 255, 0.96)');
+            effects.addComicSplash(this.x, this.y - this.radius - 18, '⚡ SOVEREIGN BROKEN!', '#fed330', 26, true);
+            if (typeof effects.triggerScreenFlash === 'function') effects.triggerScreenFlash('#ffffff', 0.44, 24);
+        }
+        if (typeof window !== 'undefined' && window.soundEngine && typeof window.soundEngine.playBossWarning === 'function') {
+            window.soundEngine.playBossWarning();
+        }
     }
 
     _activateHalfHpShield() {
@@ -113,6 +176,7 @@ class OmegaApocalypse extends EndlessBossBase {
         this.phase = Math.max(this.phase, 3);
         this.shieldFlash = 14;
         this.phaseLabel = '🛡️ OMEGA AEGIS • PILLARS HEALING (4/4)';
+        if (typeof ApexW60Audio !== 'undefined') ApexW60Audio.playVoice('erebus_aegis', 'w60_aegis');
     }
 
     onShieldPillarDestroyed(pillar = null, effects = null) {

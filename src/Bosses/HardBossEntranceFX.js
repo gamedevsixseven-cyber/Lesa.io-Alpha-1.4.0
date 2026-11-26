@@ -11,13 +11,13 @@ class HardBossEntranceFX {
         if (waveNum === 15) return { ctorName: 'ChronoWarden', title: 'KAELOS, WARDEN OF STASIS', rankName: 'HARD MINI-BOSS', crateId: 'boss_crate_very_hard', rankColor: '#38bdf8', isMini: true };
         if (waveNum === 20) return { ctorName: 'AbyssalSeraph', title: 'VAELOR, BLOOD ECLIPSE SERAPH', rankName: 'HARD MAIN BOSS', crateId: 'boss_crate_very_hard', rankColor: '#fed330', isMini: false };
         if (waveNum === 25) return { ctorName: 'VoidDreadnought', title: 'XYLAR, OBSIDIAN SIEGEBREAKER', rankName: 'HARD MINI-BOSS', crateId: 'boss_crate_very_hard', rankColor: '#ff6b35', isMini: true };
-        if (waveNum === 30) return { ctorName: 'OblivionEngine', title: 'AETHELGARD, SOVEREIGN OF RUIN', rankName: 'APEX BOSS', crateId: 'boss_crate_insane', rankColor: '#ff2e4c', isMini: false, isApexBoss: true, bossRank: 'apex' };
+        if (waveNum === 30) return { ctorName: 'OblivionEngine', title: 'ALPHA, SOVEREIGN OF RUIN', rankName: 'APEX BOSS', crateId: 'boss_crate_insane', rankColor: '#ff2e4c', isMini: false, isApexBoss: true, bossRank: 'apex' };
         if (waveNum === 35) return { ctorName: 'InfernoHydra', title: 'IGNIS, TWIN-CORE WARDEN', rankName: 'HARD MINI-BOSS', crateId: 'boss_crate_insane', rankColor: '#ffa502', isMini: true };
         if (waveNum === 40) return { ctorName: 'CelestialEclipseArchon', title: 'NYXOR, HERALD OF ECLIPSE', rankName: 'HARD MAIN BOSS', crateId: 'boss_crate_insane', rankColor: '#a855f7', isMini: false };
         if (waveNum === 45) return { ctorName: 'StormforgeAutomaton', title: 'VOLTAIRE, MAGNETAR FORGEMASTER', rankName: 'HARD MINI-BOSS', crateId: 'boss_crate_insane', rankColor: '#38bdf8', isMini: true };
         if (waveNum === 50) return { ctorName: 'AstralChronoReaver', title: 'KRONARCH, WEAVER OF TIME', rankName: 'HARD MAIN BOSS', crateId: 'boss_crate_insane', rankColor: '#2ed573', isMini: false };
         if (waveNum === 55) return { ctorName: 'AbyssalLeviathan', title: 'NAUTILOR, ABYSSAL LEVIATHAN', rankName: 'HARD MINI-BOSS', crateId: 'boss_crate_insane', rankColor: '#00d2d3', isMini: true };
-        if (waveNum === 60) return { ctorName: 'OmegaApocalypse', title: 'EREBUS, SOVEREIGN OF THE END', rankName: 'FINAL APEX BOSS', crateId: 'boss_crate_insane', rankColor: '#ff2e4c', isMini: false, isApexBoss: true, bossRank: 'apex' };
+        if (waveNum === 60) return { ctorName: 'OmegaApocalypse', title: 'OMEGA, SOVEREIGN OF THE END', rankName: 'FINAL APEX BOSS', crateId: 'boss_crate_insane', rankColor: '#ff2e4c', isMini: false, isApexBoss: true, bossRank: 'apex' };
         return null;
     }
 
@@ -37,6 +37,7 @@ class HardBossEntranceFX {
         const Ctor = (cfg && typeof window !== 'undefined') ? window[cfg.ctorName] : null;
         if (!cfg || typeof Ctor !== 'function') return false;
 
+        if (waveNum >= 55 && typeof ApexW60Audio !== 'undefined') ApexW60Audio.prefetch();
         const waveMult = 1.15 + (waveNum - 1) * 0.23;
         const ang = Math.random() * Math.PI * 2;
         const dist = cfg.isMini ? 450 : 380;

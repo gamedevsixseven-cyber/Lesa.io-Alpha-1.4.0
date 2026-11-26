@@ -265,6 +265,7 @@ class CoopPauseSync {
         s.game.isCoopGuest = false;
         s.game.coopSession = null;
         if (typeof LilXasEvent !== 'undefined') LilXasEvent.reset();
+        if (typeof ApexW60Audio !== 'undefined') ApexW60Audio.resetSession();
         if (s.game.cutsceneOverlay) {
             s.game.cutsceneOverlay.totalPlayers = 1;
             s.game.cutsceneOverlay.setReadyState(0, 1, false);

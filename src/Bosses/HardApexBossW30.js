@@ -1,5 +1,5 @@
 /**
- * Lesa.io - Wave 30 Apex Boss: "Aethelgard, Sovereign of Ruin"
+ * Lesa.io - Wave 30 Apex Boss: "Alpha, Sovereign of Ruin"
  * First Hard-Mode APEX BOSS (`isApexBoss: true`, `bossRank: 'apex'`).
  * Uses 5-stage Reality-Shatter entrance ritual, 3 multi-mechanics combat phases
  * (Pylon Laser Stars, Singularity Pull Collapse, Halberd Dash, Meteor Barrage),
@@ -9,8 +9,8 @@
 class OblivionEngine extends EndlessBossBase {
     constructor(x, y, waveMultiplier = 1.0, extra = {}) {
         super(x, y, 'apex_sovereign_w30', waveMultiplier, {
-            name: 'Aethelgard, Sovereign of Ruin',
-            hudLabel: extra.hudLabel || '👑 AETHELGARD [APEX BOSS] 👑',
+            name: 'Alpha, Sovereign of Ruin',
+            hudLabel: extra.hudLabel || '👑 ALPHA [APEX BOSS] 👑',
             isMiniBoss: false,
             bossRank: 'apex',
             rankColor: extra.rankColor || '#ff2e4c',
@@ -28,7 +28,7 @@ class OblivionEngine extends EndlessBossBase {
         this.isHardMainBoss = true;
         this.isApexBoss = true;
         this.fixedHardHp = 1500000;
-        this.apexTitle = 'Aethelgard, Sovereign of Ruin';
+        this.apexTitle = 'Alpha, Sovereign of Ruin';
         this.apexBadgeText = '👑 W30 APEX BOSS';
         this.phaseNotches = [0.65, 0.50, 0.30];
         this.phase = 1;
@@ -144,7 +144,7 @@ class OblivionEngine extends EndlessBossBase {
         if (this.cutsceneState !== 'COMBAT' && typeof HardBossEntranceFX !== 'undefined' && HardBossEntranceFX.updateApexBossCutscene) {
             HardBossEntranceFX.updateApexBossCutscene(this, dt, player, effects, {
                 subText: 'HARD WAVE 30 • APEX BOSS AWAKENING',
-                speaker: 'AETHELGARD, SOVEREIGN OF RUIN',
+                speaker: 'ALPHA, SOVEREIGN OF RUIN',
                 avatar: '👑',
                 color: '#ff2e4c',
                 line1: 'SIX RUNES SHATTERED... NO MORTAL HAS SURVIVED THE APEX SOVEREIGN!',

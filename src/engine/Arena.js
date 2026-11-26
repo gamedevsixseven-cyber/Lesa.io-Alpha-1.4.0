@@ -5,7 +5,7 @@
 
 function createArenaRng(seed) {
     let s = (seed >>> 0) || 123456789;
-    return function() {
+    return function () {
         s = (s + 0x6D2B79F5) >>> 0;
         let t = Math.imul(s ^ (s >>> 15), 1 | s);
         t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
@@ -50,7 +50,7 @@ class Arena {
                 }
             }
             if (isMobile && typeof tex1.decode === 'function') {
-                tex1.decode().then(onTex1Ready).catch(() => {});
+                tex1.decode().then(onTex1Ready).catch(() => { });
             }
         }
         if (!isMobile) {
@@ -88,9 +88,11 @@ class Arena {
             const m = document.getElementById('olympus-blessing-modal');
             if (m && m.parentNode) m.parentNode.removeChild(m);
         }
-        if (!this.dungeonFloor) return;
+        const wasDlc = (this.gameMode === 'dlc_cave');
+        if (!this.dungeonFloor && !wasDlc) return;
         this.dungeonFloor = null;
         this.dungeonBounds = null;
+        if (wasDlc) { this.width = 2800; this.height = 2800; this.halfWidth = 1400; this.halfHeight = 1400; }
         if (typeof MobilePerf !== 'undefined' && MobilePerf.isMobile && this.cachedGroundCanvas) {
             MobilePerf.releaseCanvas(this.cachedGroundCanvas);
             this.cachedGroundCanvas = null;
@@ -102,13 +104,11 @@ class Arena {
     }
 
     setGameMode(gameMode, options = {}) {
-        if (gameMode !== 'dungeons' && this.dungeonFloor) {
-            this.resetNormalTheme();
-        }
-        if (gameMode === 'dungeons') {
-            this.gameMode = 'dungeons';
-            this.isHardEndless = false;
-            return;
+        if (gameMode !== 'dungeons' && gameMode !== 'dlc_cave' && (this.dungeonFloor || this.gameMode === 'dlc_cave')) this.resetNormalTheme();
+        if (gameMode === 'dungeons') { this.gameMode = 'dungeons'; this.isHardEndless = false; return; }
+        if (gameMode === 'dlc_cave') {
+            if (typeof DlcManager === 'undefined' || !DlcManager.isPrimaryDev()) gameMode = 'story';
+            else { this.isHardEndless = false; DlcManager.applyArenaTheme(this); return; }
         }
         const nextMode = (gameMode === 'endless') ? 'endless' : 'story';
         const nextHard = (nextMode === 'endless') && !!(options && options.isEndlessHard);
@@ -480,7 +480,7 @@ class Arena {
                 const isBarrel = (obs.type === 'barrel');
                 this.obstacles.splice(i, 1);
                 const isCoop = typeof window !== 'undefined' && window.gameInstance && !!window.gameInstance.coopSession;
-                if (!isCoop) {
+                if (!isCoop && this.gameMode !== 'dlc_cave') {
                     setTimeout(() => {
                         if (isBarrel) {
                             this.respawnBarrel();
@@ -496,7 +496,7 @@ class Arena {
     drawGround(ctx, camera) {
         if (this.isHardEndless && typeof EndlessHardMap !== 'undefined' && EndlessHardMap.drawGround(ctx, camera, this)) return;
         if (typeof MobilePerf !== 'undefined' && MobilePerf.isMobile) {
-            if (this.dungeonFloor) {
+            if (this.dungeonFloor || this.gameMode === 'dlc_cave') {
                 if (MobilePerf.drawScaledCachedGround(ctx, camera, this)) return;
             } else {
                 MobilePerf.drawMobileArenaGround(ctx, camera, this);
@@ -533,6 +533,7 @@ class Arena {
     }
 
     drawBoundaries(ctx) {
+        if (this.gameMode === 'dlc_cave') return;
         if (this.dungeonFloor && typeof DungeonMapTheme !== 'undefined' && DungeonMapTheme.drawBoundaries) {
             DungeonMapTheme.drawBoundaries(ctx, this);
             return;
@@ -560,6 +561,7 @@ class Arena {
         if (typeof window !== 'undefined' && window.gameInstance && window.gameInstance.waveManager && window.gameInstance.waveManager.dungeonManager) {
             window.gameInstance.waveManager.dungeonManager.drawGroundOverlay(ctx, camera, this);
         }
+        if (this.gameMode === 'dlc_cave' && typeof DlcManager !== 'undefined') DlcManager.drawGroundOverlay(ctx, camera, this);
         if (typeof OutsidePerimeterRoads !== 'undefined') {
             OutsidePerimeterRoads.drawRoads(ctx, camera, this);
         }

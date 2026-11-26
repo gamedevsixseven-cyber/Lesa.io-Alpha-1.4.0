@@ -1,8 +1,8 @@
 /**
  * Lesa.io - Apex Rarity Boss Gear Catalog
  * Earned exclusively from Hard Endless Apex Bosses:
- *   - Wave 30 Apex Boss (Aethelgard, Sovereign of Ruin): Apex Belt & Apex Gloves
- *   - Wave 60 Final Apex Boss (Erebus, Sovereign of the End): Apex Armor, Helmet & Boots
+ *   - Wave 30 Apex Boss (Alpha, Sovereign of Ruin): Apex Belt & Apex Gloves
+ *   - Wave 60 Final Apex Boss (Omega, Sovereign of the End): Apex Armor, Helmet & Boots
  * W60 pieces carry modestly higher stat totals than W30 pieces while sharing Apex rarity.
  */
 
@@ -23,7 +23,7 @@ const APEX_GEAR_DATA = {
         statSummary: '-15% Dash CD, +115 Magnet, +120 HP, +14% DMG, +10% Fire Rate',
         icon: '♦️',
         iconImg: 'assets/Belts/ApexSovereignCord.png',
-        desc: 'Forged from Aethelgard’s shattered pylon core; channels crimson slipstreams on every dash.',
+        desc: 'Forged from Alpha’s shattered pylon core; channels crimson slipstreams on every dash.',
         passive: {
             id: 'ruin_slipstream',
             name: 'Ruin Slipstream',
@@ -67,7 +67,7 @@ const APEX_GEAR_DATA = {
         statSummary: '+295 HP, +22% DMG, +15% Fire Rate, +24% Crit DMG, +4% DEF',
         icon: '🛡️',
         iconImg: 'assets/Armors/ApexOmegaMantle.png',
-        desc: 'Erebus’s sovereign plate woven from dying starlight, towering above Olympian myth.',
+        desc: 'Omega’s sovereign plate woven from dying starlight, towering above Olympian myth.',
         passive: {
             id: 'omega_aegis_barrier',
             name: 'Omega Eclipse Barrier',
@@ -107,7 +107,7 @@ const APEX_GEAR_DATA = {
         statSummary: '+20% Move Speed, -10% Dash CD, +15% DEF, +145 HP, +16% Crit DMG',
         icon: '🥾',
         iconImg: 'assets/boots/ApexEclipseGreaves.png',
-        desc: 'Gravity-warping war greaves forged from Erebus’s ash that shatter the arena on landing.',
+        desc: 'Gravity-warping war greaves forged from Omega’s ash that shatter the arena on landing.',
         passive: {
             id: 'eclipse_phase_step',
             name: 'Eclipse Phase Step',

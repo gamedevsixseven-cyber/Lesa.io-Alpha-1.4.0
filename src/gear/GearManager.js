@@ -92,9 +92,9 @@ class GearManager {
 
         if (isChestRestricted && !isGranted) {
             const bossMsg = item.bossUnlock === 'apex_sovereign_w30'
-                ? 'Defeat Wave 30 Hard Endless Apex Boss (Aethelgard) to unlock this Apex item'
+                ? 'Defeat Wave 30 Hard Endless Apex Boss (Alpha) to unlock this Apex item'
                 : (item.bossUnlock === 'apex_omega_w60'
-                    ? 'Defeat Wave 60 Hard Endless Final Apex Boss (Erebus) to unlock this Apex item'
+                    ? 'Defeat Wave 60 Hard Endless Final Apex Boss (Omega) to unlock this Apex item'
                     : 'Defeat Zeus on Mount Olympus Floor 5 to unlock this Mythic item');
             return {
                 success: false,

@@ -481,6 +481,7 @@ class UIController {
             window.soundEngine.startMenuBGM();
         }
         if (typeof LilXasEvent !== 'undefined') LilXasEvent.reset();
+        if (typeof ApexW60Audio !== 'undefined') ApexW60Audio.resetSession();
 
         if (this.menuScreen) {
             this.menuScreen.classList.remove('hidden');

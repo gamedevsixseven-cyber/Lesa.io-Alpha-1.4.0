@@ -22,6 +22,7 @@ class ApexW60Atmosphere {
         this._isCritical = false;
         this._bolts = [];
         this._fissures = null;
+        if (typeof ApexW60Audio !== 'undefined') ApexW60Audio.resetSession();
     }
 
     static getActiveBoss(game) {
@@ -38,6 +39,7 @@ class ApexW60Atmosphere {
         const g = game || (typeof window !== 'undefined' ? window.gameInstance : null);
         const boss = this.getActiveBoss(g);
         const active = !!boss || Boolean(g && g.gameMode === 'endless' && g.isEndlessHard && g.waveManager && g.waveManager.wave === 60 && g.waveManager.waveState === 'IN_PROGRESS');
+        if (typeof ApexW60Audio !== 'undefined') ApexW60Audio.sync(g, boss, active);
 
         if (!active) {
             this.intensity = Math.max(0, this.intensity - 0.03 * dt);

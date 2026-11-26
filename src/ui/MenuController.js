@@ -354,6 +354,7 @@ class MenuController {
         if (!this.gameModeModal) this.gameModeModal = document.getElementById('game-mode-modal');
         this.updateAscentCrestBadge();
         this.updateEndlessHardUnlockUI();
+        if (typeof DlcManager !== 'undefined') DlcManager.syncMenuEntry(this);
         const noticeEl = document.getElementById('mode-crest-notice');
         if (noticeEl) noticeEl.classList.add('hidden');
         if (this._crestNoticeTimer) {
@@ -456,6 +457,9 @@ class MenuController {
     }
 
     startGame(gameMode = 'story', options = {}) {
+        if (gameMode === 'dlc_cave' && (typeof DlcManager === 'undefined' || !DlcManager.isPrimaryDev())) {
+            return;
+        }
         if (gameMode === 'dungeons' && window.ascentCrestManager) {
             if (!window.ascentCrestManager.consumeCrest()) {
                 this.showCrestShortageNotice();

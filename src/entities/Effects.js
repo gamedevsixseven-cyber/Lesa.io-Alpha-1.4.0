@@ -355,6 +355,12 @@ class EffectsManager {
         if (typeof ApexW60Atmosphere !== 'undefined') {
             ApexW60Atmosphere.drawScreenAtmosphere(ctx, width, height);
         }
+        if (typeof ApexW60FinaleTeaser !== 'undefined') {
+            ApexW60FinaleTeaser.draw(ctx, width, height, window.gameInstance);
+        }
+        if (typeof DlcLightingEngine !== 'undefined') {
+            DlcLightingEngine.drawScreenLighting(ctx, width, height, window.gameInstance);
+        }
         if (this.combatJuice) {
             this.combatJuice.drawScreenOverlays(ctx, width, height, player);
         }
@@ -452,6 +458,9 @@ class EffectsManager {
         }
         if (typeof ApexW60Atmosphere !== 'undefined') {
             ApexW60Atmosphere.update(dt, gameRef);
+        }
+        if (typeof ApexW60FinaleTeaser !== 'undefined') {
+            ApexW60FinaleTeaser.update(dt, gameRef);
         }
     }
 
@@ -564,6 +573,10 @@ class EffectsManager {
         if (typeof ApexW60Atmosphere !== 'undefined') {
             ApexW60Atmosphere.reset();
         }
+        if (typeof ApexW60FinaleTeaser !== 'undefined') {
+            ApexW60FinaleTeaser.reset();
+        }
+        if (typeof DlcLightingEngine !== 'undefined') DlcLightingEngine.reset();
     }
 }
 

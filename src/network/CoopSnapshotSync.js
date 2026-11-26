@@ -130,8 +130,9 @@ class CoopSnapshotSync {
                 row.hb = {
                     cs: e.cutsceneState || 'COMBAT', sh: e.shieldActive ? 1 : 0,
                     hm: e.hideBossModel ? 1 : 0, as: safeFloat(e.auraScale ?? 1, 2, 1),
-                    dy: safeInt(e.entranceDropY || 0, 0, 500, 0), ph: e.phase || 1,
-                    pl: e.phaseLabel || '', ab: e.apexBadgeText || ''
+                    dy: safeInt(e.entranceDropY || 0, -100, 500, 0), ph: e.phase || 1,
+                    pl: e.phaseLabel || '', ab: e.apexBadgeText || '',
+                    df: e.isDefeated ? 1 : 0, fd: safeFloat(e._defeatFade ?? 1, 2, 1)
                 };
             }
             if (e.type === 'kiloumpas') {
@@ -394,6 +395,7 @@ class CoopSnapshotSync {
         }
         if (eNet.hb) {
             const hb = eNet.hb;
+            const wasShield = !!enemy.shieldActive;
             if (typeof hb.cs === 'string') enemy.cutsceneState = hb.cs;
             if (hb.sh !== undefined) enemy.shieldActive = !!hb.sh;
             if (hb.hm !== undefined) enemy.hideBossModel = !!hb.hm;
@@ -402,6 +404,11 @@ class CoopSnapshotSync {
             if (Number.isFinite(hb.ph)) enemy.phase = hb.ph;
             if (typeof hb.pl === 'string') enemy.phaseLabel = hb.pl;
             if (typeof hb.ab === 'string' && hb.ab) enemy.apexBadgeText = hb.ab;
+            if (hb.df !== undefined) { enemy.isDefeated = !!hb.df; enemy.isDying = !!hb.df; }
+            if (Number.isFinite(hb.fd)) enemy._defeatFade = hb.fd;
+            if (enemy.type === 'apex_omega_w60' && typeof ApexW60Audio !== 'undefined') {
+                if (!wasShield && enemy.shieldActive) ApexW60Audio.playVoice('erebus_aegis', 'w60_aegis');
+            }
         }
     }
 
@@ -417,6 +424,12 @@ class CoopSnapshotSync {
                 if (co.dialogueText !== csData.txt) {
                     co.setDialogue(csData.spk, csData.txt, csData.col, csData.ico, csData.adv);
                     co.setReadyState(csData.rc || 0, csData.tp || 2, false);
+                    if (typeof ApexW60Audio !== 'undefined') {
+                        if (csData.txt.includes('WAITING FOR YOU') || csData.txt.includes('ALPHA WAS A MERCY')) ApexW60Audio.playVoice('erebus_line1', 'w60_d1');
+                        else if (csData.txt.includes('OMEGA APOCALYPSE')) ApexW60Audio.playVoice('erebus_surge', 'w60_surge');
+                        else if (csData.txt.includes('LITTLE SPARK')) ApexW60Audio.playVoice('erebus_line2', 'w60_d2');
+                        else if (csData.txt.includes('CROWN OF ASHES')) ApexW60Audio.playVoice('erebus_defeat', 'w60_defeat');
+                    }
                 } else {
                     co.promptAdvance = !!csData.adv;
                     co.setReadyState(csData.rc || 0, csData.tp || 2, co.isLocalReady);

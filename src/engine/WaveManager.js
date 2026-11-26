@@ -17,6 +17,7 @@ class WaveManager {
     }
 
     reset(gameMode = 'story', options = {}) {
+        if (gameMode === 'dlc_cave' && (typeof DlcManager === 'undefined' || !DlcManager.isPrimaryDev())) gameMode = 'story';
         this.gameMode = gameMode;
         this.isEndlessHard = (gameMode === 'endless') && !!(options && options.isEndlessHard);
         this.wave = 1;
@@ -32,6 +33,7 @@ class WaveManager {
         } else {
             this.dungeonManager = null;
         }
+        this.dlcManager = (gameMode === 'dlc_cave' && typeof DlcManager !== 'undefined') ? new DlcManager(this) : null;
     }
 
     isBossWave(waveNum = this.wave) {
@@ -87,6 +89,10 @@ class WaveManager {
     }
 
     startWave(waveNum, player, enemies, effects) {
+        if (this.gameMode === 'dlc_cave' && this.dlcManager) {
+            this.dlcManager.startZone(waveNum, player, enemies, effects);
+            return;
+        }
         if (this.gameMode === 'dungeons' && this.dungeonManager) {
             this.dungeonManager.startFloor(waveNum, player, enemies, effects);
             return;
@@ -228,6 +234,10 @@ class WaveManager {
 
         if (this.gameMode === 'endless' && typeof EndlessWaveDirector !== 'undefined') {
             EndlessWaveDirector.onEndlessWaveCleared(this, game);
+            if (game.isEndlessHard && this.wave >= 60) {
+                this.betweenWaveTimer = 135;
+                if (typeof game.vacuumAllXP === 'function') game.vacuumAllXP();
+            }
             if (typeof window !== 'undefined' && window.EventBus) {
                 window.EventBus.emit('waveCompleted', { wave: this.wave });
             }
@@ -307,6 +317,10 @@ class WaveManager {
             this.waveAnnouncementTimer -= dt;
         }
 
+        if (this.gameMode === 'dlc_cave' && this.dlcManager) {
+            this.dlcManager.update(dt, game);
+            return;
+        }
         if (this.gameMode === 'dungeons' && this.dungeonManager) {
             this.dungeonManager.update(dt, game);
             return;
@@ -330,6 +344,10 @@ class WaveManager {
                     } else if (game && game.ui && typeof game.ui.showStoryVictoryModal === 'function') {
                         game.ui.showStoryVictoryModal(game.player, this.wave, game.gameTime);
                     }
+                } else if (this.gameMode === 'endless' && game && game.isEndlessHard && this.wave >= 60 && typeof ApexW60FinaleTeaser !== 'undefined') {
+                    // Hard Endless concludes at Wave 60 -> triggers DLC Cavern Teaser Finale!
+                    this.waveState = 'HARD_FINALE';
+                    ApexW60FinaleTeaser.start(game);
                 } else {
                     // Endless Mode (or Story Mode waves 1-19): advance to next wave!
                     this.startWave(this.wave + 1, game.player, game.enemies, game.effects);

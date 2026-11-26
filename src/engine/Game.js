@@ -78,7 +78,7 @@ class Game {
         return this.waveManager ? this.waveManager.waveState : 'IN_PROGRESS';
     }
 
-    isCutsceneActive() { return !!(this.cutsceneOverlay && this.cutsceneOverlay.active); }
+    isCutsceneActive() { return !!(this.cutsceneOverlay && this.cutsceneOverlay.active) || (typeof ApexW60FinaleTeaser !== 'undefined' && ApexW60FinaleTeaser.active); }
     advanceCutscene() { return this.cutsceneOverlay ? this.cutsceneOverlay.advance() : false; }
 
     initLeaderboard() {
@@ -118,6 +118,7 @@ class Game {
     }
 
     startNewGame(heroType = 'psanas', gameMode = 'story', options = {}) {
+        if (gameMode === 'dlc_cave' && (typeof DlcManager === 'undefined' || !DlcManager.isPrimaryDev())) gameMode = 'story';
         const isHard = (gameMode === 'endless') && !!(options && options.isEndlessHard);
         if (!options.isCoop && typeof window !== 'undefined' && window.friendService) {
             const statusLabel = gameMode === 'dungeons' ? 'Climbing Mt. Olympus' : (gameMode === 'endless' ? (isHard ? 'Playing Endless Hard' : 'Playing Normal Endless') : 'Playing Story');
@@ -146,6 +147,7 @@ class Game {
         if (typeof EndlessHardMap !== 'undefined') EndlessHardMap.reset();
         if (typeof OutsidePerimeterRoads !== 'undefined') OutsidePerimeterRoads.reset();
         if (typeof LilXasEvent !== 'undefined') LilXasEvent.reset();
+        if (typeof ApexW60Audio !== 'undefined') ApexW60Audio.resetSession();
         if (this.arena && typeof this.arena.setGameMode === 'function') {
             this.arena.setGameMode(gameMode, { isEndlessHard: isHard });
         } else if (gameMode !== 'dungeons' && this.arena && this.arena.dungeonFloor) {
@@ -180,6 +182,7 @@ class Game {
             this.ui.showPauseModal(name);
             if (this.touchInput) this.touchInput.hide();
             if (typeof LilXasEvent !== 'undefined') LilXasEvent.setPaused(true);
+            if (typeof ApexW60Audio !== 'undefined') ApexW60Audio.setPaused(true);
         }
     }
 
@@ -194,12 +197,14 @@ class Game {
             this.lastTime = performance.now();
             if (this.touchInput) this.touchInput.show();
             if (typeof LilXasEvent !== 'undefined') LilXasEvent.setPaused(false);
+            if (typeof ApexW60Audio !== 'undefined') ApexW60Audio.setPaused(false);
         }
     }
 
     gameOver() {
         this.state = 'GAME_OVER';
         if (typeof LilXasEvent !== 'undefined') LilXasEvent.reset();
+        if (typeof ApexW60Audio !== 'undefined') ApexW60Audio.resetSession();
         if (typeof document !== 'undefined') document.getElementById('olympus-blessing-modal')?.remove();
         if (this.touchInput) this.touchInput.hide();
         const timeElapsedSec = this.gameTime / 60;

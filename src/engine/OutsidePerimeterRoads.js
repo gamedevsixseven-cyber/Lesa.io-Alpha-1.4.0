@@ -63,7 +63,7 @@ class OutsidePerimeterRoads {
 
     static update(dt = 1, game = null) {
         const g = game || (typeof window !== 'undefined' ? window.gameInstance : null);
-        if (!g || !g.arena || g.arena.dungeonFloor) return;
+        if (!g || !g.arena || g.arena.dungeonFloor || g.arena.gameMode === 'dlc_cave') return;
         if (g.state !== 'PLAYING') return;
 
         this.age += dt;
@@ -311,7 +311,7 @@ class OutsidePerimeterRoads {
     }
 
     static drawRoads(ctx, camera, arena) {
-        if (!arena || arena.dungeonFloor) return;
+        if (!arena || arena.dungeonFloor || arena.gameMode === 'dlc_cave') return;
         this._ensureLayout(arena);
 
         const hw = arena.halfWidth;
@@ -467,7 +467,7 @@ class OutsidePerimeterRoads {
     }
 
     static drawTraffic(ctx, camera, arena) {
-        if (!arena || arena.dungeonFloor || !this.activeVehicles.length) return;
+        if (!arena || arena.dungeonFloor || arena.gameMode === 'dlc_cave' || !this.activeVehicles.length) return;
         const list = (this.activeVehicles.length > 1)
             ? [...this.activeVehicles].sort((a, b) => a.y - b.y)
             : this.activeVehicles;

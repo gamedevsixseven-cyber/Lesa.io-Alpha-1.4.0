@@ -124,7 +124,16 @@ class HUDController {
             const isEndless = !!(gInst && gInst.gameMode === 'endless');
             const isHard = !!(isEndless && gInst.isEndlessHard);
             const isDungeon = !!(gInst && gInst.gameMode === 'dungeons');
-            if (isDungeon) {
+            const isDlc = !!(gInst && gInst.gameMode === 'dlc_cave');
+            if (isDlc) {
+                const waveKey = 'dlc:cave';
+                if (c.waveKey !== waveKey) {
+                    c.waveKey = waveKey;
+                    const txt = '🗺️ DLC • THE SUNLESS CAVERN';
+                    if (typeof UiIcons !== 'undefined') UiIcons.setRichText(this.waveText, txt, 'ui-icon-sm');
+                    else this.waveText.textContent = txt;
+                }
+            } else if (isDungeon) {
                 const floorName = (gInst.waveManager && gInst.waveManager.dungeonManager) ? gInst.waveManager.dungeonManager.getCurrentFloorName() : 'OLYMPUS';
                 const waveKey = `d:${wave}:${floorName}`;
                 if (c.waveKey !== waveKey) {
@@ -146,8 +155,14 @@ class HUDController {
 
         if (this.waveEnemyCountText) {
             const isDungeon = (window.gameInstance && window.gameInstance.gameMode === 'dungeons');
+            const isDlc = (window.gameInstance && window.gameInstance.gameMode === 'dlc_cave');
             const dm = window.gameInstance && window.gameInstance.waveManager && window.gameInstance.waveManager.dungeonManager;
-            if (window.gameInstance && window.gameInstance.waveState === 'WAVE_CLEARED') {
+            const dlcMgr = window.gameInstance && window.gameInstance.waveManager && window.gameInstance.waveManager.dlcManager;
+            if (isDlc) {
+                const zoneTxt = `📍 ${(dlcMgr && dlcMgr.currentZoneName) ? dlcMgr.currentZoneName : 'Breach Hollow'} (Explore)`;
+                if (c.enemyTxt !== zoneTxt) { c.enemyTxt = zoneTxt; this.waveEnemyCountText.textContent = zoneTxt; }
+                if (c.enemyColor !== '#38bdf8') { c.enemyColor = '#38bdf8'; this.waveEnemyCountText.style.color = '#38bdf8'; }
+            } else if (window.gameInstance && window.gameInstance.waveState === 'WAVE_CLEARED') {
                 const climbText = (dm && dm.ascentSystem && dm.ascentSystem.stairwayUnlocked)
                     ? 'FLOOR CLEARED! Walk to North Stairs ▲'
                     : 'FLOOR CLEARED! Ascending...';

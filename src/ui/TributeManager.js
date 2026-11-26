@@ -86,7 +86,7 @@ class TributeManager {
                     </div>
                     <div class="u120-card u120-apex">
                         <div class="u120-card-hdr"><span class="u120-ic">${ico('crown')}</span> APEX RARITY &amp; BOSSES</div>
-                        <p>W30 Aethelgard (1.2M HP) drops Cord &amp; Gauntlets; W60 Erebus (4.5M HP) drops Armor, Helmet &amp; Boots with Lv.6 Diamond Bonus &amp; glowing UI tabs!</p>
+                        <p>W30 Alpha (1.5M HP) drops Cord &amp; Gauntlets; W60 Omega (5M HP) drops Armor, Helmet &amp; Boots with Lv.6 Diamond Bonus &amp; glowing UI tabs!</p>
                     </div>
                     <div class="u120-card u120-celestial">
                         <div class="u120-card-hdr"><span class="u120-ic">${ico('sparkle')}</span> CELESTIAL SKILL TREES</div>

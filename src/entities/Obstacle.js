@@ -184,6 +184,8 @@ class Obstacle {
 
         if (this.isObsidianPillar && typeof EndlessHardMap !== 'undefined') {
             EndlessHardMap.drawPillar(ctx, this);
+        } else if ((this.isCaveWall || this.isCaveProp) && typeof CaveZoneMap !== 'undefined') {
+            CaveZoneMap.drawObstacle(ctx, this);
         } else if (this.isHardProp && typeof EndlessHardMap !== 'undefined' && EndlessHardMap.drawProp(ctx, this)) {
         } else if (this.isOlympianPillar) {
             this.drawOlympianPillar(ctx);
@@ -493,6 +495,9 @@ class Obstacle {
     }
 
     hitTestCircle(cx, cy, cr) {
+        if (this.isCaveWall && typeof CaveZoneMap !== 'undefined') {
+            return CaveZoneMap.intersectRectCircle(this, cx, cy, cr);
+        }
         if (this.type === 'building' && typeof EndlessBuildingRenderer !== 'undefined') {
             return EndlessBuildingRenderer.intersectCircle(this, cx, cy, cr);
         }

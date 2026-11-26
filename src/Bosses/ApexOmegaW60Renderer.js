@@ -23,11 +23,14 @@ class ApexOmegaW60Renderer {
 
         const r = b.radius, fl = b.hitFlash > 0, ang = b.angle || 0, ph = b.phase || 1;
         const dropY = b.entranceDropY || 0;
-        const auraScale = b.cutsceneState !== 'COMBAT' ? Math.max(0.15, b.auraScale || 1) : (ph >= 4 ? 1.25 : 1.0);
+        const isDef = !!b.isDefeated;
+        const fade = isDef ? Math.max(0, Math.min(1, b._defeatFade ?? 1)) : 1;
+        const auraScale = b.cutsceneState !== 'COMBAT' ? Math.max(0.08, b.auraScale || 0.4) : (ph >= 4 ? 1.25 : 1.0);
 
         ctx.save();
-        EndlessBossRenderer.drawShadow(ctx, b.x, b.y, r * 1.24, true, true);
-        ctx.translate(b.x, b.y - dropY + Math.sin(t * 2) * 3);
+        EndlessBossRenderer.drawShadow(ctx, b.x, b.y, r * 1.24 * (0.45 + 0.55 * fade), true, true);
+        if (fade < 1) ctx.globalAlpha = fade;
+        ctx.translate(b.x, b.y - dropY + (isDef ? 10 : Math.sin(t * 2) * 3));
 
         // 1. Blazing Chromatic Sovereign Aura Field (Rising plasma tongues & expanding halo)
         this._drawSovereignAura(ctx, r, t, ph, auraScale);
@@ -54,7 +57,7 @@ class ApexOmegaW60Renderer {
         ctx.restore();
 
         // 3. Six Curved Spectral Seraph-Abyssal Bezier Wings
-        this._drawLayeredWings(ctx, r, t, ph, fl);
+        this._drawLayeredWings(ctx, r, t, ph, fl, isDef);
 
         // 4. Flowing Multi-Fold Sovereign Void Mantle Cloak
         const cw = Math.sin(t * 3.1) * 7;
@@ -113,12 +116,25 @@ class ApexOmegaW60Renderer {
         }
         ctx.fillStyle = '#fed330';
         ctx.beginPath(); ctx.moveTo(-7, -r * 1.06); ctx.lineTo(0, -r * 1.48); ctx.lineTo(7, -r * 1.06); ctx.closePath(); ctx.fill(); ctx.stroke();
-        // Twin Blazing Optic Slits
-        ctx.fillStyle = ph >= 4 ? '#ffffff' : '#fef08a';
+        // Twin Blazing Optic Slits (dim & flicker to embers when defeated)
+        ctx.fillStyle = isDef ? (Math.sin(t * 18) > 0 ? 'rgba(255, 71, 87, 0.55)' : '#27272a') : (ph >= 4 ? '#ffffff' : '#fef08a');
         ctx.fillRect(-r * 0.22, -r * 0.72, r * 0.16, 5); ctx.fillRect(r * 0.06, -r * 0.72, r * 0.16, 5);
 
-        // 7. Aimed Omega Eclipse Scythe-Halberd + Orbiting Singularity Sphere
-        EndlessBossRenderer.drawAimedLayer(ctx, ang, 0, 0, () => {
+        // Glowing golden-white armor fracture cracks spreading across obsidian chestplate on defeat
+        if (isDef) {
+            ctx.save();
+            ctx.strokeStyle = '#fef08a'; ctx.lineWidth = 2.6;
+            ctx.beginPath();
+            ctx.moveTo(-r * 0.34, -r * 0.34); ctx.lineTo(-r * 0.10, -r * 0.08); ctx.lineTo(-r * 0.24, r * 0.26);
+            ctx.moveTo(r * 0.32, -r * 0.22); ctx.lineTo(r * 0.08, r * 0.06); ctx.lineTo(r * 0.22, r * 0.38);
+            ctx.moveTo(-r * 0.12, -r * 0.92); ctx.lineTo(0, -r * 0.56);
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        // 7. Aimed Omega Eclipse Scythe-Halberd (droops downward in defeat)
+        const weaponAng = isDef ? (Math.PI * 0.42) : ang;
+        EndlessBossRenderer.drawAimedLayer(ctx, weaponAng, 0, isDef ? 8 : 0, () => {
             ctx.strokeStyle = '#07090f'; ctx.lineWidth = 3;
             ctx.fillStyle = '#1f2937'; ctx.fillRect(-r * 0.28, -5, r * 1.98, 10); ctx.strokeRect(-r * 0.28, -5, r * 1.98, 10);
             ctx.fillStyle = '#fed330';
@@ -155,8 +171,14 @@ class ApexOmegaW60Renderer {
         if (b.shieldActive && typeof ApexSovereignW30Renderer !== 'undefined' && ApexSovereignW30Renderer._drawAegisShieldDome) {
             ApexSovereignW30Renderer._drawAegisShieldDome(ctx, b, r, t);
         }
+        if (isDef && b.cutsceneState === 'DEFEAT_SHATTER') {
+            ctx.save();
+            ctx.fillStyle = `rgba(254, 240, 138, ${0.55 * fade + 0.25})`;
+            ctx.beginPath(); ctx.arc(0, -r * 0.12, r * (0.35 + (1 - fade) * 0.9), 0, Math.PI * 2); ctx.fill();
+            ctx.restore();
+        }
         ctx.restore();
-        EndlessBossRenderer.drawBossHUD(ctx, b);
+        if (!isDef && b.cutsceneState === 'COMBAT') EndlessBossRenderer.drawBossHUD(ctx, b);
     }
 
     static _drawSovereignAura(ctx, r, t, ph, scale) {
@@ -191,8 +213,8 @@ class ApexOmegaW60Renderer {
         }
     }
 
-    static _drawLayeredWings(ctx, r, t, ph, fl) {
-        const flap = Math.sin(t * 2.3) * 0.09;
+    static _drawLayeredWings(ctx, r, t, ph, fl, isDef = false) {
+        const flap = isDef ? (0.32 + Math.sin(t * 1.1) * 0.02) : Math.sin(t * 2.3) * 0.09;
         for (const side of [-1, 1]) {
             ctx.save(); ctx.scale(side, 1); ctx.rotate(flap);
             for (let i = 0; i < 3; i++) {

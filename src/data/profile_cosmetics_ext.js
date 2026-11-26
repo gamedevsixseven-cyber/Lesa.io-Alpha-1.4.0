@@ -172,12 +172,12 @@
         },
         {
             id: 'banner_hard_sovereign',
-            name: 'Aethelgard’s Pylon',
+            name: 'Alpha’s Pylon',
             rarity: 'mythic',
             cssClass: 'cos-banner-hard-pylon',
             fxTheme: 'hard_pylon',
             desc: 'Levitating crimson Ruin Pylons locking orbital laser tethers across fractured obsidian.',
-            unlockHint: 'Reach Endless Hard Wave 30 OR Defeat Aethelgard',
+            unlockHint: 'Reach Endless Hard Wave 30 OR Defeat Alpha',
             targetVal: () => 30,
             currentVal: (s) => ((s.defeatedBosses.apex_sovereign_w30 || 0) > 0 || (s.endlessHardMaxWave || 0) >= 30) ? 30 : Math.min(29, s.endlessHardMaxWave || 0),
             isUnlocked: (s) => (s.defeatedBosses.apex_sovereign_w30 || 0) > 0 || (s.endlessHardMaxWave || 0) >= 30
@@ -334,7 +334,7 @@
             accent: '#ff4757',
             fxRing: 'hard_pylon',
             desc: 'Spinning Ruin Pylon diamonds locked by crimson orbital laser ticks.',
-            unlockHint: 'Reach Endless Hard Wave 30 OR Defeat Aethelgard',
+            unlockHint: 'Reach Endless Hard Wave 30 OR Defeat Alpha',
             targetVal: () => 30,
             currentVal: (s) => ((s.defeatedBosses.apex_sovereign_w30 || 0) > 0 || (s.endlessHardMaxWave || 0) >= 30) ? 30 : Math.min(29, s.endlessHardMaxWave || 0),
             isUnlocked: (s) => (s.defeatedBosses.apex_sovereign_w30 || 0) > 0 || (s.endlessHardMaxWave || 0) >= 30
@@ -496,14 +496,14 @@
         },
         {
             id: 'coin_hard_30',
-            name: 'Aethelgard Slayer Coin',
+            name: 'Alpha Slayer Coin',
             shortTag: 'HARD W30',
             rarity: 'mythic',
             rim: '#ff4757',
             core: '#450a0a',
             glyph: 'pylon',
             desc: 'Forged from the shattered Ruin Pylons of Endless Hard Wave 30.',
-            unlockHint: 'Reach Endless Hard Wave 30 OR Defeat Aethelgard',
+            unlockHint: 'Reach Endless Hard Wave 30 OR Defeat Alpha',
             targetVal: () => 30,
             currentVal: (s) => ((s.defeatedBosses.apex_sovereign_w30 || 0) > 0 || (s.endlessHardMaxWave || 0) >= 30) ? 30 : Math.min(29, s.endlessHardMaxWave || 0),
             isUnlocked: (s) => (s.defeatedBosses.apex_sovereign_w30 || 0) > 0 || (s.endlessHardMaxWave || 0) >= 30

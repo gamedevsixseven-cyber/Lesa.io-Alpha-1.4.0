@@ -156,6 +156,13 @@ class CoopGuestSession {
                     this.game.effects.addComicSplash(this.game.player.x, this.game.player.y - 80, '🌟 OLYMPIAN STAR-STONE ACQUIRED! 🌟');
                 }
                 if (typeof window !== 'undefined' && window.soundEngine && typeof window.soundEngine.playLevelUp === 'function') window.soundEngine.playLevelUp();
+            } else if (type === 'HARD_W60_FINALE' && typeof ApexW60FinaleTeaser !== 'undefined') {
+                if (payload && payload.kind === 'start') {
+                    if (this.game && this.game.waveManager) this.game.waveManager.waveState = 'HARD_FINALE';
+                    ApexW60FinaleTeaser.start(this.game);
+                } else if (payload && payload.kind === 'victory') {
+                    ApexW60FinaleTeaser.completeToVictory(this.game, true);
+                }
             } else if (type === 'COOP_GAME_OVER') {
                 if (payload && Number.isFinite(payload.wave) && this.game.waveManager) this.game.waveManager.wave = Math.max(this.game.waveManager.wave || 1, payload.wave);
                 if (this.game && (this.game.state === 'PLAYING' || this.game.state === 'PAUSED')) this.game.gameOver();

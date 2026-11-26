@@ -28,14 +28,14 @@ class BossRewardManager {
             items: [{ category: 'weapon', id: 'helios_cannon' }]
         },
         apex_sovereign_w30: {
-            bossName: 'Hard Endless Wave 30: Aethelgard, Sovereign of Ruin',
+            bossName: 'Hard Endless Wave 30: Alpha, Sovereign of Ruin',
             items: [
                 { category: 'gear', id: 'apex_ruin_cord' },
                 { category: 'gear', id: 'apex_rift_gauntlets' }
             ]
         },
         apex_omega_w60: {
-            bossName: 'Hard Endless Wave 60: Erebus, Sovereign of the End',
+            bossName: 'Hard Endless Wave 60: Omega, Sovereign of the End',
             items: [
                 { category: 'gear', id: 'apex_omega_mantle' },
                 { category: 'gear', id: 'apex_omega_crown' },
