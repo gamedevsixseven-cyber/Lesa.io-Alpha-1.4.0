@@ -86,16 +86,21 @@
 .coop-copy-btn:active { transform: translateY(2px); box-shadow: 0 1px 0 #1e272e; }
 
 /* Mode Selection Inside Co-op */
-.coop-mode-picker { display: flex; gap: 10px; }
+.coop-mode-picker { display: flex; gap: 8px; flex-wrap: wrap; }
 .coop-mode-btn {
-    flex: 1; background: #efe4c4; border: 2.5px solid #1e272e; border-radius: 12px; color: #374151;
-    font-family: inherit; padding: 9px 10px; font-size: 13px; font-weight: 900; cursor: pointer;
-    box-shadow: 0 3px 0 #1e272e; transition: transform 0.12s ease, background 0.15s ease;
+    flex: 1 1 0; min-width: 96px; background: #efe4c4; border: 2.5px solid #1e272e; border-radius: 12px; color: #374151;
+    font-family: inherit; padding: 9px 8px; font-size: 12.5px; font-weight: 900; cursor: pointer;
+    box-shadow: 0 3px 0 #1e272e; transition: transform 0.12s ease, background 0.15s ease; white-space: nowrap;
 }
 .coop-mode-btn.selected {
     background: linear-gradient(180deg, #2ed573 0%, #20bf6b 100%); border-color: #1e272e;
     color: #052e16; box-shadow: 0 4px 0 #1e272e;
 }
+.coop-mode-btn.is-hard.selected {
+    background: linear-gradient(180deg, #ff4757 0%, #b91c1c 100%); border-color: #fed330;
+    color: #fef08a; box-shadow: 0 4px 0 #1e272e, 0 0 12px rgba(255, 71, 87, 0.45);
+}
+.coop-mode-btn.is-hard.is-locked { background: #d6cbb0; color: #6b7280; opacity: 0.85; }
 
 /* Join Input */
 .coop-input-wrap { display: flex; flex-direction: column; gap: 7px; }

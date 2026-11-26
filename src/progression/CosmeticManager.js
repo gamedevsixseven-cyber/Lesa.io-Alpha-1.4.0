@@ -302,6 +302,7 @@ class CosmeticManager {
             unlockedFramesCount: st.unlockedFrames.length,
             unlockedCoinsCount: st.unlockedCoins.length,
             endlessMaxWave: snap.endlessMaxWave,
+            endlessHardMaxWave: snap.endlessHardMaxWave || 0,
             olympusMaxFloor: snap.olympusMaxFloor,
             zeusKills: (snap.defeatedBosses && snap.defeatedBosses.zeus) || 0,
             olympianStarStones: snap.olympianStarStones || 0,

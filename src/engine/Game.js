@@ -123,9 +123,10 @@ class Game {
             const statusLabel = gameMode === 'dungeons' ? 'Climbing Mt. Olympus' : (gameMode === 'endless' ? (isHard ? 'Playing Endless Hard' : 'Playing Endless') : 'Playing Story');
             window.friendService.setPresenceStatus(statusLabel, null);
         }
+        const progMode = (gameMode === 'endless' && isHard) ? 'endless_hard' : gameMode;
         if (typeof window !== 'undefined' && window.GameState && typeof window.GameState.syncLiveGame === 'function') {
             window.GameState.syncLiveGame(this, true);
-            window.GameState.beginMatchSession(heroType, gameMode);
+            window.GameState.beginMatchSession(heroType, progMode);
         }
         this.gameMode = gameMode;
         this.isEndlessHard = isHard;
@@ -213,10 +214,11 @@ class Game {
         const totalKills = Math.max((this.player && this.player.kills) || 0, fatmirsBonked + casillasOutplayed + skarmogyftosOutsmarted + kleanthisDefeated + kiloumpasDefeated + roufDefeated);
 
         // Record lifetime stats in GameState
+        const recMode = (this.gameMode === 'endless' && this.isEndlessHard) ? 'endless_hard' : this.gameMode;
         if (typeof window !== 'undefined' && window.GameState) {
             window.GameState.recordMatch(
                 this.player.score, this.waveManager.wave, timeElapsedSec,
-                fatmirsBonked, casillasOutplayed, this.player.heroType, skarmogyftosOutsmarted, totalKills, this.gameMode
+                fatmirsBonked, casillasOutplayed, this.player.heroType, skarmogyftosOutsmarted, totalKills, recMode
             );
             this.highScore = window.GameState.player.stats.highScore;
         } else if (this.player.score > this.highScore) {

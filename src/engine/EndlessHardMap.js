@@ -20,6 +20,47 @@ class EndlessHardMap {
     static _motes = null;
     static _strikeCd = 190;
     static _dmgCd = 0;
+    static _strikeIdSeq = 1;
+
+    static forEachAlivePlayer(g, fn) {
+        if (!g || typeof fn !== 'function') return;
+        if (g.player && g.player.hp > 0) fn(g.player);
+        const rps = g.coopSession && Array.isArray(g.coopSession.remotePlayers) ? g.coopSession.remotePlayers : null;
+        if (!rps) return;
+        for (let i = 0; i < rps.length; i++) {
+            const rp = rps[i];
+            if (rp && !rp.isDowned && !rp.isDownedDisconnected && rp.hp > 0) fn(rp);
+        }
+    }
+
+    static getNetStrikes() {
+        return this._strikes.map(s => ({
+            id: s._netId || 0, x: Math.round(s.x), y: Math.round(s.y),
+            r: Math.round(s.radius), t: Math.round(s.timer), mt: Math.round(s.maxTimer),
+            k: s.kind === 'meteor' ? 'm' : 'l'
+        }));
+    }
+
+    static applyNetStrikes(arr, g) {
+        if (!Array.isArray(arr)) return;
+        const incomingIds = new Set(arr.map(s => s && s.id).filter(Boolean));
+        for (let i = 0; i < this._strikes.length; i++) {
+            const prev = this._strikes[i];
+            if (prev && prev._netId && !incomingIds.has(prev._netId)) {
+                if (typeof EndlessHardHazards !== 'undefined') EndlessHardHazards.onStrikeDetonate(prev);
+                if (g && g.effects) {
+                    const col = prev.kind === 'meteor' ? 'rgba(255, 46, 76, 0.92)' : 'rgba(56, 189, 248, 0.92)';
+                    g.effects.addShockwave(prev.x, prev.y, prev.radius + 25, col);
+                    g.effects.addSparks(prev.x, prev.y, prev.kind === 'meteor' ? '#ff2e4c' : '#38bdf8', 10);
+                }
+            }
+        }
+        this._strikes = arr.map(s => ({
+            _netId: s.id || 0, x: s.x || 0, y: s.y || 0,
+            radius: s.r || 88, timer: Math.max(1, s.t || 1), maxTimer: Math.max(1, s.mt || 56),
+            kind: s.k === 'm' ? 'meteor' : 'lightning'
+        }));
+    }
 
     static reset() {
         this.active = false;
@@ -240,31 +281,36 @@ class EndlessHardMap {
             this._strikeCd -= dt;
             if (this._strikeCd <= 0) {
                 this._strikeCd = st >= 4 ? 115 : (st >= 3 ? 150 : 185);
+                const targets = [];
+                this.forEachAlivePlayer(g, pl => targets.push(pl));
+                const tgt = targets.length ? targets[Math.floor(Math.random() * targets.length)] : g.player;
                 const ang = Math.random() * Math.PI * 2;
                 const rad = 90 + Math.random() * 260;
-                const sx = Math.max(-g.arena.halfWidth + 100, Math.min(g.arena.halfWidth - 100, g.player.x + Math.cos(ang) * rad));
-                const sy = Math.max(-g.arena.halfHeight + 100, Math.min(g.arena.halfHeight - 100, g.player.y + Math.sin(ang) * rad));
-                this._strikes.push({ x: sx, y: sy, radius: st >= 4 ? 105 : 88, timer: 56, maxTimer: 56, kind: st >= 4 ? 'meteor' : 'lightning' });
+                const sx = Math.max(-g.arena.halfWidth + 100, Math.min(g.arena.halfWidth - 100, tgt.x + Math.cos(ang) * rad));
+                const sy = Math.max(-g.arena.halfHeight + 100, Math.min(g.arena.halfHeight - 100, tgt.y + Math.sin(ang) * rad));
+                this._strikes.push({ _netId: this._strikeIdSeq++, x: sx, y: sy, radius: st >= 4 ? 105 : 88, timer: 56, maxTimer: 56, kind: st >= 4 ? 'meteor' : 'lightning' });
             }
         }
 
         for (let i = this._strikes.length - 1; i >= 0; i--) {
             const s = this._strikes[i];
-            s.timer -= dt;
-            if (s.timer <= 0) {
-                if (!isGuest) this._detonateStrike(s, g);
-                this._strikes.splice(i, 1);
+            if (!isGuest) {
+                s.timer -= dt;
+                if (s.timer <= 0) {
+                    this._detonateStrike(s, g);
+                    this._strikes.splice(i, 1);
+                }
             }
         }
     }
 
     static _tickAcidPools(g) {
-        const p = g.player;
         for (const pool of this._acidPools) {
-            const d = Math.hypot(p.x - pool.x, p.y - pool.y);
-            if (d < Math.max(pool.rx, pool.ry) * 0.78 && p.invulnerableTimer <= 0) {
-                p.takeDamage(6, g.effects, g.camera);
-            }
+            this.forEachAlivePlayer(g, (p) => {
+                if (p.invulnerableTimer <= 0 && Math.hypot(p.x - pool.x, p.y - pool.y) < Math.max(pool.rx, pool.ry) * 0.78) {
+                    p.takeDamage(6, g.effects, g.camera);
+                }
+            });
             if (Array.isArray(g.enemies)) {
                 for (const e of g.enemies) {
                     if (!e || e.dead || e.isDying) continue;
@@ -283,9 +329,11 @@ class EndlessHardMap {
             g.effects.addShockwave(s.x, s.y, s.radius + 25, col);
             g.effects.addSparks(s.x, s.y, s.kind === 'meteor' ? '#ff2e4c' : '#38bdf8', 10);
         }
-        if (g.player && Math.hypot(g.player.x - s.x, g.player.y - s.y) <= s.radius) {
-            g.player.takeDamage(s.kind === 'meteor' ? 24 : 18, g.effects, g.camera);
-        }
+        this.forEachAlivePlayer(g, (p) => {
+            if (Math.hypot(p.x - s.x, p.y - s.y) <= s.radius) {
+                p.takeDamage(s.kind === 'meteor' ? 24 : 18, g.effects, g.camera);
+            }
+        });
         if (Array.isArray(g.enemies)) {
             for (const e of g.enemies) {
                 if (!e || e.dead || e.isDying) continue;

@@ -102,7 +102,7 @@ class FriendsCardRenderer {
             <img class="toast-inv-avatar" src="${this.getHeroAvatar(invite.fromHero)}" alt="Hero">
             <div class="toast-inv-copy">
                 <div class="toast-inv-title">${this._ico('handshake')} <b>${this.esc(invite.fromName)}</b> invited you!</div>
-                <div class="toast-inv-sub">${this.esc((invite.gameMode || 'story').toUpperCase())} CO-OP · ROOM <b>${this.esc(invite.roomCode)}</b></div>
+                <div class="toast-inv-sub">${this.esc((invite.gameMode || 'story').replace(/_/g, ' ').toUpperCase())} CO-OP · ROOM <b>${this.esc(invite.roomCode)}</b></div>
             </div>
             <button id="toast-join-coop-btn" class="friend-btn friend-btn-join">${this._ico('rocket')} JOIN</button>
             <button id="toast-dismiss-coop-btn" class="friend-btn friend-btn-muted">${this._ico('cross', '✕')}</button>
@@ -154,11 +154,12 @@ class FriendsCardRenderer {
         card.className = `friend-card ${stateCls} ${opts.isExpanded ? 'is-expanded' : ''}`;
 
         const endlessBest = Math.max(0, Number(f.endlessMaxWave) || 0);
+        const hardBest = Math.max(0, Number(f.endlessHardMaxWave) || 0);
         const statsHtml = opts.isExpanded ? `
             <div class="friend-stats-grid">
                 <div class="friend-stat-pill"><span>${this._ico('trophy')} Best Score</span><strong>${Number(f.highScore || 0).toLocaleString()}</strong></div>
-                <div class="friend-stat-pill"><span>${this._ico('wave')} Story Best</span><strong>Wave ${Number(f.maxWave || 1)}</strong></div>
-                <div class="friend-stat-pill"><span>${this._ico('flame')} Endless Best</span><strong>Wave ${endlessBest}</strong></div>
+                <div class="friend-stat-pill"><span>${this._ico('wave')} Endless Best</span><strong>Wave ${endlessBest}</strong></div>
+                <div class="friend-stat-pill"><span>${this._ico('flame')} Hard Endless</span><strong>Wave ${hardBest}</strong></div>
                 <div class="friend-stat-pill"><span>${this._ico('swords')} Kills</span><strong>${Number(f.totalKills || 0).toLocaleString()}</strong></div>
             </div>
         ` : '';
@@ -225,7 +226,7 @@ class FriendsCardRenderer {
                         <div class="friend-name-line">
                             <span class="friend-name">${this._ico('handshake')} ${this.esc(inv.fromName)}</span>
                             <span class="friend-tag-chip">${this.esc(inv.fromTag || '')}</span>
-                            <span class="friend-mode-pill">${this.esc((inv.gameMode || 'story').toUpperCase())}</span>
+                            <span class="friend-mode-pill">${this.esc((inv.gameMode || 'story').replace(/_/g, ' ').toUpperCase())}</span>
                         </div>
                         <div class="friend-sub"><span class="friend-room-pill">${this._ico('gamepad')} ROOM ${this.esc(inv.roomCode)}</span></div>
                     </div>

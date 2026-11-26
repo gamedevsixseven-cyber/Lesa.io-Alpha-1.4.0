@@ -85,9 +85,10 @@ class StatsManager {
     static syncLiveGame(gs, game, finalize = false, forceNow = false) {
         if (!gs || !game || !game.player) return;
         if (!finalize && !forceNow && Math.abs((game.gameTime || 0) - ((gs._liveMatch && gs._liveMatch.lastFrameTime) || 0)) < 120) return;
+        const modeKey = (game.gameMode === 'endless' && game.isEndlessHard) ? 'endless_hard' : (game.gameMode || 'story');
         if (!gs._liveMatch || !gs._liveMatch.active) {
             if (game.state !== 'PLAYING' && game.state !== 'PAUSED' && game.state !== 'CREDITS') return;
-            this.beginMatchSession(gs, game.player.heroType || 'psanas', game.gameMode || 'story');
+            this.beginMatchSession(gs, game.player.heroType || 'psanas', modeKey);
         }
         gs._liveMatch.lastFrameTime = game.gameTime || 0;
         const p = game.player;
@@ -96,7 +97,7 @@ class StatsManager {
         const totalKills = Math.max(p.kills || 0, fatmirs + casillas + skarmo + bosses);
         const wave = (game.waveManager && game.waveManager.wave) || 1;
         const timeSec = (game.gameTime || 0) / 60;
-        gs.recordMatch(p.score || 0, wave, timeSec, fatmirs, casillas, p.heroType, skarmo, totalKills, game.gameMode, !finalize);
+        gs.recordMatch(p.score || 0, wave, timeSec, fatmirs, casillas, p.heroType, skarmo, totalKills, modeKey, !finalize);
         game.highScore = gs.player.stats.highScore;
         if (typeof window !== 'undefined') {
             if (window.uiController && window.uiController.profileManager && typeof window.uiController.profileManager.updateProfileUI === 'function') {

@@ -6,6 +6,57 @@
  */
 
 class CoopSnapshotSync {
+    static HARD_ENTITY_CTORS = {
+        void_acolyte: () => (typeof VoidAcolyte !== 'undefined' ? VoidAcolyte : null),
+        obsidian_golem: () => (typeof ObsidianGolem !== 'undefined' ? ObsidianGolem : null),
+        crimson_wraith: () => (typeof CrimsonWraith !== 'undefined' ? CrimsonWraith : null),
+        storm_tempest: () => (typeof StormTempest !== 'undefined' ? StormTempest : null),
+        eclipse_harbinger: () => (typeof EclipseHarbinger !== 'undefined' ? EclipseHarbinger : null),
+        blight_necromancer: () => (typeof BlightNecromancer !== 'undefined' ? BlightNecromancer : null),
+        cryo_sniper: () => (typeof CryoSniper !== 'undefined' ? CryoSniper : null),
+        inferno_artillery: () => (typeof InfernoArtillery !== 'undefined' ? InfernoArtillery : null),
+        crimson_executioner: () => (typeof CrimsonExecutioner !== 'undefined' ? CrimsonExecutioner : null),
+        plague_sovereign: () => (typeof PlagueSovereign !== 'undefined' ? PlagueSovereign : null),
+        chrono_warden: () => (typeof ChronoWarden !== 'undefined' ? ChronoWarden : null),
+        abyssal_seraph: () => (typeof AbyssalSeraph !== 'undefined' ? AbyssalSeraph : null),
+        void_dreadnought: () => (typeof VoidDreadnought !== 'undefined' ? VoidDreadnought : null),
+        apex_sovereign_w30: () => (typeof OblivionEngine !== 'undefined' ? OblivionEngine : null),
+        inferno_hydra: () => (typeof InfernoHydra !== 'undefined' ? InfernoHydra : null),
+        void_eclipse_archon: () => (typeof CelestialEclipseArchon !== 'undefined' ? CelestialEclipseArchon : null),
+        magnetar_forgemaster: () => (typeof StormforgeAutomaton !== 'undefined' ? StormforgeAutomaton : null),
+        chrono_reaver: () => (typeof AstralChronoReaver !== 'undefined' ? AstralChronoReaver : null),
+        abyssal_leviathan: () => (typeof AbyssalLeviathan !== 'undefined' ? AbyssalLeviathan : null),
+        apex_omega_w60: () => (typeof OmegaApocalypse !== 'undefined' ? OmegaApocalypse : null),
+        apex_shield_pillar: () => (typeof ApexShieldPillar !== 'undefined' ? ApexShieldPillar : null)
+    };
+
+    static spawnHardEntityByType(type, x, y, waveMult = 1.0, eNet = null) {
+        const key = String(type || '').toLowerCase();
+        if (key === 'fatmir' && eNet && eNet.cr && typeof Fatmir !== 'undefined') {
+            return new Fatmir(x, y, waveMult, { isCrimson: true });
+        }
+        const getter = this.HARD_ENTITY_CTORS[key];
+        const Ctor = getter ? getter() : null;
+        if (!Ctor) return null;
+        const ent = new Ctor(x, y, waveMult, {});
+        if ('cutsceneState' in ent && !eNet?.hb) ent.cutsceneState = 'COMBAT';
+        if ('hideBossModel' in ent && !eNet?.hb) { ent.hideBossModel = false; ent.auraScale = 1; ent.entranceDropY = 0; }
+        if (ent.isApexPillar) ent.emergeProgress = 1;
+        return ent;
+    }
+
+    static syncGuestEndlessWave(session, data, prevWave) {
+        const g = session && session.game;
+        if (!g || !data || !Number.isFinite(data.wave)) return;
+        const nextWave = data.wave;
+        if (g.gameMode === 'endless' && nextWave > (prevWave || 0)) {
+            const modeKey = g.isEndlessHard ? 'endless_hard' : 'endless';
+            if (typeof window !== 'undefined' && window.GameState && typeof window.GameState.recordWaveProgress === 'function') {
+                window.GameState.recordWaveProgress(modeKey, nextWave);
+            }
+        }
+    }
+
     static getAdaptiveInterval(session) {
         const net = session && session.net;
         const enemies = session && session.game && session.game.enemies ? session.game.enemies.length : 0;
@@ -74,7 +125,15 @@ class CoopSnapshotSync {
             if (e._lilXasFleeing) row.fl = 1;
             if ((e._earPainTimer || 0) > 0) row.ep = 1;
             if (e.isLilXasSpeaker) { row.si = e.speakerIndex || 0; row.mp = e.musicPlaying ? 1 : 0; }
-            if (e.isLilXas && typeof LilXasAttacksFX !== 'undefined') { row.lx = LilXasAttacksFX.serializeBossNet(e); }
+            if (e.isCrimson) row.cr = 1;
+            if (e.isHardMainBoss || e.isApexBoss || e.isApexPillar || (e.isEndlessBoss && e.cutsceneState !== undefined)) {
+                row.hb = {
+                    cs: e.cutsceneState || 'COMBAT', sh: e.shieldActive ? 1 : 0,
+                    hm: e.hideBossModel ? 1 : 0, as: safeFloat(e.auraScale ?? 1, 2, 1),
+                    dy: safeInt(e.entranceDropY || 0, 0, 500, 0), ph: e.phase || 1,
+                    pl: e.phaseLabel || '', ab: e.apexBadgeText || ''
+                };
+            }
             if (e.type === 'kiloumpas') {
                 row.kl = {
                     cs: e.cutsceneState || 'COMBAT', hc: e.hasCarbine ? 1 : 0, hd: e.hidden ? 1 : 0,
@@ -141,9 +200,11 @@ class CoopSnapshotSync {
             const netVy = Number.isFinite(eNet.vy) ? eNet.vy : 0;
 
             if (!enemy) {
-                enemy = session.spawnEnemyByType(eNet.t || 'fatmir', netX, netY);
+                enemy = CoopSnapshotSync.spawnHardEntityByType(eNet.t, netX, netY, 1.0, eNet)
+                    || session.spawnEnemyByType(eNet.t || 'fatmir', netX, netY);
                 if (enemy) {
                     enemy._netId = eNet.id;
+                    if (eNet.cr && enemy.type === 'fatmir') { enemy.isCrimson = true; enemy.name = 'Fatmir'; enemy.color = '#ff2e4c'; }
                     if (eNet.st) enemy.subType = eNet.st;
                     if (eNet.n) enemy.name = eNet.n;
                     if (Number.isFinite(eNet.mhp)) enemy.maxHp = eNet.mhp;
@@ -330,6 +391,17 @@ class CoopSnapshotSync {
             } else {
                 enemy.policeCar = null;
             }
+        }
+        if (eNet.hb) {
+            const hb = eNet.hb;
+            if (typeof hb.cs === 'string') enemy.cutsceneState = hb.cs;
+            if (hb.sh !== undefined) enemy.shieldActive = !!hb.sh;
+            if (hb.hm !== undefined) enemy.hideBossModel = !!hb.hm;
+            if (Number.isFinite(hb.as)) enemy.auraScale = hb.as;
+            if (Number.isFinite(hb.dy)) enemy.entranceDropY = hb.dy;
+            if (Number.isFinite(hb.ph)) enemy.phase = hb.ph;
+            if (typeof hb.pl === 'string') enemy.phaseLabel = hb.pl;
+            if (typeof hb.ab === 'string' && hb.ab) enemy.apexBadgeText = hb.ab;
         }
     }
 

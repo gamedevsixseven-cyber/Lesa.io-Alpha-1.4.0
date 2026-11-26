@@ -310,7 +310,7 @@
     }
     #leaderboard-modal .lb-modal-title { font-size: 1.15rem !important; margin: 0 0 2px !important; }
     #leaderboard-modal .lb-modal-sub { font-size: 0.64rem !important; margin: 0 0 5px !important; line-height: 1.15 !important; }
-    #leaderboard-modal .lb-tabs-row { gap: 5px !important; margin-bottom: 6px !important; flex-shrink: 0 !important; }
+    #leaderboard-modal .lb-tabs-row { grid-template-columns: repeat(2, 1fr) !important; gap: 5px !important; margin-bottom: 6px !important; flex-shrink: 0 !important; }
     #leaderboard-modal .lb-tab-btn { padding: 5px 4px !important; font-size: 0.68rem !important; }
     #leaderboard-modal .leaderboard-list-box {
         flex: 1 1 auto !important; min-height: 0 !important; max-height: none !important;

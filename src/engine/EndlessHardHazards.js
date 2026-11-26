@@ -67,20 +67,25 @@ class EndlessHardHazards {
         const isGuest = !!(game && game.isCoopGuest);
         const p = game ? game.player : null;
 
-        // Stage II: Frozen Storm Frost Rifts chill player briefly on contact
-        if (stage === 2 && !isGuest && p && p.invulnerableTimer <= 0) {
-            for (const fr of this._frostRifts) {
-                if (Math.hypot(p.x - fr.x, p.y - fr.y) < fr.rad * 0.82) {
-                    if ((p._frostRiftCd || 0) <= 0) {
-                        p._frostRiftCd = 36;
-                        p.speedDebuffTimer = Math.max(p.speedDebuffTimer || 0, 34);
-                        if (game.effects) game.effects.addSparks(p.x, p.y, '#7dd3fc', 3);
+        // Stage II: Frozen Storm Frost Rifts chill squad players briefly on contact
+        const eachPl = (fn) => (typeof EndlessHardMap !== 'undefined' && EndlessHardMap.forEachAlivePlayer)
+            ? EndlessHardMap.forEachAlivePlayer(game, fn)
+            : (p && p.hp > 0 ? fn(p) : null);
+        eachPl((pl) => {
+            if (stage === 2 && !isGuest && pl.invulnerableTimer <= 0) {
+                for (const fr of this._frostRifts) {
+                    if (Math.hypot(pl.x - fr.x, pl.y - fr.y) < fr.rad * 0.82) {
+                        if ((pl._frostRiftCd || 0) <= 0) {
+                            pl._frostRiftCd = 36;
+                            pl.speedDebuffTimer = Math.max(pl.speedDebuffTimer || 0, 34);
+                            if (game.effects) game.effects.addSparks(pl.x, pl.y, '#7dd3fc', 3);
+                        }
+                        break;
                     }
-                    break;
                 }
             }
-        }
-        if (p && p._frostRiftCd > 0) p._frostRiftCd = Math.max(0, p._frostRiftCd - dt);
+            if (pl._frostRiftCd > 0) pl._frostRiftCd = Math.max(0, pl._frostRiftCd - dt);
+        });
 
         // Stage III+: Magma Geyser Vents cycle eruption
         if (stage >= 3) {
@@ -106,10 +111,13 @@ class EndlessHardHazards {
             game.effects.addShockwave(v.x, v.y, v.rad + 22, 'rgba(255, 107, 53, 0.92)');
             game.effects.addSparks(v.x, v.y, '#fed330', 10);
         }
-        const p = game.player;
-        if (p && Math.hypot(p.x - v.x, p.y - v.y) <= v.rad && p.invulnerableTimer <= 0) {
-            p.takeDamage(20, game.effects, game.camera);
-        }
+        const hitPl = (pl) => {
+            if (Math.hypot(pl.x - v.x, pl.y - v.y) <= v.rad && pl.invulnerableTimer <= 0) {
+                pl.takeDamage(20, game.effects, game.camera);
+            }
+        };
+        if (typeof EndlessHardMap !== 'undefined' && EndlessHardMap.forEachAlivePlayer) EndlessHardMap.forEachAlivePlayer(game, hitPl);
+        else if (game.player) hitPl(game.player);
         if (Array.isArray(game.enemies)) {
             for (const e of game.enemies) {
                 if (!e || e.dead || e.isDying) continue;

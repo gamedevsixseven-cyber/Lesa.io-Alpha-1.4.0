@@ -95,6 +95,7 @@ class PublicProfileModal {
                         highScore: Math.max(Number(merged.highScore) || 0, Number(formatted.highScore) || 0),
                         maxWave: Math.max(Number(merged.maxWave) || 1, Number(formatted.maxWave) || 1),
                         endlessMaxWave: Math.max(Number(merged.endlessMaxWave) || 0, Number(formatted.endlessMaxWave) || 0),
+                        endlessHardMaxWave: Math.max(Number(merged.endlessHardMaxWave) || 0, Number(formatted.endlessHardMaxWave) || 0),
                         olympusMaxFloor: Math.max(Number(merged.olympusMaxFloor) || 0, Number(formatted.olympusMaxFloor) || 0),
                         totalKills: Math.max(Number(merged.totalKills) || 0, Number(formatted.totalKills) || 0)
                     };
@@ -152,9 +153,10 @@ class PublicProfileModal {
             <div class="pub-showcase-row">${showcaseHtml}</div>
             <div class="pub-stats-grid">
                 <div class="pub-stat-pill"><span>🏆 High Score</span><strong>${Number(p.highScore || 0).toLocaleString()}</strong></div>
-                <div class="pub-stat-pill"><span>🔥 Endless Best</span><strong>Wave ${Math.max(0, Number(p.endlessMaxWave) || 0)}</strong></div>
+                <div class="pub-stat-pill"><span>⚡ Endless Best</span><strong>Wave ${Math.max(0, Number(p.endlessMaxWave) || 0)}</strong></div>
                 <div class="pub-stat-pill"><span>⚔️ Total Kills</span><strong>${Number(p.totalKills || 0).toLocaleString()}</strong></div>
-                <div class="pub-stat-pill"><span>⚡ Olympus Peak</span><strong>Floor ${Number(p.olympusMaxFloor || 0)}/5</strong></div>
+                <div class="pub-stat-pill"><span>🏛️ Olympus Peak</span><strong>Floor ${Number(p.olympusMaxFloor || 0)}/5</strong></div>
+                <div class="pub-stat-pill is-hard-stat"><span>🔥 Endless Hard Best</span><strong>Wave ${Math.max(0, Number(p.endlessHardMaxWave) || 0)}</strong></div>
             </div>
             <button type="button" class="pub-quick-loadout-btn" data-pub-jump="gear">
                 <span>${kitText}</span>

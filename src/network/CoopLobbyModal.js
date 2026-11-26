@@ -7,6 +7,7 @@ class CoopLobbyModal {
     constructor() {
         this.modal = null;
         this.selectedMode = 'story';
+        this.selectedEndlessHard = false;
         this.activeTab = 'host';
         this.roomCode = '';
         this.peerData = null;
@@ -22,53 +23,9 @@ class CoopLobbyModal {
     }
 
     getLocalUserData() {
-        const gs = (typeof window !== 'undefined') ? window.GameState : null;
-        const cs = (typeof window !== 'undefined') ? window.cloudSave : null;
-        const fbUser = cs && (cs.currentUser || (cs.auth && cs.auth.currentUser));
-        const authName = (fbUser && (fbUser.displayName || (fbUser.email && fbUser.email.split('@')[0]))) || '';
-        const heroType = (gs && gs.player && gs.player.selectedHero) || (typeof localStorage !== 'undefined' && localStorage.getItem('lesaio_selected_hero')) || 'psanas';
-        const rawName = (gs && gs.player && gs.player.name) || (typeof localStorage !== 'undefined' && localStorage.getItem('lesaio_player_name')) || '';
-        const cleanRaw = String(rawName || '').trim();
-        const nameChosen = typeof localStorage !== 'undefined' && localStorage.getItem('lesaio_player_name_chosen') === 'true';
-        const name = (cleanRaw && (cleanRaw !== 'Psanas' || nameChosen || !authName)) ? cleanRaw : (authName || cleanRaw || 'Hero');
-        const weaponType = (typeof WeaponSystem !== 'undefined')
-            ? WeaponSystem.resolveEquippedWeapon((typeof HEROES !== 'undefined' && HEROES[heroType]) ? HEROES[heroType].weaponType : 'pea')
-            : ((gs && gs.player && (gs.player.selectedWeapon || gs.player.weaponType)) || localStorage.getItem('lesaio_selected_weapon') || 'pea');
-        const heroSkin = (typeof HeroSkinSystem !== 'undefined') ? HeroSkinSystem.getActiveSkin(heroType) : 'default';
-        const heroStyle = (heroType === 'psgiannhs' && typeof PsgiannhsHero !== 'undefined') ? PsgiannhsHero.getActiveStyle() : null;
-        const starBlessed = (typeof HeroStarBlessing !== 'undefined' && HeroStarBlessing.isBlessed) ? !!HeroStarBlessing.isBlessed(heroType) : false;
-        const armorEq = (typeof GearManager !== 'undefined' && typeof GearManager.getEquipped === 'function') ? GearManager.getEquipped('armor') : null;
-        const equippedArmorId = armorEq ? armorEq.id : null;
-        const armorEvolved = !!(equippedArmorId && typeof HeroArmorRenderer !== 'undefined' && HeroArmorRenderer.isEvolved(equippedArmorId));
-        const weaponEvolved = !!(typeof WeaponEvolutionManager !== 'undefined' && WeaponEvolutionManager.isEvolved(weaponType));
-
-        let maxHp = (typeof HEROES !== 'undefined' && HEROES[heroType] && HEROES[heroType].hp) || 100;
-        const upgrades = (gs && gs.player && gs.player.upgrades) || {};
-        maxHp += (upgrades.maxHealth || 0) * 6;
-        let damageReduction = (typeof HEROES !== 'undefined' && HEROES[heroType] && HEROES[heroType].damageReduction) || 0;
-        let magnetRadius = 140;
-        if (typeof GearManager !== 'undefined') {
-            const eq = GearManager.getEquippedTotalStats();
-            maxHp += (eq.maxHp || 0);
-            damageReduction = Math.min(0.55, damageReduction + (eq.damageReduction || 0) / 100);
-            magnetRadius += (eq.magnetRadius || 0);
-        }
-        if (typeof PerkSystem !== 'undefined' && PerkSystem.hasPerk && PerkSystem.hasPerk('zeus_storm_crown')) {
-            const st = PerkSystem.getRankStats ? PerkSystem.getRankStats('zeus_storm_crown') : {};
-            maxHp = Math.max(25, Math.round(maxHp * (1 - (st.maxHpPenalty || 0.25))));
-        }
-        if (starBlessed) maxHp = Math.round(maxHp * 1.10);
-        if (typeof ClanBuffs !== 'undefined') maxHp = Math.round(maxHp * ClanBuffs.getMaxHpMultiplier());
-        const clanRef = (typeof window !== 'undefined' && window.clanService && window.clanService.currentClan) ? window.clanService.currentClan : null;
-        return {
-            name, heroType, weaponType, heroSkin, heroStyle, starBlessed,
-            equippedArmorId, armorEvolved, weaponEvolved,
-            clanId: clanRef ? clanRef.id : null,
-            clanTag: clanRef ? clanRef.tag : null,
-            maxHp: Math.min(1200, Math.round(maxHp)),
-            damageReduction,
-            magnetRadius: Math.max(80, Math.min(400, Math.round(magnetRadius)))
-        };
+        return (typeof CoopPeerRoster !== 'undefined' && CoopPeerRoster.buildLocalUserData)
+            ? CoopPeerRoster.buildLocalUserData()
+            : { name: 'Hero', heroType: 'psanas', weaponType: 'pea', maxHp: 100, damageReduction: 0, magnetRadius: 140 };
     }
 
     ensureModalMarkup() {
@@ -106,8 +63,9 @@ class CoopLobbyModal {
                     <div>
                         <span class="coop-code-label" style="display:block; margin-bottom: 6px;">SELECT GAME MODE:</span>
                         <div class="coop-mode-picker">
-                            <button id="coop-mode-story" class="coop-mode-btn selected">${typeof UiIcons !== 'undefined' ? UiIcons.i('book', 'ui-icon-sm') : '📖'} STORY MODE</button>
-                            <button id="coop-mode-endless" class="coop-mode-btn">${typeof UiIcons !== 'undefined' ? UiIcons.i('bolt', 'ui-icon-sm') : '⚡'} ENDLESS MODE</button>
+                            <button id="coop-mode-story" class="coop-mode-btn selected">${typeof UiIcons !== 'undefined' ? UiIcons.i('book', 'ui-icon-sm') : '📖'} STORY</button>
+                            <button id="coop-mode-endless" class="coop-mode-btn">${typeof UiIcons !== 'undefined' ? UiIcons.i('bolt', 'ui-icon-sm') : '⚡'} ENDLESS</button>
+                            <button id="coop-mode-endless-hard" class="coop-mode-btn is-hard">🔥 ENDLESS HARD</button>
                         </div>
                     </div>
 
@@ -179,8 +137,23 @@ class CoopLobbyModal {
         // Mode selectors
         const btnStory = document.getElementById('coop-mode-story');
         const btnEndless = document.getElementById('coop-mode-endless');
-        btnStory.addEventListener('click', () => { this.selectedMode = 'story'; btnStory.classList.add('selected'); btnEndless.classList.remove('selected'); });
-        btnEndless.addEventListener('click', () => { this.selectedMode = 'endless'; btnEndless.classList.add('selected'); btnStory.classList.remove('selected'); });
+        const btnHard = document.getElementById('coop-mode-endless-hard');
+        btnStory.addEventListener('click', () => { this.selectedMode = 'story'; this.selectedEndlessHard = false; this._syncModePickerUI(); });
+        btnEndless.addEventListener('click', () => { this.selectedMode = 'endless'; this.selectedEndlessHard = false; this._syncModePickerUI(); });
+        btnHard?.addEventListener('click', () => {
+            const mc = window.menuController || (window.gameInstance && window.gameInstance.ui && window.gameInstance.ui.menuController);
+            const unlocked = !mc || typeof mc.isEndlessHardUnlocked !== 'function' || mc.isEndlessHardUnlocked();
+            if (!unlocked) {
+                if (window.soundEngine) (window.soundEngine.playGoBack || window.soundEngine.playSelect).call(window.soundEngine);
+                const statusEl = document.getElementById('coop-host-status');
+                if (statusEl) statusEl.textContent = '🔒 Reach Wave 30 in Endless Mode to unlock Co-op Endless Hard!';
+                btnHard.classList.remove('crest-shake'); void btnHard.offsetWidth; btnHard.classList.add('crest-shake');
+                return;
+            }
+            if (window.soundEngine) window.soundEngine.playSelect();
+            this.selectedMode = 'endless'; this.selectedEndlessHard = true; this._syncModePickerUI();
+        });
+        this._syncModePickerUI();
 
         // Copy button (with fallback when Clipboard API unavailable on HTTP LAN)
         const copyBtn = document.getElementById('coop-copy-code-btn');
@@ -295,7 +268,24 @@ class CoopLobbyModal {
             if (!window.friendService.friends.length && typeof window.friendService.pollFriendships === 'function') window.friendService.pollFriendships();
             else if (typeof window.friendService.refreshFriendStatuses === 'function') window.friendService.refreshFriendStatuses();
         }
+        this._syncModePickerUI();
         this.renderFriendQuickInvite();
+    }
+
+    _syncModePickerUI() {
+        const mc = window.menuController || (window.gameInstance && window.gameInstance.ui && window.gameInstance.ui.menuController);
+        const unlocked = !mc || typeof mc.isEndlessHardUnlocked !== 'function' || mc.isEndlessHardUnlocked();
+        if (!unlocked) this.selectedEndlessHard = false;
+        const btnStory = document.getElementById('coop-mode-story');
+        const btnEndless = document.getElementById('coop-mode-endless');
+        const btnHard = document.getElementById('coop-mode-endless-hard');
+        if (btnStory) btnStory.classList.toggle('selected', this.selectedMode !== 'endless');
+        if (btnEndless) btnEndless.classList.toggle('selected', this.selectedMode === 'endless' && !this.selectedEndlessHard);
+        if (btnHard) {
+            btnHard.classList.toggle('is-locked', !unlocked);
+            btnHard.classList.toggle('selected', this.selectedMode === 'endless' && !!this.selectedEndlessHard);
+            btnHard.textContent = unlocked ? '🔥 ENDLESS HARD' : '🔒 HARD (W30)';
+        }
     }
 
     renderFriendQuickInvite() {
@@ -330,7 +320,8 @@ class CoopLobbyModal {
                 btn.disabled = true; btn.textContent = '⏳ Opening...';
                 const ready = window.networkManager ? await window.networkManager.waitUntilReady(6500) : true;
                 if (!ready) { btn.disabled = false; setLbl(`Retry ${f.name}`); return; }
-                const ok = await fs.sendCoopInvite(f.uid, this.roomCode, this.selectedMode || 'story');
+                const invMode = (this.selectedMode === 'endless' && this.selectedEndlessHard) ? 'endless_hard' : (this.selectedMode || 'story');
+                const ok = await fs.sendCoopInvite(f.uid, this.roomCode, invMode);
                 if (ok) {
                     setLbl(`✓ Sent to ${f.name}`);
                     setTimeout(() => { if (btn.isConnected && btn.disabled) { btn.disabled = false; setLbl(`📨 ${f.name}`); } }, 8000);
@@ -471,8 +462,10 @@ class CoopLobbyModal {
             ? window.networkManager.getConnectedPeers() : (Array.isArray(this.connectedPeers) ? this.connectedPeers : []);
         const initPeers = roster.length > 0 ? roster : (this.peerData ? [{ id: 'p2', ...this.peerData }] : []);
 
+        const isHard = !!(this.selectedMode === 'endless' && this.selectedEndlessHard);
         window.networkManager.send('MATCH_START', {
             gameMode: this.selectedMode,
+            isEndlessHard: isHard,
             hostName: u.name,
             hostHero: u.heroType,
             hostInfo: u,
@@ -482,7 +475,7 @@ class CoopLobbyModal {
 
         this.hide();
         if (window.friendService) {
-            const label = this.selectedMode === 'endless' ? (this.selectedEndlessHard ? 'Playing Co-op (Endless Hard)' : 'Playing Co-op (Endless)') : 'Playing Co-op (Story)';
+            const label = this.selectedMode === 'endless' ? (isHard ? 'Playing Co-op (Endless Hard)' : 'Playing Co-op (Endless)') : 'Playing Co-op (Story)';
             window.friendService.setPresenceStatus(label, null);
         }
 
@@ -492,13 +485,14 @@ class CoopLobbyModal {
 
         if (window.gameInstance) {
             window.gameInstance.isCoopGuest = false;
-            window.gameInstance.startNewGame(u.heroType, this.selectedMode, { isCoop: true, isEndlessHard: !!this.selectedEndlessHard });
+            window.gameInstance.startNewGame(u.heroType, this.selectedMode, { isCoop: true, isEndlessHard: isHard });
             if (window.gameInstance.arena && typeof window.gameInstance.arena.reseed === 'function') {
                 window.gameInstance.arena.reseed(mapSeed);
             }
             window.gameInstance.coopSession = new CoopHostSession(window.gameInstance, window.networkManager, initPeers, mapSeed);
             if (window.gameInstance.ui) {
-                window.gameInstance.ui.addKillfeed(`🤝 ${1 + initPeers.length}P CO-OP MATCH STARTED (${this.selectedMode.toUpperCase()})`);
+                const modeLabel = isHard ? 'ENDLESS HARD' : this.selectedMode.toUpperCase();
+                window.gameInstance.ui.addKillfeed(`🤝 ${1 + initPeers.length}P CO-OP MATCH STARTED (${modeLabel})`);
             }
         }
     }
@@ -531,7 +525,8 @@ class CoopLobbyModal {
                 myPeerId: (window.networkManager && window.networkManager.assignedPeerId) || null
             });
             if (window.gameInstance.ui) {
-                window.gameInstance.ui.addKillfeed(`🤝 ${Math.max(2, 1 + initPeers.length)}P CO-OP MATCH STARTED (${gameMode.toUpperCase()})`);
+                const modeLabel = isHard ? 'ENDLESS HARD' : gameMode.toUpperCase();
+                window.gameInstance.ui.addKillfeed(`🤝 ${Math.max(2, 1 + initPeers.length)}P CO-OP MATCH STARTED (${modeLabel})`);
             }
         }
     }

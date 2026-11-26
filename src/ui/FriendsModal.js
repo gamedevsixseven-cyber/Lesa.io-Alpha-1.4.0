@@ -538,7 +538,8 @@ class FriendsModal {
         setStat(`⏳ Opening room before inviting ${friendName}...`);
         const ready = await window.networkManager.waitUntilReady(6500);
         if (ready && modal.roomCode && window.networkManager.isHost) {
-            await this.service.sendCoopInvite(friendUid, modal.roomCode, modal.selectedMode || 'story');
+            const invMode = (modal.selectedMode === 'endless' && modal.selectedEndlessHard) ? 'endless_hard' : (modal.selectedMode || 'story');
+            await this.service.sendCoopInvite(friendUid, modal.roomCode, invMode);
             if (statusEl && !window.networkManager.connected) setStat(`📨 Invite sent to ${friendName}! Waiting to connect...`);
         } else { setStat('⚠️ Could not register room on signaling server — please try again.'); }
     }

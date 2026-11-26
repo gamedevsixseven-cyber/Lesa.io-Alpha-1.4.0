@@ -44,7 +44,8 @@ class LeaderboardModal {
                     <p class="lb-modal-sub">Tap any champion row to inspect their Banner, Frame &amp; Milestone Coins</p>
                     <div class="lb-tabs-row" id="lb-tabs-row">
                         <button type="button" class="lb-tab-btn active" data-lb-tab="score">🏆 HIGH SCORE</button>
-                        <button type="button" class="lb-tab-btn" data-lb-tab="endless">🔥 ENDLESS WAVE</button>
+                        <button type="button" class="lb-tab-btn" data-lb-tab="endless">⚡ ENDLESS</button>
+                        <button type="button" class="lb-tab-btn is-hard-tab" data-lb-tab="endless_hard">🔥 HARD ENDLESS</button>
                         <button type="button" class="lb-tab-btn" data-lb-tab="kills">⚔️ TOTAL KILLS</button>
                     </div>
                     <div class="leaderboard-list-box" id="lb-list-box"></div>
@@ -126,6 +127,7 @@ class LeaderboardModal {
             highScore: Math.max((me && me.highScore) || 0, stats.highScore || 0),
             maxWave: Math.max((me && me.maxWave) || 1, stats.maxWave || 1),
             endlessMaxWave: Math.max((me && me.endlessMaxWave) || 0, snap.endlessMaxWave || 0),
+            endlessHardMaxWave: Math.max((me && me.endlessHardMaxWave) || 0, snap.endlessHardMaxWave || 0),
             olympusMaxFloor: Math.max((me && me.olympusMaxFloor) || 0, snap.olympusMaxFloor || 0),
             totalKills: Math.max((me && me.totalKills) || 0, stats.totalKills || 0),
             cosmetics: cos,
@@ -184,6 +186,7 @@ class LeaderboardModal {
                 highScore: Math.max(Number(f.highScore) || 0, Number(cur && cur.highScore) || 0),
                 maxWave: Math.max(Number(f.maxWave) || 1, Number(cur && cur.maxWave) || 1),
                 endlessMaxWave: Math.max(Number(f.endlessMaxWave) || 0, Number(cur && cur.endlessMaxWave) || 0),
+                endlessHardMaxWave: Math.max(Number(f.endlessHardMaxWave) || 0, Number(cur && cur.endlessHardMaxWave) || 0),
                 olympusMaxFloor: Math.max(Number(f.olympusMaxFloor) || 0, Number(cur && cur.olympusMaxFloor) || 0),
                 totalKills: Math.max(Number(f.totalKills) || 0, Number(cur && cur.totalKills) || 0),
                 ...(isSelf ? { isSelf: true, isLocalStub: false } : {})
@@ -258,6 +261,7 @@ class LeaderboardModal {
                                 highScore: Math.max(Number(formatted.highScore) || 0, Number(curSelf.highScore) || 0),
                                 maxWave: Math.max(Number(formatted.maxWave) || 1, Number(curSelf.maxWave) || 1),
                                 endlessMaxWave: Math.max(Number(formatted.endlessMaxWave) || 0, Number(curSelf.endlessMaxWave) || 0),
+                                endlessHardMaxWave: Math.max(Number(formatted.endlessHardMaxWave) || 0, Number(curSelf.endlessHardMaxWave) || 0),
                                 olympusMaxFloor: Math.max(Number(formatted.olympusMaxFloor) || 0, Number(curSelf.olympusMaxFloor) || 0),
                                 totalKills: Math.max(Number(formatted.totalKills) || 0, Number(curSelf.totalKills) || 0),
                                 isSelf: true,
@@ -280,6 +284,7 @@ class LeaderboardModal {
                                     highScore: Math.max(Number(formatted.highScore) || 0, Number(existing.highScore) || 0),
                                     maxWave: Math.max(Number(formatted.maxWave) || 1, Number(existing.maxWave) || 1),
                                     endlessMaxWave: Math.max(Number(formatted.endlessMaxWave) || 0, Number(existing.endlessMaxWave) || 0),
+                                    endlessHardMaxWave: Math.max(Number(formatted.endlessHardMaxWave) || 0, Number(existing.endlessHardMaxWave) || 0),
                                     olympusMaxFloor: Math.max(Number(formatted.olympusMaxFloor) || 0, Number(existing.olympusMaxFloor) || 0),
                                     totalKills: Math.max(Number(formatted.totalKills) || 0, Number(existing.totalKills) || 0)
                                 });
@@ -318,6 +323,9 @@ class LeaderboardModal {
 
     _getMetricValue(entry) {
         if (!entry) return 0;
+        if (this._activeTab === 'endless_hard') {
+            return Math.max(0, Number(entry.endlessHardMaxWave) || 0);
+        }
         if (this._activeTab === 'endless') {
             return Math.max(0, Number(entry.endlessMaxWave) || 0);
         }
@@ -329,6 +337,7 @@ class LeaderboardModal {
 
     _formatMetricLabel(entry) {
         const val = this._getMetricValue(entry);
+        if (this._activeTab === 'endless_hard') return val > 0 ? `Hard W${val}` : 'Wave 0';
         if (this._activeTab === 'endless') return `Wave ${val}`;
         if (this._activeTab === 'kills') return `${val.toLocaleString()} Kills`;
         return val.toLocaleString();
@@ -411,7 +420,7 @@ class LeaderboardModal {
                         ${coinsHtml}
                     </div>
                     <div class="lb-score-col">
-                        <span class="lb-score-val">${this._formatMetricLabel(entry)}</span>
+                        <span class="lb-score-val${this._activeTab === 'endless_hard' && Number(entry.endlessHardMaxWave) > 0 ? ' is-hard-metric' : ''}">${this._formatMetricLabel(entry)}</span>
                         <span class="lb-inspect-hint">VIEW ▸</span>
                     </div>
                     ${isPrimaryDev ? `<button type="button" class="lb-dev-hide-btn ${entry.leaderboardHidden ? 'is-restore' : ''}" data-lb-dev-idx="${idx}" title="${entry.leaderboardHidden ? 'Restore to Leaderboard' : 'Remove from Leaderboard'}">${entry.leaderboardHidden ? '👁️ SHOW' : '✕'}</button>` : ''}

@@ -5,6 +5,54 @@
  */
 
 class CoopPeerRoster {
+    static buildLocalUserData() {
+        const gs = (typeof window !== 'undefined') ? window.GameState : null;
+        const cs = (typeof window !== 'undefined') ? window.cloudSave : null;
+        const fbUser = cs && (cs.currentUser || (cs.auth && cs.auth.currentUser));
+        const authName = (fbUser && (fbUser.displayName || (fbUser.email && fbUser.email.split('@')[0]))) || '';
+        const heroType = (gs && gs.player && gs.player.selectedHero) || (typeof localStorage !== 'undefined' && localStorage.getItem('lesaio_selected_hero')) || 'psanas';
+        const rawName = (gs && gs.player && gs.player.name) || (typeof localStorage !== 'undefined' && localStorage.getItem('lesaio_player_name')) || '';
+        const cleanRaw = String(rawName || '').trim();
+        const nameChosen = typeof localStorage !== 'undefined' && localStorage.getItem('lesaio_player_name_chosen') === 'true';
+        const name = (cleanRaw && (cleanRaw !== 'Psanas' || nameChosen || !authName)) ? cleanRaw : (authName || cleanRaw || 'Hero');
+        const weaponType = (typeof WeaponSystem !== 'undefined')
+            ? WeaponSystem.resolveEquippedWeapon((typeof HEROES !== 'undefined' && HEROES[heroType]) ? HEROES[heroType].weaponType : 'pea')
+            : ((gs && gs.player && (gs.player.selectedWeapon || gs.player.weaponType)) || localStorage.getItem('lesaio_selected_weapon') || 'pea');
+        const heroSkin = (typeof HeroSkinSystem !== 'undefined') ? HeroSkinSystem.getActiveSkin(heroType) : 'default';
+        const heroStyle = (heroType === 'psgiannhs' && typeof PsgiannhsHero !== 'undefined') ? PsgiannhsHero.getActiveStyle() : null;
+        const starBlessed = (typeof HeroStarBlessing !== 'undefined' && HeroStarBlessing.isBlessed) ? !!HeroStarBlessing.isBlessed(heroType) : false;
+        const armorEq = (typeof GearManager !== 'undefined' && typeof GearManager.getEquipped === 'function') ? GearManager.getEquipped('armor') : null;
+        const equippedArmorId = armorEq ? armorEq.id : null;
+        const armorEvolved = !!(equippedArmorId && typeof HeroArmorRenderer !== 'undefined' && HeroArmorRenderer.isEvolved(equippedArmorId));
+        const weaponEvolved = !!(typeof WeaponEvolutionManager !== 'undefined' && WeaponEvolutionManager.isEvolved(weaponType));
+
+        let maxHp = (typeof HEROES !== 'undefined' && HEROES[heroType] && HEROES[heroType].hp) || 100;
+        const upgrades = (gs && gs.player && gs.player.upgrades) || {};
+        maxHp += (upgrades.maxHealth || 0) * 6;
+        let damageReduction = (typeof HEROES !== 'undefined' && HEROES[heroType] && HEROES[heroType].damageReduction) || 0;
+        let magnetRadius = 140;
+        if (typeof GearManager !== 'undefined') {
+            const eq = GearManager.getEquippedTotalStats();
+            maxHp += (eq.maxHp || 0);
+            damageReduction = Math.min(0.55, damageReduction + (eq.damageReduction || 0) / 100);
+            magnetRadius += (eq.magnetRadius || 0);
+        }
+        if (typeof PerkSystem !== 'undefined' && PerkSystem.hasPerk && PerkSystem.hasPerk('zeus_storm_crown')) {
+            const st = PerkSystem.getRankStats ? PerkSystem.getRankStats('zeus_storm_crown') : {};
+            maxHp = Math.max(25, Math.round(maxHp * (1 - (st.maxHpPenalty || 0.25))));
+        }
+        if (starBlessed) maxHp = Math.round(maxHp * 1.10);
+        if (typeof ClanBuffs !== 'undefined') maxHp = Math.round(maxHp * ClanBuffs.getMaxHpMultiplier());
+        const clanRef = (typeof window !== 'undefined' && window.clanService && window.clanService.currentClan) ? window.clanService.currentClan : null;
+        return {
+            name, heroType, weaponType, heroSkin, heroStyle, starBlessed,
+            equippedArmorId, armorEvolved, weaponEvolved,
+            clanId: clanRef ? clanRef.id : null, clanTag: clanRef ? clanRef.tag : null,
+            maxHp: Math.min(1200, Math.round(maxHp)), damageReduction,
+            magnetRadius: Math.max(80, Math.min(400, Math.round(magnetRadius)))
+        };
+    }
+
     static initHostRoster(session, game, networkManager, guestInfoOrPeers) {
         session.remotePlayersMap = new Map();
         session.remotePlayers = [];

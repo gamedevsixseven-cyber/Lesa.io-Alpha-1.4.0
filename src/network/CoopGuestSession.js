@@ -386,12 +386,17 @@ class CoopGuestSession {
             }
         }
 
-        // 3. Sync Wave Info, Squad Stats & HUD
+        // 3. Sync Wave Info, Hard Endless Strikes/Progression & Squad Stats
         if (this.game.waveManager) {
+            const prevW = this.game.waveManager.wave || 0;
             if (Number.isFinite(data.wave)) this.game.waveManager.wave = data.wave;
             if (typeof data.wState === 'string') this.game.waveManager.waveState = data.wState;
             if (Number.isFinite(data.wTotal)) this.game.waveManager.waveTotalEnemies = data.wTotal;
             if (Number.isFinite(data.wKilled)) this.game.waveManager.waveEnemiesKilled = data.wKilled;
+            if (typeof CoopSnapshotSync !== 'undefined') CoopSnapshotSync.syncGuestEndlessWave(this, data, prevW);
+        }
+        if (Array.isArray(data.ehS) && typeof EndlessHardMap !== 'undefined') {
+            EndlessHardMap.applyNetStrikes(data.ehS, this.game);
         }
         if (data.sq && this.game.player) {
             const p = this.game.player, sq = data.sq;
@@ -420,41 +425,8 @@ class CoopGuestSession {
         }
 
         // 4. Synchronize Enemies with zero-GC delta reconstruction & interpolation
-        if (Array.isArray(data.enemies)) {
-            if (typeof CoopSnapshotSync !== 'undefined') {
-                CoopSnapshotSync.applyGuestEnemies(this, data.enemies);
-            } else {
-                if (!Array.isArray(this.game.enemies)) this.game.enemies = [];
-                const incomingIds = new Set();
-                const existingMap = new Map();
-                for (let i = 0; i < this.game.enemies.length; i++) {
-                    const e = this.game.enemies[i];
-                    if (e && e._netId) existingMap.set(e._netId, e);
-                }
-                for (let i = 0; i < data.enemies.length; i++) {
-                    const eNet = data.enemies[i];
-                    if (!eNet || typeof eNet.id !== 'number') continue;
-                    incomingIds.add(eNet.id);
-                    let enemy = existingMap.get(eNet.id);
-                    const netX = Number.isFinite(eNet.x) ? eNet.x : 0;
-                    const netY = Number.isFinite(eNet.y) ? eNet.y : 0;
-                    if (!enemy) {
-                        enemy = this.spawnEnemyByType(eNet.t, netX, netY);
-                        if (enemy) { enemy._netId = eNet.id; enemy.x = netX; enemy.y = netY; enemy.dead = false; this.game.enemies.push(enemy); }
-                    }
-                    if (enemy) {
-                        enemy.targetX = netX; enemy.targetY = netY;
-                        enemy.vx = Number.isFinite(eNet.vx) ? eNet.vx : 0; enemy.vy = Number.isFinite(eNet.vy) ? eNet.vy : 0;
-                        enemy.targetAngle = Number.isFinite(eNet.a) ? eNet.a : 0;
-                        enemy.hp = Number.isFinite(eNet.hp) ? eNet.hp : enemy.hp;
-                        enemy.dead = false;
-                    }
-                }
-                for (let i = this.game.enemies.length - 1; i >= 0; i--) {
-                    const e = this.game.enemies[i];
-                    if (e && e._netId && !incomingIds.has(e._netId)) { e.dead = true; this.game.enemies.splice(i, 1); }
-                }
-            }
+        if (Array.isArray(data.enemies) && typeof CoopSnapshotSync !== 'undefined') {
+            CoopSnapshotSync.applyGuestEnemies(this, data.enemies);
         }
 
         // 4.5. Synchronize Enemy Projectiles smoothly without wiping player bullets or teleporting

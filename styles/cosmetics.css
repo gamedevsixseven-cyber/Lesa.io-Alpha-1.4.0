@@ -272,7 +272,7 @@
 }
 .lb-modal-title { margin: 0 0 4px; color: #facc15; -webkit-text-stroke: 1.5px #0f172a; text-shadow: 0 3px 0 #0f172a; letter-spacing: 0.5px; }
 .lb-modal-sub { margin: 0 0 10px; font-size: 0.8rem; font-weight: 800; color: #334155; }
-.lb-tabs-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 10px; flex-shrink: 0; }
+.lb-tabs-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 10px; flex-shrink: 0; }
 .lb-tab-btn {
     padding: 8px 6px;
     border-radius: 10px;
@@ -281,11 +281,12 @@
     color: #cbd5e1;
     font-family: inherit;
     font-weight: 900;
-    font-size: 0.78rem;
+    font-size: 0.74rem;
     cursor: pointer;
     box-shadow: 0 3px 0 #0f172a;
 }
 .lb-tab-btn.active { background: linear-gradient(135deg, #facc15, #f59e0b); color: #0f172a; }
+.lb-tab-btn.is-hard-tab.active { background: linear-gradient(135deg, #ff4757, #b91c1c); color: #fef08a; border-color: #fde047; }
 .leaderboard-list-box {
     flex: 1 1 auto;
     min-height: 200px;
@@ -367,6 +368,7 @@
 .lb-dev-hide-btn.is-restore { background: #22c55e; color: #052e16; }
 .lb-dev-hide-btn:hover { filter: brightness(1.1); }
 .lb-score-val { display: block; font-weight: 900; font-size: 0.96rem; color: #fde047; text-shadow: 0 2px 3px rgba(0,0,0,0.8); white-space: nowrap; }
+.lb-score-val.is-hard-metric { display: inline-block; padding: 2px 8px; border-radius: 8px; background: rgba(15, 23, 42, 0.82); border: 1.5px solid #ff4757; color: #fef08a; text-shadow: 0 1px 3px rgba(0,0,0,0.9); box-shadow: 0 2px 6px rgba(255, 46, 76, 0.45); }
 .lb-inspect-hint { font-size: 0.65rem; font-weight: 800; color: #cbd5e1; white-space: nowrap; }
 .lb-empty-state, .lb-warn-banner { flex: 0 0 auto; padding: 14px; text-align: center; font-weight: 800; color: #cbd5e1; background: rgba(15, 23, 42, 0.6); border-radius: 10px; }
 .lb-actions-row, .pub-actions-row { margin-top: 12px; display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap; flex-shrink: 0; }
@@ -441,6 +443,8 @@
 }
 .pub-stat-pill span { color: #e2e8f0; font-weight: 800; }
 .pub-stat-pill strong { color: #fde047; font-size: 0.88rem; }
+.pub-stat-pill.is-hard-stat { grid-column: 1 / -1; background: linear-gradient(135deg, #3b0d18 0%, #1e293b 100%); border-color: #ff4757; }
+.pub-stat-pill.is-hard-stat strong { color: #ff6b81; }
 .pub-coin-vault {
     display: flex;
     align-items: center;

@@ -58,7 +58,7 @@ class HardBossEntranceFX {
     /**
      * Applies tiered Hard Endless stat buffs (Hard Endless ONLY, strictly idempotent):
      *   - Apex Bosses (W30 / W60): VeryHigh + extra High HP stack (3.50x), unchanged Damage (1.0x)
-     *   - Regular Hard Bosses & Mini-Bosses: High+ HP (1.90x), Low+ Damage (1.30x)
+     *   - Regular Hard Bosses & Mini-Bosses: Buffed HP (2.65x), Buffed Damage (1.72x)
      *   - Regular Hard Enemies: MedToHigh+ HP (1.75x), LowToMed+ Damage (1.42x)
      */
     static applyHardScaling(entity) {
@@ -71,8 +71,8 @@ class HardBossEntranceFX {
             hpMult = 3.50;
             dmgMult = 1.00;
         } else if (entity.isEndlessBoss || entity.isBoss || entity.isMiniBoss) {
-            hpMult = 1.90;
-            dmgMult = 1.30;
+            hpMult = 2.65;
+            dmgMult = 1.72;
         }
 
         if (entity.isApexBoss && typeof entity.fixedHardHp === 'number' && entity.fixedHardHp > 0) {

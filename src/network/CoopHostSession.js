@@ -412,6 +412,7 @@ class CoopHostSession {
             wState: (wm && wm.waveState) ? wm.waveState : 'IN_PROGRESS',
             wTotal: safeInt(wm ? wm.waveTotalEnemies : 0, 0, 999, 0),
             wKilled: safeInt(wm ? wm.waveEnemiesKilled : 0, 0, 999, 0),
+            ...(this.game && this.game.isEndlessHard && typeof EndlessHardMap !== 'undefined' ? { ehS: EndlessHardMap.getNetStrikes() } : {}),
             host: {
                 name: (this.net && this.net.localUserData && this.net.localUserData.name) || p.name,
                 x: safeInt(p.x),
