@@ -60,13 +60,13 @@ class HardBossEntranceFX {
      *   - Apex Bosses (W30 / W60): fixedHardHp (1.5M / 5M), unchanged Damage (1.0x)
      *   - Regular Hard Main Bosses (W10, W20, W40, W50): Buffed HP (3.35x), Buffed Damage (1.92x)
      *   - Hard Mini-Bosses (W5, W15, W25, W35, W45, W55): HP (2.65x), Damage (1.72x)
-     *   - Regular Hard Enemies: MedToHigh+ HP (1.75x), LowToMed+ Damage (1.42x)
+     *   - Regular Hard Enemies: Buffed HP (2.35x), LowToMed+ Damage (1.42x)
      */
     static applyHardScaling(entity) {
         if (!entity || entity._hardScaled || entity.isApexPillar) return entity;
         entity._hardScaled = true;
 
-        let hpMult = 1.75;
+        let hpMult = 2.35;
         let dmgMult = 1.42;
         if (entity.isApexBoss) {
             hpMult = 3.50;

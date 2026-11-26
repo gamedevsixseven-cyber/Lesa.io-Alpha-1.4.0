@@ -289,7 +289,11 @@ class EndlessWaveDirector {
             const x = player.x + Math.cos(angle) * dist;
             const y = player.y + Math.sin(angle) * dist;
             const Ctor = roster[i];
-            if (typeof Ctor === 'function') enemies.push(new Ctor(x, y, waveMult));
+            if (typeof Ctor === 'function') {
+                const mob = new Ctor(x, y, waveMult);
+                mob.maxHp = Math.max(1, Math.round(mob.maxHp * 1.38)); mob.hp = mob.maxHp;
+                enemies.push(mob);
+            }
         }
 
         waveManager.showWaveAnnouncement(`ENDLESS ${waveNum}`, '#fed330', 160);
