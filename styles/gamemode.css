@@ -491,7 +491,7 @@
 .ediff-play-btn.is-normal { background: linear-gradient(180deg, #2ed573, #1ea356); }
 .ediff-play-btn.is-hard { background: linear-gradient(180deg, #ff4757, #b91c1c); }
 .ediff-play-btn.is-hard.is-locked { background: #475569; color: #cbd5e1; cursor: not-allowed; }
-.friend-status-text.is-hard-status, .pub-status-chip.online.is-hard-status { color: #ff6b81; font-weight: 900; text-shadow: 0 0 8px rgba(255, 71, 87, 0.4); }
+.friend-status-text.is-hard-status, .pub-status-chip.online.is-hard-status, .dm-sub-status.is-hard-status { color: #ff6b81; font-weight: 900; text-shadow: 0 0 8px rgba(255, 71, 87, 0.4); }
 @media screen and (max-height: 540px), screen and (max-width: 768px), screen and (pointer: coarse) and (max-height: 720px) {
     #endless-diff-modal.modal-overlay { padding: 6px; align-items: center; justify-content: center; }
     .ediff-panel {

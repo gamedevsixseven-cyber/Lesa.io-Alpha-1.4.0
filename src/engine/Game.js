@@ -120,7 +120,7 @@ class Game {
     startNewGame(heroType = 'psanas', gameMode = 'story', options = {}) {
         const isHard = (gameMode === 'endless') && !!(options && options.isEndlessHard);
         if (!options.isCoop && typeof window !== 'undefined' && window.friendService) {
-            const statusLabel = gameMode === 'dungeons' ? 'Climbing Mt. Olympus' : (gameMode === 'endless' ? (isHard ? 'Playing Endless Hard' : 'Playing Endless') : 'Playing Story');
+            const statusLabel = gameMode === 'dungeons' ? 'Climbing Mt. Olympus' : (gameMode === 'endless' ? (isHard ? 'Playing Endless Hard' : 'Playing Normal Endless') : 'Playing Story');
             window.friendService.setPresenceStatus(statusLabel, null);
         }
         const progMode = (gameMode === 'endless' && isHard) ? 'endless_hard' : gameMode;

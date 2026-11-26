@@ -473,7 +473,7 @@ class MenuController {
         }
         this.ui.hud.show();
         if (window.friendService) {
-            const label = gameMode === 'dungeons' ? 'Climbing Mt. Olympus' : (gameMode === 'endless' ? (options.isEndlessHard ? 'Playing Endless Hard' : 'Playing Endless') : 'Playing Story');
+            const label = gameMode === 'dungeons' ? 'Climbing Mt. Olympus' : (gameMode === 'endless' ? (options.isEndlessHard ? 'Playing Endless Hard' : 'Playing Normal Endless') : 'Playing Story');
             window.friendService.setPresenceStatus(label, null);
         }
 

@@ -138,8 +138,8 @@ class CoopLobbyModal {
         const btnStory = document.getElementById('coop-mode-story');
         const btnEndless = document.getElementById('coop-mode-endless');
         const btnHard = document.getElementById('coop-mode-endless-hard');
-        btnStory.addEventListener('click', () => { this.selectedMode = 'story'; this.selectedEndlessHard = false; this._syncModePickerUI(); });
-        btnEndless.addEventListener('click', () => { this.selectedMode = 'endless'; this.selectedEndlessHard = false; this._syncModePickerUI(); });
+        btnStory.addEventListener('click', () => { this.selectedMode = 'story'; this.selectedEndlessHard = false; this._syncModePickerUI(); this._syncHostPresence(); });
+        btnEndless.addEventListener('click', () => { this.selectedMode = 'endless'; this.selectedEndlessHard = false; this._syncModePickerUI(); this._syncHostPresence(); });
         btnHard?.addEventListener('click', () => {
             const mc = window.menuController || (window.gameInstance && window.gameInstance.ui && window.gameInstance.ui.menuController);
             const unlocked = !mc || typeof mc.isEndlessHardUnlocked !== 'function' || mc.isEndlessHardUnlocked();
@@ -151,7 +151,7 @@ class CoopLobbyModal {
                 return;
             }
             if (window.soundEngine) window.soundEngine.playSelect();
-            this.selectedMode = 'endless'; this.selectedEndlessHard = true; this._syncModePickerUI();
+            this.selectedMode = 'endless'; this.selectedEndlessHard = true; this._syncModePickerUI(); this._syncHostPresence();
         });
         this._syncModePickerUI();
 
@@ -264,12 +264,24 @@ class CoopLobbyModal {
         });
 
         if (window.friendService) {
-            window.friendService.setPresenceStatus('Hosting Co-op', this.roomCode);
+            this._syncHostPresence();
             if (!window.friendService.friends.length && typeof window.friendService.pollFriendships === 'function') window.friendService.pollFriendships();
             else if (typeof window.friendService.refreshFriendStatuses === 'function') window.friendService.refreshFriendStatuses();
         }
         this._syncModePickerUI();
         this.renderFriendQuickInvite();
+    }
+
+    _getPresenceLabel(verb = 'Hosting', gameMode = this.selectedMode, isHard = this.selectedEndlessHard) {
+        const modeName = gameMode === 'endless' ? (isHard ? 'Endless Hard' : 'Normal Endless') : (gameMode === 'dungeons' ? 'Mt. Olympus' : 'Story');
+        return `${verb} Co-op (${modeName})`;
+    }
+
+    _syncHostPresence() {
+        if (!window.friendService || this.activeTab !== 'host' || !this.roomCode) return;
+        if (window.gameInstance && window.gameInstance.coopSession && window.gameInstance.state === 'PLAYING') return;
+        const isHard = !!(this.selectedMode === 'endless' && this.selectedEndlessHard);
+        window.friendService.setPresenceStatus(this._getPresenceLabel('Hosting', this.selectedMode, isHard), this.roomCode);
     }
 
     _syncModePickerUI() {
@@ -473,10 +485,9 @@ class CoopLobbyModal {
             mapSeed: mapSeed
         });
 
-        this.hide();
+        this.hide(true);
         if (window.friendService) {
-            const label = this.selectedMode === 'endless' ? (isHard ? 'Playing Co-op (Endless Hard)' : 'Playing Co-op (Endless)') : 'Playing Co-op (Story)';
-            window.friendService.setPresenceStatus(label, null);
+            window.friendService.setPresenceStatus(this._getPresenceLabel('Playing', this.selectedMode, isHard), null);
         }
 
         if (window.menuController) window.menuController.hideGameModeModal();
@@ -498,7 +509,7 @@ class CoopLobbyModal {
     }
 
     launchMatchAsGuest(payload) {
-        this.hide();
+        this.hide(true);
         if (window.menuController) window.menuController.hideGameModeModal();
         const menuScreen = document.getElementById('menu-screen');
         if (menuScreen) menuScreen.classList.add('hidden');
@@ -507,8 +518,7 @@ class CoopLobbyModal {
         const gameMode = payload.gameMode || 'story';
         const isHard = !!(gameMode === 'endless' && payload.isEndlessHard);
         if (window.friendService) {
-            const label = gameMode === 'endless' ? (isHard ? 'Playing Co-op (Endless Hard)' : 'Playing Co-op (Endless)') : 'Playing Co-op (Story)';
-            window.friendService.setPresenceStatus(label, null);
+            window.friendService.setPresenceStatus(this._getPresenceLabel('Playing', gameMode, isHard), null);
         }
         const mapSeed = payload.mapSeed || 123456;
         const hostData = payload.hostInfo || this.hostInfo || this.peerData || { name: payload.hostName || 'Host', heroType: payload.hostHero || 'psanas' };
@@ -552,9 +562,9 @@ class CoopLobbyModal {
         }
     }
 
-    hide() {
+    hide(preservePresence = false) {
         if (this.modal) this.modal.classList.add('hidden');
-        if (window.friendService && (!window.gameInstance || window.gameInstance.state !== 'PLAYING')) {
+        if (!preservePresence && window.friendService && (!window.gameInstance || window.gameInstance.state !== 'PLAYING')) {
             window.friendService.setPresenceStatus('In Lobby', null);
         }
     }

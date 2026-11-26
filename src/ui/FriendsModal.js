@@ -239,10 +239,11 @@ class FriendsModal {
                 hero: live.hero || f.profile.hero,
                 level: live.uid ? Math.max(1, Number(live.level) || 1) : Math.max(1, Number(live.level) || 0, Number(f.profile && f.profile.level) || 1),
                 isOnline, status: pres.currentStatus || live.currentStatus || (isOnline ? 'In Lobby' : 'Offline'),
+                currentStatus: pres.currentStatus || live.currentStatus || (isOnline ? 'In Lobby' : 'Offline'),
                 lastSeenAt: Number(pres.lastSeenAt || live.lastSeenAt || (f.profile && f.profile.lastSeenAt) || 0),
                 coopRoomCode: isOnline ? (pres.coopRoomCode || live.coopRoomCode || null) : null,
                 highScore: live.highScore || 0, maxWave: live.maxWave || 1, totalKills: live.totalKills || 0,
-                endlessMaxWave: live.endlessMaxWave || 0, olympusMaxFloor: live.olympusMaxFloor || 0,
+                endlessMaxWave: live.endlessMaxWave || 0, endlessHardMaxWave: live.endlessHardMaxWave || 0, olympusMaxFloor: live.olympusMaxFloor || 0,
                 cosmetics: live.cosmetics || f.profile.cosmetics || {},
                 loadout: live.loadout || null
             };

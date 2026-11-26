@@ -76,6 +76,7 @@ class FriendService {
             clanId: cid, clanTag: cl ? cl.tag : (cid && cloud?.clanId === cid ? (cloud.clanTag || null) : null), clanName: cl ? cl.name : (cid && cloud?.clanId === cid ? (cloud.clanName || null) : null),
             level: p.accountLevel || parseInt(localStorage.getItem('lesaio_account_level') || '1', 10) || 1,
             selectedHero: p.selectedHero || localStorage.getItem('lesaio_selected_hero') || 'psanas',
+            isOnline: true, currentStatus: this._currentStatus || 'In Lobby', coopRoomCode: this._activeRoomCode || null,
             highScore: FriendService._maxNum(stats.highScore, parseInt(localStorage.getItem('lesaio_highscore') || '0', 10)),
             maxWave: rawMaxWave, totalKills: FriendService._maxNum(stats.totalKills, parseInt(localStorage.getItem('lesaio_total_kills') || '0', 10)),
             endlessMaxWave, endlessHardMaxWave, olympusMaxFloor: FriendService._maxNum(p.combatFeats?.olympusMaxFloor, featSnap?.olympusMaxFloor),
@@ -191,7 +192,7 @@ class FriendService {
                 baseDoc.publicLoadout = PlayerLoadoutExtractor.serializeForPublicCloud();
                 baseDoc.privateLoadout = PlayerLoadoutExtractor.isLocalPrivate();
             }
-            socialSig = JSON.stringify([me.uid, me.name, lvl, me.selectedHero, hs, mw, ew, ehw, tk, me.olympusMaxFloor, me.clanId, me.clanTag, me.cosmetics, baseDoc.privateLoadout, baseDoc.publicLoadout && baseDoc.publicLoadout.weapon]);
+            socialSig = JSON.stringify([me.uid, me.name, lvl, me.selectedHero, hs, mw, ew, ehw, tk, me.olympusMaxFloor, me.clanId, me.clanTag, me.cosmetics, baseDoc.privateLoadout, baseDoc.publicLoadout && baseDoc.publicLoadout.weapon, this._currentStatus, this._activeRoomCode]);
             if (rtdbReady && this._lastSocialHash === socialSig) {
                 this._lastPresenceSync = now;
                 return true;

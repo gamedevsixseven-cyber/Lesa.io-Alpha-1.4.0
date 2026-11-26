@@ -83,6 +83,7 @@ class PublicProfileModal {
                     const hasRealName = Boolean(rawDoc.playerName || (rawDoc.player && rawDoc.player.name));
                     const hasCos = Boolean(rawDoc.cosmetics || (rawDoc.player && rawDoc.player.cosmetics));
                     const hasLoadout = Boolean(rawDoc.publicLoadout || (rawDoc.player && rawDoc.player.selectedWeapon));
+                    const isSelfTarget = fs && merged.uid === fs.getMyUid();
                     merged = {
                         ...merged,
                         ...(hasRealName ? { name: formatted.name, tag: formatted.tag } : {}),
@@ -91,6 +92,7 @@ class PublicProfileModal {
                         ...(hasCos ? { cosmetics: formatted.cosmetics } : {}),
                         ...(hasLoadout ? { loadout: formatted.loadout } : {}),
                         ...(formatted.isOnline || rawDoc.lastSeenAt ? { isOnline: formatted.isOnline, lastSeenAt: Math.max(Number(merged.lastSeenAt) || 0, Number(formatted.lastSeenAt) || 0), currentStatus: formatted.currentStatus, coopRoomCode: formatted.coopRoomCode } : {}),
+                        ...(isSelfTarget && fs ? { isOnline: true, currentStatus: fs._currentStatus || formatted.currentStatus || merged.currentStatus || 'In Lobby', coopRoomCode: fs._activeRoomCode ?? formatted.coopRoomCode ?? null } : {}),
                         level: Math.max(Number(merged.level) || 1, Number(formatted.level) || 1),
                         highScore: Math.max(Number(merged.highScore) || 0, Number(formatted.highScore) || 0),
                         maxWave: Math.max(Number(merged.maxWave) || 1, Number(formatted.maxWave) || 1),
@@ -423,8 +425,9 @@ class PublicProfileModal {
         const rel = (fs && p.uid && !p.isLocalStub) ? fs.getRelationState(p.uid) : { state: 'self' };
         const friendLastOnline = (!p.isOnline && rel.state === 'accepted' && typeof FriendsCardRenderer !== 'undefined' && typeof FriendsCardRenderer.formatLastOnline === 'function')
             ? FriendsCardRenderer.formatLastOnline(p.lastSeenAt) : '';
-        const isHardStatus = p.isOnline && /endless hard/i.test(String(p.currentStatus || ''));
-        const statusChipText = p.isOnline ? `● ${this._esc(p.currentStatus || 'Online')}` : (friendLastOnline ? `● Offline · ${this._esc(friendLastOnline)}` : '● Offline');
+        const liveStatus = p.currentStatus || p.status || 'Online';
+        const isHardStatus = p.isOnline && /endless hard/i.test(String(liveStatus));
+        const statusChipText = p.isOnline ? `● ${this._esc(liveStatus)}` : (friendLastOnline ? `● Offline · ${this._esc(friendLastOnline)}` : '● Offline');
 
         let socialBtnHtml = '';
         if (rel.state === 'none') socialBtnHtml = `<button type="button" id="pub-prof-add-friend" class="comic-btn comic-btn-primary pub-social-btn">+ ADD FRIEND</button>`;

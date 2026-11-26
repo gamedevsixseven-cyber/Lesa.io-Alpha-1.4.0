@@ -73,6 +73,7 @@ class DevPowerToolsService {
             }
             if (msgUid === this._lastSeenId || age > DevPowerToolsService.MAX_AGE_MS) return;
             this._saveLastSeenId(msgUid);
+            if (this._recentSent && msg.text === this._recentSent.text && (Date.now() - this._recentSent.at) < 15000) return;
             const parsed = this._decodeWireMessage(msg);
             this.displayBroadcastBanner(parsed, false);
         } catch (_) { }
@@ -109,7 +110,7 @@ class DevPowerToolsService {
                 const res = await edge.post(`/messages/${DevPowerToolsService.BROADCAST_CHANNEL}`, {
                     senderUid: uid, senderName: senderName || 'SYSTEM', senderHero: theme, senderRole: tagMode, senderLevel: 99, text
                 });
-                if (res && res.ok) sentOnline = true;
+                if (res && res.ok) { sentOnline = true; this._recentSent = { text, at: Date.now() }; }
             } catch (_) { }
         }
         if (this._bc) { try { this._bc.postMessage(payload); } catch (_) { } }
@@ -133,7 +134,10 @@ class DevPowerToolsService {
 
         el.className = `admin-global-bcast-banner theme-${esc(theme)} ${showTag ? 'has-tag' : 'is-plain'}`;
         el.innerHTML = `<div class="agb-glow-bar"></div><div class="agb-inner">${showTag ? `<span class="agb-badge">${esc(badgeLabel)}</span>` : ''}<span class="agb-text">${esc(bcast.text)}</span><button type="button" class="agb-close-btn" title="Dismiss" aria-label="Dismiss">✕</button></div>`;
-        el.querySelector('.agb-close-btn')?.addEventListener('click', () => el.classList.remove('is-visible'));
+        el.querySelector('.agb-close-btn')?.addEventListener('click', () => {
+            if (this._bannerTimer) { clearTimeout(this._bannerTimer); this._bannerTimer = null; }
+            el.classList.remove('is-visible');
+        });
         void el.offsetWidth;
         el.classList.add('is-visible');
 
@@ -146,7 +150,7 @@ class DevPowerToolsService {
             g.effects.addComicSplash(g.player.x, g.player.y - 68, `${showTag ? `${badgeLabel}: ` : ''}${bcast.text}`.slice(0, 48), '#fed330', 22, true);
         }
         if (this._bannerTimer) clearTimeout(this._bannerTimer);
-        this._bannerTimer = setTimeout(() => { if (el) el.classList.remove('is-visible'); }, 10500);
+        this._bannerTimer = setTimeout(() => { this._bannerTimer = null; if (el) el.classList.remove('is-visible'); }, 5000);
     }
 
     /**

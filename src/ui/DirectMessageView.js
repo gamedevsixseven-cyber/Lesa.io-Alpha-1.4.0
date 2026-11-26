@@ -20,6 +20,15 @@ class DirectMessageView {
             : 'assets/HeroesIcons/PsanasAvatar.png';
     }
 
+    static _buildPeerStatusHtml(friend) {
+        const lastOnlineTxt = (!friend.isOnline && !friend.coopRoomCode && typeof FriendsCardRenderer !== 'undefined' && typeof FriendsCardRenderer.formatLastOnline === 'function')
+            ? FriendsCardRenderer.formatLastOnline(friend.lastSeenAt) : '';
+        const statusText = friend.isOnline ? (friend.status || friend.currentStatus || 'In Lobby') : (lastOnlineTxt || 'Offline');
+        const isHardStatus = friend.isOnline && /endless hard/i.test(String(statusText));
+        const roomPill = friend.coopRoomCode ? `<span class="friend-room-pill">${this.ico('gamepad')} ROOM ${this.esc(friend.coopRoomCode)}</span> ` : '';
+        return `${roomPill}<span class="dm-sub-status ${isHardStatus ? 'is-hard-status' : ''}">${this.ico(friend.isOnline ? 'orb_green' : 'orb_dark')} ${this.esc(statusText)}</span>`;
+    }
+
     static render(container, friend, chatService, modal) {
         if (!container || !friend) return;
         const existingView = container.querySelector(`.dm-view[data-dm-rel="${CSS.escape ? CSS.escape(friend.relId) : friend.relId}"]`);
@@ -32,12 +41,7 @@ class DirectMessageView {
         const roomAction = friend.coopRoomCode
             ? `<button type="button" class="friend-btn friend-btn-join" data-dm-act="join" data-code="${this.esc(friend.coopRoomCode)}">${this.ico('rocket')} JOIN ROOM</button>`
             : `<button type="button" class="friend-btn friend-btn-primary" data-dm-act="invite" ${friend.isOnline ? '' : 'disabled title="Friend is offline"'}>${this.ico('swords')} INVITE</button>`;
-        const lastOnlineTxt = (!friend.isOnline && !friend.coopRoomCode && typeof FriendsCardRenderer !== 'undefined' && typeof FriendsCardRenderer.formatLastOnline === 'function')
-            ? FriendsCardRenderer.formatLastOnline(friend.lastSeenAt) : '';
-        const statusText = friend.isOnline ? (friend.status || 'In Lobby') : (lastOnlineTxt || 'Offline');
-        const statusHtml = friend.coopRoomCode
-            ? `<span class="friend-room-pill">${this.ico('gamepad')} ROOM ${this.esc(friend.coopRoomCode)}</span>`
-            : `<span class="dm-sub-status">${this.ico(friend.isOnline ? 'orb_green' : 'orb_dark')} ${this.esc(statusText)}</span>`;
+        const statusHtml = this._buildPeerStatusHtml(friend);
 
         container.innerHTML = `
             <div class="dm-view" data-dm-rel="${this.esc(friend.relId)}">
@@ -123,14 +127,7 @@ class DirectMessageView {
         const dot = viewEl.querySelector('.dm-peer .friend-presence-dot');
         if (dot) dot.classList.toggle('online', Boolean(friend.isOnline));
         const subWrap = viewEl.querySelector('.dm-peer-meta > div:last-child');
-        if (subWrap) {
-            const lastOnlineTxt = (!friend.isOnline && !friend.coopRoomCode && typeof FriendsCardRenderer !== 'undefined' && typeof FriendsCardRenderer.formatLastOnline === 'function')
-                ? FriendsCardRenderer.formatLastOnline(friend.lastSeenAt) : '';
-            const statusText = friend.isOnline ? (friend.status || 'In Lobby') : (lastOnlineTxt || 'Offline');
-            subWrap.innerHTML = friend.coopRoomCode
-                ? `<span class="friend-room-pill">${this.ico('gamepad')} ROOM ${this.esc(friend.coopRoomCode)}</span>`
-                : `<span class="dm-sub-status">${this.ico(friend.isOnline ? 'orb_green' : 'orb_dark')} ${this.esc(statusText)}</span>`;
-        }
+        if (subWrap) subWrap.innerHTML = this._buildPeerStatusHtml(friend);
         const acts = viewEl.querySelector('.dm-topbar-actions');
         const curActionBtn = acts ? acts.querySelector('[data-dm-act="invite"], [data-dm-act="join"]') : null;
         if (curActionBtn) {
