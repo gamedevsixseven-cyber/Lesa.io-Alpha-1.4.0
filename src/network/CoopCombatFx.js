@@ -23,7 +23,8 @@ class CoopCombatFx {
             isPermafrostShard: !!b.isPermafrostShard, isCryoShard: !!b.isCryoShard,
             isExplosiveMitts: !!b.isExplosiveMitts,
             isMoltenBuster: !!b.isMoltenBuster, isPhantomRail: !!b.isPhantomRail,
-            isStareShot: !!b.isStareShot, wavePhase: b._wavePhase || 0,
+            isStareShot: !!b.isStareShot, isStarfallShot: !!b.isStarfallShot,
+            celestialTrait: b.celestialTrait || null, wavePhase: b._wavePhase || 0,
             muzzle: (b.type !== 'spas12' && b.type !== 'sawnoff_shotgun') || idx === 0
         });
         const sendOpts = { droppable: true, maxBufferedBytes: 196608 };
@@ -69,10 +70,10 @@ class CoopCombatFx {
             rp._shootBurst = (rp._shootBurst || []).filter(t => (now - t) < 200);
             if (rp._shootBurst.length >= 44) return;
             rp._shootBurst.push(now);
-            if (Math.hypot(bx - rp.x, by - rp.y) > 130) { bx = rp.x; by = rp.y; }
+            if (Math.hypot(bx - rp.x, by - rp.y) > 280) { bx = rp.x; by = rp.y; }
             const mag = Math.hypot(vx, vy);
             if (mag > 42) { vx = (vx / mag) * 42; vy = (vy / mag) * 42; }
-            dmg = Math.max(1, Math.min(450, dmg));
+            dmg = Math.max(1, Math.min(15000, dmg));
             speed = Math.max(1, Math.min(42, speed));
             radius = Math.max(3, Math.min(40, radius));
             pierce = Math.max(1, Math.min(16, Math.round(pierce)));
@@ -95,6 +96,8 @@ class CoopCombatFx {
         if (bData.isExplosiveMitts) bullet.isExplosiveMitts = true;
         if (bData.isMoltenBuster) bullet.isMoltenBuster = true;
         if (bData.isPhantomRail) bullet.isPhantomRail = true;
+        if (bData.isStarfallShot) bullet.isStarfallShot = true;
+        if (typeof bData.celestialTrait === 'string' && bData.celestialTrait) bullet.celestialTrait = bData.celestialTrait;
         if (bData.wavePhase) bullet._wavePhase = Number(bData.wavePhase) || 0;
         if (bType === 'vulcan_minigun') {
             rp._vulcanHeat = Math.min(1.0, (rp._vulcanHeat || 0) + 0.11);
@@ -106,10 +109,26 @@ class CoopCombatFx {
         }
 
         if (isHostAuthoritative) {
+            bullet.prevX = bx;
+            bullet.prevY = by;
+            bullet._preserveSpawnPrev = true;
             const latencyMs = (session.net && session.net.latency) ? session.net.latency : 25;
-            const lagFrames = Math.min(6, Math.max(1, Math.round(latencyMs / 16.666)));
-            bullet.x += bullet.vx * lagFrames;
-            bullet.y += bullet.vy * lagFrames;
+            const lagFrames = Math.min(3, Math.max(0, Math.round(latencyMs / 16.666) - 1));
+            const enemies = Array.isArray(game.enemies) ? game.enemies : null;
+            for (let s = 0; s < lagFrames; s++) {
+                let blockedClose = false;
+                if (enemies) {
+                    for (let ei = 0; ei < enemies.length; ei++) {
+                        const e = enemies[ei];
+                        if (!e || e.dead || e.isDying || e.isAirborneImmune) continue;
+                        const rr = bullet.radius + (e.radius || 24) + 6;
+                        if ((bullet.x - e.x) ** 2 + (bullet.y - e.y) ** 2 <= rr * rr) { blockedClose = true; break; }
+                    }
+                }
+                if (blockedClose) break;
+                bullet.x += bullet.vx;
+                bullet.y += bullet.vy;
+            }
         }
         game.bullets.push(bullet);
 
@@ -151,7 +170,7 @@ class CoopCombatFx {
         if (isHostAuthoritative && now - (rp._lastBeamMs || 0) < 400) return;
         rp._lastBeamMs = now;
         const angle = Number.isFinite(data.angle) ? data.angle : rp.angle;
-        const dmg = isHostAuthoritative ? Math.max(10, Math.min(450, Number(data.damage) || 60)) : (Number(data.damage) || 60);
+        const dmg = isHostAuthoritative ? Math.max(10, Math.min(15000, Number(data.damage) || 60)) : (Number(data.damage) || 60);
         rp._isRemoteBeam = true;
         try {
             HeliosOmegaCannon.fireBeam(rp, angle, dmg, !!data.isEvolved, game.effects, game);
@@ -188,10 +207,14 @@ class CoopCombatFx {
         }, { droppable: true });
     }
 
-    static relayGlaiveSwing(net, player, aim, isEvolved, isRiftSwing) {
+    static relayGlaiveSwing(net, player, aim, isEvolved, isRiftSwing, spec = null) {
         if (!net || !net.connected || !player || !this._canSendFx()) return;
+        const s = spec || {};
         net.send('COOP_FX', {
-            t: 'glaive', a: Number((aim || 0).toFixed(3)), e: !!isEvolved, r: !!isRiftSwing
+            t: 'glaive', a: Number((aim || 0).toFixed(3)), e: !!isEvolved, r: !!isRiftSwing,
+            dmg: Math.round(s.baseDmg || 80), cc: Number((s.critChance || 0.15).toFixed(3)),
+            cm: Number((s.critMult || 2.0).toFixed(2)), cr: Math.round(s.cleaveRadius || 205),
+            wr: Math.round(s.waveRange || 360), tr: s.traitId || null
         }, { droppable: true });
     }
 
@@ -202,7 +225,7 @@ class CoopCombatFx {
         const rp = (session && typeof session.getRemotePlayer === 'function')
             ? session.getRemotePlayer(effFrom) : (session && session.remotePlayer);
         if (data.t === 'glaive' && rp && typeof HyperionCelestialGlaive !== 'undefined') {
-            HyperionCelestialGlaive.spawnRemoteSwing(rp, Number(data.a) || 0, !!data.e, !!data.r, fx);
+            HyperionCelestialGlaive.spawnRemoteSwing(rp, Number(data.a) || 0, !!data.e, !!data.r, fx, session.game, !!session.isHost, data);
         } else if (data.t === 'chain' && typeof fx.addLightningChain === 'function') {
             fx.addLightningChain(data.x1, data.y1, data.x2, data.y2, data.c || '#00d2d3');
         } else if (data.t === 'ring') {

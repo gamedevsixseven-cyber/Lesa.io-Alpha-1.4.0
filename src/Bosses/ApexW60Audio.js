@@ -98,9 +98,11 @@ class ApexW60Audio {
             } catch (_) { this._setDuck(1.0); }
         };
 
-        if (se.ctx && (!location || location.protocol !== 'file:')) {
+        const useWebAudio = (!location || location.protocol !== 'file:') && !!(se.ctx || typeof AudioContext !== 'undefined' || typeof webkitAudioContext !== 'undefined');
+        if (useWebAudio) {
+            if (!se.ctx && typeof se.init === 'function') se.init();
             this._decodeVoice(src).then((buf) => {
-                if (!buf || se.muted || se.masterVolume <= 0) { if (!buf) startFallback(); return; }
+                if (!buf || !se.ctx || se.muted || se.masterVolume <= 0) return;
                 const node = se.ctx.createBufferSource();
                 node.buffer = buf;
                 const g = se.ctx.createGain();
@@ -179,26 +181,25 @@ class ApexW60Audio {
     static _startOrResumeMusic() {
         const se = this._se();
         if (!se || se.muted || se.bgmMuted || se.bgmVolume <= 0) return;
-        const audio = this._ensureAudioEl();
-        if (!audio) return;
 
         const wasPlaying = this._playing && !this._paused;
         this._playing = true;
         this._paused = false;
 
-        if (se.bgmCtrl && se.bgmCtrl.isMobile && se.bgmCtrl.isMobile()) {
+        if (se.bgmCtrl && se.bgmCtrl.canUseWebAudio && se.bgmCtrl.canUseWebAudio()) {
             if (!se.bgmCtrl.isSlotActive(this.TRACK_SLOT)) {
                 se.bgmCtrl.playTrack(this.TRACK_SLOT, this.TRACK_URL, {
                     loop: true,
                     scale: this._duckFactor,
-                    reset: !wasPlaying && (audio.currentTime || 0) === 0,
-                    fallbackAudio: audio
+                    reset: !wasPlaying
                 });
             }
             this._applyMusicGain();
             return;
         }
 
+        const audio = this._ensureAudioEl();
+        if (!audio) return;
         if (se.bgmCtrl && !se.bgmCtrl.isSlotActive(this.TRACK_SLOT)) {
             se.bgmCtrl.playTrack(this.TRACK_SLOT, this.TRACK_URL, {
                 loop: true,

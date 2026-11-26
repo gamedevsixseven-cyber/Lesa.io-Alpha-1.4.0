@@ -414,10 +414,11 @@ class MobilePerf {
         const src = audioEl.src || audioEl.getAttribute?.('src');
         const ctx = soundEngine.ctx;
         const vol = Math.max(0, Math.min(1, (soundEngine.masterVolume || 0.5) * volumeMult));
+        const hasHttp = (typeof location === 'undefined' || location.protocol !== 'file:');
 
-        if (ctx && ctx.state === 'running' && src) {
+        if (ctx && src) {
             const cached = this._audioBuffers.get(src);
-            if (cached) {
+            if (cached && ctx.state === 'running') {
                 try {
                     const source = ctx.createBufferSource();
                     source.buffer = cached;
@@ -428,20 +429,20 @@ class MobilePerf {
                     source.start(0);
                     return true;
                 } catch (_) { }
-            } else if (!this._audioLoading.has(src) && typeof fetch === 'function' && !src.startsWith('file:')) {
+            } else if (!cached && !this._audioLoading.has(src) && typeof fetch === 'function' && !src.startsWith('file:')) {
                 this._audioLoading.add(src);
                 fetch(src)
                     .then((r) => (r.ok ? r.arrayBuffer() : null))
                     .then((ab) => (ab && soundEngine.ctx ? soundEngine.ctx.decodeAudioData(ab) : null))
-                    .then((buf) => {
-                        if (buf) this._audioBuffers.set(src, buf);
-                    })
+                    .then((buf) => { if (buf) this._audioBuffers.set(src, buf); })
                     .catch(() => { })
                     .finally(() => this._audioLoading.delete(src));
             }
         }
+        // On HTTP/HTTPS, avoid triggering HTMLAudioElement playback (spawns mobile media notification); let ProceduralSynth handle cold tap
+        if (hasHttp && (typeof AudioContext !== 'undefined' || typeof webkitAudioContext !== 'undefined')) return false;
 
-        // Safe non-cloning reuse fallback while buffer decodes or if offline
+        // Offline file:// fallback
         try {
             audioEl.volume = vol;
             audioEl.currentTime = 0;

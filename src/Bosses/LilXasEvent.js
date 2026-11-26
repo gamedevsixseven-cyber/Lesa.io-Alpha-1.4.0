@@ -413,10 +413,10 @@ class LilXasEvent {
                 ? forcedIdx : Math.floor(Math.random() * this.TRACKS.length);
             this.activeTrackIdx = idx;
             const trackUrl = encodeURI(this.TRACKS[idx]);
+            if (se && se.bgmCtrl && se.bgmCtrl.playTrack('lilXas', trackUrl, { loop: true, scale: 0.9, reset: true })) return;
             const audio = new Audio(trackUrl);
             audio.loop = true;
             this.audio = audio;
-            if (se && se.bgmCtrl && se.bgmCtrl.playTrack('lilXas', trackUrl, { loop: true, scale: 0.9, reset: true, fallbackAudio: audio })) return;
             if (se && typeof se.registerBgmElement === 'function') se.registerBgmElement(audio, 0.9);
             else audio.volume = se ? Math.max(0, Math.min(1, se.bgmVolume * 0.9)) : 0.6;
             const p = audio.play();
@@ -457,8 +457,9 @@ class LilXasEvent {
         }
         const shouldPlay = (this.phase === 'BLAST_SONG' || (this.stage && this.stage.musicPlaying));
         const se = (typeof window !== 'undefined') ? window.soundEngine : null;
-        if (!shouldPlay || (se && (se.muted || se.bgmMuted))) { if (this.audio) this.stopMusic(); }
-        else if (!this.audio) { this.playRandomSong(this.activeTrackIdx); }
+        const isPlaying = !!(this.audio || (se && se.bgmCtrl && se.bgmCtrl.isSlotActive('lilXas')));
+        if (!shouldPlay || (se && (se.muted || se.bgmMuted))) { if (isPlaying) this.stopMusic(); }
+        else if (!isPlaying) { this.playRandomSong(this.activeTrackIdx); }
         if (g && g.player) {
             g.player.earBleedSlowMult = (this.phase === 'COMBAT' && lx.eb > 0) ? Math.max(0.66, 1.0 - 0.08 * lx.eb) : 1.0;
         }

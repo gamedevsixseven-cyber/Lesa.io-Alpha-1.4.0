@@ -28,6 +28,8 @@ class Bullet {
 
         this.x = opt.x || 0;
         this.y = opt.y || 0;
+        this.prevX = this.x;
+        this.prevY = this.y;
         this.vx = opt.vx || 0;
         this.vy = opt.vy || 0;
         this.damage = opt.damage !== undefined ? opt.damage : 25;
@@ -58,6 +60,8 @@ class Bullet {
 
     update(dt = 1, arena = null, effects = null) {
         this.age += dt;
+        if (this._preserveSpawnPrev) { this._preserveSpawnPrev = false; }
+        else { this.prevX = this.x; this.prevY = this.y; }
         const moveDist = Math.hypot(this.vx, this.vy) * dt;
         this.x += this.vx * dt;
         this.y += this.vy * dt;

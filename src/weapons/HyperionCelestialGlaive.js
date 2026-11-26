@@ -288,26 +288,26 @@ class HyperionCelestialGlaive extends WeaponBase {
             effects.addSparks(originX + Math.cos(aim) * 38, originY + Math.sin(aim) * 38, '#fef08a', 4);
         }
 
-        // Relay co-op swing visual when active
+        // Relay co-op swing combat & visuals when active
         if (g && g.coopSession && g.coopSession.net && typeof CoopCombatFx !== 'undefined' && typeof CoopCombatFx.relayGlaiveSwing === 'function') {
-            CoopCombatFx.relayGlaiveSwing(g.coopSession.net, player, aim, isEvolved, isRiftSwing);
+            CoopCombatFx.relayGlaiveSwing(g.coopSession.net, player, aim, isEvolved, isRiftSwing, {
+                baseDmg, critChance, critMult, cleaveRadius, waveRange, traitId: config.celestialTraitId || null
+            });
         }
 
         return [];
     }
 
-    static spawnRemoteSwing(player, aim, isEvolved, isRiftSwing, effects = null) {
+    static spawnRemoteSwing(player, aim, isEvolved, isRiftSwing, effects = null, game = null, isHostAuth = false, netData = null) {
+        if (typeof HyperionSkillTreeTraits !== 'undefined' && typeof HyperionSkillTreeTraits.handleRemoteSwing === 'function') {
+            HyperionSkillTreeTraits.handleRemoteSwing(this, player, aim, isEvolved, isRiftSwing, effects, game, isHostAuth, netData);
+            return;
+        }
         if (!player) return;
-        player._glaiveSwingDir = player._glaiveSwingDir === 1 ? -1 : 1;
-        player._glaiveSwingTimer = 14;
-        const pr = player.radius || 25;
-        const ox = player.x + Math.cos(aim) * 18;
-        const oy = (player.y - pr * 0.25) + Math.sin(aim) * 18;
+        player._glaiveSwingDir = player._glaiveSwingDir === 1 ? -1 : 1; player._glaiveSwingTimer = 14;
+        const pr = player.radius || 25, ox = player.x + Math.cos(aim) * 18, oy = (player.y - pr * 0.25) + Math.sin(aim) * 18;
         this._slashes.push({ x: player.x, y: player.y - pr * 0.25, angle: aim, dir: player._glaiveSwingDir, radius: isEvolved ? 235 : 205, isEvolved, isRiftSwing, timer: 14, maxTimer: 14 });
         this._waves.push({ x: ox + Math.cos(aim) * 32, y: oy + Math.sin(aim) * 32, vx: Math.cos(aim) * (isEvolved ? 15.5 : 13.5), vy: Math.sin(aim) * (isEvolved ? 15.5 : 13.5), angle: aim, halfWidth: isEvolved ? 84 : 70, traveled: 0, maxRange: isEvolved ? 410 : 360, damage: 0, critChance: 0, critMult: 1, isEvolved, shooter: player, visualOnly: true, hitSet: new Set() });
-        if (isRiftSwing && effects) {
-            effects.addShockwave(ox + Math.cos(aim) * 195, oy + Math.sin(aim) * 195, 145, 'rgba(192, 132, 252, 0.85)');
-        }
     }
 
     static _normAngle(a) {

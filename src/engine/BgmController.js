@@ -16,13 +16,27 @@ class BgmController {
         this._bgPausedSlots = null;
 
         this._bindMobileLifecycle();
-        if (this.isMobile() && (typeof location === 'undefined' || location.protocol !== 'file:')) {
+        this._configureAudioSession();
+        if (this.canUseWebAudio()) {
             this._prefetchBytes('Audio/MenuSoundtrack1Default.mp3');
         }
     }
 
     isMobile() {
         return typeof MobilePerf !== 'undefined' && MobilePerf.isMobile;
+    }
+
+    canUseWebAudio() {
+        return typeof fetch === 'function' &&
+            typeof window !== 'undefined' &&
+            !!(window.AudioContext || window.webkitAudioContext) &&
+            (!window.location || window.location.protocol !== 'file:');
+    }
+
+    _configureAudioSession() {
+        if (typeof navigator !== 'undefined' && navigator.audioSession && navigator.audioSession.type !== 'ambient') {
+            try { navigator.audioSession.type = 'ambient'; } catch (_) {}
+        }
     }
 
     _ensureGain() {
@@ -131,13 +145,13 @@ class BgmController {
         slot.fallbackAudio = opts.fallbackAudio || null;
         slot.wantPlaying = true;
 
-        if (this.isMobile() && (typeof location === 'undefined' || location.protocol !== 'file:')) {
+        if (this.canUseWebAudio()) {
+            this._configureAudioSession();
             se.init();
-            if (slot.node && slot.buffer) return true;
+            if (!opts.reset && slot.node && slot.buffer) return true;
             this._getOrLoadBuffer(src).then((buf) => {
                 if (!slot.wantPlaying || slot.token !== token) return;
                 if (buf) this._startSlotBuffer(slot, buf);
-                else if (slot.fallbackAudio) { this.syncFallback(slot.fallbackAudio, slot.scale); slot.fallbackAudio.play().catch(() => {}); }
             });
             return true;
         }
@@ -228,6 +242,7 @@ class BgmController {
         const st = this._bgPausedSlots;
         this._bgPausedSlots = null;
         if (!se) return;
+        this._configureAudioSession();
 
         const restore = () => {
             if (!st || se.muted || se.bgmMuted || se.bgmVolume <= 0) return;

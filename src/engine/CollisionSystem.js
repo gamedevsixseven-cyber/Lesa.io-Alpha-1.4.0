@@ -44,62 +44,71 @@ class CollisionSystem {
             if (b.dead) continue;
 
             if (!b.isEnemy) {
-                // Player Bullet vs Enemies
+                // Player Bullet vs Enemies (swept segment prevents close/fast/co-op-lag tunneling)
+                const hasPrev = Number.isFinite(b.prevX) && Number.isFinite(b.prevY);
+                const sdx = hasPrev ? (b.x - b.prevX) : 0, sdy = hasPrev ? (b.y - b.prevY) : 0;
+                const segLenSq = sdx * sdx + sdy * sdy;
+                const useSweep = segLenSq > 64;
+                const qX = useSweep ? (b.prevX + b.x) * 0.5 : b.x, qY = useSweep ? (b.prevY + b.y) * 0.5 : b.y;
+                const qHalf = useSweep ? Math.sqrt(segLenSq) * 0.5 : 0;
                 const eBuf = hasGrid ? SpatialHashGrid._bulletEnemyBuf : null;
-                const eLen = useEGrid ? eGrid.queryIndices(b.x, b.y, b.radius + eGrid.maxRadius + 2, eBuf) : enemies.length;
+                const eLen = useEGrid ? eGrid.queryIndices(qX, qY, b.radius + qHalf + eGrid.maxRadius + 2, eBuf) : enemies.length;
                 for (let ei = 0; ei < eLen; ei++) {
                     const e = useEGrid ? enemies[eBuf[ei]] : enemies[ei];
                     if (e.dead || e.isDying || e.isAirborneImmune) continue;
                     if (b.hitEntities && b.hitEntities.has(e)) continue;
 
-                    const bdx = b.x - e.x;
-                    const bdy = b.y - e.y;
                     const radSum = b.radius + e.radius;
-
-                    // Fast Manhattan bounding pre-test
-                    if (Math.abs(bdx) <= radSum && Math.abs(bdy) <= radSum) {
-                        if (bdx * bdx + bdy * bdy < radSum * radSum) {
-                            if (b.hitEntities) b.hitEntities.add(e);
-                            let dmgMult = (typeof window !== 'undefined' && window.perkSystem) ? window.perkSystem.getDamageMultiplier(e) : 1.0;
-                            if (typeof GearPassives !== 'undefined') dmgMult *= GearPassives.getDamageMultiplier(p, e, b.isCrit);
-                            const finalDmg = b.damage * dmgMult;
-                            e.takeDamage(finalDmg, effects, b.isCrit);
-                            if (typeof HeroUltimates !== 'undefined') HeroUltimates.onDamageDealt(p, finalDmg);
-                            if (game.isCoopGuest) e.dead = false;
-                            if (b.isChargedBubble) {
-                                if (e.isBoss || e.isMiniBoss || e.isStationary) {
-                                    // Bosses cannot go in the bubble: deals damage and immediately pops!
-                                    b.explode(effects);
-                                    b.dead = true;
-                                    break;
-                                } else if (typeof e.trapInBubble === 'function') {
-                                    e.trapInBubble(2.0, 30);
-                                }
-                            }
-                            if (b.isPagakiaChilling && typeof e.applyIceSlow === 'function') {
-                                e.applyIceSlow(3.0, 0.50, effects);
-                            }
-                            if (b.type === 'lightning' && Math.random() < 0.10) {
-                                CollisionSystem.triggerLightningChain(e, finalDmg, enemies, effects, game, b.shooter);
-                            }
-                            if (b.type === 'dialtone' && !b.isEnemy && typeof e.applySonicSlow === 'function') {
-                                e.applySonicSlow(1.5, 0.70, effects);
-                            }
-                            if (!b.isEnemy && typeof WeaponSystem !== 'undefined') WeaponSystem.onBulletHit(b, e, finalDmg, enemies, effects, game);
-                            if (typeof GearPassives !== 'undefined') {
-                                GearPassives.onBulletHit(b, e, finalDmg, enemies, effects, game);
-                            }
-                            if (typeof window !== 'undefined' && window.perkSystem && typeof window.perkSystem.onBulletHit === 'function') {
-                                window.perkSystem.onBulletHit(b, e, finalDmg, enemies, effects, game);
-                            }
-                            b.pierce--;
-                            if (b.pierce <= 0) {
+                    let hitSq = Infinity;
+                    if (useSweep) {
+                        const t = Math.max(0, Math.min(1, ((e.x - b.prevX) * sdx + (e.y - b.prevY) * sdy) / segLenSq));
+                        const hx = b.prevX + t * sdx - e.x, hy = b.prevY + t * sdy - e.y;
+                        hitSq = hx * hx + hy * hy;
+                    } else {
+                        const bdx = b.x - e.x, bdy = b.y - e.y;
+                        if (Math.abs(bdx) <= radSum && Math.abs(bdy) <= radSum) hitSq = bdx * bdx + bdy * bdy;
+                    }
+                    if (hitSq < radSum * radSum) {
+                        if (b.hitEntities) b.hitEntities.add(e);
+                        let dmgMult = (typeof window !== 'undefined' && window.perkSystem) ? window.perkSystem.getDamageMultiplier(e) : 1.0;
+                        if (typeof GearPassives !== 'undefined') dmgMult *= GearPassives.getDamageMultiplier(p, e, b.isCrit);
+                        const finalDmg = b.damage * dmgMult;
+                        e.takeDamage(finalDmg, effects, b.isCrit);
+                        if (typeof HeroUltimates !== 'undefined') HeroUltimates.onDamageDealt(p, finalDmg);
+                        if (game.isCoopGuest) e.dead = false;
+                        if (b.isChargedBubble) {
+                            if (e.isBoss || e.isMiniBoss || e.isStationary) {
+                                // Bosses cannot go in the bubble: deals damage and immediately pops!
                                 b.explode(effects);
                                 b.dead = true;
                                 break;
-                            } else if (effects && typeof effects.addImpactSplat === 'function') {
-                                effects.addImpactSplat(b.x, b.y, b.type, b.isCrit, false, 0.58);
+                            } else if (typeof e.trapInBubble === 'function') {
+                                e.trapInBubble(2.0, 30);
                             }
+                        }
+                        if (b.isPagakiaChilling && typeof e.applyIceSlow === 'function') {
+                            e.applyIceSlow(3.0, 0.50, effects);
+                        }
+                        if (b.type === 'lightning' && Math.random() < 0.10) {
+                            CollisionSystem.triggerLightningChain(e, finalDmg, enemies, effects, game, b.shooter);
+                        }
+                        if (b.type === 'dialtone' && !b.isEnemy && typeof e.applySonicSlow === 'function') {
+                            e.applySonicSlow(1.5, 0.70, effects);
+                        }
+                        if (!b.isEnemy && typeof WeaponSystem !== 'undefined') WeaponSystem.onBulletHit(b, e, finalDmg, enemies, effects, game);
+                        if (typeof GearPassives !== 'undefined') {
+                            GearPassives.onBulletHit(b, e, finalDmg, enemies, effects, game);
+                        }
+                        if (typeof window !== 'undefined' && window.perkSystem && typeof window.perkSystem.onBulletHit === 'function') {
+                            window.perkSystem.onBulletHit(b, e, finalDmg, enemies, effects, game);
+                        }
+                        b.pierce--;
+                        if (b.pierce <= 0) {
+                            b.explode(effects);
+                            b.dead = true;
+                            break;
+                        } else if (effects && typeof effects.addImpactSplat === 'function') {
+                            effects.addImpactSplat(b.x, b.y, b.type, b.isCrit, false, 0.58);
                         }
                     }
                 }

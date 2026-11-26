@@ -31,18 +31,20 @@ class SoundEngine {
         this.bgmTimer = null;
         this.step = 0;
 
-        // Menu Soundtrack
+        const canWebFetch = (typeof fetch === 'function' && (typeof window === 'undefined' || !window.location || window.location.protocol !== 'file:'));
+
+        // Menu Soundtrack (preloaded only when falling back to <audio> on file://; Web Audio streams over HTTP/HTTPS)
         this.menuMusic = new Audio('Audio/MenuSoundtrack1Default.mp3');
         this.menuMusic.loop = true;
         this.menuMusic.autoplay = false;
-        this.menuMusic.preload = 'auto';
+        this.menuMusic.preload = canWebFetch ? 'none' : 'auto';
         this.menuMusic.volume = this.bgmMuted ? 0 : this.bgmVolume;
 
         // Credits Soundtrack
         this.creditsMusic = new Audio('Audio/Lesa.io (Credits).mp3');
         this.creditsMusic.loop = false;
         this.creditsMusic.autoplay = false;
-        this.creditsMusic.preload = 'auto';
+        this.creditsMusic.preload = canWebFetch ? 'none' : 'auto';
         this.creditsMusic.volume = this.bgmMuted ? 0 : this.bgmVolume;
 
         // Data-Driven Sound Registry Initialization
@@ -95,8 +97,9 @@ class SoundEngine {
             this.init();
             const menuEl = document.getElementById('menu-screen');
             const isMenuVisible = menuEl && !menuEl.classList.contains('hidden');
+            const menuInactive = this.bgmCtrl ? (!this.bgmCtrl.isSlotActive('menu') && this.menuMusic.paused) : this.menuMusic.paused;
             if (window.loadingScreen && window.loadingScreen.isDone && isMenuVisible) {
-                if (this.menuMusic.paused && (!window.gameInstance || window.gameInstance.state === 'MENU')) {
+                if (menuInactive && (!window.gameInstance || window.gameInstance.state === 'MENU')) {
                     this.startMenuBGM();
                 }
             }
@@ -108,6 +111,9 @@ class SoundEngine {
     }
 
     init() {
+        if (typeof navigator !== 'undefined' && navigator.audioSession && navigator.audioSession.type !== 'ambient') {
+            try { navigator.audioSession.type = 'ambient'; } catch (_) {}
+        }
         if (!this.ctx) {
             const AudioContext = window.AudioContext || window.webkitAudioContext;
             if (AudioContext) this.ctx = new AudioContext();

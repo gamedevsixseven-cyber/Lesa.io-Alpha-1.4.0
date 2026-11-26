@@ -177,6 +177,50 @@ class HyperionSkillTreeTraits {
         }
     }
 
+    static handleRemoteSwing(Glaive, player, aim, isEvolved, isRiftSwing, effects = null, game = null, isHostAuth = false, netData = null) {
+        if (!player || !Glaive) return;
+        const g = game || (typeof window !== 'undefined' ? window.gameInstance : null);
+        player._glaiveSwingDir = player._glaiveSwingDir === 1 ? -1 : 1;
+        player._glaiveSwingTimer = 14;
+        const pr = player.radius || 25;
+        const ox = player.x + Math.cos(aim) * 18;
+        const oy = (player.y - pr * 0.25) + Math.sin(aim) * 18;
+        const rawDmg = Number(netData && netData.dmg) || 85;
+        const baseDmg = Math.max(1, Math.min(15000, rawDmg));
+        const critChance = Math.max(0, Math.min(0.95, Number(netData && netData.cc) || 0.15));
+        const critMult = Math.max(1.0, Math.min(4.5, Number(netData && netData.cm) || 2.0));
+        const cleaveRadius = Math.max(100, Math.min(360, Number(netData && netData.cr) || (isEvolved ? 235 : 205)));
+        const waveRange = Math.max(180, Math.min(620, Number(netData && netData.wr) || (isEvolved ? 410 : 360)));
+        const traitId = (netData && typeof netData.tr === 'string') ? netData.tr : null;
+
+        Glaive._slashes.push({ x: player.x, y: player.y - pr * 0.25, angle: aim, dir: player._glaiveSwingDir, radius: cleaveRadius, isEvolved, isRiftSwing, timer: 14, maxTimer: 14 });
+        if (isHostAuth && g && Array.isArray(g.enemies)) {
+            Glaive._damageArcEnemies(ox, oy, aim, cleaveRadius, 1.35, baseDmg, critChance, critMult, 9.5, g, effects);
+            this.onSwing(ox, oy, aim, baseDmg, critChance, critMult, { celestialTraitId: traitId }, player, g);
+        }
+        const waveSpeed = isEvolved ? 15.5 : 13.5;
+        Glaive._waves.push({
+            x: ox + Math.cos(aim) * 32, y: oy + Math.sin(aim) * 32,
+            vx: Math.cos(aim) * waveSpeed, vy: Math.sin(aim) * waveSpeed,
+            angle: aim, halfWidth: isEvolved ? 84 : 70, traveled: 0, maxRange: waveRange,
+            damage: isHostAuth ? Math.round(baseDmg * 0.85) : 0,
+            critChance, critMult, isEvolved, shooter: player, visualOnly: !isHostAuth, hitSet: new Set()
+        });
+        if (isRiftSwing) {
+            const rx = ox + Math.cos(aim) * (isEvolved ? 225 : 195);
+            const ry = oy + Math.sin(aim) * (isEvolved ? 225 : 195);
+            if (isHostAuth) {
+                Glaive._rifts.push({
+                    x: rx, y: ry, radius: Math.round(isEvolved ? 275 : 235),
+                    damage: Math.round(baseDmg * (isEvolved ? 1.75 : 1.45)),
+                    maxChains: isEvolved ? 9 : 6, isEvolved, celestialTraitId: traitId,
+                    timer: 16, maxTimer: 16, chained: false, shooter: player
+                });
+            }
+            if (effects) effects.addShockwave(rx, ry, isEvolved ? 175 : 145, 'rgba(192, 132, 252, 0.90)');
+        }
+    }
+
     static drawWorld(ctx) {
         if (!ctx) return;
         for (const s of this._shards) {
