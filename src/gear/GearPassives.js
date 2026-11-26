@@ -38,7 +38,7 @@ class GearPassives {
             sonicDashHitSet: null
         };
         if (typeof GearPassiveHandlersExt !== 'undefined') GearPassiveHandlersExt.initState(player._gearPassiveState);
-        player.aegisBarrier = this.has('omega_aegis_barrier') ? 70 : (this.has('blessed_shield') ? 30 : 0);
+        player.aegisBarrier = this.has('omega_aegis_barrier') ? 95 : (this.has('blessed_shield') ? 30 : 0);
     }
 
     static _ensureState(player) {
@@ -132,15 +132,15 @@ class GearPassives {
             }
         }
 
-        // Omega Eclipse (70 HP / 8s), Stormborn Aegis (45 HP / 10s, or Awakened 75 HP / 8s), Chronos (50 HP / 10s), or Blessed Shield (30 HP / 12s)
+        // Omega Eclipse (95 HP / 7s), Stormborn Aegis (45 HP / 10s, or Awakened 75 HP / 8s), Chronos (50 HP / 10s), or Blessed Shield (30 HP / 12s)
         const hasOmegaBarrier = this.has('omega_aegis_barrier');
         const hasStormBarrier = this.has('stormborn_aegis');
         const awakenedStorm = hasStormBarrier && this.isAwakenedStormborn();
         const hasBlessedBarrier = this.has('blessed_shield');
         const extBarrier = (typeof GearPassiveHandlersExt !== 'undefined') ? GearPassiveHandlersExt.getBarrierSpec() : null;
         if (hasOmegaBarrier || hasStormBarrier || hasBlessedBarrier || extBarrier) {
-            const barrierCap = awakenedStorm ? 75 : (hasOmegaBarrier ? 70 : (extBarrier ? extBarrier.cap : (hasStormBarrier ? 45 : 30)));
-            const barrierPeriod = (awakenedStorm || hasOmegaBarrier) ? 480 : ((hasStormBarrier || extBarrier) ? 600 : 720);
+            const barrierCap = hasOmegaBarrier ? 95 : (awakenedStorm ? 75 : (extBarrier ? extBarrier.cap : (hasStormBarrier ? 45 : 30)));
+            const barrierPeriod = hasOmegaBarrier ? 420 : (awakenedStorm ? 480 : ((hasStormBarrier || extBarrier) ? 600 : 720));
             if ((player.aegisBarrier || 0) < barrierCap) {
                 s.aegisShieldTimer += dt;
                 if (s.aegisShieldTimer >= barrierPeriod) {
@@ -149,7 +149,7 @@ class GearPassives {
                     if (effects) {
                         const rCol = hasOmegaBarrier ? 'rgba(255, 46, 76, 0.92)' : (awakenedStorm ? 'rgba(251, 191, 36, 0.9)' : (extBarrier ? extBarrier.col : (hasStormBarrier ? 'rgba(0, 245, 255, 0.85)' : 'rgba(243, 156, 18, 0.75)')));
                         const rRad = hasOmegaBarrier ? 106 : (awakenedStorm ? 98 : (extBarrier ? extBarrier.rad : (hasStormBarrier ? 85 : 70)));
-                        const rMsg = hasOmegaBarrier ? '♦️ OMEGA BARRIER +70!' : (awakenedStorm ? '⚡ AWAKENED BARRIER +75!' : (extBarrier ? extBarrier.msg : (hasStormBarrier ? '⚡ STORM BARRIER +45!' : '🛡️ AEGIS +30!')));
+                        const rMsg = hasOmegaBarrier ? '♦️ OMEGA BARRIER +95!' : (awakenedStorm ? '⚡ AWAKENED BARRIER +75!' : (extBarrier ? extBarrier.msg : (hasStormBarrier ? '⚡ STORM BARRIER +45!' : '🛡️ AEGIS +30!')));
                         effects.addShockwave(player.x, player.y, rRad, rCol);
                         effects.addComicSplash(player.x, player.y - 36, rMsg);
                         if (typeof CoopCombatFx !== 'undefined') CoopCombatFx.relayRing(player, rRad, rCol, rMsg);
@@ -350,7 +350,7 @@ class GearPassives {
             if (effects) effects.addComicSplash(player.x, player.y - 34, '⚡ +25% SPEED!');
         }
         if (this.has('omega_aegis_barrier')) {
-            this._triggerRadialStomp(player, game ? game.enemies : [], effects, 225, 95 * (player.damageMultiplier || 1), 45, '♦️ OMEGA ECLIPSE BLAST!', '#ff2e4c');
+            this._triggerRadialStomp(player, game ? game.enemies : [], effects, 225, 110 * (player.damageMultiplier || 1), 45, '♦️ OMEGA ECLIPSE BLAST!', '#ff2e4c');
         }
         if (this.has('stormborn_aegis')) {
             const awakened = this.isAwakenedStormborn();

@@ -254,7 +254,7 @@ class PlayerLoadoutExtractor {
     }
 
     static getLoadoutTotals(loadout) {
-        const totals = { maxHp: 0, damageReduction: 0, critChance: 0, bulletDamage: 0, fireRate: 0, speed: 0 };
+        const totals = { maxHp: 0, damageReduction: 0, critChance: 0, critDamage: 0, bulletDamage: 0, fireRate: 0, speed: 0 };
         if (!loadout || !loadout.gear) return totals;
         for (const slot of this.SLOTS) {
             const { stats } = this.getSlotItemStats(loadout.gear[slot]);

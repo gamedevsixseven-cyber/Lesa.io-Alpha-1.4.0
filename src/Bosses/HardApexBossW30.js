@@ -18,8 +18,8 @@ class OblivionEngine extends EndlessBossBase {
             isApex: true,
             radius: 56,
             baseHp: 43844,
-            speed: 2.95,
-            baseDmg: 54,
+            speed: 3.25,
+            baseDmg: 64,
             xpDrop: 2400,
             scoreValue: 9500,
             goldBonus: 2100,
@@ -27,7 +27,7 @@ class OblivionEngine extends EndlessBossBase {
         });
         this.isHardMainBoss = true;
         this.isApexBoss = true;
-        this.fixedHardHp = 1200000;
+        this.fixedHardHp = 1500000;
         this.apexTitle = 'Aethelgard, Sovereign of Ruin';
         this.apexBadgeText = '👑 W30 APEX BOSS';
         this.phaseNotches = [0.65, 0.50, 0.30];
@@ -38,11 +38,11 @@ class OblivionEngine extends EndlessBossBase {
         this.cutsceneTimer = 54;
         this.entranceDropY = 260;
 
-        this.starCooldown = 115;
-        this.gravCooldown = 165;
-        this.dashCooldown = 190;
-        this.volleyCooldown = 76;
-        this.meteorCooldown = 210;
+        this.starCooldown = 95;
+        this.gravCooldown = 135;
+        this.dashCooldown = 155;
+        this.volleyCooldown = 64;
+        this.meteorCooldown = 170;
         this.attackRange = 760;
         this.dashWindup = 0;
         this.dashTimer = 0;
@@ -226,11 +226,11 @@ class OblivionEngine extends EndlessBossBase {
         }
         if (this.dashTimer > 0) {
             this.dashTimer -= dt;
-            this.x += Math.cos(this.dashAngle) * 15.8 * dt;
-            this.y += Math.sin(this.dashAngle) * 15.8 * dt;
+            this.x += Math.cos(this.dashAngle) * 17.2 * dt;
+            this.y += Math.sin(this.dashAngle) * 17.2 * dt;
             if (Math.floor(this.dashTimer) % 6 === 0) {
                 this.addTelegraph(this.x, this.y, 82, 34, Math.round(this.damage * 0.95), '💥', 'rgba(255, 46, 76, 0.92)', 'orbital_nuke', '#fed330');
-                this.fireFan(bullets, this.dashAngle + Math.PI * 0.5, [0, Math.PI], 10.2, Math.round(this.damage * 0.78), 11, 'crimson_slash');
+                this.fireFan(bullets, this.dashAngle + Math.PI * 0.5, [0, Math.PI], 10.6, Math.round(this.damage * 0.78), 11, 'crimson_slash');
             }
             this.applyArenaBounds(arena);
             return;
@@ -247,41 +247,41 @@ class OblivionEngine extends EndlessBossBase {
 
         // 1. Rotating Pylon Laser Star
         if (this.starCooldown <= 0 && inRange) {
-            this.starCooldown = this.phase >= 3 ? 135 : 185;
+            this.starCooldown = this.phase >= 3 ? 112 : 152;
             this._spawnStarBeams(this.phase >= 3 ? 6 : 4);
         }
 
         // 2. Singularity Graviton Pull + Radial Glaive Burst (range-gated)
         if (this.gravCooldown <= 0 && inRange) {
-            this.gravCooldown = this.phase >= 2 ? 140 : 185;
+            this.gravCooldown = this.phase >= 2 ? 115 : 150;
             this.addTelegraph(player.x, player.y, 138, 52, Math.round(this.damage * 1.25), '🌀', 'rgba(168, 85, 247, 0.95)', 'frost_prism', '#ff2e4c');
             this._gravPools.push({ x: player.x, y: player.y, life: 50 });
-            for (let k = 0; k < 8; k++) this.fireFan(bullets, (k / 8) * Math.PI * 2 + this.age * 0.03, [0], 9.8, Math.round(this.damage * 0.8), 11, 'eclipse_glaive');
+            for (let k = 0; k < 8; k++) this.fireFan(bullets, (k / 8) * Math.PI * 2 + this.age * 0.03, [0], 10.2, Math.round(this.damage * 0.8), 11, 'eclipse_glaive');
         }
 
         // 3. Cataclysm Halberd Dash
         if (this.dashCooldown <= 0 && dist < 500) {
-            this.dashCooldown = this.phase >= 3 ? 130 : 180;
-            this.dashWindup = 24;
+            this.dashCooldown = this.phase >= 3 ? 105 : 148;
+            this.dashWindup = 22;
             this.dashAngle = this.angle;
         }
 
         // 4. Phase 2+ Abyssal Meteor Barrage (range-gated so meteors never spawn across map)
         if (this.phase >= 2 && this.meteorCooldown <= 0 && inRange) {
-            this.meteorCooldown = this.phase >= 3 ? 120 : 165;
+            this.meteorCooldown = this.phase >= 3 ? 98 : 138;
             for (let m = 0; m < (this.phase >= 3 ? 5 : 4); m++) {
                 const mx = player.x + (player.vx || 0) * (m * 10) + (Math.random() - 0.5) * 140;
                 const my = player.y + (player.vy || 0) * (m * 10) + (Math.random() - 0.5) * 140;
-                this.addTelegraph(mx, my, 96, 46 + m * 6, Math.round(this.damage * 1.18), '☄️', 'rgba(255, 46, 76, 0.96)', 'orbital_nuke', '#fed330');
+                this.addTelegraph(mx, my, 96, 44 + m * 6, Math.round(this.damage * 1.18), '☄️', 'rgba(255, 46, 76, 0.96)', 'orbital_nuke', '#fed330');
             }
         }
 
         // 5. Dual Alternating Ruin Volleys (void_orb + magma_shard, range-gated)
         if (this.volleyCooldown <= 0 && inRange) {
-            this.volleyCooldown = this.phase >= 3 ? 46 : (this.phase >= 2 ? 60 : 76);
+            this.volleyCooldown = this.phase >= 3 ? 38 : (this.phase >= 2 ? 50 : 64);
             const fan = this.phase >= 2 ? [-0.42, -0.21, 0, 0.21, 0.42] : [-0.26, 0, 0.26];
-            this.fireFan(bullets, this.angle, fan, 11.8, Math.round(this.damage * 0.86), 11, 'void_orb');
-            if (this.phase >= 2) this.fireFan(bullets, this.angle + 0.12, [-0.2, 0.2], 12.6, Math.round(this.damage * 0.82), 11, 'magma_shard');
+            this.fireFan(bullets, this.angle, fan, 12.2, Math.round(this.damage * 0.86), 11, 'void_orb');
+            if (this.phase >= 2) this.fireFan(bullets, this.angle + 0.12, [-0.2, 0.2], 13.0, Math.round(this.damage * 0.82), 11, 'magma_shard');
         }
 
         this.moveTowards(dt * (this.shieldActive ? 0.72 : 1), dx, dy, dist, 235, arena);

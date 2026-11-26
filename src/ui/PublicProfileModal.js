@@ -183,7 +183,9 @@ class PublicProfileModal {
         if (totals.maxHp) powerChips.push(`+${totals.maxHp} HP`);
         if (totals.damageReduction) powerChips.push(`+${totals.damageReduction}% DEF`);
         if (totals.bulletDamage) powerChips.push(`+${totals.bulletDamage}% DMG`);
+        if (totals.fireRate) powerChips.push(`+${totals.fireRate}% ROF`);
         if (totals.critChance) powerChips.push(`+${totals.critChance}% CRIT`);
+        if (totals.critDamage) powerChips.push(`+${totals.critDamage}% CDMG`);
         if (totals.speed) powerChips.push(`+${totals.speed}% SPD`);
         const powerHtml = powerChips.length
             ? powerChips.map(c => `<span class="pub-power-chip">${c}</span>`).join('')

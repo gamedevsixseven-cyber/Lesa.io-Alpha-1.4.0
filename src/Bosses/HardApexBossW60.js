@@ -19,8 +19,8 @@ class OmegaApocalypse extends EndlessBossBase {
             isApex: true,
             radius: 62,
             baseHp: 87345,
-            speed: 3.15,
-            baseDmg: 72,
+            speed: 3.45,
+            baseDmg: 86,
             xpDrop: 5000,
             scoreValue: 25000,
             goldBonus: 6500,
@@ -28,7 +28,7 @@ class OmegaApocalypse extends EndlessBossBase {
         });
         this.isHardMainBoss = true;
         this.isApexBoss = true;
-        this.fixedHardHp = 4500000;
+        this.fixedHardHp = 5000000;
         this.apexTitle = 'Erebus, Sovereign of the End';
         this.apexBadgeText = '🔥 W60 FINAL APEX 🔥';
         this.phaseNotches = [0.75, 0.50, 0.25];
@@ -41,11 +41,11 @@ class OmegaApocalypse extends EndlessBossBase {
         this.auraScale = 0;
         this.entranceDropY = 180;
 
-        this.riftCooldown = 125;
-        this.ringCooldown = 145;
-        this.blinkCooldown = 175;
-        this.spiralCooldown = 62;
-        this.starCooldown = 155;
+        this.riftCooldown = 100;
+        this.ringCooldown = 115;
+        this.blinkCooldown = 145;
+        this.spiralCooldown = 50;
+        this.starCooldown = 125;
         this.attackRange = 800;
         this.blinkTarget = null;
         this.blinkWindup = 0;
@@ -60,6 +60,7 @@ class OmegaApocalypse extends EndlessBossBase {
         this.shieldFlash = 0;
         this._immuneTxtCd = 0;
         this._pendingShieldSpawn = false;
+        this._pillarHealTimer = 48;
         this.phase4Triggered = false;
     }
 
@@ -108,9 +109,10 @@ class OmegaApocalypse extends EndlessBossBase {
         this.halfShieldTriggered = true;
         this.shieldActive = true;
         this._pendingShieldSpawn = true;
+        this._pillarHealTimer = 48;
         this.phase = Math.max(this.phase, 3);
         this.shieldFlash = 14;
-        this.phaseLabel = '🛡️ OMEGA AEGIS • SHATTER ALL 4 PILLARS (4/4)';
+        this.phaseLabel = '🛡️ OMEGA AEGIS • PILLARS HEALING (4/4)';
     }
 
     onShieldPillarDestroyed(pillar = null, effects = null) {
@@ -132,6 +134,35 @@ class OmegaApocalypse extends EndlessBossBase {
                 effects.addShockwave(this.x, this.y, 310, 'rgba(254, 211, 48, 0.98)');
                 effects.addComicSplash(this.x, this.y + this.radius + 24, '💥 OMEGA SHIELD SHATTERED! 💥', '#fef08a');
                 if (typeof effects.triggerScreenFlash === 'function') effects.triggerScreenFlash('#fed330', 0.36, 24);
+            }
+        }
+    }
+
+    _tickPillarHealing(dt, effects) {
+        const alive = this.shieldPillars.filter(p => p && !p.dead && p.hp > 0);
+        if (alive.length <= 0) { this.onShieldPillarDestroyed(null, effects); return; }
+        // More surviving pillars = faster siphon ticks and stronger heal (4->0.8s/+1.8%, 1->2.1s/+0.35%)
+        const intervals = [126, 126, 90, 66, 48];
+        const healPcts = [0, 0.0035, 0.007, 0.012, 0.018];
+        const count = Math.min(4, alive.length);
+        const interval = intervals[count] || 126;
+        if (this._pillarHealTimer > interval) this._pillarHealTimer = interval;
+        this._pillarHealTimer -= dt;
+        if (this._pillarHealTimer > 0) return;
+        this._pillarHealTimer = interval;
+
+        const maxHeal = Math.max(0, this.maxHp - this.hp);
+        const rawHeal = Math.round(this.maxHp * healPcts[count]);
+        const gained = Math.min(maxHeal, rawHeal);
+        if (gained > 0) {
+            this.hp += gained;
+            this.shieldFlash = Math.max(this.shieldFlash, 7);
+            if (effects) {
+                effects.addShockwave(this.x, this.y, 130 + count * 18, 'rgba(46, 213, 115, 0.72)');
+                effects.addComicSplash(this.x, this.y - this.radius - 20, `💚 +${gained.toLocaleString()} SIPHON (${count})`, '#2ed573');
+                for (let i = 0; i < alive.length; i++) {
+                    effects.addLightningChain(alive[i].x, alive[i].y - 36, this.x, this.y, '#2ed573');
+                }
             }
         }
     }
@@ -162,8 +193,8 @@ class OmegaApocalypse extends EndlessBossBase {
                 if (typeof effects.triggerScreenFlash === 'function') effects.triggerScreenFlash('#ff2e4c', 0.34, 22);
             }
         }
-        if (this.shieldActive && this.shieldPillars.length > 0 && this.shieldPillars.every(p => !p || p.dead || p.hp <= 0)) {
-            this.onShieldPillarDestroyed(null, effects);
+        if (this.shieldActive && this.shieldPillars.length > 0) {
+            this._tickPillarHealing(dt, effects);
         }
 
         this.updateTelegraphs(dt, player, effects);
@@ -229,26 +260,26 @@ class OmegaApocalypse extends EndlessBossBase {
 
         // 1. Intersecting Space-Tear Rift Slicers (range-gated)
         if (this.riftCooldown <= 0 && inRange) {
-            this.riftCooldown = this.phase >= 4 ? 85 : (this.phase >= 2 ? 115 : 140);
+            this.riftCooldown = this.phase >= 4 ? 72 : (this.phase >= 2 ? 96 : 118);
             const count = this.phase >= 4 ? 3 : 2;
             for (let i = 0; i < count; i++) {
                 const a = this.angle + (i - (count - 1) * 0.5) * 0.85 + (Math.random() - 0.5) * 0.25;
-                this._riftLines.push({ ax: player.x - Math.cos(a) * 320, ay: player.y - Math.sin(a) * 320, ang: a, len: 640, warnTimer: 40, activeTimer: 16, hit: false });
+                this._riftLines.push({ ax: player.x - Math.cos(a) * 320, ay: player.y - Math.sin(a) * 320, ang: a, len: 640, warnTimer: 38, activeTimer: 16, hit: false });
             }
         }
 
         // 2. Inward-Collapsing Glaive Ring around Player (range-gated)
         if (this.ringCooldown <= 0 && inRange && typeof Bullet !== 'undefined') {
-            this.ringCooldown = this.phase >= 4 ? 110 : 148;
-            const ringCount = this.phase >= 4 ? 12 : 9;
+            this.ringCooldown = this.phase >= 4 ? 90 : 122;
+            const ringCount = this.phase >= 4 ? 14 : 11;
             const gap = Math.floor(Math.random() * ringCount);
             for (let k = 0; k < ringCount; k++) {
                 if (k === gap) continue;
                 const a = (k / ringCount) * Math.PI * 2;
                 const sx = player.x + Math.cos(a) * 265, sy = player.y + Math.sin(a) * 265;
                 bullets.push(new Bullet({
-                    x: sx, y: sy, vx: -Math.cos(a) * 7.8, vy: -Math.sin(a) * 7.8,
-                    damage: Math.round(this.damage * 0.85), speed: 7.8, radius: 11,
+                    x: sx, y: sy, vx: -Math.cos(a) * 8.2, vy: -Math.sin(a) * 8.2,
+                    damage: Math.round(this.damage * 0.85), speed: 8.2, radius: 11,
                     type: 'eclipse_glaive', isEnemy: true, range: 520
                 }));
             }
@@ -256,29 +287,29 @@ class OmegaApocalypse extends EndlessBossBase {
 
         // 3. Shadow-Step Blink Slam
         if (this.blinkCooldown <= 0 && dist < 620) {
-            this.blinkCooldown = this.phase >= 4 ? 135 : 185;
+            this.blinkCooldown = this.phase >= 4 ? 110 : 150;
             this.blinkTarget = { x: player.x + (player.vx || 0) * 14, y: player.y + (player.vy || 0) * 14 };
-            this.blinkWindup = 32;
+            this.blinkWindup = 30;
             return;
         }
 
         // 4. Solar-Void Barrage + Orbital Meteor Strikes (Phase 2+, range-gated)
         if (this.spiralCooldown <= 0 && inRange) {
-            this.spiralCooldown = this.phase >= 4 ? 38 : (this.phase >= 2 ? 50 : 66);
+            this.spiralCooldown = this.phase >= 4 ? 32 : (this.phase >= 2 ? 42 : 55);
             const spinOff = Math.sin(this.age * 0.14) * 0.35;
             const fan = this.phase >= 4 ? [-0.46, -0.23, 0, 0.23, 0.46] : [-0.28, 0, 0.28];
-            this.fireFan(bullets, this.angle + spinOff, fan, 12.6, Math.round(this.damage * 0.88), 11, 'void_orb');
+            this.fireFan(bullets, this.angle + spinOff, fan, 13.0, Math.round(this.damage * 0.88), 11, 'void_orb');
             if (this.phase >= 2) {
-                this.fireFan(bullets, this.angle - spinOff, [-0.18, 0.18], 13.4, Math.round(this.damage * 0.84), 11, 'magma_shard');
+                this.fireFan(bullets, this.angle - spinOff, [-0.18, 0.18], 13.8, Math.round(this.damage * 0.84), 11, 'magma_shard');
                 if (Math.random() < 0.45) {
-                    this.addTelegraph(player.x + (player.vx || 0) * 14, player.y + (player.vy || 0) * 14, 102, 46, Math.round(this.damage * 1.22), '☄️', 'rgba(255, 46, 76, 0.96)', 'orbital_nuke', '#fed330');
+                    this.addTelegraph(player.x + (player.vx || 0) * 14, player.y + (player.vy || 0) * 14, 102, 44, Math.round(this.damage * 1.22), '☄️', 'rgba(255, 46, 76, 0.96)', 'orbital_nuke', '#fed330');
                 }
             }
         }
 
         // 5. Phase 4+ Rotating Cataclysm Star Beams (range-gated)
         if (this.phase >= 4 && this.starCooldown <= 0 && inRange) {
-            this.starCooldown = 145;
+            this.starCooldown = 115;
             this._spawnStarBeams(5);
         }
 

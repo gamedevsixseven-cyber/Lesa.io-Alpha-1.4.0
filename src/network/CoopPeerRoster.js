@@ -48,7 +48,7 @@ class CoopPeerRoster {
             name, heroType, weaponType, heroSkin, heroStyle, starBlessed,
             equippedArmorId, armorEvolved, weaponEvolved,
             clanId: clanRef ? clanRef.id : null, clanTag: clanRef ? clanRef.tag : null,
-            maxHp: Math.min(1200, Math.round(maxHp)), damageReduction,
+            maxHp: Math.min(3000, Math.round(maxHp)), damageReduction,
             magnetRadius: Math.max(80, Math.min(400, Math.round(magnetRadius)))
         };
     }

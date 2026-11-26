@@ -94,7 +94,7 @@ class RemotePlayer {
             if (opts.heroStyle !== undefined) this.heroStyle = opts.heroStyle;
             if (typeof opts.starBlessed === 'boolean') this.starBlessed = opts.starBlessed;
             if (typeof opts.maxHp === 'number' && Number.isFinite(opts.maxHp)) {
-                this.maxHp = Math.max(25, Math.min(1200, Math.round(opts.maxHp)));
+                this.maxHp = Math.max(25, Math.min(3000, Math.round(opts.maxHp)));
             }
             if (typeof opts.damageReduction === 'number' && Number.isFinite(opts.damageReduction)) {
                 this.damageReduction = Math.max(0, Math.min(0.70, opts.damageReduction));

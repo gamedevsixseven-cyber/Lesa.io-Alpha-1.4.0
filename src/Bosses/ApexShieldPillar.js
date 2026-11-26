@@ -19,7 +19,8 @@ class ApexShieldPillar extends EnemyBase {
 
         this.radius = 30;
         this.hudOffsetY = 74;
-        this.maxHp = Math.round(2400 * Math.max(1.0, waveMultiplier));
+        const basePillarHp = (ownerBoss && ownerBoss.type === 'apex_omega_w60') ? 9600 : 7200;
+        this.maxHp = Math.round(basePillarHp * Math.max(1.0, waveMultiplier));
         this.hp = this.maxHp;
         this.baseSpeed = 0;
         this.speed = 0;
@@ -191,16 +192,17 @@ class ApexShieldPillar extends EnemyBase {
         const pulse = 0.5 + 0.5 * Math.sin(pillar.age * 0.25 + pillar.pillarIndex);
         ctx.save();
         ctx.lineCap = 'round';
-        ctx.strokeStyle = `rgba(255, 46, 76, ${0.30 + pulse * 0.18})`; ctx.lineWidth = 13;
+        const isW60Heal = boss.type === 'apex_omega_w60';
+        ctx.strokeStyle = isW60Heal ? `rgba(46, 213, 115, ${0.32 + pulse * 0.20})` : `rgba(255, 46, 76, ${0.30 + pulse * 0.18})`; ctx.lineWidth = 13;
         ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(ex, ey); ctx.stroke();
-        ctx.strokeStyle = `rgba(254, 211, 48, ${0.78 + pulse * 0.20})`; ctx.lineWidth = 4;
+        ctx.strokeStyle = isW60Heal ? `rgba(110, 231, 183, ${0.84 + pulse * 0.16})` : `rgba(254, 211, 48, ${0.78 + pulse * 0.20})`; ctx.lineWidth = 4;
         ctx.setLineDash([14, 10]); ctx.lineDashOffset = -(pillar.age * 4.5);
         ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(ex, ey); ctx.stroke();
         ctx.setLineDash([]);
         for (let k = 0; k < 3; k++) {
             const p = ((pillar.age * 0.028 + k / 3 + pillar.pillarIndex * 0.2) % 1);
             const px = sx + (ex - sx) * p, py = sy + (ey - sy) * p;
-            ctx.fillStyle = '#ffffff'; ctx.strokeStyle = '#ff2e4c'; ctx.lineWidth = 2;
+            ctx.fillStyle = isW60Heal ? '#a7f3d0' : '#ffffff'; ctx.strokeStyle = isW60Heal ? '#10b981' : '#ff2e4c'; ctx.lineWidth = 2;
             ctx.beginPath(); ctx.arc(px, py, 4.8, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
         }
         ctx.restore();
