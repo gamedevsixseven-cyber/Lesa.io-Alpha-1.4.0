@@ -139,6 +139,7 @@ class Game {
         this.drops.length = 0;
         if (this.hazards) this.hazards.length = 0;
         this.effects.clear();
+        if (typeof CryptonExhaustFire !== 'undefined') CryptonExhaustFire.clear();
         if (typeof window !== 'undefined' && window.perkSystem) window.perkSystem.init(this);
         if (typeof GearPassives !== 'undefined') GearPassives.initPlayer(this.player);
 

@@ -4,8 +4,18 @@
  *   - Psanas: "RAGE" (6.7s — 2x MaxHP & Heal, 2x DMG, 2x Speed, Boss Stun Immunity)
  *   - Psogas: "SPICY INFERNO STORM" (5.5s — 360° Blazing Chili Vortex + 8-Way Chili Spiral Volleys + 1.35x Speed)
  *   - Petros: "SYM VF185" (6.5s — Mounts 2.5D Jet-Black/Magenta SYM VF185 at 2.15x Speed, running over enemies & crates!)
- *   - 50balos: "CRYPTON X" (6.5s — Mounts 2.5D Pearl-White Crypton X 135 at 2.22x Speed, ramming foes & scorching with exhaust fire!)
+ *   - 50balos & Kitsos: "CRYPTON X" (6.5s — Mounts 2.5D Pearl-White Crypton X 135 at 2.22x Speed, ramming foes & scorching with exhaust fire!)
  */
+
+const CRYPTON_X_ULT = {
+    id: 'crypton_x',
+    name: 'CRYPTON X',
+    mobileLabel: 'CRYPTON',
+    icon: 'assets/SkillsIcons/UltCryptonXSkill.svg',
+    duration: 390, // 6.5s at 60 FPS
+    accent: '#ff6b35',
+    barColor: '#f8fafc'
+};
 
 const HERO_ULTIMATES = {
     psanas: {
@@ -35,15 +45,8 @@ const HERO_ULTIMATES = {
         accent: '#ff4785',
         barColor: '#ff4785'
     },
-    '50balos': {
-        id: 'crypton_x',
-        name: 'CRYPTON X',
-        mobileLabel: 'CRYPTON',
-        icon: 'assets/SkillsIcons/UltCryptonXSkill.svg',
-        duration: 390, // 6.5s at 60 FPS
-        accent: '#ff6b35',
-        barColor: '#f8fafc'
-    }
+    '50balos': CRYPTON_X_ULT,
+    kitsos: CRYPTON_X_ULT
 };
 
 class HeroUltimates {

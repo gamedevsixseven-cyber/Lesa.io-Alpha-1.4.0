@@ -82,8 +82,8 @@ class TributeManager {
                 </div>
                 <div class="tribute-quote-box update-120-grid">
                     <div class="u120-card u120-crypton">
-                        <div class="u120-card-hdr"><span class="u120-ic">${ico('flame')}</span> 50BALOS: WHITE CRYPTON X &amp; VF185 BUFF! <span class="u120-live-tag u120-crypton-tag">NEW ULTI (Q)</span></div>
-                        <p>50Balos rides his White Crypton X on Ulti (Q) — ramming enemies &amp; dropping exhaust fire trails! Petros's SYM VF185 ram damage is also buffed.</p>
+                        <div class="u120-card-hdr"><span class="u120-ic">${ico('flame')}</span> 50BALOS &amp; KITSOS: CRYPTON X &amp; VF185! <span class="u120-live-tag u120-crypton-tag">NEW ULTI (Q)</span></div>
+                        <p>50Balos &amp; Kitsos ride the White Crypton X on Ulti (Q) — ramming enemies &amp; dropping exhaust fire! Petros's SYM VF185 ram damage is also buffed.</p>
                     </div>
                     <div class="u120-card u120-celestial">
                         <div class="u120-card-hdr"><span class="u120-ic">${ico('bolt')}</span> ENDLESS HARD PERFORMANCE</div>

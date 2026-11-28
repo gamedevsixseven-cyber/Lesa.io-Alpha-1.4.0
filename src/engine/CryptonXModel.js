@@ -503,53 +503,64 @@ class CryptonXModel {
 
     static _drawRiderBody(rider, ctx, flash, vertical = false, facingUp = false) {
         const r = (rider.radius || 24) * 0.78;
+        const isKitsos = !!(rider && rider.heroType === 'kitsos');
         ctx.save();
         ctx.translate(vertical ? 0 : -10, vertical ? -20 : -23);
 
-        // Mounted charcoal jogger leg + signature Cream/Black Air Jordan 1 high-top on footpeg
+        // Mounted leg & sneaker resting on footpeg (Kitsos shorts + AJ1 or 50balos joggers + AJ1)
         if (!vertical) {
-            ctx.fillStyle = flash ? '#ffffff' : '#191a1f';
+            ctx.fillStyle = flash ? '#ffffff' : (isKitsos ? '#782832' : '#191a1f');
             ctx.strokeStyle = '#090a0d';
             ctx.lineWidth = 1.9;
             ctx.beginPath();
-            ctx.roundRect(-4, 5, 9.5, 13, 3);
+            ctx.roundRect(-4, 5, 9.5, isKitsos ? 9 : 13, 3);
             ctx.fill();
             ctx.stroke();
 
-            // Cream/Black AJ1 high-top sneaker
-            ctx.fillStyle = flash ? '#ffffff' : '#e2d8c5';
+            if (isKitsos) {
+                ctx.fillStyle = flash ? '#ffffff' : '#dfa575';
+                ctx.fillRect(-2.5, 13.5, 6.5, 3);
+                ctx.strokeRect(-2.5, 13.5, 6.5, 3);
+            }
+
+            ctx.fillStyle = flash ? '#ffffff' : (isKitsos ? '#141416' : '#e2d8c5');
             ctx.beginPath();
             ctx.roundRect(-3, 16, 12, 5.5, 2);
             ctx.fill();
             ctx.stroke();
-            ctx.fillStyle = '#111216';
+            ctx.fillStyle = isKitsos ? '#95a5a6' : '#111216';
             ctx.fillRect(4, 16.5, 5, 4);
         }
 
-        // 50balos exact head + TIMES navy/cobalt tracksuit likeness
-        if (typeof FiftyBalosHero !== 'undefined' && typeof FiftyBalosHero.drawLikeness === 'function') {
+        // Exact rider head + torso likeness (Kitsos or 50balos)
+        if (isKitsos && typeof KitsosHero !== 'undefined' && typeof KitsosHero.drawLikeness === 'function') {
+            KitsosHero.drawLikeness(ctx, r, flash, 1, facingUp);
+        } else if (typeof FiftyBalosHero !== 'undefined' && typeof FiftyBalosHero.drawLikeness === 'function') {
             FiftyBalosHero.drawLikeness(ctx, r, flash, 1, facingUp);
         }
 
-        // Navy & Cobalt tracksuit sleeve with cream stripe reaching onto Crypton X handlebar
+        // Rider arm reaching cleanly onto Crypton X handlebar
         if (!vertical) {
-            ctx.strokeStyle = '#0a1834';
-            ctx.lineWidth = 6.2;
             ctx.lineCap = 'round';
+            ctx.strokeStyle = isKitsos ? '#0d0e11' : '#0a1834';
+            ctx.lineWidth = 6.2;
             ctx.beginPath();
             ctx.moveTo(4, -5);
             ctx.lineTo(17, -3);
             ctx.stroke();
 
-            ctx.strokeStyle = flash ? '#ffffff' : '#1162df';
+            ctx.strokeStyle = flash ? '#ffffff' : (isKitsos ? '#dfa575' : '#1162df');
             ctx.lineWidth = 4.0;
             ctx.stroke();
 
-            ctx.strokeStyle = flash ? '#ffffff' : '#ece5d7';
-            ctx.lineWidth = 1.4;
+            ctx.strokeStyle = flash ? '#ffffff' : (isKitsos ? '#1e1f24' : '#ece5d7');
+            ctx.lineWidth = isKitsos ? 5.2 : 1.4;
+            ctx.beginPath();
+            ctx.moveTo(4, -5);
+            ctx.lineTo(isKitsos ? 10.5 : 17, isKitsos ? -4 : -3);
             ctx.stroke();
 
-            ctx.fillStyle = flash ? '#ffffff' : '#db8f5d';
+            ctx.fillStyle = flash ? '#ffffff' : (isKitsos ? '#dfa575' : '#db8f5d');
             ctx.beginPath();
             ctx.arc(18, -3, 3.4, 0, Math.PI * 2);
             ctx.fill();
