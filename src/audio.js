@@ -90,25 +90,26 @@ class SoundEngine {
         this._creditsActive = false;
         this._creditsFadeToken = 0;
         this._creditsGain = 1.0;
+        this._unlockCallbacks = new Set();
+        this._unlockBound = false;
         this.bgmCtrl = (typeof BgmController !== 'undefined') ? new BgmController(this) : null;
 
-        // Unlock Web Audio Context on user interaction (browser policy)
-        const events = ['click', 'pointerdown', 'mousedown', 'keydown', 'touchstart'];
+        // Unlock Web Audio Context on user interaction (re-arms if mobile OS suspends ctx)
+        const events = ['click', 'pointerdown', 'mousedown', 'keydown', 'touchstart', 'touchend'];
         const unlockAudio = () => {
             this.init();
+            this._flushUnlockCallbacks();
             const menuEl = document.getElementById('menu-screen');
             const isMenuVisible = menuEl && !menuEl.classList.contains('hidden');
             const menuInactive = this.bgmCtrl ? (!this.bgmCtrl.isSlotActive('menu') && this.menuMusic.paused) : this.menuMusic.paused;
-            if (window.loadingScreen && window.loadingScreen.isDone && isMenuVisible) {
-                if (menuInactive && (!window.gameInstance || window.gameInstance.state === 'MENU')) {
-                    this.startMenuBGM();
-                }
+            if (window.loadingScreen && window.loadingScreen.isDone && isMenuVisible && menuInactive && (!window.gameInstance || window.gameInstance.state === 'MENU')) {
+                this.startMenuBGM();
             }
-            if (this.ctx && this.ctx.state === 'running') {
-                events.forEach(evt => window.removeEventListener(evt, unlockAudio));
-            }
+            if (this.ctx && this.ctx.state === 'running' && this._unlockCallbacks.size === 0) this._detachUnlockListeners();
         };
-        events.forEach(evt => window.addEventListener(evt, unlockAudio, { passive: true }));
+        this._bindUnlockListeners = () => { if (!this._unlockBound) { this._unlockBound = true; events.forEach(e => window.addEventListener(e, unlockAudio, { passive: true, capture: true })); } };
+        this._detachUnlockListeners = () => { if (this._unlockBound) { this._unlockBound = false; events.forEach(e => window.removeEventListener(e, unlockAudio, { capture: true })); } };
+        this._bindUnlockListeners();
     }
 
     init() {
@@ -117,14 +118,38 @@ class SoundEngine {
         }
         if (!this.ctx) {
             const AudioContext = window.AudioContext || window.webkitAudioContext;
-            if (AudioContext) this.ctx = new AudioContext();
+            if (AudioContext) {
+                this.ctx = new AudioContext();
+                if (this.ctx && this.ctx.addEventListener) {
+                    this.ctx.addEventListener('statechange', () => {
+                        if (!this.ctx) return;
+                        if (this.ctx.state === 'running') this._flushUnlockCallbacks();
+                        else if (this._bindUnlockListeners) this._bindUnlockListeners();
+                    });
+                }
+            }
         }
         if (this.ctx && this.ctx.state !== 'running') {
-            this.ctx.resume().catch(() => {});
+            if (this._bindUnlockListeners) this._bindUnlockListeners();
+            this.ctx.resume().then(() => this._flushUnlockCallbacks()).catch(() => {});
+        } else if (this.ctx && this.ctx.state === 'running') {
+            this._flushUnlockCallbacks();
         }
-        if (this.ctx && !this.critAudioBuffer && !this.critBufferLoading) {
-            this.loadCritBuffer();
-        }
+        if (this.ctx && !this.critAudioBuffer && !this.critBufferLoading) this.loadCritBuffer();
+    }
+
+    onAudioUnlock(cb) {
+        if (typeof cb !== 'function') return;
+        if (this.ctx && this.ctx.state === 'running') { try { cb(); } catch (_) {} return; }
+        (this._unlockCallbacks || (this._unlockCallbacks = new Set())).add(cb);
+        if (this._bindUnlockListeners) this._bindUnlockListeners();
+    }
+
+    _flushUnlockCallbacks() {
+        if (!this.ctx || this.ctx.state !== 'running' || !this._unlockCallbacks || this._unlockCallbacks.size === 0) return;
+        const cbs = Array.from(this._unlockCallbacks);
+        this._unlockCallbacks.clear();
+        for (let i = 0; i < cbs.length; i++) { try { cbs[i](); } catch (_) {} }
     }
 
     registerBgmElement(audioEl, scale = 1.0) {

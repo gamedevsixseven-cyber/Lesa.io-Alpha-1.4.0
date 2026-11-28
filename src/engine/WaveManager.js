@@ -12,7 +12,10 @@ class WaveManager {
         this.waveState = 'IN_PROGRESS'; // 'IN_PROGRESS' | 'WAVE_CLEARED'
         this.betweenWaveTimer = 0;
         this.waveAnnouncementText = '';
+        this.waveAnnouncementColor = '#fed330';
         this.waveAnnouncementTimer = 0;
+        this.waveAnnouncementMaxTimer = 150;
+        this.waveAnnouncementSubtext = '';
         this.dungeonManager = null;
     }
 
@@ -26,7 +29,10 @@ class WaveManager {
         this.waveState = 'IN_PROGRESS';
         this.betweenWaveTimer = 0;
         this.waveAnnouncementText = '';
+        this.waveAnnouncementColor = '#fed330';
         this.waveAnnouncementTimer = 0;
+        this.waveAnnouncementMaxTimer = 150;
+        this.waveAnnouncementSubtext = '';
         this.roufCrestAwarded = false;
         if (gameMode === 'dungeons' && typeof DungeonManager !== 'undefined') {
             this.dungeonManager = new DungeonManager(this);
@@ -356,9 +362,32 @@ class WaveManager {
         }
     }
 
-    showWaveAnnouncement(text, color = '#fed330', duration = 150) {
+    showWaveAnnouncement(text, color = '#fed330', duration = 150, subtext = '') {
         this.waveAnnouncementText = text;
+        this.waveAnnouncementColor = color || '#fed330';
         this.waveAnnouncementTimer = duration;
+        this.waveAnnouncementMaxTimer = Math.max(1, duration || 150);
+        this.waveAnnouncementSubtext = subtext || '';
+        this._waveHudBottomCss = (typeof BossWarningOverlay !== 'undefined' && BossWarningOverlay._measureHudBottomCss)
+            ? BossWarningOverlay._measureHudBottomCss()
+            : 0;
+    }
+
+    _parseColorRgb(color) {
+        if (typeof color === 'string') {
+            const hex = color.trim();
+            const m6 = /^#([0-9a-f]{6})$/i.exec(hex);
+            if (m6) {
+                const n = parseInt(m6[1], 16);
+                return `${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}`;
+            }
+            const m3 = /^#([0-9a-f]{3})$/i.exec(hex);
+            if (m3) {
+                const h = m3[1];
+                return `${parseInt(h[0] + h[0], 16)}, ${parseInt(h[1] + h[1], 16)}, ${parseInt(h[2] + h[2], 16)}`;
+            }
+        }
+        return '254, 211, 48';
     }
 
     renderAnnouncement(ctx, width, height) {
@@ -370,43 +399,153 @@ class WaveManager {
         if (this.waveAnnouncementTimer <= 0 || !this.waveAnnouncementText) return;
 
         // Suppress if the big boss warning screen is active so no duplicate popup appears behind it
-        if (typeof window !== 'undefined' && window.gameInstance && window.gameInstance.bossWarningOverlay && window.gameInstance.bossWarningOverlay.active) {
+        const game = (typeof window !== 'undefined') ? window.gameInstance : null;
+        if (game && game.bossWarningOverlay && game.bossWarningOverlay.active) {
             return;
         }
 
+        const dpr = (game && Number.isFinite(game.dpr) && game.dpr > 0) ? game.dpr : 1;
+        const cssW = width / dpr;
+        const cssH = height / dpr;
+        const isCompact = cssW < 780 || cssH < 520;
+        const uiScale = isCompact
+            ? Math.max(0.80, Math.min(1.0, cssW / 760))
+            : Math.max(0.90, Math.min(1.12, cssW / 1280));
+        const s = dpr * uiScale;
+
+        const maxT = Math.max(1, this.waveAnnouncementMaxTimer || 150);
+        const timer = this.waveAnnouncementTimer;
+        const elapsed = Math.max(0, maxT - timer);
+        const inT = Math.min(1, elapsed / 14);
+        const outT = Math.min(1, timer / 22);
+        const easeIn = 1 - Math.pow(1 - inT, 3);
+        const alpha = Math.max(0, Math.min(1, Math.min(inT, outT)));
+        if (alpha <= 0.01) return;
+
+        const slideY = ((1 - easeIn) * -10 - (timer < 22 ? (1 - outT) * 7 : 0)) * s;
+        const animScale = 0.93 + 0.07 * easeIn;
+
+        const text = String(this.waveAnnouncementText);
+        const upper = text.toUpperCase();
+        const isClear = upper.includes('CLEARED') || upper.includes('VANQUISHED') || upper.includes('DEFEATED') || upper.includes('CRUSHED');
+        const isBossKill = upper.includes('VANQUISHED') || upper.includes('DEFEATED') || upper.includes('CRUSHED');
+        const isHard = !!(this.isEndlessHard || upper.includes('HARD '));
+
+        const subtext = this.waveAnnouncementSubtext
+            || (isClear ? (isBossKill ? 'BOSS BOUNTY CLAIMED • NEXT WAVE INCOMING' : 'NEXT WAVE INCOMING') : '');
+        const hasSub = subtext.length > 0;
+
+        const accentHex = this.waveAnnouncementColor || (isClear ? '#2ed573' : '#fed330');
+        const accentRgb = this._parseColorRgb(accentHex);
+        // Hard endless clears pair crimson edge energy with molten victory gold
+        const secondaryRgb = (isHard && isClear) ? '255, 46, 76' : accentRgb;
+
+        const bandW = Math.min(cssW * (isCompact ? 0.80 : 0.56), isCompact ? 500 : 620) * dpr;
+        const bandHCss = (hasSub ? (isCompact ? 44 : 54) : (isCompact ? 34 : 42)) * uiScale;
+        const bandH = bandHCss * dpr;
+        const halfBandW = bandW / 2;
+        const halfBandH = bandH / 2;
+
+        // Upper-band placement clears both the top HUD (including score number) and center hero
+        const centerX = width / 2;
+        const cssAnchorY = (typeof BossWarningOverlay !== 'undefined' && BossWarningOverlay.getSafeBannerAnchorY)
+            ? BossWarningOverlay.getSafeBannerAnchorY(cssH, bandHCss * 0.5, isCompact, this._waveHudBottomCss || 0)
+            : (isCompact ? Math.max(106, cssH * 0.275) : Math.max(146, cssH * 0.22));
+        const centerY = cssAnchorY * dpr + slideY;
+
         ctx.save();
-        const halfW = width / 2;
-        const halfH = height / 2;
+        try {
+            ctx.globalAlpha *= alpha;
+            ctx.translate(centerX, centerY);
+            ctx.scale(animScale, animScale);
 
-        ctx.fillStyle = '#1e272e';
-        ctx.fillRect(halfW - 280, halfH - 120, 560, 74);
-        ctx.lineWidth = 4;
-        ctx.strokeStyle = '#fed330';
-        ctx.strokeRect(halfW - 280, halfH - 120, 560, 74);
+            // Feathered translucent atmospheric ribbon (fades to 0 at edges — no boxy border)
+            const bgGrad = ctx.createLinearGradient(-halfBandW, 0, halfBandW, 0);
+            bgGrad.addColorStop(0, 'rgba(10, 14, 24, 0)');
+            bgGrad.addColorStop(0.18, 'rgba(12, 16, 28, 0.56)');
+            bgGrad.addColorStop(0.5, 'rgba(12, 16, 28, 0.78)');
+            bgGrad.addColorStop(0.82, 'rgba(12, 16, 28, 0.56)');
+            bgGrad.addColorStop(1, 'rgba(10, 14, 24, 0)');
+            ctx.fillStyle = bgGrad;
+            ctx.fillRect(-halfBandW, -halfBandH, bandW, bandH);
 
-        if (typeof EnemyBase !== 'undefined' && EnemyBase.getLabelSprite) {
-            const lbl = EnemyBase.getLabelSprite(
-                this.waveAnnouncementText,
-                "900 48px 'Luckiest Guy', cursive",
-                '#fed330',
-                '#1e272e',
-                8,
-                530,
-                'middle'
-            );
-            EnemyBase.drawLabel(ctx, lbl, halfW, halfH - 82);
-        } else {
+            const tintGrad = ctx.createLinearGradient(-halfBandW, 0, halfBandW, 0);
+            tintGrad.addColorStop(0, `rgba(${secondaryRgb}, 0)`);
+            tintGrad.addColorStop(0.28, `rgba(${secondaryRgb}, 0.11)`);
+            tintGrad.addColorStop(0.5, `rgba(${accentRgb}, ${isClear ? 0.20 : 0.14})`);
+            tintGrad.addColorStop(0.72, `rgba(${secondaryRgb}, 0.11)`);
+            tintGrad.addColorStop(1, `rgba(${secondaryRgb}, 0)`);
+            ctx.fillStyle = tintGrad;
+            ctx.fillRect(-halfBandW, -halfBandH, bandW, bandH);
+
+            if (elapsed < 34) {
+                const sheenProgress = elapsed / 34;
+                const sheenHalfW = bandW * 0.16;
+                const travel = bandW * 0.58;
+                const sx = -travel * 0.5 + travel * sheenProgress;
+                const sheenAlpha = Math.sin(sheenProgress * Math.PI) * (isClear ? 0.22 : 0.14);
+                const sheenGrad = ctx.createLinearGradient(sx - sheenHalfW, 0, sx + sheenHalfW, 0);
+                sheenGrad.addColorStop(0, 'rgba(255, 255, 255, 0)');
+                sheenGrad.addColorStop(0.5, `rgba(255, 255, 255, ${sheenAlpha.toFixed(3)})`);
+                sheenGrad.addColorStop(1, 'rgba(255, 255, 255, 0)');
+                ctx.fillStyle = sheenGrad;
+                ctx.fillRect(sx - sheenHalfW, -halfBandH, sheenHalfW * 2, bandH);
+            }
+
+            // Tapered horizontal glow hairlines (no left/right side borders)
+            const lineH = Math.max(1.25, 1.7 * s);
+            const lineGrad = ctx.createLinearGradient(-halfBandW, 0, halfBandW, 0);
+            lineGrad.addColorStop(0, `rgba(${secondaryRgb}, 0)`);
+            lineGrad.addColorStop(0.2, `rgba(${secondaryRgb}, 0.68)`);
+            lineGrad.addColorStop(0.5, `rgba(${accentRgb}, 0.96)`);
+            lineGrad.addColorStop(0.8, `rgba(${secondaryRgb}, 0.68)`);
+            lineGrad.addColorStop(1, `rgba(${secondaryRgb}, 0)`);
+            ctx.fillStyle = lineGrad;
+            ctx.fillRect(-halfBandW, -halfBandH, bandW, lineH);
+            ctx.fillRect(-halfBandW, halfBandH - lineH, bandW, lineH);
+
+            if (isClear || isHard) {
+                const gemR = 3.2 * s;
+                ctx.fillStyle = accentHex;
+                ctx.beginPath();
+                ctx.moveTo(0, -halfBandH - gemR * 0.65);
+                ctx.lineTo(gemR * 1.35, -halfBandH + lineH * 0.5);
+                ctx.lineTo(0, -halfBandH + lineH + gemR * 0.65);
+                ctx.lineTo(-gemR * 1.35, -halfBandH + lineH * 0.5);
+                ctx.closePath();
+                ctx.fill();
+            }
+
+            // Crisp native vector text (zero atlas downscaling blur on High-DPR mobile)
+            const headlinePx = Math.round((hasSub ? (isCompact ? 18.5 : 24.5) : (isCompact ? 21 : 27)) * s);
+            const maxLabelW = Math.round(bandW * 0.86);
+            const headlineY = hasSub ? (-7.5 * s) : (1 * s);
+            const headlineColor = (isHard && isClear) ? '#ffe58f' : ((isClear && !isHard && accentHex === '#2ed573') ? '#5cff9d' : accentHex);
+            const outlineColor = (isHard && !isClear) ? '#1a070d' : '#090e1a';
+
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
-            ctx.font = "900 48px 'Luckiest Guy', cursive";
-            ctx.lineWidth = 8;
-            ctx.strokeStyle = '#1e272e';
-            ctx.fillStyle = '#fed330';
-            ctx.strokeText(this.waveAnnouncementText, halfW, halfH - 82, 530);
-            ctx.fillText(this.waveAnnouncementText, halfW, halfH - 82, 530);
-        }
+            ctx.lineJoin = 'round';
+            ctx.font = `900 ${headlinePx}px 'Luckiest Guy', cursive`;
+            ctx.lineWidth = Math.max(2.5, 4.2 * s);
+            ctx.strokeStyle = outlineColor;
+            ctx.fillStyle = headlineColor;
+            ctx.strokeText(text, 0, headlineY, maxLabelW);
+            ctx.fillText(text, 0, headlineY, maxLabelW);
 
-        ctx.restore();
+            if (hasSub) {
+                const subPx = Math.round((isCompact ? 9.5 : 11.5) * s);
+                const subY = 12 * s;
+                ctx.font = `800 ${subPx}px 'Fredoka', sans-serif`;
+                ctx.lineWidth = Math.max(1.5, 2.4 * s);
+                ctx.strokeStyle = '#090e1a';
+                ctx.fillStyle = (isHard && isClear) ? '#ffd6dc' : '#e2e8f0';
+                ctx.strokeText(subtext, 0, subY, maxLabelW);
+                ctx.fillText(subtext, 0, subY, maxLabelW);
+            }
+        } finally {
+            ctx.restore();
+        }
     }
 
     static vacuumMaterialDrops(drops) {

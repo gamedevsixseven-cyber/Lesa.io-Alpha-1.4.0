@@ -525,6 +525,7 @@ class CoopLobbyModal {
         const initPeers = Array.isArray(payload.peers) ? payload.peers : (Array.isArray(this.connectedPeers) ? this.connectedPeers : []);
 
         if (window.gameInstance) {
+            if (window.soundEngine && typeof window.soundEngine.init === 'function') window.soundEngine.init();
             window.gameInstance.isCoopGuest = true;
             window.gameInstance.startNewGame(u.heroType, gameMode, { isCoop: true, isEndlessHard: isHard });
             if (window.gameInstance.arena && typeof window.gameInstance.arena.reseed === 'function') {

@@ -90,9 +90,13 @@ class CoopGuestSession {
                     const sameTxt = (this.game.cutsceneOverlay.dialogueText === payload.text);
                     if (!sameTxt) {
                         this.game.cutsceneOverlay.setDialogue(payload.speaker, payload.text, payload.speakerColor, payload.avatarIcon, payload.promptAdvance);
+                        if (typeof ApexW60Audio !== 'undefined') ApexW60Audio.syncCutsceneDialogue(payload.text);
                     }
                     this.game.cutsceneOverlay.setReadyState(payload.readyCount || 0, payload.totalPlayers || 2, sameTxt ? this.game.cutsceneOverlay.isLocalReady : false);
                 }
+            } else if (type === 'COOP_VOICE' && payload && typeof ApexW60Audio !== 'undefined') {
+                if (payload.action === 'stop') ApexW60Audio.stopVoice({ fromNetwork: true });
+                else if (payload.key) ApexW60Audio.playVoice(payload.key, payload.onceTag || null, { fromNetwork: true });
             } else if (type === 'LIL_XAS_EVENT' && typeof LilXasEvent !== 'undefined' && payload) {
                 LilXasEvent.handleCoopEvent(payload.kind, payload, this.game);
             } else if (type === 'CUTSCENE_READY_UPDATE') {
@@ -100,6 +104,7 @@ class CoopGuestSession {
                     this.game.cutsceneOverlay.setReadyState(payload.readyCount, payload.totalPlayers, this.game.cutsceneOverlay.isLocalReady);
                 }
             } else if (type === 'CUTSCENE_END') {
+                if (typeof ApexW60Audio !== 'undefined') ApexW60Audio.stopVoice({ fromNetwork: true });
                 if (this.game.cutsceneOverlay && typeof this.game.cutsceneOverlay.endCutscene === 'function') {
                     this.game.cutsceneOverlay.endCutscene();
                     this.game.cutsceneOverlay.setReadyState(0, 1, false);

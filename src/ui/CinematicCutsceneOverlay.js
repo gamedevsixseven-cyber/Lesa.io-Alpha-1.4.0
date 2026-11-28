@@ -112,6 +112,9 @@ class CinematicCutsceneOverlay {
     }
 
     advance() {
+        if (typeof window !== 'undefined' && window.soundEngine && typeof window.soundEngine.init === 'function') {
+            window.soundEngine.init();
+        }
         if (!this.active || !this.promptAdvance) return false;
         const now = performance.now();
         // Strict Debounce: ignore touches within 380ms of last advance OR 480ms of new dialogue/prompt appearing

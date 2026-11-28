@@ -30,12 +30,33 @@ class ApexW60Audio {
 
     static _voiceNode = null;
     static _voiceAudio = null;
+    static _voiceToken = 0;
     static _duckFactor = 1.0;
     static _duckTimer = null;
     static _playedTags = new Set();
 
+    static DIALOGUE_CUES = [
+        ['WAITING FOR YOU', 'erebus_line1', 'w60_d1'],
+        ['ALPHA WAS A MERCY', 'erebus_line1', 'w60_d1'],
+        ['OMEGA APOCALYPSE', 'erebus_surge', 'w60_surge'],
+        ['LITTLE SPARK', 'erebus_line2', 'w60_d2'],
+        ['CROWN OF ASHES', 'erebus_defeat', 'w60_defeat']
+    ];
+
     static _se() {
         return (typeof window !== 'undefined' && window.soundEngine) ? window.soundEngine : null;
+    }
+
+    static syncCutsceneDialogue(text) {
+        if (!text || typeof text !== 'string') return false;
+        for (let i = 0; i < this.DIALOGUE_CUES.length; i++) {
+            const [needle, key, tag] = this.DIALOGUE_CUES[i];
+            if (text.includes(needle)) {
+                this.playVoice(key, tag);
+                return true;
+            }
+        }
+        return false;
     }
 
     static prefetch() {
@@ -76,24 +97,48 @@ class ApexW60Audio {
         });
     }
 
-    static playVoice(key, onceTag = null) {
-        if (onceTag && this._playedTags.has(onceTag)) return;
-        if (onceTag) this._playedTags.add(onceTag);
-        const src = this.VOICES[key];
-        const se = this._se();
-        if (!src || !se || se.muted || se.masterVolume <= 0) return;
-        if (!se.ctx && typeof se.init === 'function') se.init();
+    static _broadcastCoopVoice(payload) {
+        const g = (typeof window !== 'undefined') ? window.gameInstance : null;
+        const cs = g && g.coopSession;
+        if (cs && cs.isHost && cs.net && cs.net.connected) cs.net.send('COOP_VOICE', payload);
+    }
 
-        this.stopVoice();
-        this._setDuck(0.30, 6800);
+    static playVoice(key, onceTag = null, opts = {}) {
+        const src = this.VOICES[key];
+        if (!src) return;
+        if (onceTag && this._playedTags.has(onceTag) && !opts.force) return;
+        if (onceTag) this._playedTags.add(onceTag);
+
+        // Broadcast before local mute check so muted host never silences co-op joiners
+        if (!opts.fromNetwork) this._broadcastCoopVoice({ key, onceTag: onceTag || null });
+
+        const se = this._se();
+        if (!se || se.muted || se.masterVolume <= 0) return;
+        if (typeof se.init === 'function') se.init();
+
+        this.stopVoice({ fromNetwork: true });
+        const token = ++this._voiceToken;
+        this._setDuck(0.28, 7200);
 
         const vol = Math.max(0.05, Math.min(1.0, se.masterVolume * 1.15));
+        let started = false;
         const startFallback = () => {
+            if (started || this._voiceToken !== token || se.muted || se.masterVolume <= 0) return;
+            started = true;
             try {
                 const a = new Audio(src);
                 a.volume = vol;
                 a.onended = () => { if (this._voiceAudio === a) { this._voiceAudio = null; this._setDuck(1.0); } };
-                a.play().catch(() => { this._setDuck(1.0); });
+                a.play().catch(() => {
+                    if (typeof se.onAudioUnlock === 'function') {
+                        se.onAudioUnlock(() => {
+                            if (this._voiceToken === token && this._voiceAudio === a && a.paused && !se.muted && se.masterVolume > 0) {
+                                a.play().catch(() => {});
+                            }
+                        });
+                    }
+                    this._setDuck(1.0);
+                });
                 this._voiceAudio = a;
             } catch (_) { this._setDuck(1.0); }
         };
@@ -102,26 +147,39 @@ class ApexW60Audio {
         if (useWebAudio) {
             if (!se.ctx && typeof se.init === 'function') se.init();
             this._decodeVoice(src).then((buf) => {
-                if (!buf || !se.ctx || se.muted || se.masterVolume <= 0) return;
-                const node = se.ctx.createBufferSource();
-                node.buffer = buf;
-                const g = se.ctx.createGain();
-                g.gain.value = vol;
-                node.connect(g);
-                g.connect(se.ctx.destination);
-                this._voiceNode = node;
-                this._setDuck(0.30, Math.ceil(buf.duration * 1000) + 150);
-                node.onended = () => {
-                    if (this._voiceNode === node) { this._voiceNode = null; this._setDuck(1.0); }
+                if (this._voiceToken !== token || se.muted || se.masterVolume <= 0) return;
+                if (!buf || !se.ctx) { startFallback(); return; }
+                const startNode = () => {
+                    if (started || this._voiceToken !== token || !se.ctx || se.muted || se.masterVolume <= 0) return;
+                    if (se.ctx.state !== 'running') {
+                        if (typeof se.onAudioUnlock === 'function') se.onAudioUnlock(startNode);
+                        se.ctx.resume().then(() => { if (se.ctx && se.ctx.state === 'running') startNode(); }).catch(() => startFallback());
+                        return;
+                    }
+                    started = true;
+                    const node = se.ctx.createBufferSource();
+                    node.buffer = buf;
+                    const g = se.ctx.createGain();
+                    g.gain.value = Math.max(0.05, Math.min(1.35, se.masterVolume * 1.2));
+                    node.connect(g);
+                    g.connect(se.ctx.destination);
+                    this._voiceNode = node;
+                    this._setDuck(0.28, Math.ceil(buf.duration * 1000) + 150);
+                    node.onended = () => {
+                        if (this._voiceNode === node) { this._voiceNode = null; this._setDuck(1.0); }
+                    };
+                    node.start(0);
                 };
-                node.start(0);
+                startNode();
             });
         } else {
             startFallback();
         }
     }
 
-    static stopVoice() {
+    static stopVoice(opts = {}) {
+        this._voiceToken++;
+        if (!opts.fromNetwork) this._broadcastCoopVoice({ action: 'stop' });
         if (this._voiceNode) {
             try { this._voiceNode.onended = null; this._voiceNode.stop(); this._voiceNode.disconnect(); } catch (_) {}
             this._voiceNode = null;

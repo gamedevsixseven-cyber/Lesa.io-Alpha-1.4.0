@@ -29,12 +29,30 @@ class BossWarningOverlay {
             this.rankName = 'NORMAL BOSS';
         }
         this.pulsePhase = 0;
+        this._hudBottomCss = BossWarningOverlay._measureHudBottomCss();
 
         if (window.soundEngine) {
             if (typeof window.soundEngine.playSelect === 'function') {
                 window.soundEngine.playSelect();
             }
         }
+    }
+
+    static _measureHudBottomCss() {
+        if (typeof document === 'undefined') return 0;
+        const el = document.querySelector('#game-hud .hud-center-status, #game-hud .hud-center-score, #score-display');
+        if (!el) return 0;
+        const rect = el.getBoundingClientRect();
+        return (rect && rect.height > 0) ? rect.bottom : 0;
+    }
+
+    static getSafeBannerAnchorY(cssH, bandHalfCss, isCompact, cachedHudBottom = 0) {
+        const fallbackHud = isCompact ? 76 : 114;
+        const hudBottom = cachedHudBottom > 0 ? Math.max(cachedHudBottom, fallbackHud * 0.7) : fallbackHud;
+        const minSafeY = hudBottom + (isCompact ? 10 : 14) + bandHalfCss;
+        const defaultY = isCompact ? Math.max(minSafeY, cssH * 0.28) : Math.max(minSafeY, cssH * 0.22);
+        const maxSafeY = cssH * 0.5 - (isCompact ? 38 : 48) - bandHalfCss;
+        return Math.min(defaultY, Math.max(minSafeY, maxSafeY));
     }
 
     update(dt = 1, camera = null) {
@@ -79,111 +97,160 @@ class BossWarningOverlay {
 
         ctx.save();
         try {
-            const progress = 1.0 - (this.timer / this.maxTimer);
+            const game = (typeof window !== 'undefined') ? window.gameInstance : null;
+            const dpr = (game && Number.isFinite(game.dpr) && game.dpr > 0) ? game.dpr : 1;
+            const cssW = width / dpr;
+            const cssH = height / dpr;
+            const isCompact = cssW < 780 || cssH < 520;
+            const uiScale = isCompact
+                ? Math.max(0.80, Math.min(1.0, cssW / 760))
+                : Math.max(0.90, Math.min(1.12, cssW / 1280));
+            const s = dpr * uiScale;
+
+            const elapsed = Math.max(0, this.maxTimer - this.timer);
+            const inT = Math.min(1, elapsed / 14);
+            const outT = Math.min(1, this.timer / 24);
+            const easeIn = 1 - Math.pow(1 - inT, 3);
+            const masterAlpha = Math.max(0, Math.min(1, Math.min(inT, outT)));
+            if (masterAlpha <= 0.01) return;
+
             const pulse = 0.55 + Math.sin(this.pulsePhase) * 0.45; // 0.1 to 1.0
             const isMobile = typeof MobilePerf !== 'undefined' && MobilePerf.isMobile;
 
-            // 1. Fullscreen Red Flashing Vignette (cached low-res sprite on mobile to avoid Wave 10 GPU gradient churn)
+            // 1. Edge-only Crimson Vignette (keeps center hero unobstructed; cached low-res sprite on mobile)
             const vigSprite = isMobile ? BossWarningOverlay._getMobileVignetteCanvas() : null;
             if (vigSprite) {
                 const prevAlpha = ctx.globalAlpha;
-                ctx.globalAlpha = prevAlpha * pulse;
+                ctx.globalAlpha = prevAlpha * masterAlpha * (0.45 + 0.35 * pulse);
                 ctx.drawImage(vigSprite, 0, 0, width, height);
                 ctx.globalAlpha = prevAlpha;
             } else if (isMobile) {
-                ctx.fillStyle = `rgba(180, 0, 0, ${0.22 * pulse})`;
+                ctx.fillStyle = `rgba(180, 0, 0, ${(0.18 * pulse * masterAlpha).toFixed(3)})`;
                 ctx.fillRect(0, 0, width, height);
             } else {
-                const grad = ctx.createRadialGradient(width / 2, height / 2, width * 0.2, width / 2, height / 2, width * 0.75);
+                const grad = ctx.createRadialGradient(width / 2, height / 2, width * 0.24, width / 2, height / 2, width * 0.78);
                 grad.addColorStop(0, 'rgba(255, 0, 0, 0)');
-                grad.addColorStop(0.7, `rgba(235, 47, 6, ${0.45 * pulse})`);
-                grad.addColorStop(1, `rgba(180, 0, 0, ${0.82 * pulse})`);
+                grad.addColorStop(0.68, `rgba(220, 38, 38, ${(0.30 * pulse * masterAlpha).toFixed(3)})`);
+                grad.addColorStop(1, `rgba(140, 0, 0, ${(0.58 * pulse * masterAlpha).toFixed(3)})`);
                 ctx.fillStyle = grad;
                 ctx.fillRect(0, 0, width, height);
             }
 
-            // 2. Animated Top & Bottom Hazard Warning Stripes
-            const stripeH = 34;
-            this.drawHazardStripes(ctx, 0, 0, width, stripeH, pulse);
-            this.drawHazardStripes(ctx, 0, height - stripeH, width, stripeH, pulse);
+            // 2. Upper-Band Sleek Warning Ribbon (no screen-edge HUD overlap, no boxy border, clear center arena)
+            const slideY = ((1 - easeIn) * -12 - (this.timer < 24 ? (1 - outT) * 8 : 0)) * s;
+            const animScale = 0.93 + 0.07 * easeIn;
+            const bandW = Math.min(cssW * (isCompact ? 0.86 : 0.64), isCompact ? 560 : 720) * dpr;
+            const bandHCss = (isCompact ? 56 : 72) * uiScale;
+            const bandH = bandHCss * dpr;
+            const halfBandW = bandW / 2;
+            const halfBandH = bandH / 2;
 
-            // 3. Center Warning Presentation Banner
-            const halfW = width / 2;
-            const halfH = height / 2;
+            const cssAnchorY = BossWarningOverlay.getSafeBannerAnchorY(cssH, bandHCss * 0.5, isCompact, this._hudBottomCss || 0);
+            const centerX = width / 2;
+            const centerY = cssAnchorY * dpr + slideY;
 
-            const scale = Math.min(1.0, Math.max(0.48, width / 720));
-            const bannerW = Math.min(640, width * 0.92);
-            const bannerH = 150 * scale;
-            const halfBannerW = bannerW / 2;
-            const halfBannerH = bannerH / 2;
-
-            ctx.save();
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-
-            // Warning Pill Background
-            ctx.fillStyle = 'rgba(20, 0, 0, 0.88)';
-            ctx.beginPath();
-            ctx.roundRect(halfW - halfBannerW, halfH - halfBannerH, bannerW, bannerH, 20 * scale);
-            ctx.fill();
-            ctx.lineWidth = Math.max(2, 5 * scale);
-            ctx.strokeStyle = `rgba(255, 71, 87, ${0.8 + 0.2 * pulse})`;
-            ctx.stroke();
-
-            // Inner Glow Stroke
-            ctx.lineWidth = Math.max(1, 2 * scale);
-            ctx.strokeStyle = '#fed330';
-            ctx.strokeRect(halfW - halfBannerW + 6 * scale, halfH - halfBannerH + 6 * scale, bannerW - 12 * scale, bannerH - 12 * scale);
-
-            // Title 1: "⚠️ WARNING ⚠️"
-            const title1Size = Math.max(18, Math.round(38 * scale));
-            ctx.font = `900 ${title1Size}px 'Luckiest Guy', cursive`;
-            ctx.lineWidth = Math.max(3, 8 * scale);
-            ctx.strokeStyle = '#1e272e';
-            ctx.strokeText('⚠️ WARNING ⚠️', halfW, halfH - 20 * scale);
-            ctx.fillStyle = '#fed330';
-            ctx.fillText('⚠️ WARNING ⚠️', halfW, halfH - 20 * scale);
-
-            // Title 2: "BOSS INCOMING! • [RANK]"
-            const title2Size = Math.max(20, Math.round(42 * scale));
-            ctx.font = `900 ${title2Size}px 'Luckiest Guy', cursive`;
-            ctx.lineWidth = Math.max(4, 8 * scale);
-            ctx.strokeStyle = '#1e272e';
-            const rankText = `${this.bossName ? this.bossName + ' • ' : 'BOSS INCOMING! • '}${this.rankName}`;
-            ctx.strokeText(rankText, halfW, halfH + 34 * scale, bannerW - 28 * scale);
             const rUp = (this.rankName || '').toUpperCase();
-            ctx.fillStyle = rUp.includes('INSANE') ? '#ff4757'
-                : (rUp.includes('VERY HARD') ? '#e67e22'
+            const rankColor = (rUp.includes('INSANE') || rUp.includes('APEX')) ? '#ff4757'
+                : (rUp.includes('VERY HARD') ? '#ff9f43'
                     : (rUp.includes('HARD') ? '#e056fd'
                         : (rUp.includes('EASY') ? '#2ed573' : '#54a0ff')));
-            ctx.fillText(rankText, halfW, halfH + 34 * scale, bannerW - 28 * scale);
 
-            ctx.restore();
+            ctx.translate(centerX, centerY);
+            ctx.scale(animScale, animScale);
+            ctx.globalAlpha *= masterAlpha;
+
+            // Feathered crimson-obsidian backdrop fading to zero at both horizontal ends
+            const bgGrad = ctx.createLinearGradient(-halfBandW, 0, halfBandW, 0);
+            bgGrad.addColorStop(0, 'rgba(18, 4, 8, 0)');
+            bgGrad.addColorStop(0.16, 'rgba(22, 4, 9, 0.56)');
+            bgGrad.addColorStop(0.5, 'rgba(26, 4, 10, 0.80)');
+            bgGrad.addColorStop(0.84, 'rgba(22, 4, 9, 0.56)');
+            bgGrad.addColorStop(1, 'rgba(18, 4, 8, 0)');
+            ctx.fillStyle = bgGrad;
+            ctx.fillRect(-halfBandW, -halfBandH, bandW, bandH);
+
+            // Pulsing crimson energy wash
+            const auraGrad = ctx.createLinearGradient(-halfBandW, 0, halfBandW, 0);
+            auraGrad.addColorStop(0, 'rgba(255, 46, 76, 0)');
+            auraGrad.addColorStop(0.35, `rgba(255, 46, 76, ${(0.10 + 0.08 * pulse).toFixed(3)})`);
+            auraGrad.addColorStop(0.5, `rgba(255, 71, 87, ${(0.18 + 0.10 * pulse).toFixed(3)})`);
+            auraGrad.addColorStop(0.65, `rgba(255, 46, 76, ${(0.10 + 0.08 * pulse).toFixed(3)})`);
+            auraGrad.addColorStop(1, 'rgba(255, 46, 76, 0)');
+            ctx.fillStyle = auraGrad;
+            ctx.fillRect(-halfBandW, -halfBandH, bandW, bandH);
+
+            // Slim animated tapered caution rails along top & bottom of the band
+            const railH = Math.max(3, 4.2 * s);
+            this.drawHazardStripes(ctx, -halfBandW, -halfBandH, bandW, railH, pulse, s);
+            this.drawHazardStripes(ctx, -halfBandW, halfBandH - railH, bandW, railH, pulse, s);
+
+            // Thin glowing accent hairlines framing the caution rails horizontally
+            const lineH = Math.max(1.2, 1.6 * s);
+            const lineGrad = ctx.createLinearGradient(-halfBandW, 0, halfBandW, 0);
+            lineGrad.addColorStop(0, 'rgba(255, 71, 87, 0)');
+            lineGrad.addColorStop(0.22, `rgba(255, 71, 87, ${(0.55 + 0.30 * pulse).toFixed(3)})`);
+            lineGrad.addColorStop(0.5, 'rgba(254, 211, 48, 0.95)');
+            lineGrad.addColorStop(0.78, `rgba(255, 71, 87, ${(0.55 + 0.30 * pulse).toFixed(3)})`);
+            lineGrad.addColorStop(1, 'rgba(255, 71, 87, 0)');
+            ctx.fillStyle = lineGrad;
+            ctx.fillRect(-halfBandW, -halfBandH + railH, bandW, lineH);
+            ctx.fillRect(-halfBandW, halfBandH - railH - lineH, bandW, lineH);
+
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.lineJoin = 'round';
+            const maxTextW = bandW * 0.86;
+
+            const eyebrowPx = Math.max(11, Math.round((isCompact ? 12.5 : 15.5) * s));
+            const eyebrowY = -(isCompact ? 11.5 : 14.5) * s;
+            ctx.font = `900 ${eyebrowPx}px 'Luckiest Guy', cursive`;
+            ctx.lineWidth = Math.max(2, 3.6 * s);
+            ctx.strokeStyle = '#14060a';
+            const warnLabel = '⚠  WARNING  •  BOSS INCOMING  ⚠';
+            ctx.strokeText(warnLabel, 0, eyebrowY, maxTextW);
+            ctx.fillStyle = '#fed330';
+            ctx.fillText(warnLabel, 0, eyebrowY, maxTextW);
+
+            const titlePx = Math.max(15, Math.round((isCompact ? 19.5 : 26) * s));
+            const titleY = (isCompact ? 10 : 13) * s;
+            const bossTitle = this.bossName ? `${this.bossName}  •  ${this.rankName}` : `BOSS INCOMING  •  ${this.rankName}`;
+            ctx.font = `900 ${titlePx}px 'Luckiest Guy', cursive`;
+            ctx.lineWidth = Math.max(2.5, 4.4 * s);
+            ctx.strokeStyle = '#14060a';
+            ctx.strokeText(bossTitle, 0, titleY, maxTextW);
+            ctx.fillStyle = rankColor;
+            ctx.fillText(bossTitle, 0, titleY, maxTextW);
         } finally {
             ctx.restore();
         }
     }
 
-    drawHazardStripes(ctx, x, y, w, h, pulse) {
+    drawHazardStripes(ctx, x, y, w, h, pulse, scale = 1) {
         ctx.save();
         try {
-            ctx.beginPath();
-            ctx.rect(x, y, w, h);
-            ctx.clip();
+            const halfW = w / 2;
+            const midX = x + halfW;
+            const step = Math.max(14, Math.round(20 * scale));
+            const tickW = step * 0.48;
+            const skew = h * 0.9;
+            const offset = (((this.stripeOffset || 0) % 40) / 40) * step;
+            const startX = x + offset - step;
+            const endX = x + w;
 
-            ctx.fillStyle = '#1e272e';
-            ctx.fillRect(x, y, w, h);
+            for (let sx = startX; sx < endX; sx += step) {
+                const tickCenter = sx + tickW * 0.5;
+                const edgeDist = Math.abs(tickCenter - midX) / Math.max(1, halfW);
+                if (edgeDist >= 0.92) continue;
+                const taper = Math.max(0, 1 - Math.pow(edgeDist / 0.92, 1.8));
+                const tickAlpha = (0.45 + 0.45 * pulse) * taper;
+                if (tickAlpha <= 0.03) continue;
 
-            ctx.fillStyle = `rgba(255, 71, 87, ${0.75 + 0.25 * pulse})`;
-            const stripeW = 28;
-            const total = Math.ceil(w / stripeW) + 4;
-            for (let i = -2; i < total; i++) {
-                const sx = i * stripeW + this.stripeOffset;
+                ctx.fillStyle = `rgba(255, 71, 87, ${tickAlpha.toFixed(3)})`;
                 ctx.beginPath();
                 ctx.moveTo(sx, y);
-                ctx.lineTo(sx + 14, y);
-                ctx.lineTo(sx + 14 - 10, y + h);
-                ctx.lineTo(sx - 10, y + h);
+                ctx.lineTo(sx + tickW, y);
+                ctx.lineTo(sx + tickW - skew, y + h);
+                ctx.lineTo(sx - skew, y + h);
                 ctx.closePath();
                 ctx.fill();
             }

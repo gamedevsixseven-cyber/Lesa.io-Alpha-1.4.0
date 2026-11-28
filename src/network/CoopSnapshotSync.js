@@ -48,7 +48,11 @@ class CoopSnapshotSync {
     static syncGuestEndlessWave(session, data, prevWave) {
         const g = session && session.game;
         if (!g || !data || !Number.isFinite(data.wave)) return;
+        if ((data.eh || data.ehS) && !g.isEndlessHard) g.isEndlessHard = true;
         const nextWave = data.wave;
+        if (g.gameMode === 'endless' && nextWave >= 55 && g.isEndlessHard && typeof ApexW60Audio !== 'undefined') {
+            ApexW60Audio.prefetch();
+        }
         if (g.gameMode === 'endless' && nextWave > (prevWave || 0)) {
             const modeKey = g.isEndlessHard ? 'endless_hard' : 'endless';
             if (typeof window !== 'undefined' && window.GameState && typeof window.GameState.recordWaveProgress === 'function') {
@@ -421,15 +425,10 @@ class CoopSnapshotSync {
             else if (typeof csData.sub === 'string' && csData.sub && co.subText !== csData.sub) co.subText = csData.sub;
             if (csData.tp) co.totalPlayers = csData.tp;
             if (csData.txt) {
+                if (typeof ApexW60Audio !== 'undefined') ApexW60Audio.syncCutsceneDialogue(csData.txt);
                 if (co.dialogueText !== csData.txt) {
                     co.setDialogue(csData.spk, csData.txt, csData.col, csData.ico, csData.adv);
                     co.setReadyState(csData.rc || 0, csData.tp || 2, false);
-                    if (typeof ApexW60Audio !== 'undefined') {
-                        if (csData.txt.includes('WAITING FOR YOU') || csData.txt.includes('ALPHA WAS A MERCY')) ApexW60Audio.playVoice('erebus_line1', 'w60_d1');
-                        else if (csData.txt.includes('OMEGA APOCALYPSE')) ApexW60Audio.playVoice('erebus_surge', 'w60_surge');
-                        else if (csData.txt.includes('LITTLE SPARK')) ApexW60Audio.playVoice('erebus_line2', 'w60_d2');
-                        else if (csData.txt.includes('CROWN OF ASHES')) ApexW60Audio.playVoice('erebus_defeat', 'w60_defeat');
-                    }
                 } else {
                     co.promptAdvance = !!csData.adv;
                     co.setReadyState(csData.rc || 0, csData.tp || 2, co.isLocalReady);

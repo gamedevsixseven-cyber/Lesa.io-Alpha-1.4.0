@@ -376,7 +376,7 @@ class EndlessWaveDirector {
             18: '☣️ PLAGUE WEAVERS EMERGE!', 23: '❄️ GLACIAL MARKSMEN LOCK ON!', 28: '💣 HELLFIRE MORTARS DEPLOYED!'
         };
         const banner = hardDebuts[waveNum] || `🔥 HARD ENDLESS ${waveNum}`;
-        waveManager.showWaveAnnouncement(banner, '#ff2e4c', hardDebuts[waveNum] ? 210 : 170);
+        waveManager.showWaveAnnouncement(banner, '#ff2e4c', hardDebuts[waveNum] ? 210 : 170, hardDebuts[waveNum] ? `HARD ENDLESS • WAVE ${waveNum}` : 'HARD ENDLESS MODE');
         if (effects) effects.addComicSplash(player.x, player.y - 50, `🔥 HARD WAVE ${waveNum}!`);
     }
 
@@ -409,7 +409,7 @@ class EndlessWaveDirector {
             ? (isBoss ? `👑 ${hardTitle} VANQUISHED! 🔥` : (isMini ? `🔥 ${hardTitle} CRUSHED! 🔥` : `🔥 HARD WAVE ${waveNum} CLEARED!`))
             : (isBoss ? `👑 ${bossCfg.title} DEFEATED! 👑` : (isMini ? `💥 ${miniCfg.title} DEFEATED! 💥` : `ENDLESS ${waveNum} CLEARED!`));
 
-        waveManager.showWaveAnnouncement(msg, isHard ? '#ff2e4c' : (encounter ? encounter.rankColor : '#2ed573'), encounter ? 250 : 165);
+        waveManager.showWaveAnnouncement(msg, isHard ? '#ffb142' : (encounter ? encounter.rankColor : '#2ed573'), encounter ? 235 : 160, isHard ? ((isBoss || isMini) ? 'HARD BOSS BOUNTY CLAIMED • NEXT WAVE SOON' : 'HARD ENDLESS • NEXT WAVE INCOMING') : '');
 
         if (encounter && game.effects) {
             game.effects.addConfetti(game.player.x, game.player.y, isBoss ? 105 : 75);
