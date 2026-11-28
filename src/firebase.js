@@ -17,24 +17,11 @@ const firebaseConfig = {
 
 class CloudSaveService {
     constructor() {
-        this.isInitialized = false;
-        this.auth = null;
-        this.db = null;
-        this.rtdb = null;
-        this.currentUser = null;
-        this.hasCompletedInitialSync = false;
-        this.isHydratingAuth = false;
-        this.hasUnflushedLocalMutation = false;
-        this.lastLocalMutationDirtyAt = 0;
-        this._localMutationVersion = 0;
-        this._activeListenerUid = null;
-        this._cloudSyncCooldownMs = 15000;
-        this._lastCloudSyncAt = 0;
-        this._lastFirestoreWriteAt = 0;
-        this._lastFirestoreLevel = 0;
-        this._cloudSyncTimer = null;
-        this._pendingCloudSyncData = null;
-
+        this.isInitialized = false; this.auth = null; this.db = null; this.rtdb = null; this.currentUser = null;
+        this.hasCompletedInitialSync = false; this.isHydratingAuth = false; this.hasUnflushedLocalMutation = false;
+        this.lastLocalMutationDirtyAt = 0; this._localMutationVersion = 0; this._activeListenerUid = null;
+        this._cloudSyncCooldownMs = 15000; this._lastCloudSyncAt = 0; this._lastFirestoreWriteAt = 0;
+        this._lastFirestoreLevel = 0; this._lastFirestoreHardWave = 0; this._cloudSyncTimer = null; this._pendingCloudSyncData = null;
         this.init();
     }
 
@@ -242,10 +229,13 @@ class CloudSaveService {
                 if (putRes && putRes.ok) savedToEdge = true;
             }
             const lvlNow = Number(payload.level) || 1;
-            const needFs = !savedToEdge || (!isKeepalive && (lvlNow > (this._lastFirestoreLevel || 0) || Date.now() - (this._lastFirestoreWriteAt || 0) >= 300000));
+            const hardNow = Number(payload.lbEndlessHardWave || payload.socialStats?.endlessHardMaxWave || payload.player?.combatFeats?.endlessHardMaxWave || 0) || 0;
+            const forceImmediate = Boolean(opts && opts.immediate);
+            const needFs = !savedToEdge || (!isKeepalive && (forceImmediate || lvlNow > (this._lastFirestoreLevel || 0) || hardNow > (this._lastFirestoreHardWave || 0) || Date.now() - (this._lastFirestoreWriteAt || 0) >= 300000));
             if (needFs && !isKeepalive) {
                 this._lastFirestoreWriteAt = Date.now();
                 this._lastFirestoreLevel = Math.max(this._lastFirestoreLevel || 0, lvlNow);
+                this._lastFirestoreHardWave = Math.max(this._lastFirestoreHardWave || 0, hardNow);
                 const writePayload = { ...payload, lastUpdated: firebase.firestore.FieldValue.serverTimestamp() };
                 try { await userDocRef.set(writePayload, { merge: true }); } catch (writeErr) {
                     if (writeErr && writeErr.code === 'permission-denied') {
@@ -485,15 +475,19 @@ class CloudSaveService {
             this._reconcileDoc({ xp: incomingXp, accountXp: incomingXp, 'player.accountXp': incomingXp });
         }
 
-        // 5. Live Skill Levels Sync
-        const rawSkills = (data.player && data.player.skillLevels) ? data.player.skillLevels : data.skillLevels;
-        if (rawSkills && typeof rawSkills === 'object') {
-            const curSkills = (window.GameState && window.GameState.player && window.GameState.player.skillLevels) || {};
+        // 5. Live Skill Levels & Unlock Sync
+        const rawSkP = (data.player && typeof data.player.skillLevels === 'object') ? data.player.skillLevels : null;
+        const rawSkR = (data.skillLevels && typeof data.skillLevels === 'object') ? data.skillLevels : null;
+        const curSkills = (window.GameState && window.GameState.player && window.GameState.player.skillLevels) || {};
+        if (rawSkP || rawSkR) {
             const parsedSkills = {};
             const keepMax = _preferLocal || !_wiped;
-            for (const [k, v] of Object.entries(rawSkills)) {
-                const n = parseInt(v, 10) || 1;
-                parsedSkills[k] = keepMax ? Math.max(curSkills[k] || 1, n) : n;
+            for (const src of [rawSkR, rawSkP]) {
+                if (!src) continue;
+                for (const [k, v] of Object.entries(src)) {
+                    const n = parseInt(v, 10) || 1;
+                    parsedSkills[k] = keepMax ? Math.max(parsedSkills[k] || 1, curSkills[k] || 1, n) : n;
+                }
             }
             if (keepMax) for (const [k, v] of Object.entries(curSkills)) parsedSkills[k] = Math.max(parsedSkills[k] || 1, parseInt(v, 10) || 1);
             const strSkills = JSON.stringify(parsedSkills);
@@ -511,6 +505,7 @@ class CloudSaveService {
                 if (!_isStaleCloud) this._reconcileDoc({ skillLevels: parsedSkills, 'player.skillLevels': parsedSkills });
             }
         }
+        if (!_wiped && !_preferLocal && data.player && window.SaveSerializer && window.GameState && window.SaveSerializer.mergeProgressOnly(data, window.GameState)) changed = true;
         } finally { this.isSyncingFromCloud = false; }
         if (changed && window.SaveManager && typeof window.SaveManager.saveLocalOnly === 'function') window.SaveManager.saveLocalOnly();
         if (changed && window.uiController && window.uiController.modalManager && typeof window.uiController.modalManager.updateGearScreen === 'function') {

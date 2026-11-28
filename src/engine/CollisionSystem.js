@@ -243,8 +243,9 @@ class CollisionSystem {
             if (!hit) continue;
             if (obs.type === 'mushroom') { obs.triggerMushroom(p, effects); continue; }
             if (obs.type === 'crate' || obs.type === 'barrel' || obs.type === 'tree' || obs.type === 'building') {
-                if (obs.type !== 'tree' && obs.type !== 'building' && (p.isBladeRushing || p.vf185Active)) {
-                    const destroyed = !game.isCoopGuest ? obs.takeDamage(85, effects, game) : false;
+                if (obs.type !== 'tree' && obs.type !== 'building' && (p.isBladeRushing || p.vf185Active || p.cryptonXActive)) {
+                    const smashDmg = (p.vf185Active || p.cryptonXActive) ? 120 : 85;
+                    const destroyed = !game.isCoopGuest ? obs.takeDamage(smashDmg, effects, game) : false;
                     if (destroyed && obs.type === 'crate') {
                         game.drops.push(new Drop(obs.x, obs.y, 'xp', 20));
                         if (Math.random() < 0.35) game.drops.push(new Drop(obs.x, obs.y, 'heart', 25));
@@ -283,15 +284,15 @@ class CollisionSystem {
 
     static _checkUnitEnemyBody(unit, enemies, eGrid, useEGrid, buf, effects, game, camera, allowBladeRush) {
         const rush = allowBladeRush && unit.isBladeRushing;
-        const pad = rush ? 35 : (unit.vf185Active ? 26 : 0);
+        const pad = rush ? 35 : ((unit.vf185Active || unit.cryptonXActive) ? 26 : 0);
         const len = useEGrid ? eGrid.queryIndices(unit.x, unit.y, unit.radius + pad + eGrid.maxRadius + 2, buf) : enemies.length;
         for (let i = 0; i < len; i++) {
             const e = useEGrid ? enemies[buf[i]] : enemies[i];
             if (e.dead || e.isDying || e.bubbleTrappedTimer > 0 || e.isAirborneImmune) continue;
             const edx = e.x - unit.x, edy = e.y - unit.y, hitDist = unit.radius + e.radius + pad;
             if (Math.abs(edx) > hitDist || Math.abs(edy) > hitDist || edx * edx + edy * edy >= hitDist * hitDist) continue;
-            if (unit.vf185Active && typeof HeroUltimates !== 'undefined') {
-                HeroUltimates.onVF185RamEnemy(unit, e, effects, game);
+            if ((unit.vf185Active || unit.cryptonXActive) && typeof HeroUltimates !== 'undefined') {
+                HeroUltimates.onBikeRamEnemy(unit, e, effects, game);
             } else if (rush) {
                 if (!unit.bladeRushHitEnemies) unit.bladeRushHitEnemies = new Set();
                 if (!unit.bladeRushHitEnemies.has(e)) {

@@ -13,6 +13,7 @@ class TributeManager {
     static UPDATE_110_KEY = 'lesaio_update_1_1_0_seen';
     static UPDATE_111_KEY = 'lesaio_update_1_1_1_seen';
     static UPDATE_120_KEY = 'lesaio_update_1_2_0_seen';
+    static UPDATE_121_KEY = 'lesaio_update_1_2_1_seen';
     static UPDATE_LOCK_MS = 3000;
     static _updateUnlockAt = 0;
     static _updateTimer = null;
@@ -44,7 +45,7 @@ class TributeManager {
     static checkAndShowUpdateNotice() {
         try {
             if (typeof document === 'undefined') return;
-            if (localStorage.getItem(this.UPDATE_120_KEY) === 'true') return;
+            if (localStorage.getItem(this.UPDATE_121_KEY) === 'true') return;
             const firstNameModal = document.getElementById('first-time-name-modal');
             if (firstNameModal && !firstNameModal.classList.contains('hidden')) return;
             setTimeout(() => {
@@ -58,13 +59,13 @@ class TributeManager {
     static showUpdateNoticeModal() {
         if (typeof document === 'undefined') return;
         try {
-            if (localStorage.getItem(this.UPDATE_120_KEY) === 'true') return;
-        } catch (_) {}
+            if (localStorage.getItem(this.UPDATE_121_KEY) === 'true') return;
+        } catch (_) { }
 
-        let modal = document.getElementById('update-120-modal');
+        let modal = document.getElementById('update-121-modal');
         if (!modal) {
             modal = document.createElement('div');
-            modal.id = 'update-120-modal';
+            modal.id = 'update-121-modal';
             modal.className = 'modal-overlay hidden';
             const layer = document.querySelector('.ui-layer') || document.body;
             layer.appendChild(modal);
@@ -73,37 +74,37 @@ class TributeManager {
         const ico = (k) => (typeof UiIcons !== 'undefined') ? UiIcons.i(k, 'ui-icon-sm') : '';
         modal.innerHTML = `
             <div class="modal-panel tribute-modal-panel update-120-panel">
-                <div class="update-120-pill">🚀 WHAT'S NEW • MAJOR EXPANSION</div>
+                <div class="update-120-pill">🚀 WHAT'S NEW • UPDATE 1.2.1</div>
                 <div class="tribute-header-banner">
-                    <div class="tribute-dove-badge update-120-hero-ic"><img src="assets/ui-icons/crown.svg" class="ui-icon ui-icon-box" alt=""></div>
-                    <h2 class="tribute-title update-120-title">BIG UPDATE 1.2.0</h2>
-                    <div class="tribute-years update-120-sub">NEW SERVER • APEX ENDGAME • CELESTIAL TREES</div>
+                    <div class="tribute-dove-badge update-120-hero-ic"><img src="assets/SkillsIcons/UltCryptonXSkill.svg" class="ui-icon ui-icon-box" alt="Crypton X"></div>
+                    <h2 class="tribute-title update-120-title">UPDATE 1.2.1</h2>
+                    <div class="tribute-years update-120-sub">CRYPTON X ULTI • ENDLESS HARD BOOST • MOBILE &amp; CO-OP POLISH</div>
                 </div>
                 <div class="tribute-quote-box update-120-grid">
-                    <div class="u120-card u120-server">
-                        <div class="u120-card-hdr"><span class="u120-ic">${ico('bolt')}</span> NEW SERVER! <span class="u120-live-tag">4G / 5G BOOST</span></div>
-                        <p>Brand-new high-capacity Co-op Relay Server for smoother online multiplayer, lower 4G/5G mobile ping &amp; automatic reconnects!</p>
-                    </div>
-                    <div class="u120-card u120-apex">
-                        <div class="u120-card-hdr"><span class="u120-ic">${ico('crown')}</span> APEX RARITY &amp; BOSSES</div>
-                        <p>W30 Alpha (1.5M HP) drops Cord &amp; Gauntlets; W60 Omega (5M HP) drops Armor, Helmet &amp; Boots with Lv.6 Diamond Bonus &amp; glowing UI tabs!</p>
+                    <div class="u120-card u120-crypton">
+                        <div class="u120-card-hdr"><span class="u120-ic">${ico('flame')}</span> 50BALOS: WHITE CRYPTON X &amp; VF185 BUFF! <span class="u120-live-tag u120-crypton-tag">NEW ULTI (Q)</span></div>
+                        <p>50Balos rides his White Crypton X on Ulti (Q) — ramming enemies &amp; dropping exhaust fire trails! Petros's SYM VF185 ram damage is also buffed.</p>
                     </div>
                     <div class="u120-card u120-celestial">
-                        <div class="u120-card-hdr"><span class="u120-ic">${ico('sparkle')}</span> CELESTIAL SKILL TREES</div>
-                        <p>Hyperion Glaive &amp; Aurelion Scepter unlock 2-path Celestial Trees with capstone traits, chest reveal FX &amp; crate/TNT breaking!</p>
+                        <div class="u120-card-hdr"><span class="u120-ic">${ico('bolt')}</span> ENDLESS HARD PERFORMANCE</div>
+                        <p>Faster Endless Hard enemy AI, spatial grid lookups &amp; batched crowd rendering in massive waves.</p>
                     </div>
-                    <div class="u120-card u120-mythic">
-                        <div class="u120-card-hdr"><span class="u120-ic">${ico('swords')}</span> CHEST GEAR &amp; ARSENAL</div>
-                        <p>10 new Mythic chest armor pieces with Evos, Stormcaller Longbow &amp; Vortex Void Mortar — plus upgraded icons &amp; armor models!</p>
+                    <div class="u120-card u120-mobile">
+                        <div class="u120-card-hdr"><span class="u120-ic">${ico('sparkle')}</span> MOBILE CRASH FIX &amp; HD</div>
+                        <p>Fixed mobile white-screen crashes/restarts &amp; restored crisp High graphics resolution on phones.</p>
+                    </div>
+                    <div class="u120-card u120-apex">
+                        <div class="u120-card-hdr"><span class="u120-ic">${ico('sound')}</span> BANNERS &amp; CO-OP AUDIO</div>
+                        <p>Polished Wave &amp; Boss banners on PC/mobile, and fixed mobile Co-op joiner music &amp; voice lines.</p>
                     </div>
                     <div class="u120-card u120-chronos">
-                        <div class="u120-card-hdr"><span class="u120-ic">${ico('hourglass')}</span> CHRONOS+ &amp; BALANCE</div>
-                        <p>Chronos Hourglass gains Lv.6 Overclock (2s self-heal + zone co-op revive), Apex bosses respect range &amp; are immune to perma-stun!</p>
+                        <div class="u120-card-hdr"><span class="u120-ic">${ico('hourglass')}</span> CHRONOS+, SKILLS &amp; HARD LB</div>
+                        <p>Fixed Chronos Overclock, skill upgrades &amp; Hard Endless leaderboard waves staying saved.</p>
                     </div>
                 </div>
-                <div class="u120-lock-track" id="u120-lock-track"><div class="u120-lock-fill" id="u120-lock-fill"></div></div>
+                <div class="u120-lock-track" id="u121-lock-track"><div class="u120-lock-fill" id="u121-lock-fill"></div></div>
                 <div class="modal-actions update-120-actions">
-                    <button type="button" id="dismiss-update-120-btn" class="comic-btn tribute-claim-btn update-120-btn is-locked" disabled>⏳ PLEASE WAIT (3s)...</button>
+                    <button type="button" id="dismiss-update-121-btn" class="comic-btn tribute-claim-btn update-120-btn is-locked" disabled>⏳ PLEASE WAIT (3s)...</button>
                 </div>
             </div>
         `;
@@ -116,7 +117,7 @@ class TributeManager {
             this._escBlockerBound = true;
             document.addEventListener('keydown', (e) => {
                 if (e.key === 'Escape') {
-                    const m = document.getElementById('update-120-modal');
+                    const m = document.getElementById('update-121-modal');
                     if (m && !m.classList.contains('hidden') && performance.now() < this._updateUnlockAt) {
                         e.stopImmediatePropagation();
                         e.preventDefault();
@@ -130,9 +131,9 @@ class TributeManager {
         }
 
         if (this._updateTimer) clearInterval(this._updateTimer);
-        const dismissBtn = modal.querySelector('#dismiss-update-120-btn');
-        const lockFill = modal.querySelector('#u120-lock-fill');
-        const lockTrack = modal.querySelector('#u120-lock-track');
+        const dismissBtn = modal.querySelector('#dismiss-update-121-btn');
+        const lockFill = modal.querySelector('#u121-lock-fill');
+        const lockTrack = modal.querySelector('#u121-lock-track');
         const syncCountdown = () => {
             if (!dismissBtn) return;
             const remMs = Math.max(0, this._updateUnlockAt - performance.now());
@@ -148,7 +149,7 @@ class TributeManager {
                 dismissBtn.disabled = false;
                 dismissBtn.classList.remove('is-locked');
                 dismissBtn.classList.add('is-ready');
-                dismissBtn.innerHTML = `${ico('rocket')} ENTER UPDATE 1.2.0!`;
+                dismissBtn.innerHTML = `${ico('rocket')} ENTER UPDATE 1.2.1!`;
                 if (lockTrack) lockTrack.classList.add('is-done');
                 if (this._updateTimer) { clearInterval(this._updateTimer); this._updateTimer = null; }
             }
@@ -165,9 +166,9 @@ class TributeManager {
         if (performance.now() < this._updateUnlockAt) return false;
         if (this._updateTimer) { clearInterval(this._updateTimer); this._updateTimer = null; }
         try {
-            localStorage.setItem(this.UPDATE_120_KEY, 'true');
-        } catch (_) {}
-        const modal = typeof document !== 'undefined' ? document.getElementById('update-120-modal') : null;
+            localStorage.setItem(this.UPDATE_121_KEY, 'true');
+        } catch (_) { }
+        const modal = typeof document !== 'undefined' ? document.getElementById('update-121-modal') : null;
         if (modal) modal.classList.add('hidden');
         if (window.soundEngine && typeof window.soundEngine.playSelect === 'function') {
             window.soundEngine.playSelect();

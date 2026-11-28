@@ -239,7 +239,7 @@ class CoopPeerRoster {
                 heroSkin: rp.heroSkin || 'default',
                 starBlessed: !!rp.starBlessed,
                 ultId: rp.ultActive ? (rp.ultId || '') : '',
-                vfAng: rp.vf185Active ? safeFloat(rp.vf185Angle || rp.angle || 0, 2, 0) : undefined,
+                vfAng: (rp.vf185Active || rp.cryptonXActive) ? safeFloat((rp.vf185Active ? rp.vf185Angle : rp.cryptonXAngle) || rp.angle || 0, 2, 0) : undefined,
                 bubbleCharge: Number((rp.bubbleCharge || 0).toFixed(2)),
                 downed: !!rp.isDowned,
                 disc: !!rp.isDownedDisconnected

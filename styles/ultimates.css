@@ -64,6 +64,11 @@
     border-color: #ff4785;
 }
 
+#mobile-ult-btn.ult-crypton {
+    background: linear-gradient(135deg, #f8fafc 0%, #cbd5e1 48%, #ff6b35 100%);
+    border-color: #ff4757;
+}
+
 #mobile-ult-btn .btn-ult-img-icon {
     width: 28px;
     height: 28px;

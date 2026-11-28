@@ -67,7 +67,13 @@ class SaveManager {
         const prevGear = Array.isArray(ep.unlockedGear) ? ep.unlockedGear.length : 0;
         const curWeps = Array.isArray(sp.unlockedWeapons) ? sp.unlockedWeapons.length : 1;
         const prevWeps = Array.isArray(ep.unlockedWeapons) ? ep.unlockedWeapons.length : 1;
-        return curLvl < prevLvl || curKills < prevKills || curHigh < prevHigh || curGear < prevGear || curWeps < prevWeps;
+        const curSkills = Array.isArray(sp.unlockedSkills) ? sp.unlockedSkills.length : 2;
+        const prevSkills = Array.isArray(ep.unlockedSkills) ? ep.unlockedSkills.length : 2;
+        const sumLvls = (m) => (m && typeof m === 'object') ? Object.values(m).reduce((a, v) => a + Math.max(0, (parseInt(v, 10) || 1) - 1), 0) : 0;
+        const curSkillPts = sumLvls(sp.skillLevels), prevSkillPts = sumLvls(ep.skillLevels);
+        const curHard = Number((sp.combatFeats && sp.combatFeats.endlessHardMaxWave) || 0);
+        const prevHard = Number((ep.combatFeats && ep.combatFeats.endlessHardMaxWave) || 0);
+        return curLvl < prevLvl || curKills < prevKills || curHigh < prevHigh || curGear < prevGear || curWeps < prevWeps || curSkills < prevSkills || curSkillPts < prevSkillPts || curHard < prevHard;
     }
 
     /**
@@ -136,7 +142,7 @@ class SaveManager {
     /**
      * Execute save immediately
      */
-    saveNow() {
+    saveNow(opts = {}) {
         if (this.saveDebounceTimer) {
             clearTimeout(this.saveDebounceTimer);
             this.saveDebounceTimer = null;
@@ -147,13 +153,16 @@ class SaveManager {
         const serialized = this.saveLocalOnly();
         if (!serialized) return false;
 
+        const immediateCloud = opts === true || Boolean(opts && opts.immediateCloud);
         try {
             // Notify cloud sync if available (skip if hydrating auth or applying cloud data)
             if (typeof window !== 'undefined' && window.cloudSave && window.cloudSave.isInitialized) {
                 if (window.cloudSave.isSyncingFromCloud || window.cloudSave.isHydratingAuth) {
                     return true;
                 }
-                if (typeof window.cloudSave.triggerCloudSync === 'function') {
+                if (immediateCloud && typeof window.cloudSave.saveToCloud === 'function') {
+                    window.cloudSave.saveToCloud(serialized, { immediate: true });
+                } else if (typeof window.cloudSave.triggerCloudSync === 'function') {
                     window.cloudSave.triggerCloudSync(serialized);
                 } else if (typeof window.cloudSave.saveToCloud === 'function') {
                     window.cloudSave.saveToCloud(serialized);

@@ -63,12 +63,13 @@ async function ensureSchema(db) {
       uid TEXT PRIMARY KEY, playerName TEXT NOT NULL DEFAULT 'Hero', playerNameLower TEXT NOT NULL DEFAULT 'hero',
       friendTag TEXT NOT NULL DEFAULT '', friendTagClean TEXT NOT NULL DEFAULT '', level INTEGER NOT NULL DEFAULT 1,
       selectedHero TEXT NOT NULL DEFAULT 'psanas', lbHighScore INTEGER NOT NULL DEFAULT 0,
-      lbEndlessWave INTEGER NOT NULL DEFAULT 0, lbTotalKills INTEGER NOT NULL DEFAULT 0,
+      lbEndlessWave INTEGER NOT NULL DEFAULT 0, lbEndlessHardWave INTEGER NOT NULL DEFAULT 0, lbTotalKills INTEGER NOT NULL DEFAULT 0,
       clanId TEXT, clanTag TEXT, clanName TEXT, lastSeenAt INTEGER NOT NULL DEFAULT 0,
       updatedAt INTEGER NOT NULL DEFAULT 0, dataJson TEXT NOT NULL DEFAULT '{}'
     )`,
     `CREATE INDEX IF NOT EXISTS idx_players_hs ON players(lbHighScore DESC)`,
     `CREATE INDEX IF NOT EXISTS idx_players_ew ON players(lbEndlessWave DESC)`,
+    `CREATE INDEX IF NOT EXISTS idx_players_ehw ON players(lbEndlessHardWave DESC)`,
     `CREATE INDEX IF NOT EXISTS idx_players_tk ON players(lbTotalKills DESC)`,
     `CREATE INDEX IF NOT EXISTS idx_players_seen ON players(lastSeenAt DESC)`,
     `CREATE INDEX IF NOT EXISTS idx_players_tag ON players(friendTagClean)`,
@@ -89,6 +90,8 @@ async function ensureSchema(db) {
     `CREATE INDEX IF NOT EXISTS idx_msgs_chan ON messages(channel, createdAt DESC)`
   ];
   await db.batch(stmts.map((s) => db.prepare(s)));
+  try { await db.prepare('ALTER TABLE players ADD COLUMN lbEndlessHardWave INTEGER NOT NULL DEFAULT 0').run(); } catch (_) { }
+  try { await db.prepare('CREATE INDEX IF NOT EXISTS idx_players_ehw ON players(lbEndlessHardWave DESC)').run(); } catch (_) { }
   _schemaReady = true;
 }
 
@@ -141,14 +144,15 @@ async function syncPlayerClanFields(db, uid, clanOrNull) {
 
 async function handlePlayers(method, segs, url, body, db) {
   if (segs[0] === 'leaderboard' && method === 'GET') {
-    const [hs, ew, tk, seen] = await db.batch([
+    const [hs, ew, ehw, tk, seen] = await db.batch([
       db.prepare('SELECT uid, dataJson FROM players ORDER BY lbHighScore DESC LIMIT 35'),
       db.prepare('SELECT uid, dataJson FROM players ORDER BY lbEndlessWave DESC LIMIT 35'),
+      db.prepare('SELECT uid, dataJson FROM players ORDER BY lbEndlessHardWave DESC LIMIT 35'),
       db.prepare('SELECT uid, dataJson FROM players ORDER BY lbTotalKills DESC LIMIT 35'),
       db.prepare('SELECT uid, dataJson FROM players ORDER BY lastSeenAt DESC LIMIT 40')
     ]);
     const map = new Map();
-    for (const res of [hs, ew, tk, seen]) {
+    for (const res of [hs, ew, ehw, tk, seen]) {
       for (const r of (res.results || [])) {
         if (!map.has(r.uid)) {
           try {
@@ -252,41 +256,35 @@ async function handlePlayers(method, segs, url, body, db) {
         const pLvl = Math.max(1, parseInt(pp.accountLevel ?? prev.level ?? 1, 10) || 1), iLvl = Math.max(1, parseInt(ip.accountLevel ?? rawIn.level ?? 1, 10) || 1);
         const mLvl = Math.max(pLvl, iLvl);
         merged.level = mLvl; merged.accountLevel = mLvl;
-        merged.player = { ...pp, ...ip, accountLevel: mLvl, unlockedGear: uArr(pp.unlockedGear, ip.unlockedGear), evolvedGear: uArr(pp.evolvedGear, ip.evolvedGear), ascendedGear: uArr(pp.ascendedGear, ip.ascendedGear), unlockedWeapons: uArr(pp.unlockedWeapons, ip.unlockedWeapons), unlockedHeroes: uArr(pp.unlockedHeroes, ip.unlockedHeroes), evolvedWeapons: uArr(pp.evolvedWeapons, ip.evolvedWeapons), gearLevels: maxMap(pp.gearLevels, ip.gearLevels, 1), skillLevels: maxMap(pp.skillLevels, ip.skillLevels, 1) };
+        const mFeats = { ...(pp.combatFeats || {}), ...(ip.combatFeats || {}), storyMaxWave: Math.max(Number(pp.combatFeats?.storyMaxWave) || 1, Number(ip.combatFeats?.storyMaxWave) || 1), endlessMaxWave: Math.max(Number(pp.combatFeats?.endlessMaxWave) || 0, Number(ip.combatFeats?.endlessMaxWave) || 0), endlessHardMaxWave: Math.max(Number(pp.combatFeats?.endlessHardMaxWave) || 0, Number(ip.combatFeats?.endlessHardMaxWave) || 0), olympusMaxFloor: Math.max(Number(pp.combatFeats?.olympusMaxFloor) || 0, Number(ip.combatFeats?.olympusMaxFloor) || 0), endlessMiniBossKills: Math.max(Number(pp.combatFeats?.endlessMiniBossKills) || 0, Number(ip.combatFeats?.endlessMiniBossKills) || 0), defeatedBosses: maxMap(pp.combatFeats?.defeatedBosses, ip.combatFeats?.defeatedBosses, 0), hardEndlessUnlocked: Boolean(pp.combatFeats?.hardEndlessUnlocked || ip.combatFeats?.hardEndlessUnlocked) };
+        merged.player = { ...pp, ...ip, accountLevel: mLvl, unlockedGear: uArr(pp.unlockedGear, ip.unlockedGear), evolvedGear: uArr(pp.evolvedGear, ip.evolvedGear), ascendedGear: uArr(pp.ascendedGear, ip.ascendedGear), unlockedWeapons: uArr(pp.unlockedWeapons, ip.unlockedWeapons), unlockedHeroes: uArr(pp.unlockedHeroes, ip.unlockedHeroes), evolvedWeapons: uArr(pp.evolvedWeapons, ip.evolvedWeapons), gearLevels: maxMap(pp.gearLevels, ip.gearLevels, 1), skillLevels: maxMap(pp.skillLevels, ip.skillLevels, 1), combatFeats: mFeats };
         if (iLvl < pLvl && pp.accountXp !== undefined) merged.player.accountXp = pp.accountXp;
         if (ip.equippedGear && !Object.values(ip.equippedGear).some(Boolean) && pp.equippedGear && Object.values(pp.equippedGear).some(Boolean) && iLvl <= 1 && pLvl > 1) merged.player.equippedGear = pp.equippedGear;
       }
-      if (prev.socialStats && rawIn.socialStats) merged.socialStats = { ...prev.socialStats, ...rawIn.socialStats };
-      const jsonStr = JSON.stringify(merged);
-      if (jsonStr.length > 260000) return json({ ok: false, error: 'Payload too large.' }, 413);
-
-      const pObj = merged.player || {};
-      const stats = pObj.stats || {};
-      const soc = merged.socialStats || {};
-      const feats = pObj.combatFeats || {};
-      const pName = cleanStr(merged.playerName || pObj.name || 'Hero', 40) || 'Hero';
-      const fTag = cleanStr(merged.friendTag || '', 16);
-      const fTagClean = fTag.replace(/[^A-Z0-9]/gi, '').toUpperCase();
-      const lvl = Math.max(1, parseInt(merged.level || merged.accountLevel || pObj.accountLevel || 1, 10) || 1);
-      const hero = cleanStr(merged.selectedHero || pObj.selectedHero || 'psanas', 32) || 'psanas';
+      if (prev.socialStats && rawIn.socialStats) merged.socialStats = { ...prev.socialStats, ...rawIn.socialStats, highScore: Math.max(Number(prev.socialStats.highScore) || 0, Number(rawIn.socialStats.highScore) || 0), maxWave: Math.max(Number(prev.socialStats.maxWave) || 1, Number(rawIn.socialStats.maxWave) || 1), totalKills: Math.max(Number(prev.socialStats.totalKills) || 0, Number(rawIn.socialStats.totalKills) || 0), endlessMaxWave: Math.max(Number(prev.socialStats.endlessMaxWave) || 0, Number(rawIn.socialStats.endlessMaxWave) || 0), endlessHardMaxWave: Math.max(Number(prev.socialStats.endlessHardMaxWave) || 0, Number(rawIn.socialStats.endlessHardMaxWave) || 0), olympusMaxFloor: Math.max(Number(prev.socialStats.olympusMaxFloor) || 0, Number(rawIn.socialStats.olympusMaxFloor) || 0) };
+      const pObj = merged.player || {}, stats = pObj.stats || {}, soc = merged.socialStats || {}, feats = pObj.combatFeats || {};
       const hs = Math.max(0, Number(merged.lbHighScore || soc.highScore || stats.highScore || merged.highScore || 0) || 0);
       const ew = Math.max(0, Number(merged.lbEndlessWave || soc.endlessMaxWave || feats.endlessMaxWave || 0) || 0);
+      const ehw = Math.max(0, Number(merged.lbEndlessHardWave || soc.endlessHardMaxWave || feats.endlessHardMaxWave || prev.lbEndlessHardWave || 0) || 0);
       const tk = Math.max(0, Number(merged.lbTotalKills || soc.totalKills || stats.totalKills || merged.totalKills || 0) || 0);
-      const seenAt = Math.max(Date.now(), Number(merged.lastSeenAt) || 0);
-      const now = Date.now();
+      merged.lbHighScore = hs; merged.lbEndlessWave = ew; merged.lbEndlessHardWave = ehw; merged.lbTotalKills = tk;
+      merged.socialStats = { ...soc, highScore: hs, totalKills: tk, endlessMaxWave: ew, endlessHardMaxWave: ehw };
+      const jsonStr = JSON.stringify(merged);
+      if (jsonStr.length > 260000) return json({ ok: false, error: 'Payload too large.' }, 413);
+      const pName = cleanStr(merged.playerName || pObj.name || 'Hero', 40) || 'Hero';
+      const fTag = cleanStr(merged.friendTag || '', 16), fTagClean = fTag.replace(/[^A-Z0-9]/gi, '').toUpperCase();
+      const lvl = Math.max(1, parseInt(merged.level || merged.accountLevel || pObj.accountLevel || 1, 10) || 1);
+      const hero = cleanStr(merged.selectedHero || pObj.selectedHero || 'psanas', 32) || 'psanas';
+      const seenAt = Math.max(Date.now(), Number(merged.lastSeenAt) || 0), now = Date.now();
       await db.prepare(
-        `INSERT INTO players (uid, playerName, playerNameLower, friendTag, friendTagClean, level, selectedHero, lbHighScore, lbEndlessWave, lbTotalKills, clanId, clanTag, clanName, lastSeenAt, updatedAt, dataJson)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16)
+        `INSERT INTO players (uid, playerName, playerNameLower, friendTag, friendTagClean, level, selectedHero, lbHighScore, lbEndlessWave, lbEndlessHardWave, lbTotalKills, clanId, clanTag, clanName, lastSeenAt, updatedAt, dataJson)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17)
          ON CONFLICT(uid) DO UPDATE SET playerName=excluded.playerName, playerNameLower=excluded.playerNameLower,
            friendTag=excluded.friendTag, friendTagClean=excluded.friendTagClean, level=excluded.level,
            selectedHero=excluded.selectedHero, lbHighScore=excluded.lbHighScore, lbEndlessWave=excluded.lbEndlessWave,
-           lbTotalKills=excluded.lbTotalKills, clanId=excluded.clanId, clanTag=excluded.clanTag, clanName=excluded.clanName,
+           lbEndlessHardWave=excluded.lbEndlessHardWave, lbTotalKills=excluded.lbTotalKills, clanId=excluded.clanId, clanTag=excluded.clanTag, clanName=excluded.clanName,
            lastSeenAt=excluded.lastSeenAt, updatedAt=excluded.updatedAt, dataJson=excluded.dataJson`
-      ).bind(
-        uid, pName, pName.toLowerCase(), fTag, fTagClean, lvl, hero,
-        hs, ew, tk, merged.clanId || null, merged.clanTag || null, merged.clanName || null,
-        seenAt, now, jsonStr
-      ).run();
+      ).bind(uid, pName, pName.toLowerCase(), fTag, fTagClean, lvl, hero, hs, ew, ehw, tk, merged.clanId || null, merged.clanTag || null, merged.clanName || null, seenAt, now, jsonStr).run();
       return json({ ok: true, uid });
     }
   }

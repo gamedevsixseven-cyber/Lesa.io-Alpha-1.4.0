@@ -36,11 +36,12 @@ class HeroRenderer {
         const isAirborne = player.isAirborne;
         const isGrabbed = player.isGrabbed;
 
-        // Mounted Petros VF185 Rideable Mode (replaces walking rig with bike+rider model)
-        if (player.vf185Active && typeof VF185Model !== 'undefined') {
+        // Mounted Rideable Bike Mode (Petros SYM VF185 / 50balos White Crypton X)
+        if ((player.vf185Active && typeof VF185Model !== 'undefined') || (player.cryptonXActive && typeof CryptonXModel !== 'undefined')) {
             ctx.save();
             if (airZ > 0) ctx.translate(0, -airZ);
-            VF185Model.drawMountedPetros(player, ctx, player.hitFlash > 0);
+            if (player.vf185Active) VF185Model.drawMountedPetros(player, ctx, player.hitFlash > 0);
+            else CryptonXModel.drawMounted50Balos(player, ctx, player.hitFlash > 0);
             if (player.shieldActive) HeroRenderer.drawShieldBubble(player, ctx);
             ctx.restore();
             ctx.restore();

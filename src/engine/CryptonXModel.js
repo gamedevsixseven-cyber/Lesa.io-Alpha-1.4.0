@@ -9,13 +9,25 @@
  */
 
 class CryptonXModel {
+    static recordStep(player, dt, effects) {
+        if (typeof HeroUltimates !== 'undefined' && HeroUltimates.stepBikeChassis) {
+            HeroUltimates.stepBikeChassis(player, dt, effects, 'cryptonXAngle', '_cxWheelSpin', '_cxSkids', '#ff6b35');
+        }
+    }
+
+    static drawTireSkids(player, ctx) {
+        if (typeof HeroUltimates !== 'undefined' && HeroUltimates.drawBikeSkids) {
+            HeroUltimates.drawBikeSkids(player, ctx, '_cxSkids');
+        }
+    }
+
     static drawMounted50Balos(rider, ctx, flash = false, wheelieAngle = 0) {
-        const ang = Number.isFinite(rider.angle) ? rider.angle : 0;
+        const ang = Number.isFinite(rider.cryptonXAngle) ? rider.cryptonXAngle : (Number.isFinite(rider.angle) ? rider.angle : 0);
         const cosA = Math.cos(ang);
         const sinA = Math.sin(ang);
-        const spin = rider._spin || 0;
+        const spin = Number.isFinite(rider._cxWheelSpin) ? rider._cxWheelSpin : (rider._spin || 0);
         const speed = Math.hypot(rider.vx || 0, rider.vy || 0);
-        const rumble = speed > 0.5 ? Math.sin(spin * 2.2) * 0.95 : 0;
+        const rumble = speed > 0.5 ? Math.sin(spin * 2.2) * 0.95 : (rider.cryptonXActive ? Math.sin(Date.now() * 0.05) * 0.45 : 0);
         const facingLeft = cosA < 0;
         const isVertical = Math.abs(cosA) < 0.36;
 
@@ -44,8 +56,8 @@ class CryptonXModel {
         ctx.ellipse(0, 17, isVertical ? 20 : 41, 11.5, 0, 0, Math.PI * 2);
         ctx.fill();
 
-        // Crisp white/gold underglow accent
-        ctx.fillStyle = 'rgba(248, 250, 252, 0.14)';
+        // Crisp white/gold underglow accent (hot exhaust orange glow while Crypton X ulti is active)
+        ctx.fillStyle = rider.cryptonXActive ? 'rgba(255, 107, 53, 0.24)' : 'rgba(248, 250, 252, 0.14)';
         ctx.beginPath();
         ctx.ellipse(0, 13, isVertical ? 16 : 33, 8, 0, 0, Math.PI * 2);
         ctx.fill();
@@ -344,7 +356,29 @@ class CryptonXModel {
         ctx.fillStyle = flash ? '#ffffff' : '#e2e8f0';
         ctx.fillRect(-31, -6, 14, 3);
 
-        if (speed > 2.5) {
+        if (rider.cryptonXActive) {
+            const p = (Math.sin(Date.now() * 0.055) + 1) * 0.5;
+            const len = speed > 2.2 ? (14 + p * 8) : (8 + p * 4);
+            ctx.fillStyle = '#ff4757';
+            ctx.beginPath();
+            ctx.moveTo(-36, -9);
+            ctx.lineTo(-39 - len, -7.5 - p * 2.5);
+            ctx.lineTo(-37 - len * 0.55, -5.5);
+            ctx.lineTo(-39 - len * 0.9, -2.5 + p * 1.5);
+            ctx.lineTo(-35, -3);
+            ctx.closePath();
+            ctx.fill();
+
+            ctx.fillStyle = '#ffa502';
+            ctx.beginPath();
+            ctx.ellipse(-40 - p * 4.5, -6, 5.5 + p * 3.5, 2.7, -0.25, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.fillStyle = '#fff3b0';
+            ctx.beginPath();
+            ctx.ellipse(-38 - p * 2.5, -6, 3.0 + p * 1.8, 1.5, -0.25, 0, Math.PI * 2);
+            ctx.fill();
+        } else if (speed > 2.5) {
             const p = (Math.sin(Date.now() * 0.06) + 1) * 0.5;
             ctx.fillStyle = rider.wheeliePitch < -0.15 ? '#facc15' : '#cbd5e1';
             ctx.beginPath();
@@ -446,11 +480,23 @@ class CryptonXModel {
         }
 
         this._drawRiderBody(rider, ctx, flash, true, facingUp);
-        if (speed > 2.5 && facingUp) {
-            ctx.fillStyle = '#facc15';
-            ctx.beginPath();
-            ctx.arc(10, 12, 2.8, 0, Math.PI * 2);
-            ctx.fill();
+        if ((speed > 2.5 || rider.cryptonXActive) && facingUp) {
+            const p = (Math.sin(Date.now() * 0.055) + 1) * 0.5;
+            if (rider.cryptonXActive) {
+                ctx.fillStyle = '#ff4757';
+                ctx.beginPath();
+                ctx.ellipse(10, 14 + p * 4, 4.2 + p * 1.4, 6.2 + p * 2.5, 0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = '#fff3b0';
+                ctx.beginPath();
+                ctx.arc(10, 12 + p * 2, 2.6, 0, Math.PI * 2);
+                ctx.fill();
+            } else {
+                ctx.fillStyle = '#facc15';
+                ctx.beginPath();
+                ctx.arc(10, 12, 2.8, 0, Math.PI * 2);
+                ctx.fill();
+            }
         }
         ctx.restore();
     }

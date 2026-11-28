@@ -178,6 +178,7 @@ class MobileAimAssist {
                     if (ti._ultImgEl) ti._ultImgEl.src = ultState.cfg.icon;
                     if (ti._ultLabelEl) ti._ultLabelEl.textContent = ultState.cfg.mobileLabel;
                     ti.ultBtn.classList.toggle('ult-vf185', ultState.cfg.id === 'vf185');
+                    ti.ultBtn.classList.toggle('ult-crypton', ultState.cfg.id === 'crypton_x');
                 }
             }
         }

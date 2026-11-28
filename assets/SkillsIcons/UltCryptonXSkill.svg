@@ -1,0 +1,76 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <defs>
+    <radialGradient id="cxBg" cx="50%" cy="46%" r="54%">
+      <stop offset="0%" stop-color="#334155"/>
+      <stop offset="68%" stop-color="#16213e"/>
+      <stop offset="100%" stop-color="#0b1120"/>
+    </radialGradient>
+    <linearGradient id="cxWhite" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="70%" stop-color="#f1f5f9"/>
+      <stop offset="100%" stop-color="#cbd5e1"/>
+    </linearGradient>
+    <linearGradient id="cxFlame" x1="1" y1="0.5" x2="0" y2="0.5">
+      <stop offset="0%" stop-color="#fff3b0"/>
+      <stop offset="45%" stop-color="#ff9f1a"/>
+      <stop offset="100%" stop-color="#ff4757"/>
+    </linearGradient>
+  </defs>
+  <!-- Background Badge with White/Flame Accent Ring -->
+  <circle cx="64" cy="64" r="59" fill="url(#cxBg)" stroke="#f8fafc" stroke-width="4.2"/>
+  <circle cx="64" cy="64" r="54" fill="none" stroke="#ff6b35" stroke-width="2" opacity="0.85"/>
+  <line x1="12" y1="98" x2="116" y2="98" stroke="#ff9f1a" stroke-width="3" stroke-linecap="round" opacity="0.85"/>
+
+  <!-- Roaring Exhaust Fire Jet -->
+  <path d="M27 72 L6 66 L15 73 L4 77 L17 80 L8 86 L29 80 Z" fill="url(#cxFlame)"/>
+  <path d="M27 74 L14 72 L20 76 L13 80 L28 78 Z" fill="#fff9db"/>
+
+  <!-- Rear Wheel (17-inch slim alloy rim + white rim tape) -->
+  <g transform="translate(34, 80)">
+    <circle r="16.5" fill="#181920" stroke="#08090c" stroke-width="2.4"/>
+    <circle r="11.5" fill="#222631" stroke="#f8fafc" stroke-width="1.5" stroke-dasharray="12 7"/>
+    <g stroke="#475569" stroke-width="2">
+      <line x1="0" y1="-10" x2="0" y2="10"/><line x1="-10" y1="-3" x2="10" y2="3"/><line x1="-7" y1="8" x2="7" y2="-8"/>
+    </g>
+    <circle r="4.5" fill="#94a3b8"/>
+  </g>
+
+  <!-- Front Wheel (17-inch + 220mm wave disc + gold caliper) -->
+  <g transform="translate(96, 80)">
+    <circle r="16" fill="#181920" stroke="#08090c" stroke-width="2.4"/>
+    <circle r="11" fill="#222631" stroke="#f8fafc" stroke-width="1.5" stroke-dasharray="12 7"/>
+    <g stroke="#475569" stroke-width="2">
+      <line x1="0" y1="-10" x2="0" y2="10"/><line x1="-10" y1="3" x2="10" y2="-3"/><line x1="-7" y1="-7" x2="7" y2="7"/>
+    </g>
+    <circle r="6.8" fill="#cbd5e1" stroke="#475569" stroke-width="1.2"/>
+    <path d="M-7 -3 L-2.5 -7.5 L1 -4.5 L-3.5 0 Z" fill="#eab308" stroke="#0b0c10" stroke-width="1"/>
+  </g>
+
+  <!-- Upswept Muffler & Brushed Chrome Heat Shield -->
+  <path d="M52 82 L24 72 L22 65 L55 76 Z" fill="#1e293b" stroke="#0b0c10" stroke-width="2"/>
+  <rect x="30" y="69" width="15" height="3.5" rx="1.2" transform="rotate(19 30 69)" fill="#e2e8f0"/>
+
+  <!-- Yellow Monocross Central Shock & Silver Forks -->
+  <line x1="46" y1="77" x2="54" y2="63" stroke="#facc15" stroke-width="3.6" stroke-linecap="round"/>
+  <line x1="84" y1="49" x2="96" y2="80" stroke="#cbd5e1" stroke-width="3.6" stroke-linecap="round"/>
+
+  <!-- Pearl-White Front Mudguard -->
+  <path d="M79 68 C87 58, 102 58, 110 66 C102 66, 89 66, 81 72 Z" fill="url(#cxWhite)" stroke="#0b0c10" stroke-width="2"/>
+
+  <!-- Pure-White Crypton X Fairing, Swept Tail & Front Leg Shield -->
+  <path d="M20 55 L53 52 L65 59 L82 44 L95 49 L89 70 L74 75 L56 68 L25 65 Z" fill="url(#cxWhite)" stroke="#0b0c10" stroke-width="2.3" stroke-linejoin="round"/>
+  <!-- Red & Gold T135 Racing Decals -->
+  <path d="M24 58 L48 56 L46 60 L26 62 Z" fill="#ef4444"/>
+  <path d="M73 50 L88 53 L86 56 L73 53 Z" fill="#ef4444"/>
+  <rect x="30" y="61" width="14" height="2" fill="#eab308"/>
+
+  <!-- Charcoal Stepped Seat & Handlebar Cowl -->
+  <rect x="27" y="48" width="29" height="6.5" rx="3" fill="#1f2937" stroke="#0b0c10" stroke-width="1.8"/>
+  <polygon points="89,49 97,52 91,57" fill="#fef9c3" stroke="#0b0c10" stroke-width="1.3"/>
+  <rect x="74" y="36" width="16" height="7.5" rx="3" fill="url(#cxWhite)" stroke="#0b0c10" stroke-width="1.9"/>
+  <rect x="70" y="38.5" width="7" height="3.8" rx="1" fill="#0f172a"/>
+
+  <!-- Crypton X Pill -->
+  <rect x="28" y="19" width="72" height="15" rx="5" fill="#f8fafc" stroke="#ff4757" stroke-width="1.8"/>
+  <text x="64" y="30" font-family="sans-serif" font-weight="900" font-size="10.2" fill="#0f172a" text-anchor="middle">CRYPTON X</text>
+</svg>

@@ -131,7 +131,10 @@ class AccountSyncManager {
                         : undefined;
                     const ascentCrestsDate = p.ascentCrestsDate || docData.ascentCrestsDate || '';
 
-                    const skillLevels = { ...(p.skillLevels || docData.skillLevels || { blade_rush: 1, nerobalonaki: 1 }) };
+                    const skillLevels = { ...(docData.skillLevels || {}), ...(p.skillLevels || { blade_rush: 1, nerobalonaki: 1 }) };
+                    if (docData.skillLevels && p.skillLevels) {
+                        for (const [k, v] of Object.entries(docData.skillLevels)) skillLevels[k] = Math.max(parseInt(skillLevels[k], 10) || 1, parseInt(v, 10) || 1);
+                    }
                     if (localEstablished) {
                         for (const [k, v] of Object.entries(sj('lesaio_skill_levels', {}))) {
                             skillLevels[k] = Math.max(parseInt(skillLevels[k], 10) || 1, parseInt(v, 10) || 1);
@@ -159,7 +162,10 @@ class AccountSyncManager {
                     const totalKills = Math.max(parseInt(stats.totalKills || docData.lbTotalKills || social.totalKills || docData.totalKills || 0, 10) || 0, localEstablished ? si('lesaio_total_kills', 0, 0) : 0);
                     const maxWave = Math.max(parseInt(stats.maxWave || docData.lbEndlessWave || social.maxWave || docData.maxWave || 1, 10) || 1, localEstablished ? si('lesaio_max_wave', 1, 1) : 1);
                     const cloudEndWave = Math.max(Number(combatFeats.endlessMaxWave) || 0, Number(docData.lbEndlessWave) || 0, Number(social.endlessMaxWave) || 0, maxWave > 20 ? maxWave : 0);
+                    const cloudHardWave = Math.max(Number(combatFeats.endlessHardMaxWave) || 0, Number(docData.lbEndlessHardWave) || 0, Number(social.endlessHardMaxWave) || 0, Number(docData.endlessHardMaxWave) || 0, localEstablished ? si('lesaio_endless_hard_max_wave', 0, 0) : 0);
                     if (cloudEndWave > (combatFeats.endlessMaxWave || 0)) combatFeats.endlessMaxWave = cloudEndWave;
+                    if (cloudHardWave > (combatFeats.endlessHardMaxWave || 0)) combatFeats.endlessHardMaxWave = cloudHardWave;
+                    if (cloudHardWave > 0) localStorage.setItem('lesaio_endless_hard_max_wave', String(cloudHardWave));
                     if (cloudEndWave >= 30 || (combatFeats.endlessHardMaxWave || 0) >= 1) {
                         combatFeats.hardEndlessUnlocked = true;
                         localStorage.setItem('lesaio_hard_endless_unlocked', 'true');

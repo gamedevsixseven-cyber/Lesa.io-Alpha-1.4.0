@@ -4,6 +4,7 @@
  *   - Psanas: "RAGE" (6.7s — 2x MaxHP & Heal, 2x DMG, 2x Speed, Boss Stun Immunity)
  *   - Psogas: "SPICY INFERNO STORM" (5.5s — 360° Blazing Chili Vortex + 8-Way Chili Spiral Volleys + 1.35x Speed)
  *   - Petros: "SYM VF185" (6.5s — Mounts 2.5D Jet-Black/Magenta SYM VF185 at 2.15x Speed, running over enemies & crates!)
+ *   - 50balos: "CRYPTON X" (6.5s — Mounts 2.5D Pearl-White Crypton X 135 at 2.22x Speed, ramming foes & scorching with exhaust fire!)
  */
 
 const HERO_ULTIMATES = {
@@ -33,11 +34,21 @@ const HERO_ULTIMATES = {
         duration: 390, // 6.5s at 60 FPS
         accent: '#ff4785',
         barColor: '#ff4785'
+    },
+    '50balos': {
+        id: 'crypton_x',
+        name: 'CRYPTON X',
+        mobileLabel: 'CRYPTON',
+        icon: 'assets/SkillsIcons/UltCryptonXSkill.svg',
+        duration: 390, // 6.5s at 60 FPS
+        accent: '#ff6b35',
+        barColor: '#f8fafc'
     }
 };
 
 class HeroUltimates {
     static MAX_CHARGE = 100;
+    static _fires = []; // unused legacy ref kept empty for compat; active pools live in CryptonExhaustFire
 
     static getConfig(heroType) {
         return HERO_ULTIMATES[heroType] || null;
@@ -57,10 +68,17 @@ class HeroUltimates {
         player.rageUltActive = false;
         player.infernoUltActive = false;
         player.vf185Active = false;
+        player.cryptonXActive = false;
+        player.cryptonXAngle = 0;
         player._ultBaseMaxHp = null;
         player._ultDmgBonus = 1.0;
         player._ultTick = 0;
         player._vfSkids = [];
+        player._cxSkids = [];
+        player._cxFireSpawn = 0;
+        if (typeof CryptonExhaustFire !== 'undefined' && (typeof window === 'undefined' || !window.gameInstance || window.gameInstance.player === player)) {
+            CryptonExhaustFire.clear();
+        }
     }
 
     static onDamageDealt(player, amount = 0) {
@@ -102,8 +120,8 @@ class HeroUltimates {
             this._startPsanasRage(player, effects, camera);
         } else if (cfg.id === 'inferno_storm') {
             this._startPsogasInferno(player, effects, camera);
-        } else if (cfg.id === 'vf185') {
-            this._startPetrosVF185(player, effects, camera);
+        } else if (cfg.id === 'vf185' || cfg.id === 'crypton_x') {
+            this._startBikeUlt(player, effects, camera, cfg.id === 'crypton_x');
         }
 
         if (window.soundEngine && typeof window.soundEngine.playHeroUlt === 'function') {
@@ -150,20 +168,31 @@ class HeroUltimates {
         }
     }
 
-    static _startPetrosVF185(player, effects, camera) {
-        player.vf185Active = true;
+    static _startBikeUlt(player, effects, camera, isCrypton = false) {
         player.stunTimer = 0;
         player.speedDebuffTimer = 0;
-        player.vf185Angle = player.angle || 0;
-        player._vfWheelSpin = 0;
+        if (isCrypton) {
+            player.cryptonXActive = true;
+            player.cryptonXAngle = player.angle || 0;
+            player._cxWheelSpin = 0;
+            player._cxFireSpawn = 3.5;
+        } else {
+            player.vf185Active = true;
+            player.vf185Angle = player.angle || 0;
+            player._vfWheelSpin = 0;
+        }
+        if (typeof player.applyEquipmentStats === 'function') player.applyEquipmentStats();
         if (camera) camera.shake(9, 12);
         if (effects) {
-            effects.addComicSplash(player.x, player.y - 48, '🏍️ SYM VF185!!', '#ff4785', 22, true);
-            effects.addShockwave(player.x, player.y, 160, 'rgba(255, 71, 133, 0.92)');
+            const label = isCrypton ? '🏍️ CRYPTON X!! 🔥' : '🏍️ SYM VF185!!';
+            const color = isCrypton ? '#f8fafc' : '#ff4785';
+            const ring = isCrypton ? 'rgba(255, 107, 53, 0.92)' : 'rgba(255, 71, 133, 0.92)';
+            effects.addComicSplash(player.x, player.y - 48, label, color, 22, true);
+            effects.addShockwave(player.x, player.y, 165, ring);
             effects.addDust(player.x, player.y + 12, 12, 16);
-            effects.addSparks(player.x, player.y + 10, '#eccc3b', 10);
+            effects.addSparks(player.x, player.y + 10, isCrypton ? '#ff6b35' : '#eccc3b', 12);
             if (typeof effects.triggerScreenFlash === 'function') {
-                effects.triggerScreenFlash('#ff4785', 0.28, 16);
+                effects.triggerScreenFlash(isCrypton ? '#ff6b35' : '#ff4785', 0.28, 16);
             }
         }
     }
@@ -175,7 +204,7 @@ class HeroUltimates {
             player.maxHp = Math.round(player.maxHp * 2);
             player.damageMultiplier = (player.damageMultiplier || 1) * 2.0;
         }
-        if (player.vf185Active) {
+        if (player.vf185Active || player.cryptonXActive) {
             player.damageReduction = Math.min(0.65, (player.damageReduction || 0) + 0.25);
         }
     }
@@ -184,18 +213,22 @@ class HeroUltimates {
         if (!player || !player.ultActive) return 1.0;
         if (player.rageUltActive) return 2.0;
         if (player.vf185Active) return 2.15;
+        if (player.cryptonXActive) return 2.22;
         if (player.infernoUltActive) return 1.35;
         return 1.0;
     }
 
     static update(player, dt = 1, enemies = [], bullets = [], effects = null, game = null) {
-        if (!player || !this.hasUltimate(player.heroType)) return;
-
-        // Cooldown decay on enemies previously rammed by VF185
-        for (let i = 0; i < enemies.length; i++) {
-            const e = enemies[i];
-            if (e && e._vf185RamCd > 0) e._vf185RamCd = Math.max(0, e._vf185RamCd - dt);
+        if (Array.isArray(enemies)) {
+            for (let i = 0; i < enemies.length; i++) {
+                const e = enemies[i];
+                if (e && e._vf185RamCd > 0) e._vf185RamCd = Math.max(0, e._vf185RamCd - dt);
+            }
         }
+        // Always step lingering Crypton exhaust fire pools & enemy burns even after ult ends
+        this._updateFiresAndBurns(dt, enemies, effects, game);
+
+        if (!player || !this.hasUltimate(player.heroType)) return;
 
         if (!player.ultActive) {
             if (player.hp > 0 && (player.ultCharge || 0) < this.MAX_CHARGE) {
@@ -219,11 +252,79 @@ class HeroUltimates {
             player.stunTimer = 0;
             player.speedDebuffTimer = 0;
             if (typeof VF185Model !== 'undefined') VF185Model.recordStep(player, dt, effects);
+        } else if (player.cryptonXActive) {
+            player.stunTimer = 0;
+            player.speedDebuffTimer = 0;
+            if (typeof CryptonXModel !== 'undefined') CryptonXModel.recordStep(player, dt, effects);
+            this.stepCryptonExhaust(player, dt, effects, !(game && game.isCoopGuest));
         }
 
         if (player.ultTimer <= 0) {
             this._endUltimate(player, effects);
         }
+    }
+
+    static stepBikeChassis(player, dt, effects, angKey, spinKey, skidKey, sparkCol) {
+        if (!player[skidKey]) player[skidKey] = [];
+        const skids = player[skidKey];
+        const speed = Math.hypot(player.vx || 0, player.vy || 0);
+        player[spinKey] = (player[spinKey] || 0) + (0.14 + speed * 0.045) * dt;
+        const targetAng = speed > 0.4 ? Math.atan2(player.vy, player.vx) : (player.angle || 0);
+        if (!Number.isFinite(player[angKey])) player[angKey] = targetAng;
+        let diff = targetAng - player[angKey];
+        while (diff < -Math.PI) diff += Math.PI * 2;
+        while (diff > Math.PI) diff -= Math.PI * 2;
+        player[angKey] += diff * Math.min(1, 0.30 * dt);
+
+        if (speed > 0.8) {
+            if ((Math.abs(diff) > 0.12 || player.isDashing || Math.random() < 0.38 * dt) && skids.length < 36) {
+                skids.push({ x: player.x - Math.cos(player[angKey]) * 14, y: player.y + 12 - Math.sin(player[angKey]) * 6, ang: player[angKey], alpha: player.isDashing ? 0.62 : 0.35 });
+            }
+            if (effects && Math.random() < (player.isDashing ? 0.9 : 0.5) * dt) {
+                effects.addSparks(player.x - Math.cos(player[angKey]) * 29, player.y + 4 - Math.sin(player[angKey]) * 14, Math.random() < 0.55 ? sparkCol : '#fed330', player.isDashing ? 3 : 2);
+            }
+        }
+        for (let i = skids.length - 1; i >= 0; i--) {
+            skids[i].alpha -= 0.016 * dt;
+            if (skids[i].alpha <= 0) skids.splice(i, 1);
+        }
+    }
+
+    static drawBikeSkids(player, ctx, skidKey) {
+        const skids = player[skidKey];
+        if (!skids || skids.length === 0) return;
+        ctx.save();
+        for (let i = 0; i < skids.length; i++) {
+            const s = skids[i];
+            ctx.save();
+            ctx.translate(s.x, s.y);
+            ctx.rotate(s.ang);
+            ctx.fillStyle = `rgba(25, 22, 20, ${s.alpha})`;
+            ctx.fillRect(-10, -4, 18, 4);
+            ctx.fillRect(-10, 2, 18, 4);
+            ctx.restore();
+        }
+        ctx.restore();
+    }
+
+    static stepCryptonExhaust(rider, dt = 1, effects = null, canDamage = true) {
+        if (typeof CryptonExhaustFire !== 'undefined') CryptonExhaustFire.stepExhaust(rider, dt, effects, canDamage);
+    }
+
+    static igniteEnemy(e, attacker = null, effects = null) {
+        if (typeof CryptonExhaustFire !== 'undefined') CryptonExhaustFire.igniteEnemy(e, attacker, effects);
+    }
+
+    static _updateFiresAndBurns(dt, enemies, effects, game) {
+        if (typeof CryptonExhaustFire !== 'undefined') CryptonExhaustFire.update(dt, enemies, effects, game);
+    }
+
+    static drawExhaustFires(ctx, cam = null) {
+        if (typeof CryptonExhaustFire !== 'undefined') CryptonExhaustFire.drawFires(ctx, cam);
+    }
+
+    static drawBurningEnemies(ctx, cam = null) {
+        if (typeof CryptonExhaustFire !== 'undefined') CryptonExhaustFire.drawBurningEnemies(ctx, cam);
     }
 
     static _updatePsogasInferno(player, dt, enemies, bullets, effects) {
@@ -286,42 +387,53 @@ class HeroUltimates {
         }
     }
 
-    static onVF185RamEnemy(player, e, effects, game) {
-        if (!player || !player.vf185Active || !e || e.dead) return;
+    static onBikeRamEnemy(player, e, effects, game) {
+        if (!player || (!player.vf185Active && !player.cryptonXActive) || !e || e.dead) return;
         if (e._vf185RamCd > 0) return;
 
-        e._vf185RamCd = 22;
+        e._vf185RamCd = 16;
+        const isCrypton = !!player.cryptonXActive;
         const isBoss = !!(e.isBoss || e.isMiniBoss);
-        const dmg = Math.round(98 * (player.damageMultiplier || 1) * (isBoss ? 1.35 : 1.0));
+        const baseDmg = isCrypton ? 145 : 185;
+        const dmg = Math.round(baseDmg * (player.damageMultiplier || 1) * (isBoss ? (isCrypton ? 1.45 : 1.5) : 1.0));
+        const isGuest = !!(game && game.isCoopGuest);
         e.takeDamage(dmg, effects, true);
+        if (isGuest && e.dead) e.dead = false;
+        if (isCrypton && !isGuest) this.igniteEnemy(e, player, effects);
 
         if (!e.isStationary && !e.isBoss) {
             const ang = Math.atan2(e.y - player.y, e.x - player.x);
-            e.x += Math.cos(ang) * 38;
-            e.y += Math.sin(ang) * 38;
+            const kb = isCrypton ? 34 : 42;
+            e.x += Math.cos(ang) * kb;
+            e.y += Math.sin(ang) * kb;
         }
         if (effects) {
-            effects.addSparks(e.x, e.y, '#ff4785', 8);
-            effects.addSparks(e.x, e.y, '#fed330', 6);
-            effects.addComicSplash(e.x, e.y - 24, isBoss ? 'VF185 SMASH! 💥' : 'ROADKILL! 🏍️');
+            effects.addSparks(e.x, e.y, isCrypton ? '#ff6b35' : '#ff4785', 9);
+            effects.addSparks(e.x, e.y, isCrypton ? '#ffffff' : '#fed330', 6);
+            effects.addComicSplash(e.x, e.y - 24, isCrypton ? 'CRYPTON X!! 🔥' : (isBoss ? 'VF185 SMASH! 💥' : 'ROADKILL! 🏍️'));
         }
         const cam = game ? game.camera : null;
         if (cam && typeof cam.shake === 'function') cam.shake(5, 7);
         if (window.soundEngine) window.soundEngine.playHit(true, true);
     }
 
+    static onVF185RamEnemy(player, e, effects, game) {
+        return this.onBikeRamEnemy(player, e, effects, game);
+    }
+
     static _endUltimate(player, effects) {
         const wasRage = player.rageUltActive;
-        const wasVF = player.vf185Active;
+        const wasBike = player.vf185Active || player.cryptonXActive;
         player.ultActive = false;
         player.ultId = null;
         player.ultTimer = 0;
         player.rageUltActive = false;
         player.infernoUltActive = false;
         player.vf185Active = false;
+        player.cryptonXActive = false;
         player._ultDmgBonus = 1.0;
 
-        if (wasRage || wasVF) {
+        if (wasRage || wasBike) {
             const wasAlive = player.hp > 0;
             player.applyEquipmentStats();
             if (wasAlive) {
@@ -339,6 +451,10 @@ class HeroUltimates {
 
         if (player.vf185Active && typeof VF185Model !== 'undefined') {
             VF185Model.drawTireSkids(player, ctx);
+            return;
+        }
+        if (player.cryptonXActive && typeof CryptonXModel !== 'undefined') {
+            CryptonXModel.drawTireSkids(player, ctx);
             return;
         }
 

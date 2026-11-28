@@ -488,8 +488,14 @@ class GameState {
      */
     setSkillLevels(levels) {
         if (!levels || typeof levels !== 'object') return;
-        this.player.skillLevels = { ...(this.player.skillLevels || {}), ...levels };
+        const merged = { ...(this.player.skillLevels || {}) };
+        for (const [k, v] of Object.entries(levels)) {
+            const n = parseInt(v, 10) || 1;
+            merged[k] = Math.max(parseInt(merged[k], 10) || 1, n);
+        }
+        this.player.skillLevels = merged;
         localStorage.setItem('lesaio_skill_levels', JSON.stringify(this.player.skillLevels));
+        this._touchMutation();
 
         if (window.EventBus) {
             window.EventBus.emit('skillLevelsChanged', this.player.skillLevels);

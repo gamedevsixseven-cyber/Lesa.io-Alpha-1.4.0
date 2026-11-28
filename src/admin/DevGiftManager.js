@@ -403,7 +403,7 @@ class DevGiftManager {
                 const merged = Array.from(new Set([...cur, ...weaponIds]));
                 localStorage.setItem('lesaio_unlocked_weapons', JSON.stringify(merged));
                 if (typeof window !== 'undefined' && window.GameState && window.GameState.player) window.GameState.player.unlockedWeapons = merged;
-            } catch (_) {}
+            } catch (_) { }
         }
         window?.uiController?.modalManager?.updateWeaponsModal?.();
     }
@@ -416,7 +416,7 @@ class DevGiftManager {
 
     static _isBootOverlayActive() {
         if (typeof document === 'undefined') return false;
-        const blockers = ['loading-screen', 'dev-intro-screen', 'dev-intro-overlay', 'first-time-name-modal', 'mazonakis-tribute-modal', 'update-101-modal'];
+        const blockers = ['loading-screen', 'dev-intro-screen', 'dev-intro-overlay', 'first-time-name-modal', 'mazonakis-tribute-modal', 'update-101-modal', 'update-120-modal', 'update-121-modal'];
         return blockers.some(id => {
             const el = document.getElementById(id);
             return el && !el.classList.contains('hidden') && el.style.display !== 'none';

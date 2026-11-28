@@ -67,7 +67,7 @@ class FriendService {
         const featSnap = (typeof PerkProgression !== 'undefined' && typeof PerkProgression.getFeatSnapshot === 'function')
             ? PerkProgression.getFeatSnapshot(gs) : null;
         const endlessMaxWave = FriendService._maxNum(p.combatFeats && p.combatFeats.endlessMaxWave, featSnap && featSnap.endlessMaxWave, rawMaxWave > 20 ? rawMaxWave : 0);
-        const endlessHardMaxWave = FriendService._maxNum(p.combatFeats && p.combatFeats.endlessHardMaxWave, featSnap && featSnap.endlessHardMaxWave);
+        const endlessHardMaxWave = FriendService._maxNum(p.combatFeats && p.combatFeats.endlessHardMaxWave, featSnap && featSnap.endlessHardMaxWave, parseInt(localStorage.getItem('lesaio_endless_hard_max_wave') || '0', 10));
 
         const cs = (typeof window !== 'undefined' && window.clanService) ? window.clanService : null, cl = cs?.currentClan || null;
         const cloud = (typeof window !== 'undefined' && window.cloudSave?.lastCloudData) || null, cid = cl ? cl.id : (cs?.clanId || null);
@@ -179,7 +179,7 @@ class FriendService {
             const mw = FriendService._maxNum(1, me.maxWave, csStats.maxWave, cSocial.maxWave, !wiped && c && c.maxWave);
             const cpEndless = (!wiped && cp && cp.combatFeats && typeof cp.combatFeats.endlessMaxWave === 'number') ? cp.combatFeats.endlessMaxWave : 0;
             const ew = FriendService._maxNum(0, me.endlessMaxWave, cpEndless, mw > 20 ? mw : 0);
-            const ehw = FriendService._maxNum(0, me.endlessHardMaxWave, !wiped && cp && cp.combatFeats && cp.combatFeats.endlessHardMaxWave, cSocial.endlessHardMaxWave);
+            const ehw = FriendService._maxNum(0, me.endlessHardMaxWave, !wiped && cp && cp.combatFeats && cp.combatFeats.endlessHardMaxWave, cSocial.endlessHardMaxWave, !wiped && c && (c.lbEndlessHardWave || c.endlessHardMaxWave));
             const tk = FriendService._maxNum(0, me.totalKills, csStats.totalKills, cSocial.totalKills, !wiped && c && c.lbTotalKills);
             Object.assign(baseDoc, {
                 friendTag: me.tag, friendTagClean: me.tagClean, playerName: me.name, playerNameLower: me.nameLower,

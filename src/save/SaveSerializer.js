@@ -92,14 +92,16 @@ class SaveSerializer {
                 olympianStarStones: state.player.olympianStarStones || 0,
                 ascentCrests: (typeof window !== 'undefined' && window.ascentCrestManager) ? window.ascentCrestManager.getCount() : (state.player.ascentCrests ?? 0),
                 ascentCrestsDate: (typeof window !== 'undefined' && window.ascentCrestManager) ? window.ascentCrestManager.lastDailyDate : (state.player.ascentCrestsDate || ''),
-                selectedSkill: state.player.selectedSkill || 'blade_rush',
-                unlockedSkills: Array.from(state.player.unlockedSkills || ['blade_rush', 'nerobalonaki']),
-                skillLevels: { ...(state.player.skillLevels || { blade_rush: 1, nerobalonaki: 1 }) },
+                selectedSkill: (ls && ls.getItem('lesaio_selected_skill')) || state.player.selectedSkill || 'blade_rush',
+                unlockedSkills: Array.from(new Set([...(state.player.unlockedSkills || ['blade_rush', 'nerobalonaki']), ...this._safeJson('lesaio_unlocked_skills', [])])),
+                skillLevels: (typeof SaveMigration !== 'undefined' && typeof SaveMigration._maxObj === 'function')
+                    ? SaveMigration._maxObj(state.player.skillLevels || { blade_rush: 1, nerobalonaki: 1 }, this._safeJson('lesaio_skill_levels', {}), 1)
+                    : { ...(state.player.skillLevels || { blade_rush: 1, nerobalonaki: 1 }), ...this._safeJson('lesaio_skill_levels', {}) },
                 upgrades: { ...(state.player.upgrades || { critChance: 0, critDamage: 0, maxHealth: 0, goldBonus: 0 }) },
                 unlockedPerks: Array.from(state.player.unlockedPerks || []),
                 equippedPerks: Array.from(state.player.equippedPerks || [null, null, null]),
                 perkRanks: { ...(state.player.perkRanks || {}) },
-                combatFeats: { ...(state.player.combatFeats || {}) },
+                combatFeats: (typeof PerkProgression !== 'undefined') ? PerkProgression.mergeFeats(state.player.combatFeats || {}, this._safeJson('lesaio_combat_feats', {})) : { ...(state.player.combatFeats || {}) },
                 equippedGear: (typeof GearManager !== 'undefined') ? GearManager.getEquippedMap() : (state.player.equippedGear || { helmet: null, armor: null, belt: null, gloves: null, boots: null }),
                 unlockedGear: (typeof GearManager !== 'undefined') ? Array.from(GearManager.getUnlockedList() || []) : Array.from(state.player.unlockedGear || []),
                 gearLevels: (typeof GearUpgradeManager !== 'undefined') ? GearUpgradeManager.getAllLevels() : (state.player.gearLevels || {}),
@@ -397,12 +399,13 @@ class SaveSerializer {
                 ls.setItem('lesaio_hero_plays', JSON.stringify(cur.heroPlays));
             }
         }
-        const cf = (typeof PerkProgression !== 'undefined')
-            ? PerkProgression.normalizeFeats(state.player.combatFeats || {})
-            : { ...(state.player.combatFeats || {}) };
+        const cf = (typeof PerkProgression !== 'undefined') ? PerkProgression.normalizeFeats(state.player.combatFeats || {}) : { ...(state.player.combatFeats || {}) };
         const stMax = (state.player.stats && state.player.stats.maxWave) || 1;
-        const bestE = Math.max(Number(cf.endlessMaxWave) || 0, Number(opts.lbEndlessWave) || 0, Number(socialSrc.endlessMaxWave) || 0, stMax > 20 ? stMax : 0);
+        const extSoc = (opts.socialStats && typeof opts.socialStats === 'object') ? opts.socialStats : socialSrc;
+        const bestE = Math.max(Number(cf.endlessMaxWave) || 0, Number(opts.lbEndlessWave) || 0, Number(extSoc.endlessMaxWave) || 0, stMax > 20 ? stMax : 0);
+        const bestEH = Math.max(Number(cf.endlessHardMaxWave) || 0, Number(opts.lbEndlessHardWave) || 0, Number(p.lbEndlessHardWave) || 0, Number(p.endlessHardMaxWave) || 0, Number(extSoc.endlessHardMaxWave) || 0);
         if (bestE > (cf.endlessMaxWave || 0)) cf.endlessMaxWave = bestE;
+        if (bestEH > (cf.endlessHardMaxWave || 0)) { cf.endlessHardMaxWave = bestEH; if (ls) ls.setItem('lesaio_endless_hard_max_wave', String(bestEH)); }
         if (bestE >= 30 || (cf.endlessHardMaxWave || 0) >= 1) { cf.hardEndlessUnlocked = true; if (ls) ls.setItem('lesaio_hard_endless_unlocked', 'true'); }
         state.player.combatFeats = cf;
         if (ls) ls.setItem('lesaio_combat_feats', JSON.stringify(cf));
@@ -415,7 +418,7 @@ class SaveSerializer {
     static mergeProgressOnly(data, state, opts = {}) {
         if (!data || !data.player || !state || !state.player) return false;
         try {
-            this._applyNonDestructiveProgress(data.player, state, { syncCurrencies: false, syncSelections: false, overwriteSelections: Boolean(opts && opts.overwriteSelections), lbEndlessWave: data.lbEndlessWave });
+            this._applyNonDestructiveProgress(data.player, state, { syncCurrencies: false, syncSelections: false, overwriteSelections: Boolean(opts && opts.overwriteSelections), lbEndlessWave: data.lbEndlessWave, lbEndlessHardWave: data.lbEndlessHardWave, socialStats: data.socialStats });
             return true;
         } catch (err) {
             console.warn('[SaveSerializer] Non-fatal mergeProgressOnly notice:', err);
@@ -510,7 +513,12 @@ class SaveSerializer {
             ?? (ls ? (parseInt(ls.getItem('lesaio_account_level') || '1', 10) || 1) : 1);
         const pXp = pickNum(inputPlayer.accountXp) ?? pickNum(inputPlayer.xp) ?? pickNum(input.accountXp) ?? pickNum(input.xp)
             ?? pickNum(basePlayer.accountXp) ?? (ls ? (parseInt(ls.getItem('lesaio_account_xp') || '0', 10) || 0) : 0);
-        const pSkills = inputPlayer.skillLevels || input.skillLevels || basePlayer.skillLevels || { blade_rush: 1, nerobalonaki: 1 };
+        const lsSkills = this._safeJson('lesaio_skill_levels', {});
+        let pSkills = { ...(basePlayer.skillLevels || { blade_rush: 1, nerobalonaki: 1 }) };
+        for (const m of [lsSkills, input.skillLevels, inputPlayer.skillLevels]) {
+            if (!m || typeof m !== 'object') continue;
+            for (const [k, v] of Object.entries(m)) pSkills[k] = Math.max(parseInt(pSkills[k], 10) || 1, parseInt(v, 10) || 1);
+        }
         const pName = inputPlayer.name || inputPlayer.playerName || input.playerName || input.name
             || basePlayer.name || (ls ? ls.getItem('lesaio_player_name') : null) || 'Psanas';
 
@@ -544,9 +552,10 @@ class SaveSerializer {
         const statsHigh = Math.max(0, Number(statsObj.highScore) || 0, Number(input.highScore) || 0, ls ? (parseInt(ls.getItem('lesaio_highscore') || '0', 10) || 0) : 0);
         const statsKills = Math.max(0, Number(statsObj.totalKills) || 0, ls ? (parseInt(ls.getItem('lesaio_total_kills') || '0', 10) || 0) : 0);
         const statsWave = Math.max(1, Number(statsObj.maxWave) || 1, Number(input.maxWave) || 1, ls ? (parseInt(ls.getItem('lesaio_max_wave') || '1', 10) || 1) : 1);
-        const endlessWave = Math.max(0, Number((basePlayer.combatFeats && basePlayer.combatFeats.endlessMaxWave) || 0), Number((inputPlayer.combatFeats && inputPlayer.combatFeats.endlessMaxWave) || 0), statsWave > 20 ? statsWave : 0);
+        const endlessWave = Math.max(0, Number((basePlayer.combatFeats && basePlayer.combatFeats.endlessMaxWave) || 0), Number((inputPlayer.combatFeats && inputPlayer.combatFeats.endlessMaxWave) || 0), Number(input.lbEndlessWave) || 0, Number(input.socialStats && input.socialStats.endlessMaxWave) || 0, statsWave > 20 ? statsWave : 0);
         const olympusFloor = Math.max(0, Number((basePlayer.combatFeats && basePlayer.combatFeats.olympusMaxFloor) || 0), Number((inputPlayer.combatFeats && inputPlayer.combatFeats.olympusMaxFloor) || 0));
-        const endlessHardWave = Math.max(0, Number((basePlayer.combatFeats && basePlayer.combatFeats.endlessHardMaxWave) || 0), Number((inputPlayer.combatFeats && inputPlayer.combatFeats.endlessHardMaxWave) || 0));
+        const endlessHardWave = Math.max(0, Number((basePlayer.combatFeats && basePlayer.combatFeats.endlessHardMaxWave) || 0), Number((inputPlayer.combatFeats && inputPlayer.combatFeats.endlessHardMaxWave) || 0), Number(input.lbEndlessHardWave) || 0, Number(input.socialStats && input.socialStats.endlessHardMaxWave) || 0, ls ? (parseInt(ls.getItem('lesaio_endless_hard_max_wave') || '0', 10) || 0) : 0);
+        const mergedFeats = (typeof PerkProgression !== 'undefined') ? PerkProgression.mergeFeats(basePlayer.combatFeats || {}, { ...(inputPlayer.combatFeats || {}), endlessMaxWave: endlessWave, endlessHardMaxWave: endlessHardWave }) : { ...(basePlayer.combatFeats || {}), ...(inputPlayer.combatFeats || {}), endlessHardMaxWave: endlessHardWave };
 
         const cs = (typeof window !== 'undefined' && window.clanService) ? window.clanService : null;
         const cObj = cs && cs.currentClan ? cs.currentClan : null;
@@ -559,11 +568,11 @@ class SaveSerializer {
             friendTag: fTag, friendTagClean: fTagClean,
             ...(clanId ? { clanId, clanTag, clanName } : {}),
             coins: pCoins, gold: pCoins, gems: pGems, diamonds: pGems, level: pLevel, xp: pXp,
-            highScore: statsHigh, maxWave: statsWave, lbHighScore: statsHigh, lbEndlessWave: endlessWave, lbTotalKills: statsKills,
+            highScore: statsHigh, maxWave: statsWave, lbHighScore: statsHigh, lbEndlessWave: endlessWave, lbEndlessHardWave: endlessHardWave, lbTotalKills: statsKills,
             socialStats: { highScore: statsHigh, maxWave: statsWave, totalKills: statsKills, endlessMaxWave: endlessWave, endlessHardMaxWave: endlessHardWave, olympusMaxFloor: olympusFloor },
             ...(typeof PlayerLoadoutExtractor !== 'undefined' ? { publicLoadout: PlayerLoadoutExtractor.serializeForPublicCloud() } : {}),
             skillLevels: pSkills,
-            player: { ...basePlayer, ...partialPlayerOverrides, ...inputPlayer, name: pName, coins: pCoins, gold: pCoins, gems: pGems, diamonds: pGems, accountLevel: pLevel, accountXp: pXp, skillLevels: pSkills },
+            player: { ...basePlayer, ...partialPlayerOverrides, ...inputPlayer, name: pName, coins: pCoins, gold: pCoins, gems: pGems, diamonds: pGems, accountLevel: pLevel, accountXp: pXp, skillLevels: pSkills, combatFeats: mergedFeats },
             ...(user && user.email && !(typeof PlayerIdentity !== 'undefined' && PlayerIdentity.isGuestUid && PlayerIdentity.isGuestUid(user.uid)) ? { email: user.email } : {})
         };
         delete result.devGifts;

@@ -495,18 +495,19 @@ class ProceduralSynth {
         osc.connect(gain);
         gain.connect(ctx.destination);
 
-        if (ultId === 'vf185') {
-            // Sport 6-speed underbone engine rev (183cc two-stage throttle sweep)
+        if (ultId === 'vf185' || ultId === 'crypton_x') {
+            // Tuned underbone engine rev + exhaust backfire crackle
+            const isCryp = (ultId === 'crypton_x');
             osc.type = 'sawtooth';
-            osc.frequency.setValueAtTime(110, now);
-            osc.frequency.exponentialRampToValueAtTime(340, now + 0.18);
-            osc.frequency.setValueAtTime(195, now + 0.21);
-            osc.frequency.exponentialRampToValueAtTime(480, now + 0.45);
+            osc.frequency.setValueAtTime(isCryp ? 135 : 110, now);
+            osc.frequency.exponentialRampToValueAtTime(isCryp ? 420 : 340, now + 0.16);
+            osc.frequency.setValueAtTime(isCryp ? 240 : 195, now + 0.19);
+            osc.frequency.exponentialRampToValueAtTime(isCryp ? 590 : 480, now + 0.44);
             gain.gain.setValueAtTime(masterVolume * 0.9, now);
             gain.gain.exponentialRampToValueAtTime(0.01, now + 0.48);
             osc.start(now);
             osc.stop(now + 0.50);
-            this.playNoiseCrack(ctx, masterVolume, now + 0.16, 0.25, 0.45);
+            this.playNoiseCrack(ctx, masterVolume, now + 0.14, isCryp ? 0.30 : 0.25, isCryp ? 0.58 : 0.45);
         } else if (ultId === 'inferno_storm') {
             osc.type = 'sawtooth';
             osc.frequency.setValueAtTime(240, now);

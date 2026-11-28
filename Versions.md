@@ -8,7 +8,7 @@ This file tracks the total lines of code and game architecture state across ever
 
 | Metric | Current Value |
 |---|---|
-| **Active Version** | **Version 1.0.1 — Patch & Optimization Update 🛠️** |
+| **Active Version** | **Version 1.2.1 — Crypton X, Endless Optimization & Polish Update 🏍️** |
 | **Milestone Banner** | 🔥 **OVER 103,700 LINES OF EXECUTABLE & WEB CODE (`105,200+` WITH DOCS)!** |
 | **Total Code Lines (`JS+CSS+HTML+PS1+CS`)** | **102,996 lines** across **280 files** (`102,288 lines` core web app `JS+CSS+HTML`) |
 | **Total Project Lines (incl. `.md`)** | **104,488 lines** across **287 files** *(plus `81` `.svg` icons / `587` lines & `manifest.json` / `21` lines)* |
@@ -59,6 +59,16 @@ This file tracks the total lines of code and game architecture state across ever
 ---
 
 ## 📈 Version Progression Log
+
+### **Version 1.2.1 — White Crypton X Ultimate, VF185 Buff, Endless Hard Optimization & Stability Update**
+- **Release Date:** November 28, 2026
+- **Key Additions & Changes:**
+  - **50Balos `"CRYPTON X"` Q Ultimate & Petros VF185 Damage Buff (`HeroUltimates.js`, `CryptonExhaustFire.js`, `CryptonXModel.js`, `UltCryptonXSkill.svg`, `CollisionSystem.js`, `HeroRenderer.js`, `Effects.js`, `CoopSkillFx.js`):** 50Balos now rides his White Crypton X on Ulti (Q), dealing heavy drive-through damage (`145` base) and dropping blazing road exhaust fire pools that ignite enemies with burn DoT. Petros's SYM VF185 drive-through ram damage was buffed (`98` -> `185` base, `1.5x` bosses).
+  - **Endless Hard Performance Overhaul (`EndlessHardHazards.js`, `EndlessHardMap.js`, `EnemyBatchRenderer.js`, endgame enemy renderers):** Optimized crowd rendering, spatial lookups, and AI throttling when large hordes pack Endless Hard waves.
+  - **Mobile Crash/White-Screen Fix & Crisp High Graphics (`MobileAssetGuard.js`, `MobileCanvasGuard.js`, `MobilePerf.js`, `EndlessHardMap.js`):** Hardened mobile memory/canvas safety to eliminate unexpected white-screen restarts while preserving sharper High graphics resolution on phones.
+  - **Wave/Boss Banners & Co-op Joiner Audio (`WaveManager.js`, `BossWarningOverlay.js`, `BgmController.js`, `ApexW60Audio.js`, `audio.js`, `CoopGuestSession.js`):** Polished Wave Cleared and Boss Incoming overlays on PC and mobile (removing distracting boxy borders) and fixed mobile Co-op joiner playback so all players hear BGM and boss voice lines.
+  - **Chronos+ Overclock, Skill Upgrades & Hard Endless Leaderboard Save Fix (`SkillManager.js`, `LeaderboardModal.js`, `PerkProgression.js`, `FriendService.js`, `ProfileManager.js`, `SaveManager.js`, `SaveSerializer.js`, `SaveMigration.js`, `firebase.js`, `AccountSyncManager.js`, `cloudflare/worker.js`):** Fixed Chronos Overclock, skill upgrades, and Hard Endless max wave records resetting across reloads or cloud sync via monotonic merging, `lbEndlessHardWave` indexing/queries, and immediate cloud flushes.
+  - **Version 1.2.1 Pop-up (`TributeManager.js`, `tribute.css`, `index.html`, `sw.js`, `DevGiftManager.js`):** Added one-time `#update-121-modal` announcement highlighting all Update 1.2.1 changes and updated main menu badge & PWA cache to `1.2.1`.
 
 ### **Version 1.0.1 (Patch & Optimization Update) - Mobile Staged Preloader, Gear Icon Fix, Update Pop-up, Exclusive VF 185 Kolones & Chrono Emerald Rift Banners**
 - **Release Date:** November 23, 2026

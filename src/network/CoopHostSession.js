@@ -438,7 +438,7 @@ class CoopHostSession {
                 heroSkin: p.heroSkin || 'default',
                 starBlessed: !!p._starBlessed,
                 ultId: p.ultActive ? (p.ultId || '') : '',
-                vfAng: p.vf185Active ? safeFloat(p.vf185Angle || p.angle || 0, 2, 0) : undefined,
+                vfAng: (p.vf185Active || p.cryptonXActive) ? safeFloat((p.vf185Active ? p.vf185Angle : p.cryptonXAngle) || p.angle || 0, 2, 0) : undefined,
                 bubbleCharge: p.isChargingBubble ? Number((p.bubbleCharge || 0).toFixed(2)) : 0
             },
             guestHp: this.remotePlayer ? safeInt(this.remotePlayer.hp, 0, 100000, 0) : 0,

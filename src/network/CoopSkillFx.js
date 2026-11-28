@@ -195,12 +195,18 @@ class CoopSkillFx {
         rp.rageUltActive = (ultId === 'rage');
         rp.infernoUltActive = (ultId === 'inferno_storm');
         rp.vf185Active = (ultId === 'vf185');
+        rp.cryptonXActive = (ultId === 'crypton_x');
         rp.stunTimer = 0;
         rp.speedDebuffTimer = 0;
         if (rp.vf185Active) {
             rp.vf185Angle = Number.isFinite(ultData.angle) ? ultData.angle : (rp.angle || 0);
             rp._vfWheelSpin = 0;
             if (!rp._vfSkids) rp._vfSkids = [];
+        } else if (rp.cryptonXActive) {
+            rp.cryptonXAngle = Number.isFinite(ultData.angle) ? ultData.angle : (rp.angle || 0);
+            rp._cxWheelSpin = 0;
+            rp._cxFireSpawn = 0;
+            if (!rp._cxSkids) rp._cxSkids = [];
         }
 
         if (fx) {
@@ -219,6 +225,11 @@ class CoopSkillFx {
                 fx.addShockwave(x, y, 160, 'rgba(255, 71, 133, 0.92)');
                 fx.addDust(x, y + 12, 10, 14);
                 fx.addSparks(x, y + 10, '#eccc3b', 8);
+            } else if (rp.cryptonXActive) {
+                fx.addComicSplash(x, y - 48, '🏍️ CRYPTON X!! 🔥', '#f8fafc', 22, true);
+                fx.addShockwave(x, y, 165, 'rgba(255, 107, 53, 0.92)');
+                fx.addDust(x, y + 12, 10, 14);
+                fx.addSparks(x, y + 10, '#ff6b35', 10);
             }
         }
         if (se) {
@@ -237,12 +248,15 @@ class CoopSkillFx {
             rp.ultTimer -= normDt;
             if (rp.ultTimer <= 0) {
                 rp.ultActive = false; rp.ultId = null;
-                rp.rageUltActive = false; rp.infernoUltActive = false; rp.vf185Active = false;
+                rp.rageUltActive = false; rp.infernoUltActive = false; rp.vf185Active = false; rp.cryptonXActive = false;
                 return;
             }
         }
 
-        if (rp.rageUltActive) {
+        if (rp.cryptonXActive && typeof HeroUltimates !== 'undefined') {
+            rp.stunTimer = 0; rp.speedDebuffTimer = 0;
+            HeroUltimates.stepCryptonExhaust(rp, normDt, fx, isHostAuthoritative);
+        } else if (rp.rageUltActive) {
             rp.stunTimer = 0; rp.speedDebuffTimer = 0;
             if (fx && Math.random() < 0.35 * normDt) {
                 fx.addSparks(rp.x + (Math.random() - 0.5) * 26, rp.y + (Math.random() - 0.5) * 22, Math.random() < 0.5 ? '#ff3838' : '#ffd32a', 2);

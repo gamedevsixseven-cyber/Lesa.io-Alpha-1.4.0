@@ -26,17 +26,36 @@ class SkillManager {
     }
 
     _syncState() {
-        if (typeof window !== 'undefined' && window.GameState && window.GameState.player) {
-            const p = window.GameState.player;
-            if (Array.isArray(p.unlockedSkills) && p.unlockedSkills.length > 0) {
-                this.unlockedSkills = p.unlockedSkills;
-            }
-            if (p.selectedSkill) {
-                this.selectedSkill = p.selectedSkill;
-            }
-            if (p.skillLevels && typeof p.skillLevels === 'object') {
-                this.skillLevels = { ...this.skillLevels, ...p.skillLevels };
-            }
+        let localLvls = {};
+        try { localLvls = JSON.parse(localStorage.getItem('lesaio_skill_levels') || '{}'); } catch (_) {}
+        const p = (typeof window !== 'undefined' && window.GameState && window.GameState.player) ? window.GameState.player : null;
+        if (p && Array.isArray(p.unlockedSkills) && p.unlockedSkills.length > 0) this.unlockedSkills = p.unlockedSkills;
+        if (p && p.selectedSkill) this.selectedSkill = p.selectedSkill;
+        const merged = { ...(this.skillLevels || {}) };
+        for (const src of [localLvls, p && p.skillLevels]) {
+            if (!src || typeof src !== 'object') continue;
+            for (const [k, v] of Object.entries(src)) merged[k] = Math.max(parseInt(merged[k], 10) || 1, parseInt(v, 10) || 1);
+        }
+        this.skillLevels = merged;
+        if (p) p.skillLevels = merged;
+    }
+
+    _commitSkillState(syncCloudNow = false) {
+        if (typeof localStorage !== 'undefined') {
+            localStorage.setItem('lesaio_unlocked_skills', JSON.stringify(this.unlockedSkills));
+            localStorage.setItem('lesaio_selected_skill', this.selectedSkill);
+            localStorage.setItem('lesaio_skill_levels', JSON.stringify(this.skillLevels));
+        }
+        const gs = (typeof window !== 'undefined' && window.GameState) ? window.GameState : this.gameState;
+        if (gs && gs.player) {
+            gs.player.unlockedSkills = this.unlockedSkills;
+            gs.player.selectedSkill = this.selectedSkill;
+            if (typeof gs.setSkillLevels === 'function') gs.setSkillLevels(this.skillLevels);
+            else gs.player.skillLevels = this.skillLevels;
+        }
+        if (typeof window !== 'undefined' && window.SaveManager) {
+            if (syncCloudNow && typeof window.SaveManager.saveNow === 'function') window.SaveManager.saveNow({ immediateCloud: true });
+            else if (typeof window.SaveManager.requestSave === 'function') window.SaveManager.requestSave();
         }
     }
 
@@ -131,21 +150,9 @@ class SkillManager {
             window.GameState.spendCoins(cost);
         }
 
-        if (!this.unlockedSkills.includes(skillId)) {
-            this.unlockedSkills.push(skillId);
-            localStorage.setItem('lesaio_unlocked_skills', JSON.stringify(this.unlockedSkills));
-            if (this.gameState && this.gameState.player) {
-                this.gameState.player.unlockedSkills = this.unlockedSkills;
-            }
-        }
-
-        if (!this.skillLevels[skillId]) {
-            this.skillLevels[skillId] = 1;
-            localStorage.setItem('lesaio_skill_levels', JSON.stringify(this.skillLevels));
-            if (this.gameState && this.gameState.player) {
-                this.gameState.player.skillLevels = this.skillLevels;
-            }
-        }
+        if (!this.unlockedSkills.includes(skillId)) this.unlockedSkills.push(skillId);
+        if (!this.skillLevels[skillId]) this.skillLevels[skillId] = 1;
+        this._commitSkillState(true);
 
         if (window.soundEngine) {
             window.soundEngine.playLevelUp();
@@ -258,19 +265,11 @@ class SkillManager {
         }
 
         this.skillLevels[skillId] = currentLevel + 1;
-        localStorage.setItem('lesaio_skill_levels', JSON.stringify(this.skillLevels));
-
-        if (window.GameState && window.GameState.player) {
-            window.GameState.player.skillLevels = this.skillLevels;
-        }
-
+        this._commitSkillState(true);
         if (window.gameInstance && window.gameInstance.player && this.selectedSkill === skillId) {
             window.gameInstance.player.setSkill(skillId);
         }
-
-        if (window.soundEngine) {
-            window.soundEngine.playLevelUp();
-        }
+        if (window.soundEngine) window.soundEngine.playLevelUp();
 
         this.renderSkillCards();
         this.updateHUDIcon();
@@ -545,11 +544,7 @@ class SkillManager {
 
     selectSkill(skillId) {
         this.selectedSkill = skillId;
-        localStorage.setItem('lesaio_selected_skill', skillId);
-
-        if (this.gameState && this.gameState.player) {
-            this.gameState.player.selectedSkill = skillId;
-        }
+        this._commitSkillState(false);
 
         if (window.gameInstance && window.gameInstance.player) {
             window.gameInstance.player.setSkill(skillId);

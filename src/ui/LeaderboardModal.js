@@ -128,7 +128,7 @@ class LeaderboardModal {
             highScore: Math.max((me && me.highScore) || 0, stats.highScore || 0),
             maxWave: Math.max((me && me.maxWave) || 1, stats.maxWave || 1),
             endlessMaxWave: Math.max((me && me.endlessMaxWave) || 0, snap.endlessMaxWave || 0),
-            endlessHardMaxWave: Math.max((me && me.endlessHardMaxWave) || 0, snap.endlessHardMaxWave || 0),
+            endlessHardMaxWave: Math.max((me && me.endlessHardMaxWave) || 0, snap.endlessHardMaxWave || 0, (typeof localStorage !== 'undefined' ? (parseInt(localStorage.getItem('lesaio_endless_hard_max_wave') || '0', 10) || 0) : 0)),
             olympusMaxFloor: Math.max((me && me.olympusMaxFloor) || 0, snap.olympusMaxFloor || 0),
             totalKills: Math.max((me && me.totalKills) || 0, stats.totalKills || 0),
             cosmetics: cos,
@@ -206,11 +206,16 @@ class LeaderboardModal {
             }
         }
 
-        if (!edgeFull && db && fs) {
+        if (db && fs) {
             try {
-                const queries = [
+                const queries = edgeFull ? [
+                    db.collection('players').orderBy('lbEndlessHardWave', 'desc').limit(35).get().catch(() => null),
+                    db.collection('players').orderBy('socialStats.endlessHardMaxWave', 'desc').limit(35).get().catch(() => null)
+                ] : [
                     db.collection('players').orderBy('lbHighScore', 'desc').limit(35).get().catch(() => null),
                     db.collection('players').orderBy('lbEndlessWave', 'desc').limit(35).get().catch(() => null),
+                    db.collection('players').orderBy('lbEndlessHardWave', 'desc').limit(35).get().catch(() => null),
+                    db.collection('players').orderBy('socialStats.endlessHardMaxWave', 'desc').limit(35).get().catch(() => null),
                     db.collection('players').orderBy('lbTotalKills', 'desc').limit(35).get().catch(() => null),
                     db.collection('players').orderBy('lastSeenAt', 'desc').limit(40).get().catch(() => null)
                 ];
@@ -246,8 +251,11 @@ class LeaderboardModal {
                             edgeUids.add(formatted.uid);
                             edge.post(`/player/${encodeURIComponent(formatted.uid)}`, { ...raw, uid: formatted.uid }).catch(() => { });
                         }
-                        if ((isSelfDoc || (isPrimaryDev && isGuestDoc)) && typeof raw.lbEndlessWave === 'number' && raw.lbEndlessWave !== formatted.endlessMaxWave) {
-                            doc.ref.update({ lbEndlessWave: formatted.endlessMaxWave, 'socialStats.endlessMaxWave': formatted.endlessMaxWave }).catch(() => { });
+                        if ((isSelfDoc || (isPrimaryDev && isGuestDoc)) && ((typeof raw.lbEndlessWave === 'number' && raw.lbEndlessWave !== formatted.endlessMaxWave) || (formatted.endlessHardMaxWave > 0 && Number(raw.lbEndlessHardWave || 0) < formatted.endlessHardMaxWave))) {
+                            doc.ref.update({
+                                lbEndlessWave: formatted.endlessMaxWave, 'socialStats.endlessMaxWave': formatted.endlessMaxWave,
+                                ...(formatted.endlessHardMaxWave > 0 ? { lbEndlessHardWave: formatted.endlessHardMaxWave, 'socialStats.endlessHardMaxWave': formatted.endlessHardMaxWave } : {})
+                            }).catch(() => { });
                         }
 
                         if (isSelfDoc) {
@@ -302,7 +310,7 @@ class LeaderboardModal {
 
         if (seq !== this._fetchSeq) return;
         const rows = Array.from(byUid.values()).filter((r) => (
-            r && (r.isSelf || !r._isUnnamedGhost || r.highScore > 0 || r.totalKills > 0 || r.endlessMaxWave > 0 || r.level > 1)
+            r && (r.isSelf || !r._isUnnamedGhost || r.highScore > 0 || r.totalKills > 0 || r.endlessMaxWave > 0 || r.endlessHardMaxWave > 0 || r.level > 1)
         ));
         if (ps && typeof PresenceService !== 'undefined') {
             await ps.fetchOnce(rows.map(r => r.uid).filter(Boolean)).catch(() => { });

@@ -467,6 +467,7 @@ class EffectsManager {
     drawGround(ctx) {
         const cam = window.gameInstance ? window.gameInstance.camera : null;
         if (this.combatJuice) this.combatJuice.drawGround(ctx, cam);
+        if (typeof HeroUltimates !== 'undefined' && HeroUltimates.drawExhaustFires) HeroUltimates.drawExhaustFires(ctx, cam);
         if (typeof MobileAimAssist !== 'undefined' && window.gameInstance) {
             MobileAimAssist.drawReticle(ctx, window.gameInstance);
         }
@@ -507,6 +508,7 @@ class EffectsManager {
         if (typeof SymbioteLauncher !== 'undefined') SymbioteLauncher.drawWorld(ctx, cam);
         if (typeof HeliosOmegaCannon !== 'undefined') HeliosOmegaCannon.drawWorld(ctx, cam);
         if (typeof SkewerCharcoalRifle !== 'undefined') SkewerCharcoalRifle.drawWorld(ctx, cam);
+        if (typeof HeroUltimates !== 'undefined' && HeroUltimates.drawBurningEnemies) HeroUltimates.drawBurningEnemies(ctx, cam);
         if (typeof HadesOblivionRailgun !== 'undefined') HadesOblivionRailgun.drawWorld(ctx, cam);
         if (typeof MedusaGorgonGaze !== 'undefined') MedusaGorgonGaze.drawWorld(ctx, cam);
         if (typeof HyperionCelestialGlaive !== 'undefined') HyperionCelestialGlaive.drawWorld(ctx, cam);

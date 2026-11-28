@@ -414,10 +414,12 @@ class ProfileManager {
                         maxWave: me.maxWave,
                         totalKills: me.totalKills,
                         endlessMaxWave: me.endlessMaxWave,
+                        endlessHardMaxWave: Math.max(0, Number(me.endlessHardMaxWave) || 0),
                         olympusMaxFloor: me.olympusMaxFloor
                     },
                     lbHighScore: me.highScore,
                     lbEndlessWave: Math.max(0, Number(me.endlessMaxWave) || 0),
+                    lbEndlessHardWave: Math.max(0, Number(me.endlessHardMaxWave) || 0),
                     lbTotalKills: me.totalKills
                 });
             }

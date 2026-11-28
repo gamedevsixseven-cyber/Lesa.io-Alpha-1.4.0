@@ -8,7 +8,7 @@
  */
 
 class SaveMigration {
-    static CURRENT_APP_VERSION = '1.7.2';
+    static CURRENT_APP_VERSION = '1.7.3';
     static CURRENT_SCHEMA_VERSION = 3;
 
     static KEYS = {
@@ -85,6 +85,7 @@ class SaveMigration {
         if (this.safeGetInt('lesaio_highscore', 0, 0) > 0) return true;
         if (this.safeGetInt('lesaio_total_kills', 0, 0) > 0) return true;
         if (this.safeGetInt('lesaio_max_wave', 1, 1) > 1) return true;
+        if (this.safeGetInt('lesaio_endless_hard_max_wave', 0, 0) > 0) return true;
         if (this.safeGetInt('lesaio_evolution_stones', 0, 0) > 0) return true;
         if (this.safeGetInt('lesaio_olympian_star_stones', 0, 0) > 0) return true;
         const rawCoins = localStorage.getItem('lesaio_coins');
@@ -97,6 +98,8 @@ class SaveMigration {
         if (Array.isArray(weapons) && weapons.length > 1) return true;
         const skills = this.safeGetJson('lesaio_unlocked_skills', null);
         if (Array.isArray(skills) && skills.length > 2) return true;
+        const skLvls = this.safeGetJson('lesaio_skill_levels', null);
+        if (skLvls && typeof skLvls === 'object' && Object.values(skLvls).some(v => (parseInt(v, 10) || 1) > 1)) return true;
         const gear = this.safeGetJson('lesaio_unlocked_gear', null);
         if (Array.isArray(gear) && gear.length > 0) return true;
         const perks = this.safeGetJson('lesaio_unlocked_perks', null);
@@ -121,6 +124,11 @@ class SaveMigration {
         const matches = Math.max(0, Number(s.matchesPlayed) || 0);
         const heroes = Array.isArray(p.unlockedHeroes) ? p.unlockedHeroes.length : (Array.isArray(data.unlockedHeroes) ? data.unlockedHeroes.length : 1);
         const weapons = Array.isArray(p.unlockedWeapons) ? p.unlockedWeapons.length : (Array.isArray(data.unlockedWeapons) ? data.unlockedWeapons.length : 1);
+        const skills = Array.isArray(p.unlockedSkills) ? p.unlockedSkills.length : (Array.isArray(data.unlockedSkills) ? data.unlockedSkills.length : 2);
+        const mergedSk = this._maxObj(p.skillLevels, data.skillLevels, 1);
+        const skLvls = Object.values(mergedSk).reduce((a, v) => a + Math.max(0, (parseInt(v, 10) || 1) - 1), 0);
+        const cfObj = (p.combatFeats && typeof p.combatFeats === 'object') ? p.combatFeats : {};
+        const hardWave = Math.max(0, Number(cfObj.endlessHardMaxWave) || 0, Number(data.lbEndlessHardWave) || 0, Number(social.endlessHardMaxWave) || 0);
         const gear = Array.isArray(p.unlockedGear) ? p.unlockedGear.length : 0;
         const gLvls = (p.gearLevels && typeof p.gearLevels === 'object' && !Array.isArray(p.gearLevels)) ? Object.values(p.gearLevels).reduce((a, v) => a + Math.max(0, (parseInt(v, 10) || 1) - 1), 0) : 0;
         const evoG = (Array.isArray(p.evolvedGear) ? p.evolvedGear.length : 0) + (Array.isArray(p.ascendedGear) ? p.ascendedGear.length : 0) + (Array.isArray(p.evolvedWeapons) ? p.evolvedWeapons.length : 0);
@@ -133,8 +141,8 @@ class SaveMigration {
         score += (lvl - 1) * 100000 + Math.min(99999, xp);
         score += totalKills * 25;
         score += Math.min(50000000, highScore) * 0.02;
-        score += matches * 300 + (maxWave - 1) * 150;
-        score += Math.max(0, heroes - 1) * 2000 + Math.max(0, weapons - 1) * 1200 + gear * 500 + gLvls * 250 + evoG * 900 + evoStones * 100 + bpXp * 0.5;
+        score += matches * 300 + (maxWave - 1) * 150 + hardWave * 400;
+        score += Math.max(0, heroes - 1) * 2000 + Math.max(0, weapons - 1) * 1200 + Math.max(0, skills - 2) * 1500 + skLvls * 1000 + gear * 500 + gLvls * 250 + evoG * 900 + evoStones * 100 + bpXp * 0.5;
         score += Math.min(100000, coins) * 0.01 + Math.min(10000, gems) * 0.1;
         return score;
     }
@@ -420,17 +428,19 @@ class SaveMigration {
         const maxHigh = Math.max(0, Number(s.highScore) || 0, Number(data.highScore) || 0, Number(data.lbHighScore) || 0, Number(social.highScore) || 0);
         const maxKills = Math.max(0, Number(s.totalKills) || 0, Number(data.lbTotalKills) || 0, Number(social.totalKills) || 0, Number(data.totalKills) || 0);
         const maxWave = Math.max(1, Number(s.maxWave) || 1, Number(data.maxWave) || 1, Number(data.lbEndlessWave) || 1, Number(social.maxWave) || 1);
+        const mergedSkills = this._maxObj(p.skillLevels, data.skillLevels, 1);
+        const rawFeats = (p.combatFeats && typeof p.combatFeats === 'object') ? p.combatFeats : {};
+        const normHard = Math.max(0, Number(rawFeats.endlessHardMaxWave) || 0, Number(social.endlessHardMaxWave) || 0, Number(data.lbEndlessHardWave) || 0, Number(data.endlessHardMaxWave) || 0);
+        const normEnd = Math.max(0, Number(rawFeats.endlessMaxWave) || 0, Number(social.endlessMaxWave) || 0, Number(data.lbEndlessWave) || 0, maxWave > 20 ? maxWave : 0);
+        const mergedFeats = (typeof PerkProgression !== 'undefined') ? PerkProgression.mergeFeats(rawFeats, { endlessHardMaxWave: normHard, endlessMaxWave: normEnd, olympusMaxFloor: Math.max(0, Number(rawFeats.olympusMaxFloor) || 0, Number(social.olympusMaxFloor) || 0), storyMaxWave: Math.max(1, Number(rawFeats.storyMaxWave) || 1) }) : { ...rawFeats, endlessHardMaxWave: normHard, endlessMaxWave: normEnd };
         return {
             ...p,
             name: data.playerName || p.name || p.playerName || undefined,
             accountLevel: lvl,
             accountXp: xpCandidates.length ? Math.max(...xpCandidates) : undefined,
-            stats: {
-                ...s,
-                highScore: maxHigh,
-                totalKills: maxKills,
-                maxWave
-            }
+            ...(Object.keys(mergedSkills).length ? { skillLevels: mergedSkills } : {}),
+            combatFeats: mergedFeats,
+            stats: { ...s, highScore: maxHigh, totalKills: maxKills, maxWave }
         };
     }
 
@@ -463,55 +473,31 @@ class SaveMigration {
         const baseXp = Math.max(0, parseInt(bp.accountXp ?? 0, 10) || 0);
         const mergedXp = baseLvl > payLvl ? baseXp : (baseLvl === payLvl ? Math.max(payXp, baseXp) : payXp);
 
-        const mergedStats = {
-            ...ps,
-            totalKills: Math.max(Number(ps.totalKills) || 0, Number(bs.totalKills) || 0),
-            maxWave: Math.max(Number(ps.maxWave) || 1, Number(bs.maxWave) || 1),
-            highScore: Math.max(Number(ps.highScore) || 0, Number(bs.highScore) || 0),
-            totalFatmirs: Math.max(Number(ps.totalFatmirs) || 0, Number(bs.totalFatmirs) || 0),
-            totalCasillas: Math.max(Number(ps.totalCasillas) || 0, Number(bs.totalCasillas) || 0),
-            totalSkarmogyftos: Math.max(Number(ps.totalSkarmogyftos) || 0, Number(bs.totalSkarmogyftos) || 0),
-            matchesPlayed: Math.max(Number(ps.matchesPlayed) || 0, Number(bs.matchesPlayed) || 0),
-            totalTimeSeconds: Math.max(Number(ps.totalTimeSeconds) || 0, Number(bs.totalTimeSeconds) || 0),
-            heroPlays: this._maxObj(ps.heroPlays, bs.heroPlays, 0)
-        };
-
-        const safeEq = (payLvl === 1 && baseLvl > 1 && bp.equippedGear && Object.values(bp.equippedGear).some(Boolean) && (!pp.equippedGear || !Object.values(pp.equippedGear).some(Boolean)))
-            ? bp.equippedGear : pp.equippedGear;
+        const mergedStats = { ...ps, totalKills: Math.max(Number(ps.totalKills) || 0, Number(bs.totalKills) || 0), maxWave: Math.max(Number(ps.maxWave) || 1, Number(bs.maxWave) || 1), highScore: Math.max(Number(ps.highScore) || 0, Number(bs.highScore) || 0), totalFatmirs: Math.max(Number(ps.totalFatmirs) || 0, Number(bs.totalFatmirs) || 0), totalCasillas: Math.max(Number(ps.totalCasillas) || 0, Number(bs.totalCasillas) || 0), totalSkarmogyftos: Math.max(Number(ps.totalSkarmogyftos) || 0, Number(bs.totalSkarmogyftos) || 0), matchesPlayed: Math.max(Number(ps.matchesPlayed) || 0, Number(bs.matchesPlayed) || 0), totalTimeSeconds: Math.max(Number(ps.totalTimeSeconds) || 0, Number(bs.totalTimeSeconds) || 0), heroPlays: this._maxObj(ps.heroPlays, bs.heroPlays, 0) };
+        const mergedFeats = (typeof PerkProgression !== 'undefined') ? PerkProgression.mergeFeats(pp.combatFeats || {}, bp.combatFeats || {}) : { ...(bp.combatFeats || {}), ...(pp.combatFeats || {}), endlessHardMaxWave: Math.max(Number(pp.combatFeats?.endlessHardMaxWave) || 0, Number(bp.combatFeats?.endlessHardMaxWave) || 0), endlessMaxWave: Math.max(Number(pp.combatFeats?.endlessMaxWave) || 0, Number(bp.combatFeats?.endlessMaxWave) || 0) };
+        const safeEq = (payLvl === 1 && baseLvl > 1 && bp.equippedGear && Object.values(bp.equippedGear).some(Boolean) && (!pp.equippedGear || !Object.values(pp.equippedGear).some(Boolean))) ? bp.equippedGear : pp.equippedGear;
         const mergedPlayer = {
-            ...pp,
-            ...(safeEq ? { equippedGear: safeEq } : {}),
-            accountLevel: mergedLvl,
-            accountXp: mergedXp,
-            unlockedHeroes: this._unionArr(pp.unlockedHeroes, bp.unlockedHeroes),
-            unlockedWeapons: this._unionArr(pp.unlockedWeapons, bp.unlockedWeapons),
-            unlockedSkills: this._unionArr(pp.unlockedSkills, bp.unlockedSkills),
-            unlockedPerks: this._unionArr(pp.unlockedPerks, bp.unlockedPerks),
-            unlockedGear: this._unionArr(pp.unlockedGear, bp.unlockedGear),
-            evolvedGear: this._unionArr(pp.evolvedGear, bp.evolvedGear),
-            ascendedGear: this._unionArr(pp.ascendedGear, bp.ascendedGear),
-            evolvedWeapons: this._unionArr(pp.evolvedWeapons, bp.evolvedWeapons),
+            ...pp, ...(safeEq ? { equippedGear: safeEq } : {}), accountLevel: mergedLvl, accountXp: mergedXp,
+            unlockedHeroes: this._unionArr(pp.unlockedHeroes, bp.unlockedHeroes), unlockedWeapons: this._unionArr(pp.unlockedWeapons, bp.unlockedWeapons),
+            unlockedSkills: this._unionArr(pp.unlockedSkills, bp.unlockedSkills), unlockedPerks: this._unionArr(pp.unlockedPerks, bp.unlockedPerks),
+            unlockedGear: this._unionArr(pp.unlockedGear, bp.unlockedGear), evolvedGear: this._unionArr(pp.evolvedGear, bp.evolvedGear),
+            ascendedGear: this._unionArr(pp.ascendedGear, bp.ascendedGear), evolvedWeapons: this._unionArr(pp.evolvedWeapons, bp.evolvedWeapons),
             celestialTrees: (typeof CelestialSkillTreeManager !== 'undefined') ? CelestialSkillTreeManager.mergeMaps(pp.celestialTrees, bp.celestialTrees) : (pp.celestialTrees || bp.celestialTrees || {}),
-            starBlessedHeroes: this._unionArr(pp.starBlessedHeroes, bp.starBlessedHeroes),
-            skillLevels: this._maxObj(pp.skillLevels, bp.skillLevels, 1),
-            upgrades: this._maxObj(pp.upgrades, bp.upgrades, 0),
-            gearLevels: this._maxObj(pp.gearLevels, bp.gearLevels, 1),
-            perkRanks: this._maxObj(pp.perkRanks, bp.perkRanks, 1),
-            evolutionStones: Math.max(Number(pp.evolutionStones) || 0, Number(bp.evolutionStones) || 0),
-            olympianStarStones: Math.max(Number(pp.olympianStarStones) || 0, Number(bp.olympianStarStones) || 0),
-            stats: mergedStats
+            starBlessedHeroes: this._unionArr(pp.starBlessedHeroes, bp.starBlessedHeroes), skillLevels: this._maxObj(pp.skillLevels, bp.skillLevels, 1),
+            upgrades: this._maxObj(pp.upgrades, bp.upgrades, 0), gearLevels: this._maxObj(pp.gearLevels, bp.gearLevels, 1), perkRanks: this._maxObj(pp.perkRanks, bp.perkRanks, 1),
+            combatFeats: mergedFeats, evolutionStones: Math.max(Number(pp.evolutionStones) || 0, Number(bp.evolutionStones) || 0),
+            olympianStarStones: Math.max(Number(pp.olympianStarStones) || 0, Number(bp.olympianStarStones) || 0), stats: mergedStats
         };
-
+        const paySoc = (payload.socialStats && typeof payload.socialStats === 'object') ? payload.socialStats : {};
+        const baseSoc = (baseline.socialStats && typeof baseline.socialStats === 'object') ? baseline.socialStats : {};
+        const bestEnd = Math.max(0, Number(mergedFeats.endlessMaxWave) || 0, Number(paySoc.endlessMaxWave) || 0, Number(baseSoc.endlessMaxWave) || 0, Number(payload.lbEndlessWave) || 0, Number(baseline.lbEndlessWave) || 0, mergedStats.maxWave > 20 ? mergedStats.maxWave : 0);
+        const bestHard = Math.max(0, Number(mergedFeats.endlessHardMaxWave) || 0, Number(paySoc.endlessHardMaxWave) || 0, Number(baseSoc.endlessHardMaxWave) || 0, Number(payload.lbEndlessHardWave) || 0, Number(baseline.lbEndlessHardWave) || 0);
+        if (bestHard > (mergedFeats.endlessHardMaxWave || 0)) { mergedFeats.endlessHardMaxWave = bestHard; mergedFeats.hardEndlessUnlocked = true; }
         return {
-            ...payload,
-            level: mergedLvl,
-            xp: mergedXp,
-            skillLevels: mergedPlayer.skillLevels,
-            highScore: Math.max(Number(payload.highScore) || 0, mergedStats.highScore),
-            maxWave: Math.max(Number(payload.maxWave) || 1, mergedStats.maxWave),
-            lbHighScore: Math.max(Number(payload.lbHighScore) || 0, mergedStats.highScore),
-            lbEndlessWave: Math.max(0, Number(mergedPlayer.combatFeats && mergedPlayer.combatFeats.endlessMaxWave) || 0, mergedStats.maxWave > 20 ? mergedStats.maxWave : 0),
-            lbTotalKills: Math.max(Number(payload.lbTotalKills) || 0, mergedStats.totalKills),
+            ...payload, level: mergedLvl, xp: mergedXp, skillLevels: mergedPlayer.skillLevels,
+            highScore: Math.max(Number(payload.highScore) || 0, mergedStats.highScore), maxWave: Math.max(Number(payload.maxWave) || 1, mergedStats.maxWave),
+            lbHighScore: Math.max(Number(payload.lbHighScore) || 0, mergedStats.highScore), lbEndlessWave: bestEnd, lbEndlessHardWave: bestHard, lbTotalKills: Math.max(Number(payload.lbTotalKills) || 0, mergedStats.totalKills),
+            socialStats: { ...baseSoc, ...paySoc, highScore: Math.max(Number(payload.lbHighScore) || 0, mergedStats.highScore), maxWave: Math.max(Number(payload.maxWave) || 1, mergedStats.maxWave), totalKills: Math.max(Number(payload.lbTotalKills) || 0, mergedStats.totalKills), endlessMaxWave: bestEnd, endlessHardMaxWave: bestHard, olympusMaxFloor: Math.max(0, Number(mergedFeats.olympusMaxFloor) || 0, Number(paySoc.olympusMaxFloor) || 0, Number(baseSoc.olympusMaxFloor) || 0) },
             player: mergedPlayer
         };
     }

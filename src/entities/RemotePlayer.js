@@ -64,6 +64,10 @@ class RemotePlayer {
         this.vf185Angle = 0;
         this._vfWheelSpin = 0;
         this._vfSkids = [];
+        this.cryptonXActive = false;
+        this.cryptonXAngle = 0;
+        this._cxWheelSpin = 0;
+        this._cxSkids = [];
 
         this.applyHeroStats(heroType);
     }
@@ -243,10 +247,14 @@ class RemotePlayer {
                 this.rageUltActive = (uid === 'rage');
                 this.infernoUltActive = (uid === 'inferno_storm');
                 this.vf185Active = (uid === 'vf185');
+                this.cryptonXActive = (uid === 'crypton_x');
                 if (!uid) this.ultTimer = 0;
             }
         }
-        if (typeof data.vfAng === 'number' && Number.isFinite(data.vfAng)) this.vf185Angle = data.vfAng;
+        if (typeof data.vfAng === 'number' && Number.isFinite(data.vfAng)) {
+            this.vf185Angle = data.vfAng;
+            this.cryptonXAngle = data.vfAng;
+        }
         if (data.heroType && data.heroType !== this.heroType) {
             const preserved = { maxHp: this.maxHp, damageReduction: this.damageReduction, magnetRadius: this.magnetRadius, starBlessed: this.starBlessed, equippedArmorId: this.equippedArmorId, armorEvolved: this.armorEvolved, weaponEvolved: this.weaponEvolved, ...data };
             this.applyHeroStats(data.heroType, preserved);
@@ -320,6 +328,8 @@ class RemotePlayer {
 
         if (this.vf185Active && typeof VF185Model !== 'undefined') {
             VF185Model.recordStep(this, normDt, null);
+        } else if (this.cryptonXActive && typeof CryptonXModel !== 'undefined') {
+            CryptonXModel.recordStep(this, normDt, null);
         }
         if (this.ghostTrails && this.ghostTrails.length > 0) {
             for (let i = this.ghostTrails.length - 1; i >= 0; i--) {

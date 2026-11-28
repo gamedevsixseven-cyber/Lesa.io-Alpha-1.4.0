@@ -536,7 +536,7 @@ class CoopGuestSession {
                 armorEvolved: !!p.armorEvolved, weaponEvolved: !!p.weaponEvolved,
                 heroSkin: p.heroSkin || 'default', starBlessed: !!p._starBlessed,
                 ultId: p.ultActive ? (p.ultId || '') : '',
-                vfAng: p.vf185Active ? Number((p.vf185Angle || p.angle || 0).toFixed(2)) : undefined,
+                vfAng: (p.vf185Active || p.cryptonXActive) ? Number(((p.vf185Active ? p.vf185Angle : p.cryptonXAngle) || p.angle || 0).toFixed(2)) : undefined,
                 bubbleCharge: p.isChargingBubble ? Number((p.bubbleCharge || 0).toFixed(2)) : 0
             }, { droppable: true, fast: true });
         }
