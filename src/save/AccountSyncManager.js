@@ -34,6 +34,9 @@ class AccountSyncManager {
             const extraLookups = [
                 db.collection('players').where('uid', '==', user.uid).limit(5).get().catch(() => null)
             ];
+            if (typeof window !== 'undefined' && window.edgeApi && window.edgeApi.isEnabled()) {
+                extraLookups.push(window.edgeApi.get(`/player/${encodeURIComponent(user.uid)}`).then((r) => (r && r.ok && r.doc ? { id: user.uid, exists: true, data: () => r.doc } : null)).catch(() => null));
+            }
             if (user.email) {
                 extraLookups.push(db.collection('players').doc(user.email.toLowerCase()).get().catch(() => null));
                 extraLookups.push(db.collection('players').where('email', '==', user.email).limit(10).get().catch(() => null));
@@ -162,9 +165,13 @@ class AccountSyncManager {
                         localStorage.setItem('lesaio_hard_endless_unlocked', 'true');
                     }
 
-                    const equippedGear = (p.equippedGear && typeof p.equippedGear === 'object')
-                        ? { helmet: null, armor: null, belt: null, gloves: null, boots: null, ...p.equippedGear }
-                        : { helmet: null, armor: null, belt: null, gloves: null, boots: null };
+                    const localEqRaw = localEstablished ? localStorage.getItem('lesaio_equipped_gear') : null;
+                    const localEq = localEstablished ? sj('lesaio_equipped_gear', {}) : {};
+                    const cloudEq = (p.equippedGear && typeof p.equippedGear === 'object') ? p.equippedGear : {};
+                    const useLocalEq = localEstablished && localEqRaw !== null && accountLevel >= cloudLvl;
+                    const equippedGear = useLocalEq
+                        ? { helmet: null, armor: null, belt: null, gloves: null, boots: null, ...localEq }
+                        : { helmet: null, armor: null, belt: null, gloves: null, boots: null, ...cloudEq };
 
                     const unlockedGear = Array.from(new Set([...(Array.isArray(p.unlockedGear) ? p.unlockedGear : []), ...(localEstablished ? sj('lesaio_unlocked_gear', []) : [])]));
                     const gearLevels = { ...(p.gearLevels && typeof p.gearLevels === 'object' && !Array.isArray(p.gearLevels) ? p.gearLevels : {}) };
@@ -375,6 +382,9 @@ class AccountSyncManager {
                             email: user.email || '',
                             lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
                         }, { merge: true }).catch(() => {});
+                        if (typeof window !== 'undefined' && window.edgeApi && window.edgeApi.isEnabled()) {
+                            window.edgeApi.post(`/player/${encodeURIComponent(user.uid)}`, { ...safeDoc, lastUpdated: Date.now() }).catch(() => {});
+                        }
                     }
 
                     return {

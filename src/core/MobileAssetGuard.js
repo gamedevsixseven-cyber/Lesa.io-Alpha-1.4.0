@@ -118,6 +118,55 @@ class MobileAssetGuard {
         return false;
     }
 
+    static _canDeferDomImg(img) {
+        if (!img || !img.tagName || img.tagName !== 'IMG') return false;
+        // Preserve dynamically managed HUD/menu avatar targets so JS state stays synced
+        if (img.id === 'hud-avatar-img' || img.id === 'menu-avatar-img' || img.closest('#game-hud') || img.closest('#menu-screen')) return false;
+        return true;
+    }
+
+    static dehydrateContainer(root) {
+        if (!this.isEnabled() || !root || typeof root.querySelectorAll !== 'function') return 0;
+        const imgs = root.querySelectorAll('img');
+        let freed = 0;
+        for (let i = 0; i < imgs.length; i++) {
+            const img = imgs[i];
+            if (!this._canDeferDomImg(img)) continue;
+            const raw = (img.getAttribute && img.getAttribute('src')) || '';
+            if (!raw || raw.startsWith('data:') || raw.startsWith('blob:')) continue;
+            img.dataset.mobSrc = raw;
+            img.removeAttribute('src');
+            freed++;
+        }
+        return freed;
+    }
+
+    static restoreContainer(root) {
+        if (!root || typeof root.querySelectorAll !== 'function') return 0;
+        const imgs = root.querySelectorAll('img[data-mob-src]');
+        let restored = 0;
+        for (let i = 0; i < imgs.length; i++) {
+            const img = imgs[i];
+            const saved = img.dataset.mobSrc;
+            if (saved && !img.getAttribute('src')) {
+                img.setAttribute('src', this.normalizeAssetPath(saved) || saved);
+                restored++;
+            }
+            delete img.dataset.mobSrc;
+        }
+        return restored;
+    }
+
+    static dehydrateHiddenModals() {
+        if (!this.isEnabled() || typeof document === 'undefined') return 0;
+        let freed = 0;
+        const hiddenScreens = document.querySelectorAll('.modal-overlay.hidden, #dev-intro-screen.hidden, #loading-screen.hidden');
+        for (let i = 0; i < hiddenScreens.length; i++) {
+            freed += this.dehydrateContainer(hiddenScreens[i]);
+        }
+        return freed;
+    }
+
     static sweepBrokenImages(root = null) {
         if (!this.isEnabled() || typeof document === 'undefined') return 0;
         const scope = root || document;
@@ -125,6 +174,14 @@ class MobileAssetGuard {
         let kicked = 0;
         for (let i = 0; i < imgs.length; i++) {
             const img = imgs[i];
+            if (img.closest && img.closest('.hidden')) continue;
+            if (img.dataset && img.dataset.mobSrc && !img.getAttribute('src')) {
+                const rest = img.dataset.mobSrc;
+                img.setAttribute('src', this.normalizeAssetPath(rest) || rest);
+                delete img.dataset.mobSrc;
+                kicked++;
+                continue;
+            }
             const rawSrc = img.getAttribute('src') || img.src;
             if (!rawSrc || rawSrc.startsWith('data:') || rawSrc.startsWith('blob:')) continue;
             const normSrc = this.normalizeAssetPath(rawSrc);
@@ -132,9 +189,6 @@ class MobileAssetGuard {
                 img.setAttribute('src', normSrc);
                 kicked++;
                 continue;
-            }
-            if (img.getAttribute('loading') === 'lazy') {
-                img.removeAttribute('loading');
             }
             if (img.complete && img.naturalWidth === 0 && !img._mobileRetryPending) {
                 if (this._scheduleRetry(img, normSrc)) kicked++;
@@ -182,6 +236,29 @@ class MobileAssetGuard {
         if (!this.isEnabled() || this._domInstalled || typeof document === 'undefined') return;
         this._domInstalled = true;
 
+        this.dehydrateHiddenModals();
+
+        if (typeof MutationObserver !== 'undefined') {
+            const obs = new MutationObserver((muts) => {
+                for (let i = 0; i < muts.length; i++) {
+                    const t = muts[i].target;
+                    if (!t || !t.classList) continue;
+                    const isTracked = t.classList.contains('modal-overlay') || t.id === 'loading-screen' || t.id === 'dev-intro-screen';
+                    if (!isTracked) continue;
+                    if (t.classList.contains('hidden')) {
+                        this.dehydrateContainer(t);
+                    } else {
+                        this.restoreContainer(t);
+                    }
+                }
+            });
+            obs.observe(document.body || document.documentElement, {
+                subtree: true,
+                attributes: true,
+                attributeFilter: ['class']
+            });
+        }
+
         document.addEventListener('error', (e) => {
             const t = e && e.target;
             if (!t || t.tagName !== 'IMG') return;
@@ -194,10 +271,6 @@ class MobileAssetGuard {
         document.addEventListener('visibilitychange', () => {
             if (!document.hidden) this.queueSweep(document, 250);
         });
-
-        document.addEventListener('click', () => {
-            this.queueSweep(document, 180);
-        }, { passive: true });
     }
 }
 

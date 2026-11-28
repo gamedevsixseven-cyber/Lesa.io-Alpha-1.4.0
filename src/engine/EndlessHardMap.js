@@ -102,7 +102,9 @@ class EndlessHardMap {
      */
     static renderGroundCache(arena) {
         if (!arena) return;
-        const scale = (typeof MobilePerf !== 'undefined' && MobilePerf.isMobile) ? 0.5 : 1.0;
+        const scale = (typeof MobilePerf !== 'undefined' && MobilePerf.isMobile)
+            ? Math.min(0.42, Math.max(0.28, MobilePerf.getGroundCacheScale() * 0.65))
+            : 1.0;
         arena.groundCacheScale = scale;
         const tw = Math.max(512, Math.round(arena.width * scale));
         const th = Math.max(512, Math.round(arena.height * scale));

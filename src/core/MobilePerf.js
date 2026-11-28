@@ -35,28 +35,28 @@ class MobilePerf {
 
     static GRAPHICS_PRESETS = {
         low: {
-            pixelBudget: 850000, minDpr: 0.85, maxDpr: 1.0, smoothing: 'low',
-            groundScale: 0.5, tileSupScale: 1.0,
-            atlas: { pageSize: 1024, maxPages: 6, dprCap: 1.0 },
+            pixelBudget: 620000, minDpr: 0.8, maxDpr: 1.0, smoothing: 'low',
+            groundScale: 0.45, tileSupScale: 1.0,
+            atlas: { pageSize: 512, maxPages: 4, dprCap: 1.0 },
             glows: false, ambientLighting: false, treeSize: 224,
             maxParticles: 12, maxPopups: 7, maxMuzzles: 6, maxSplats: 6, maxPoofs: 6,
-            maxComic: 3, maxDamage: 6, cacheMaxEntries: 160, snowCap: 24, fogCap: 6, emberCap: 8
+            maxComic: 3, maxDamage: 6, cacheMaxEntries: 40, snowCap: 24, fogCap: 6, emberCap: 8
         },
         medium: {
-            pixelBudget: 1250000, minDpr: 1.0, maxDpr: 1.45, smoothing: 'medium',
-            groundScale: 0.75, tileSupScale: 1.5,
-            atlas: { pageSize: 1024, maxPages: 6, dprCap: 1.25 },
-            glows: false, ambientLighting: false, treeSize: 288,
+            pixelBudget: 960000, minDpr: 0.95, maxDpr: 1.35, smoothing: 'medium',
+            groundScale: 0.55, tileSupScale: 1.25,
+            atlas: { pageSize: 1024, maxPages: 4, dprCap: 1.15 },
+            glows: false, ambientLighting: false, treeSize: 280,
             maxParticles: 24, maxPopups: 11, maxMuzzles: 10, maxSplats: 12, maxPoofs: 10,
-            maxComic: 4, maxDamage: 8, cacheMaxEntries: 160, snowCap: 42, fogCap: 10, emberCap: 12
+            maxComic: 4, maxDamage: 8, cacheMaxEntries: 56, snowCap: 42, fogCap: 10, emberCap: 12
         },
         high: {
-            pixelBudget: 2800000, minDpr: 1.75, maxDpr: 2.5, smoothing: 'high',
-            groundScale: 1.0, tileSupScale: 2.0,
-            atlas: { pageSize: 2048, maxPages: 8, dprCap: 2.0 },
-            glows: true, ambientLighting: true, treeSize: 460,
+            pixelBudget: 1650000, minDpr: 1.35, maxDpr: 1.85, smoothing: 'high',
+            groundScale: 0.85, tileSupScale: 1.5,
+            atlas: { pageSize: 1024, maxPages: 6, dprCap: 1.5 },
+            glows: true, ambientLighting: true, treeSize: 340,
             maxParticles: 56, maxPopups: 18, maxMuzzles: 24, maxSplats: 28, maxPoofs: 24,
-            maxComic: 6, maxDamage: 14, cacheMaxEntries: 220, snowCap: 999, fogCap: 24, emberCap: 30
+            maxComic: 6, maxDamage: 14, cacheMaxEntries: 80, snowCap: 999, fogCap: 24, emberCap: 30
         }
     };
 
@@ -148,7 +148,7 @@ class MobilePerf {
     static getAtlasConfig() {
         if (!this.isMobile) return { pageSize: 2048, maxPages: 8, dprCap: 2.0 };
         const a = this.getPreset().atlas;
-        return this.isIOS ? { pageSize: Math.min(a.pageSize, 1024), maxPages: Math.min(a.maxPages, 6), dprCap: Math.min(a.dprCap, 1.35) } : a;
+        return this.isIOS ? { pageSize: Math.min(a.pageSize, 1024), maxPages: Math.min(a.maxPages, 4), dprCap: Math.min(a.dprCap, 1.25) } : a;
     }
 
     static createContext(canvas) {
@@ -434,7 +434,14 @@ class MobilePerf {
                 fetch(src)
                     .then((r) => (r.ok ? r.arrayBuffer() : null))
                     .then((ab) => (ab && soundEngine.ctx ? soundEngine.ctx.decodeAudioData(ab) : null))
-                    .then((buf) => { if (buf) this._audioBuffers.set(src, buf); })
+                    .then((buf) => {
+                        if (!buf) return;
+                        if (this._audioBuffers.size >= 10) {
+                            const oldest = this._audioBuffers.keys().next().value;
+                            if (oldest !== undefined) this._audioBuffers.delete(oldest);
+                        }
+                        this._audioBuffers.set(src, buf);
+                    })
                     .catch(() => { })
                     .finally(() => this._audioLoading.delete(src));
             }

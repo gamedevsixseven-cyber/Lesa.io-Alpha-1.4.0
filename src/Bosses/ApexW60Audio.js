@@ -286,6 +286,10 @@ class ApexW60Audio {
 
     static resetSession() {
         this.stop(true);
+        if (typeof MobilePerf !== 'undefined' && MobilePerf.isMobile) {
+            this._raw.clear();
+            this._buffers.clear();
+        }
     }
 }
 

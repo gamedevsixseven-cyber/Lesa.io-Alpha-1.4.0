@@ -122,7 +122,7 @@ class GearManager {
             }
         }
 
-        const list = this.getUnlockedList();
+        const list = Array.from(new Set(this.getUnlockedList()));
         if (!list.includes(itemId)) {
             list.push(itemId);
             if (window.GameState && window.GameState.player) {
@@ -137,7 +137,7 @@ class GearManager {
             window.uiController.updateCurrencyUI(true);
         }
 
-        this.save();
+        this.save(null, list, true);
         return { success: true };
     }
 
@@ -250,12 +250,24 @@ class GearManager {
         }
     }
 
-    static save(equippedData = null, unlockedData = null) {
+    static save(equippedData = null, unlockedData = null, immediateCloud = false) {
         const equipped = equippedData || this.getEquippedMap();
-        const unlocked = unlockedData || this.getUnlockedList();
+        const unlocked = Array.from(new Set(unlockedData || this.getUnlockedList() || []));
+        if (typeof window !== 'undefined' && window.GameState && window.GameState.player) {
+            window.GameState.player.equippedGear = equipped;
+            window.GameState.player.unlockedGear = unlocked;
+            if (typeof window.GameState._touchMutation === 'function') window.GameState._touchMutation();
+        }
         if (typeof localStorage !== 'undefined') {
             localStorage.setItem('lesaio_equipped_gear', JSON.stringify(equipped));
             localStorage.setItem('lesaio_unlocked_gear', JSON.stringify(unlocked));
+        }
+        if (typeof window !== 'undefined' && window.SaveManager) {
+            if (typeof window.SaveManager.saveLocalOnly === 'function') window.SaveManager.saveLocalOnly();
+            if (immediateCloud && typeof window.SaveManager.saveNow === 'function') {
+                window.SaveManager.saveNow();
+                return;
+            }
         }
         if (typeof window !== 'undefined' && window.GameState && typeof window.GameState.save === 'function') {
             window.GameState.save();

@@ -78,9 +78,16 @@ class BgmController {
                 try {
                     const res = se.ctx.decodeAudioData(ab, (decoded) => {
                         this._buffers.set(src, decoded);
+                        if (this.isMobile()) this._rawBytes.delete(src);
                         resolve(decoded);
                     }, () => resolve(null));
-                    if (res && typeof res.then === 'function') res.then((d) => { if (d) this._buffers.set(src, d); resolve(d || null); }).catch(() => resolve(null));
+                    if (res && typeof res.then === 'function') res.then((d) => {
+                        if (d) {
+                            this._buffers.set(src, d);
+                            if (this.isMobile()) this._rawBytes.delete(src);
+                        }
+                        resolve(d || null);
+                    }).catch(() => resolve(null));
                 } catch (_) { resolve(null); }
             });
         });
@@ -166,7 +173,27 @@ class BgmController {
         this._stopSlotNode(slot, !resetOffset);
         if (resetOffset) {
             slot.offset = 0;
-            if (key !== 'menu' && slot.src) this._buffers.delete(slot.src);
+            slot.buffer = null;
+            if ((this.isMobile() || key !== 'menu') && slot.src) {
+                this._buffers.delete(slot.src);
+                this._rawBytes.delete(slot.src);
+            }
+        }
+    }
+
+    purgeInactiveBuffers() {
+        const activeSrcs = new Set();
+        for (const k of Object.keys(this._slots)) {
+            const s = this._slots[k];
+            if (!s) continue;
+            if (s.wantPlaying && s.src) activeSrcs.add(s.src);
+            else if (!s.wantPlaying) s.buffer = null;
+        }
+        for (const src of Array.from(this._buffers.keys())) {
+            if (!activeSrcs.has(src)) this._buffers.delete(src);
+        }
+        for (const src of Array.from(this._rawBytes.keys())) {
+            if (!activeSrcs.has(src)) this._rawBytes.delete(src);
         }
     }
 

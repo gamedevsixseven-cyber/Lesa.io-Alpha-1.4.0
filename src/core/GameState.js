@@ -49,10 +49,20 @@ class GameState {
             unlockedPerks: sj('lesaio_unlocked_perks', []),
             equippedPerks: sj('lesaio_equipped_perks', [null, null, null]),
             gearLevels: sj('lesaio_gear_levels', {}),
+            equippedGear: (() => {
+                const eq = sj('lesaio_equipped_gear', null);
+                return (eq && typeof eq === 'object' && !Array.isArray(eq)) ? { helmet: null, armor: null, belt: null, gloves: null, boots: null, ...eq } : { helmet: null, armor: null, belt: null, gloves: null, boots: null };
+            })(),
+            unlockedGear: (() => { const ug = sj('lesaio_unlocked_gear', []); return Array.isArray(ug) ? ug : []; })(),
             evolvedGear: sj('lesaio_evolved_gear', []),
+            ascendedGear: (() => { const ag = sj('lesaio_ascended_gear', []); return Array.isArray(ag) ? ag : []; })(),
             evolvedWeapons: sj('lesaio_evolved_weapons', []),
             celestialTrees: sj('lesaio_celestial_trees', {}),
             evolutionStones: si('lesaio_evolution_stones', 0, 0),
+            olympianStarStones: si('lesaio_olympian_star_stones', 0, 0),
+            ascentCrests: si('lesaio_ascent_crests', 0, 0),
+            ascentCrestsDate: localStorage.getItem('lesaio_ascent_crests_date') || '',
+            starBlessedHeroes: (() => { const sb = sj('lesaio_star_blessed_heroes', []); return Array.isArray(sb) ? sb : []; })(),
             perkRanks: (() => {
                 const unlocked = sj('lesaio_unlocked_perks', []);
                 const raw = sj('lesaio_perk_ranks', {});
@@ -235,6 +245,7 @@ class GameState {
         if (!this.player.unlockedHeroes.includes(heroId)) return false;
         this.player.selectedHero = heroId;
         localStorage.setItem('lesaio_selected_hero', heroId);
+        this._touchMutation();
 
         if (window.EventBus) {
             window.EventBus.emit('heroSelected', { heroId });

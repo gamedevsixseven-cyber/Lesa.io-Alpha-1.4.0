@@ -233,24 +233,30 @@ async function handlePlayers(method, segs, url, body, db) {
       return json({ ok: true, doc: { uid: row.uid, ...doc, updatedAt: row.updatedAt } });
     }
     if (method === 'POST') {
-      const incoming = body && typeof body === 'object' ? body : {};
-      delete incoming.isAdmin;
-      delete incoming.wipedByDevAt;
+      const rawIn = body && typeof body === 'object' ? { ...body } : {};
+      delete rawIn.isAdmin; delete rawIn.wipedByDevAt;
+      for (const k of Object.keys(rawIn)) {
+        if (k.startsWith('player.')) { rawIn.player = { ...(rawIn.player || {}), [k.slice(7)]: rawIn[k] }; delete rawIn[k]; }
+      }
       const existingRow = await db.prepare('SELECT dataJson FROM players WHERE uid = ?1').bind(uid).first();
       let prev = {};
-      if (existingRow && existingRow.dataJson) {
-        try { prev = JSON.parse(existingRow.dataJson); } catch (_) { }
-      }
-      const merged = { ...prev, ...incoming, uid };
-      if (incoming.devGifts === undefined && prev.devGifts !== undefined) merged.devGifts = prev.devGifts;
-      if (prev.clanId && !incoming.clanId && !incoming._clearClan) {
-        merged.clanId = prev.clanId;
-        if (prev.clanTag) merged.clanTag = prev.clanTag;
-        if (prev.clanName) merged.clanName = prev.clanName;
-      }
+      if (existingRow && existingRow.dataJson) { try { prev = JSON.parse(existingRow.dataJson); } catch (_) { } }
+      const merged = { ...prev, ...rawIn, uid };
+      if (rawIn.devGifts === undefined && prev.devGifts !== undefined) merged.devGifts = prev.devGifts;
+      if (prev.clanId && !rawIn.clanId && !rawIn._clearClan) { merged.clanId = prev.clanId; if (prev.clanTag) merged.clanTag = prev.clanTag; if (prev.clanName) merged.clanName = prev.clanName; }
       delete merged._clearClan;
-      if (prev.player && incoming.player) merged.player = { ...prev.player, ...incoming.player };
-      if (prev.socialStats && incoming.socialStats) merged.socialStats = { ...prev.socialStats, ...incoming.socialStats };
+      if (prev.player || rawIn.player) {
+        const pp = prev.player || {}, ip = rawIn.player || {};
+        const uArr = (a, b) => Array.from(new Set([...(Array.isArray(a) ? a : []), ...(Array.isArray(b) ? b : [])]));
+        const maxMap = (a, b, min = 0) => { const o = { ...(a || {}) }; for (const [k, v] of Object.entries(b || {})) { const n = parseInt(v, 10); if (Number.isFinite(n)) o[k] = Math.max(parseInt(o[k], 10) || min, n); } return o; };
+        const pLvl = Math.max(1, parseInt(pp.accountLevel ?? prev.level ?? 1, 10) || 1), iLvl = Math.max(1, parseInt(ip.accountLevel ?? rawIn.level ?? 1, 10) || 1);
+        const mLvl = Math.max(pLvl, iLvl);
+        merged.level = mLvl; merged.accountLevel = mLvl;
+        merged.player = { ...pp, ...ip, accountLevel: mLvl, unlockedGear: uArr(pp.unlockedGear, ip.unlockedGear), evolvedGear: uArr(pp.evolvedGear, ip.evolvedGear), ascendedGear: uArr(pp.ascendedGear, ip.ascendedGear), unlockedWeapons: uArr(pp.unlockedWeapons, ip.unlockedWeapons), unlockedHeroes: uArr(pp.unlockedHeroes, ip.unlockedHeroes), evolvedWeapons: uArr(pp.evolvedWeapons, ip.evolvedWeapons), gearLevels: maxMap(pp.gearLevels, ip.gearLevels, 1), skillLevels: maxMap(pp.skillLevels, ip.skillLevels, 1) };
+        if (iLvl < pLvl && pp.accountXp !== undefined) merged.player.accountXp = pp.accountXp;
+        if (ip.equippedGear && !Object.values(ip.equippedGear).some(Boolean) && pp.equippedGear && Object.values(pp.equippedGear).some(Boolean) && iLvl <= 1 && pLvl > 1) merged.player.equippedGear = pp.equippedGear;
+      }
+      if (prev.socialStats && rawIn.socialStats) merged.socialStats = { ...prev.socialStats, ...rawIn.socialStats };
       const jsonStr = JSON.stringify(merged);
       if (jsonStr.length > 260000) return json({ ok: false, error: 'Payload too large.' }, 413);
 

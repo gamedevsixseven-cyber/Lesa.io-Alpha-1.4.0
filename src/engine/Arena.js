@@ -35,7 +35,11 @@ class Arena {
         const isMobile = (typeof MobilePerf !== 'undefined' && MobilePerf.isMobile);
         const tex1 = Arena.getFloorTexture1();
         if (tex1) {
-            const onTex1Ready = () => this.renderGroundCache();
+            const onTex1Ready = () => {
+                if (!isMobile || (typeof window !== 'undefined' && window.gameInstance && window.gameInstance.state !== 'MENU')) {
+                    this.renderGroundCache();
+                }
+            };
             if (!tex1.complete || tex1.naturalWidth === 0) {
                 tex1.addEventListener('load', onTex1Ready);
                 if (isMobile) {
@@ -63,7 +67,7 @@ class Arena {
         const rng = (seed !== null && seed !== undefined) ? createArenaRng(seed) : Math.random;
         this.generateDecorations(rng);
         this.generateObstacles(rng);
-        this.renderGroundCache();
+        if (!isMobile) this.renderGroundCache();
     }
 
     reseed(seed) {

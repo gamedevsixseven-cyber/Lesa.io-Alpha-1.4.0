@@ -90,7 +90,9 @@ class MobileCanvasGuard {
             const g = window.gameInstance;
             if (!g) return;
             this.ensureContextAlive(g);
-            if (g.arena && typeof g.arena.renderGroundCache === 'function') g.arena.renderGroundCache();
+            if ((g.state === 'PLAYING' || g.state === 'PAUSED') && g.arena && typeof g.arena.renderGroundCache === 'function') {
+                g.arena.renderGroundCache();
+            }
             if (g.state === 'PLAYING' && this._wakeLockWanted) this.requestWakeLock();
         };
         document.addEventListener('visibilitychange', recoverSurfaces);
@@ -143,6 +145,81 @@ class MobileCanvasGuard {
                 mapRef.clear();
             }
         }
+        if (typeof MobilePerf !== 'undefined') {
+            if (typeof Obstacle !== 'undefined') {
+                if (Obstacle._scaledTreeCanvas) MobilePerf.releaseCanvas(Obstacle._scaledTreeCanvas);
+                if (Obstacle._charredTreeCanvas) MobilePerf.releaseCanvas(Obstacle._charredTreeCanvas);
+                Obstacle._scaledTreeCanvas = null;
+                Obstacle._charredTreeCanvas = null;
+            }
+            if (MobilePerf._highLightCanvas) {
+                MobilePerf.releaseCanvas(MobilePerf._highLightCanvas);
+                MobilePerf._highLightCanvas = null;
+            }
+            if (typeof BossWarningOverlay !== 'undefined' && BossWarningOverlay._mobileVigCanvas) {
+                MobilePerf.releaseCanvas(BossWarningOverlay._mobileVigCanvas);
+                BossWarningOverlay._mobileVigCanvas = null;
+            }
+            if (typeof DlcLightingEngine !== 'undefined' && DlcLightingEngine._lightCanvas) {
+                MobilePerf.releaseCanvas(DlcLightingEngine._lightCanvas);
+                DlcLightingEngine._lightCanvas = null;
+                DlcLightingEngine._lightCtx = null;
+            }
+            if (typeof ApexW60FinaleTeaser !== 'undefined' && ApexW60FinaleTeaser._lightCanvas) {
+                MobilePerf.releaseCanvas(ApexW60FinaleTeaser._lightCanvas);
+                ApexW60FinaleTeaser._lightCanvas = null;
+                ApexW60FinaleTeaser._lightCtx = null;
+            }
+        }
+    }
+
+    static onStartGameplay(game) {
+        if (!this.isEnabled()) return;
+        if (typeof window !== 'undefined' && window.soundEngine && window.soundEngine.bgmCtrl) {
+            window.soundEngine.bgmCtrl.stopTrack('menu', true);
+            window.soundEngine.bgmCtrl.stopTrack('credits', true);
+            window.soundEngine.bgmCtrl.purgeInactiveBuffers();
+        }
+        if (typeof MobileAssetGuard !== 'undefined') MobileAssetGuard.dehydrateHiddenModals();
+        if (game && game.arena && !game.arena.cachedGroundCanvas && !game.arena._mobileTileCanvas && typeof game.arena.renderGroundCache === 'function') {
+            game.arena.renderGroundCache();
+        }
+        if (game && game._mobMenuTimer) {
+            clearTimeout(game._mobMenuTimer);
+            game._mobMenuTimer = 0;
+            game.lastTime = performance.now();
+            requestAnimationFrame((t) => game.loop(t));
+        }
+    }
+
+    static onReturnToMenu(game) {
+        if (!this.isEnabled()) return;
+        this.purgeHeavyCaches();
+        if (game && game.arena && typeof MobilePerf !== 'undefined') {
+            if (game.arena.cachedGroundCanvas) {
+                MobilePerf.releaseCanvas(game.arena.cachedGroundCanvas);
+                game.arena.cachedGroundCanvas = null;
+            }
+            if (game.arena._mobileTileCanvas) {
+                MobilePerf.releaseCanvas(game.arena._mobileTileCanvas);
+                game.arena._mobileTileCanvas = null;
+                game.arena._mobileTilePattern = null;
+                game.arena._mobileTilePatternCtx = null;
+            }
+        }
+        if (typeof MobilePerf !== 'undefined' && MobilePerf._audioBuffers) MobilePerf._audioBuffers.clear();
+        if (typeof window !== 'undefined' && window.soundEngine && window.soundEngine.bgmCtrl) {
+            window.soundEngine.bgmCtrl.purgeInactiveBuffers();
+        }
+        if (typeof CharacterSprites !== 'undefined' && typeof CharacterSprites.purgeIdle === 'function') {
+            const hero = (window.GameState && window.GameState.player && window.GameState.player.selectedHero) || 'psanas';
+            CharacterSprites.purgeIdle([
+                'assets/SelectScreenLesaio.png',
+                'assets/LeftMenuScreenLogos.png',
+                `assets/HeroesIcons/${hero[0].toUpperCase()}${hero.slice(1)}Avatar.png`
+            ]);
+        }
+        if (typeof MobileAssetGuard !== 'undefined') MobileAssetGuard.dehydrateHiddenModals();
     }
 
     static ensureContextAlive(game) {

@@ -148,6 +148,7 @@ class LoadingScreen {
                     }
                 }
             }
+            if (typeof MobilePerf !== 'undefined') MobilePerf.releaseCanvas(offscreen);
         } catch (e) {
             // Silently continue if canvas is unavailable
         }
@@ -234,29 +235,36 @@ class LoadingScreen {
             };
 
             if (isMobile) {
-                // MOBILE-ONLY OPTIMIZED STAGED PRELOADER:
-                // Avoids non-existent 404 assets and loads menu, world, heroes, enemies, chests & all gear icons
-                // through a 4-worker concurrency pool so iOS Safari never drops connections.
-                const mobileManifest = [...imageAssets.filter(s => s !== 'assets/casillas.jpg')];
-                const extraMobileAssets = [
-                    'assets/MainMenuChestsUI.png',
-                    'assets/GameWorldModels/FloorTextureGrass2.png',
-                    'assets/GameWorldModels/TreeModelLesa.png',
-                    'assets/HeroesIcons/50balos.png', 'assets/HeroesIcons/50balosCrop.png',
-                    'assets/HeroesIcons/Billias.png', 'assets/HeroesIcons/BilliasAvatar.png',
-                    'assets/HeroesIcons/Kitsos.png', 'assets/HeroesIcons/KitsosAvatar.png',
-                    'assets/HeroesIcons/Psgiannhs.png', 'assets/HeroesIcons/PsgiannhsAvatar.png',
-                    'assets/GearUIIcons/HELMET.png', 'assets/GearUIIcons/ARMOR.png',
-                    'assets/GearUIIcons/Belt.png', 'assets/GearUIIcons/Gloves.png', 'assets/GearUIIcons/BOOTS.png',
-                    'assets/Chests/CommonChest.png', 'assets/Chests/UncommonChest.png', 'assets/Chests/RareChest.png',
-                    'assets/Chests/EpicChest.png', 'assets/Chests/LegendaryChest.png', 'assets/Chests/MythicChest.png'
+                // MOBILE-ONLY LIGHTWEIGHT STAGED PRELOADER:
+                // Preloads only the active hero + visible menu + first-wave terrain/enemy sprites
+                // so iOS Safari / Android WebViews do not pin ~200MB of idle modal/gear bitmaps at boot.
+                const selHero = (window.GameState && window.GameState.player && window.GameState.player.selectedHero)
+                    || localStorage.getItem('lesaio_selected_hero') || 'psanas';
+                const heroSpriteMap = {
+                    psanas: ['assets/HeroesIcons/PsanasFront.png', 'assets/HeroesIcons/PsanasBack.png', 'assets/HeroesIcons/PsanasAvatar.png'],
+                    psogas: ['assets/HeroesIcons/PsogasFront.png', 'assets/HeroesIcons/PsogasBack.png', 'assets/HeroesIcons/PsogasAvatar.png'],
+                    petros: ['assets/HeroesIcons/PetrosFront.png', 'assets/HeroesIcons/PetrosBack.png', 'assets/HeroesIcons/PetrosAvatar.png'],
+                    fatmir: ['assets/HeroesIcons/Fatmirfront.png', 'assets/HeroesIcons/FatmirBack.png', 'assets/HeroesIcons/FatmirAvatar.png'],
+                    billias: ['assets/HeroesIcons/Billias.png', 'assets/HeroesIcons/BilliasAvatar.png'],
+                    kitsos: ['assets/HeroesIcons/Kitsos.png', 'assets/HeroesIcons/KitsosAvatar.png'],
+                    psgiannhs: ['assets/HeroesIcons/Psgiannhs.png', 'assets/HeroesIcons/PsgiannhsAvatar.png'],
+                    '50balos': ['assets/HeroesIcons/50balos.png', 'assets/HeroesIcons/50balosCrop.png']
+                };
+                const coreMobileQueue = [
+                    ...(heroSpriteMap[selHero] || heroSpriteMap.psanas),
+                    'assets/HeroesIcons/Fatmirfront.png',
+                    'assets/HeroesIcons/FatmirBack.png',
+                    'assets/SkillsIcons/BladeRushSkill.png',
+                    'assets/SkillsIcons/NerobalonakiSkill.png',
+                    'assets/GearUIIcons/Gear&EquipmentIcon.png',
+                    'assets/skarmogyftos.jpg',
+                    'assets/SelectScreenLesaio.png',
+                    'assets/LeftMenuScreenLogos.png',
+                    'assets/UpdatedLoadingLesa.io.png',
+                    'assets/GameWorldModels/FloorTexture1LesaIO.png',
+                    'assets/GameWorldModels/UpdatedTreeLESAIO_transparent.png'
                 ];
-                if (typeof GEAR_DATA !== 'undefined' && GEAR_DATA) {
-                    for (const item of Object.values(GEAR_DATA)) {
-                        if (item && item.iconImg) extraMobileAssets.push(item.iconImg);
-                    }
-                }
-                const fullMobileQueue = Array.from(new Set([...mobileManifest, ...extraMobileAssets].filter(Boolean)));
+                const fullMobileQueue = Array.from(new Set(coreMobileQueue.filter(Boolean)));
                 let qIdx = 0;
                 const totalMobile = Math.max(1, fullMobileQueue.length);
 
@@ -276,15 +284,9 @@ class LoadingScreen {
                         finishOne();
                         return;
                     }
-                    img.addEventListener('load', () => {
-                        if (typeof img.decode === 'function') {
-                            img.decode().catch(() => {}).finally(finishOne);
-                        } else {
-                            finishOne();
-                        }
-                    }, { once: true });
+                    img.addEventListener('load', finishOne, { once: true });
                     img.addEventListener('error', finishOne, { once: true });
-                    setTimeout(finishOne, 3200);
+                    setTimeout(finishOne, 3000);
                 });
 
                 const mobileWorker = async () => {
@@ -294,15 +296,16 @@ class LoadingScreen {
                     }
                 };
                 await Promise.race([
-                    Promise.all([mobileWorker(), mobileWorker(), mobileWorker(), mobileWorker()]),
-                    new Promise((r) => setTimeout(r, 6200))
+                    Promise.all([mobileWorker(), mobileWorker(), mobileWorker()]),
+                    new Promise((r) => setTimeout(r, 4500))
                 ]);
 
-                // Eagerly decode & heal any existing DOM <img> tags on mobile before revealing menu
                 if (typeof MobileAssetGuard !== 'undefined') {
+                    MobileAssetGuard.dehydrateHiddenModals();
                     MobileAssetGuard.sweepBrokenImages(document);
                 }
-                this.warmupGPU(loadedImageObjects.slice(0, 32));
+                this.warmupGPU(loadedImageObjects.slice(0, 8));
+                loadedImageObjects.length = 0;
                 this.targetProgress = Math.max(this.targetProgress, 86);
             } else {
                 const imgPromises = imageAssets.map((src) => {
@@ -412,6 +415,9 @@ class LoadingScreen {
 
                 setTimeout(() => {
                     this.screen.classList.add('hidden');
+                    if (typeof MobileAssetGuard !== 'undefined') {
+                        MobileAssetGuard.dehydrateContainer(this.screen);
+                    }
                     if (typeof this.onComplete === 'function') {
                         this.onComplete();
                     }

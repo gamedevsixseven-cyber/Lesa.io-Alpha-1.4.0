@@ -21,6 +21,9 @@ class ComicTextCache {
      * Get or create a pre-rendered high-res offscreen bitmap for styled comic text
      */
     getCanvas(text, color = '#ffdf00', isCrit = false) {
+        if (typeof MobilePerf !== 'undefined' && MobilePerf.isMobile && !isCrit && /^\d[\d,]*$/.test(String(text))) {
+            return null;
+        }
         const key = `${text}_${color}_${isCrit ? 'crit' : 'norm'}`;
         if (this.cache.has(key)) {
             return this.cache.get(key);

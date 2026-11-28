@@ -263,47 +263,7 @@ class SaveSerializer {
                 ? PerkProgression.mergeFeats(state.player.combatFeats, p.combatFeats)
                 : { ...(state.player.combatFeats || {}), ...p.combatFeats };
         }
-        if (p.equippedGear && typeof p.equippedGear === 'object') {
-            const curEq = state.player.equippedGear || { helmet: null, armor: null, belt: null, gloves: null, boots: null };
-            const hasLocalGear = Object.values(curEq).some(Boolean);
-            if (!hasLocalGear || opts.syncSelections) {
-                state.player.equippedGear = { helmet: null, armor: null, belt: null, gloves: null, boots: null, ...p.equippedGear };
-                if (ls) ls.setItem('lesaio_equipped_gear', JSON.stringify(state.player.equippedGear));
-            }
-        }
-        if (Array.isArray(p.unlockedGear)) {
-            state.player.unlockedGear = Array.from(new Set([...(state.player.unlockedGear || []), ...p.unlockedGear]));
-            if (ls) ls.setItem('lesaio_unlocked_gear', JSON.stringify(state.player.unlockedGear));
-        }
-        if (p.gearLevels && typeof p.gearLevels === 'object' && !Array.isArray(p.gearLevels)) {
-            const mergedLevels = { ...(state.player.gearLevels || {}) };
-            for (const [gid, lvl] of Object.entries(p.gearLevels)) {
-                const n = parseInt(lvl, 10) || 1;
-                if (n > (mergedLevels[gid] || 1)) mergedLevels[gid] = n;
-            }
-            if (typeof GearUpgradeManager !== 'undefined') state.player.gearLevels = GearUpgradeManager.setLevelsMap(mergedLevels);
-            else { state.player.gearLevels = mergedLevels; if (ls) ls.setItem('lesaio_gear_levels', JSON.stringify(mergedLevels)); }
-        }
-        if (Array.isArray(p.ascendedGear)) {
-            const mergedAsc = Array.from(new Set([...(state.player.ascendedGear || []), ...p.ascendedGear]));
-            if (typeof GearUpgradeManager !== 'undefined') state.player.ascendedGear = GearUpgradeManager.setAscendedList(mergedAsc);
-            else { state.player.ascendedGear = mergedAsc; if (ls) ls.setItem('lesaio_ascended_gear', JSON.stringify(mergedAsc)); }
-        }
-        if (Array.isArray(p.starBlessedHeroes)) {
-            const mergedBlessed = Array.from(new Set([...(state.player.starBlessedHeroes || []), ...p.starBlessedHeroes]));
-            if (typeof HeroStarBlessing !== 'undefined') state.player.starBlessedHeroes = HeroStarBlessing.setBlessedList(mergedBlessed);
-            else { state.player.starBlessedHeroes = mergedBlessed; if (ls) ls.setItem('lesaio_star_blessed_heroes', JSON.stringify(mergedBlessed)); }
-        }
-        if (Array.isArray(p.evolvedGear)) {
-            const mergedEvo = Array.from(new Set([...(state.player.evolvedGear || []), ...p.evolvedGear]));
-            if (typeof GearUpgradeManager !== 'undefined') state.player.evolvedGear = GearUpgradeManager.setEvolvedList(mergedEvo);
-            else { state.player.evolvedGear = mergedEvo; if (ls) ls.setItem('lesaio_evolved_gear', JSON.stringify(mergedEvo)); }
-        }
-        if (Array.isArray(p.evolvedWeapons)) {
-            const mergedWepEvo = Array.from(new Set([...(state.player.evolvedWeapons || []), ...p.evolvedWeapons]));
-            if (typeof WeaponEvolutionManager !== 'undefined') state.player.evolvedWeapons = WeaponEvolutionManager.setEvolvedList(mergedWepEvo);
-            else { state.player.evolvedWeapons = mergedWepEvo; if (ls) ls.setItem('lesaio_evolved_weapons', JSON.stringify(mergedWepEvo)); }
-        }
+        this._mergeGearProgress(p, state, ls, Boolean(opts.overwriteSelections));
         if (p.celestialTrees && typeof p.celestialTrees === 'object' && !Array.isArray(p.celestialTrees)) {
             if (typeof CelestialSkillTreeManager !== 'undefined') {
                 state.player.celestialTrees = CelestialSkillTreeManager.setState(CelestialSkillTreeManager.mergeMaps(state.player.celestialTrees, p.celestialTrees));
@@ -452,10 +412,10 @@ class SaveSerializer {
     /**
      * Merge non-currency cloud progression into local GameState without clobbering currencies or active selections.
      */
-    static mergeProgressOnly(data, state) {
+    static mergeProgressOnly(data, state, opts = {}) {
         if (!data || !data.player || !state || !state.player) return false;
         try {
-            this._applyNonDestructiveProgress(data.player, state, { syncCurrencies: false, syncSelections: false, lbEndlessWave: data.lbEndlessWave });
+            this._applyNonDestructiveProgress(data.player, state, { syncCurrencies: false, syncSelections: false, overwriteSelections: Boolean(opts && opts.overwriteSelections), lbEndlessWave: data.lbEndlessWave });
             return true;
         } catch (err) {
             console.warn('[SaveSerializer] Non-fatal mergeProgressOnly notice:', err);
@@ -468,11 +428,40 @@ class SaveSerializer {
      * @param {Object} data 
      * @param {GameState} state 
      */
-    static deserialize(data, state) {
-        if (!data || !data.player || !state) return false;
+    static _mergeGearProgress(p, state, ls, overwriteSel = false) {
+        const lsArr = (k, cur) => { const sv = ls ? this._safeJson(k, []) : []; return Array.from(new Set([...(Array.isArray(cur) ? cur : []), ...(Array.isArray(sv) ? sv : [])])); };
+        const lsObj = (k, cur) => ({ ...(ls ? (this._safeJson(k, {}) || {}) : {}), ...(cur && typeof cur === 'object' && !Array.isArray(cur) ? cur : {}) });
+        if (p.equippedGear && typeof p.equippedGear === 'object') {
+            const curEq = { helmet: null, armor: null, belt: null, gloves: null, boots: null, ...lsObj('lesaio_equipped_gear', state.player.equippedGear) };
+            const hasSavedKey = Boolean(ls && ls.getItem('lesaio_equipped_gear') !== null);
+            const hasLocal = hasSavedKey || Object.values(curEq).some(Boolean);
+            const nextEq = (!hasLocal || overwriteSel) ? { helmet: null, armor: null, belt: null, gloves: null, boots: null, ...p.equippedGear } : { ...curEq };
+            state.player.equippedGear = nextEq;
+            if (ls) ls.setItem('lesaio_equipped_gear', JSON.stringify(nextEq));
+        }
+        if (Array.isArray(p.unlockedGear)) { state.player.unlockedGear = Array.from(new Set([...lsArr('lesaio_unlocked_gear', state.player.unlockedGear), ...p.unlockedGear])); if (ls) ls.setItem('lesaio_unlocked_gear', JSON.stringify(state.player.unlockedGear)); }
+        if (p.gearLevels && typeof p.gearLevels === 'object' && !Array.isArray(p.gearLevels)) {
+            const ml = lsObj('lesaio_gear_levels', state.player.gearLevels);
+            for (const [gid, lvl] of Object.entries(p.gearLevels)) { const n = parseInt(lvl, 10) || 1; if (n > (ml[gid] || 1)) ml[gid] = n; }
+            if (typeof GearUpgradeManager !== 'undefined') state.player.gearLevels = GearUpgradeManager.setLevelsMap(ml);
+            else { state.player.gearLevels = ml; if (ls) ls.setItem('lesaio_gear_levels', JSON.stringify(ml)); }
+        }
+        const mergeSet = (prop, lsKey, val, setterObj, setterFn) => {
+            if (!Array.isArray(val)) return;
+            const merged = Array.from(new Set([...lsArr(lsKey, state.player[prop]), ...val]));
+            if (typeof setterObj !== 'undefined' && setterObj && typeof setterObj[setterFn] === 'function') state.player[prop] = setterObj[setterFn](merged);
+            else { state.player[prop] = merged; if (ls) ls.setItem(lsKey, JSON.stringify(merged)); }
+        };
+        mergeSet('ascendedGear', 'lesaio_ascended_gear', p.ascendedGear, typeof GearUpgradeManager !== 'undefined' ? GearUpgradeManager : null, 'setAscendedList');
+        mergeSet('starBlessedHeroes', 'lesaio_star_blessed_heroes', p.starBlessedHeroes, typeof HeroStarBlessing !== 'undefined' ? HeroStarBlessing : null, 'setBlessedList');
+        mergeSet('evolvedGear', 'lesaio_evolved_gear', p.evolvedGear, typeof GearUpgradeManager !== 'undefined' ? GearUpgradeManager : null, 'setEvolvedList');
+        mergeSet('evolvedWeapons', 'lesaio_evolved_weapons', p.evolvedWeapons, typeof WeaponEvolutionManager !== 'undefined' ? WeaponEvolutionManager : null, 'setEvolvedList');
+    }
 
+    static deserialize(data, state, opts = {}) {
+        if (!data || !data.player || !state) return false;
         try {
-            this._applyNonDestructiveProgress(data.player, state, { syncCurrencies: true, syncSelections: true, lbEndlessWave: data.lbEndlessWave });
+            this._applyNonDestructiveProgress(data.player, state, { syncCurrencies: true, syncSelections: true, overwriteSelections: Boolean(opts && opts.overwriteSelections), lbEndlessWave: data.lbEndlessWave });
 
             if (data.settings) {
                 state.settings.musicVolume = data.settings.musicVolume ?? state.settings.musicVolume;

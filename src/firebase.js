@@ -28,8 +28,10 @@ class CloudSaveService {
         this.lastLocalMutationDirtyAt = 0;
         this._localMutationVersion = 0;
         this._activeListenerUid = null;
-        this._cloudSyncCooldownMs = 120000;
+        this._cloudSyncCooldownMs = 15000;
         this._lastCloudSyncAt = 0;
+        this._lastFirestoreWriteAt = 0;
+        this._lastFirestoreLevel = 0;
         this._cloudSyncTimer = null;
         this._pendingCloudSyncData = null;
 
@@ -167,61 +169,58 @@ class CloudSaveService {
         this._pendingCloudSyncData = null;
     }
 
-    flushPendingCloudSync() {
-        if (!this._pendingCloudSyncData || this.isHydratingAuth || this.isSyncingFromCloud) return false;
+    flushPendingCloudSync(fromUnload = true) {
+        if (this.isHydratingAuth || this.isSyncingFromCloud) return false;
         if (typeof window !== 'undefined' && window._lesaioSuppressUnloadSave) return false;
-        const payload = this._pendingCloudSyncData;
+        const payload = this._pendingCloudSyncData || (this.hasUnflushedLocalMutation && typeof SaveSerializer !== 'undefined' && window.GameState ? SaveSerializer.serialize(window.GameState) : null);
+        if (!payload) return false;
         this._clearPendingCloudSync();
-        return this.saveToCloud(payload);
+        return this.saveToCloud(payload, { keepalive: Boolean(fromUnload) });
     }
 
     async triggerCloudSync(saveData) {
+        const edgeOn = typeof window !== 'undefined' && window.edgeApi && window.edgeApi.isEnabled();
+        const cd = edgeOn ? this._cloudSyncCooldownMs : 45000;
         const elapsed = Date.now() - (this._lastCloudSyncAt || 0);
-        if (elapsed >= this._cloudSyncCooldownMs) {
+        if (elapsed >= cd) {
             this._clearPendingCloudSync();
             return this.saveToCloud(saveData);
         }
         this._pendingCloudSyncData = saveData;
-        if (!this._cloudSyncTimer) {
-            this._cloudSyncTimer = setTimeout(() => this.flushPendingCloudSync(), Math.max(1000, this._cloudSyncCooldownMs - elapsed));
-        }
+        if (!this._cloudSyncTimer) this._cloudSyncTimer = setTimeout(() => this.flushPendingCloudSync(false), Math.max(1000, cd - elapsed));
         return true;
     }
 
-    async saveToCloud(saveData = {}) {
+    async saveToCloud(saveData = {}, opts = {}) {
         this._clearPendingCloudSync();
         this._lastCloudSyncAt = Date.now();
-        if (!this.isInitialized || !this.db) return false;
-        if (this.isSyncingFromCloud || this.isHydratingAuth) {
-            return false;
-        }
-        if (typeof PlayerIdentity !== 'undefined' && PlayerIdentity.isAwaitingInitialName() && !this.currentUser) {
-            return false;
-        }
-        const uid = this.getEffectivePlayerUid();
-        const email = this.getEffectivePlayerEmail();
-        const user = { uid, email };
+        if (!this.isInitialized || !this.db || this.isSyncingFromCloud || this.isHydratingAuth) return false;
+        if (typeof PlayerIdentity !== 'undefined' && PlayerIdentity.isAwaitingInitialName() && !this.currentUser) return false;
+        const uid = this.getEffectivePlayerUid(), email = this.getEffectivePlayerEmail(), user = { uid, email };
         if (!user.uid) return false;
+        const isKeepalive = Boolean(opts && opts.keepalive);
 
         this._pendingCloudSaves = (this._pendingCloudSaves || 0) + 1;
         const saveVer = this._localMutationVersion || 0;
         try {
             const edge = (typeof window !== 'undefined' && window.edgeApi && window.edgeApi.isEnabled()) ? window.edgeApi : null;
             const userDocRef = this.db.collection('players').doc(user.uid);
-            if (!this.hasCompletedInitialSync) {
+            if (!this.hasCompletedInitialSync && !isKeepalive) {
                 let preData = null;
                 if (edge) {
                     const er = await edge.get(`/player/${encodeURIComponent(user.uid)}`).catch(() => null);
                     if (er && er.ok && er.doc) preData = er.doc;
                 }
-                if (!preData) {
-                    const preSnap = await userDocRef.get().catch(() => null);
-                    if (preSnap && preSnap.exists) preData = preSnap.data();
+                const preSnap = await userDocRef.get().catch(() => null);
+                const fsData = (preSnap && preSnap.exists) ? preSnap.data() : null;
+                if (!preData || (fsData && typeof SaveMigration !== 'undefined' && SaveMigration.scoreCloudDoc(fsData) > SaveMigration.scoreCloudDoc(preData))) {
+                    preData = fsData || preData;
                 }
-                this.hasCompletedInitialSync = true;
                 if (preData) {
                     if (!this.lastCloudData) this.lastCloudData = preData;
                     this.applyCloudData(preData);
+                } else {
+                    this.hasCompletedInitialSync = true;
                 }
             }
             this.lastLocalSaveTimestamp = Date.now();
@@ -239,16 +238,20 @@ class CloudSaveService {
 
             let savedToEdge = false;
             if (edge) {
-                const putRes = await edge.post(`/player/${encodeURIComponent(user.uid)}`, { ...payload, lastUpdated: Date.now() }).catch(() => null);
+                const putRes = await edge.post(`/player/${encodeURIComponent(user.uid)}`, { ...payload, lastUpdated: Date.now() }, 6000, isKeepalive ? { keepalive: true } : null).catch(() => null);
                 if (putRes && putRes.ok) savedToEdge = true;
             }
-            if (!savedToEdge) {
+            const lvlNow = Number(payload.level) || 1;
+            const needFs = !savedToEdge || (!isKeepalive && (lvlNow > (this._lastFirestoreLevel || 0) || Date.now() - (this._lastFirestoreWriteAt || 0) >= 300000));
+            if (needFs && !isKeepalive) {
+                this._lastFirestoreWriteAt = Date.now();
+                this._lastFirestoreLevel = Math.max(this._lastFirestoreLevel || 0, lvlNow);
                 const writePayload = { ...payload, lastUpdated: firebase.firestore.FieldValue.serverTimestamp() };
                 try { await userDocRef.set(writePayload, { merge: true }); } catch (writeErr) {
                     if (writeErr && writeErr.code === 'permission-denied') {
                         const { uid: _u, email: _e, isAdmin: _a, wipedByDevAt: _w, ...safePayload } = writePayload;
                         await userDocRef.set(safePayload, { merge: true });
-                    } else throw writeErr;
+                    } else if (!savedToEdge) throw writeErr;
                 }
             }
 
@@ -297,7 +300,12 @@ class CloudSaveService {
         if (!uid) return;
         const edge = (typeof window !== 'undefined' && window.edgeApi && window.edgeApi.isEnabled()) ? window.edgeApi : null;
         if (edge) {
-            edge.post(`/player/${encodeURIComponent(uid)}`, fields).then((r) => {
+            const ef = { player: {} };
+            for (const [k, v] of Object.entries(fields || {})) {
+                if (k.startsWith('player.')) ef.player[k.slice(7)] = v; else ef[k] = v;
+            }
+            if (Object.keys(ef.player).length === 0) delete ef.player;
+            edge.post(`/player/${encodeURIComponent(uid)}`, ef).then((r) => {
                 if (r && r.fallback && this.db) this.db.collection('players').doc(uid).update(fields).catch(() => {});
             }).catch(() => {});
             return;
@@ -384,110 +392,94 @@ class CloudSaveService {
         if (!data) return;
         const now = Date.now();
         const hasPendingDebounce = !!(typeof window !== 'undefined' && window.SaveManager && window.SaveManager.saveDebounceTimer);
-        if (hasPendingDebounce || this.hasUnflushedLocalMutation || ((this._pendingCloudSaves || 0) > 0 && now - (this.lastLocalSaveTimestamp || 0) < 4000) || (now - (this.lastLocalMutationDirtyAt || 0) < 4000)) {
-            this.lastCloudData = data;
-            this.hasCompletedInitialSync = true;
-            if (Array.isArray(data.devGifts) && data.devGifts.length > 0 && typeof DevGiftManager !== 'undefined') {
-                DevGiftManager.scheduleClaimRetry(data, this);
+        const gsPre = (typeof window !== 'undefined') ? window.GameState : null;
+        const lsPre = (typeof SaveMigration !== 'undefined') ? SaveMigration.safeGetJson(SaveMigration.KEYS.MAIN_SAVE, null) : null;
+        const localPre = (typeof SaveMigration !== 'undefined') ? Math.max(SaveMigration.scoreCloudDoc(gsPre), SaveMigration.scoreCloudDoc(lsPre)) : 0;
+        const cloudPre = (typeof SaveMigration !== 'undefined') ? SaveMigration.scoreCloudDoc(data) : 0;
+        const isWipedDoc = typeof SaveMigration !== 'undefined' && SaveMigration.wasWipedByDev(data, now);
+        const isHigherInit = !this.hasCompletedInitialSync && !hasPendingDebounce && cloudPre > localPre + 50 && !isWipedDoc;
+        if (!isHigherInit && !isWipedDoc && (hasPendingDebounce || this.hasUnflushedLocalMutation || ((this._pendingCloudSaves || 0) > 0 && now - (this.lastLocalSaveTimestamp || 0) < 4000) || (now - (this.lastLocalMutationDirtyAt || 0) < 4000))) {
+            if (!this.lastCloudData || cloudPre >= (typeof SaveMigration !== 'undefined' ? SaveMigration.scoreCloudDoc(this.lastCloudData) : 0)) {
+                this.lastCloudData = data;
             }
+            if (Array.isArray(data.devGifts) && data.devGifts.length > 0 && typeof DevGiftManager !== 'undefined') DevGiftManager.scheduleClaimRetry(data, this);
             return;
         }
-        this.lastCloudData = data;
         const isInitialSync = !this.hasCompletedInitialSync;
         this.hasCompletedInitialSync = true;
         this.isSyncingFromCloud = true;
-        let changed = false;
-        let _preferLocal = false;
+        let changed = false, _preferLocal = false, _isStaleCloud = false, _wiped = false;
         try {
-        if (typeof SaveMigration !== 'undefined') {
-            _preferLocal = !!SaveMigration.reconcileCloudSnapshot(data, window.GameState, isInitialSync).preferLocalCurrencies;
+        const rec = (typeof SaveMigration !== 'undefined') ? SaveMigration.reconcileCloudSnapshot(data, window.GameState, isInitialSync) : { preferLocalCurrencies: false };
+        _preferLocal = !!rec.preferLocalCurrencies;
+        _wiped = !!rec.wiped;
+        _isStaleCloud = !_wiped && (typeof SaveMigration !== 'undefined') && SaveMigration.hasEstablishedProgress() && rec.localScore > rec.cloudScore + 50;
+        if (_isStaleCloud) _preferLocal = true;
+        if (!this.lastCloudData || _wiped || (rec.cloudScore || 0) >= (typeof SaveMigration !== 'undefined' ? SaveMigration.scoreCloudDoc(this.lastCloudData) : 0)) {
+            this.lastCloudData = data;
         }
 
         const pObj = data.player && typeof data.player === 'object' ? data.player : null;
         if (this._syncCloudCurrency('gems', data, pObj, _preferLocal)) changed = true;
         if (this._syncCloudCurrency('coins', data, pObj, _preferLocal)) changed = true;
 
-        // 3. Live Player / Account Level Sync
+        // 3. Live Player / Account Level Sync (never downgrade unless Dev-wiped)
         const curLevel = (window.GameState && typeof window.GameState.player.accountLevel === 'number')
-            ? window.GameState.player.accountLevel
-            : parseInt(localStorage.getItem('lesaio_account_level') || '1', 10);
-
-        const wiped = (typeof SaveMigration !== 'undefined') && SaveMigration.wasWipedByDev(data, 0);
+            ? window.GameState.player.accountLevel : parseInt(localStorage.getItem('lesaio_account_level') || '1', 10);
         const lvlNums = [data.level, data.accountLevel, pObj && pObj.accountLevel, pObj && pObj.level]
             .map(v => parseInt(v, 10)).filter(n => Number.isFinite(n) && n >= 1);
-        const numLevel = lvlNums.length ? (wiped ? (parseInt(data.level ?? 1, 10) || 1) : Math.max(...lvlNums)) : undefined;
+        const numLevel = lvlNums.length ? (_wiped ? (parseInt(data.level ?? 1, 10) || 1) : Math.max(...lvlNums)) : undefined;
 
         let incomingLevel = undefined;
         if (_preferLocal) {
             if (!isNaN(curLevel)) this.lastSeenLevel = curLevel;
         } else if (this.lastSeenLevel === undefined) {
             if (numLevel !== undefined && !isNaN(numLevel)) {
-                incomingLevel = (!wiped && isInitialSync && typeof SaveMigration !== 'undefined' && SaveMigration.hasEstablishedProgress()) ? Math.max(curLevel, numLevel) : numLevel;
+                incomingLevel = (!_wiped && typeof SaveMigration !== 'undefined' && SaveMigration.hasEstablishedProgress()) ? Math.max(curLevel, numLevel) : numLevel;
             }
         } else {
             const levelChanged = (numLevel !== undefined && !isNaN(numLevel) && numLevel !== this.lastSeenLevel);
-            if (levelChanged && (wiped || numLevel >= curLevel)) incomingLevel = numLevel;
+            if (levelChanged && (_wiped || numLevel >= curLevel)) incomingLevel = numLevel;
         }
-
-        if (numLevel !== undefined && !isNaN(numLevel)) this.lastSeenLevel = numLevel;
+        if (!_preferLocal && numLevel !== undefined && !isNaN(numLevel)) this.lastSeenLevel = _wiped ? numLevel : Math.max(curLevel, numLevel);
 
         if (incomingLevel !== undefined && !isNaN(incomingLevel) && incomingLevel !== curLevel) {
-            if (window.GameState && typeof window.GameState.setAccountLevel === 'function') {
-                window.GameState.setAccountLevel(incomingLevel, undefined);
-            } else {
-                localStorage.setItem('lesaio_account_level', incomingLevel.toString());
-                if (window.GameState) window.GameState.player.accountLevel = incomingLevel;
-            }
-
-            const lvlEl = document.getElementById('player-profile-level');
-            if (lvlEl) lvlEl.textContent = incomingLevel;
-            const modalLvl = document.getElementById('prof-modal-level-badge');
-            if (modalLvl) modalLvl.textContent = `LVL ${incomingLevel}`;
-            const hudLvl = document.getElementById('level-badge-text');
-            if (hudLvl) hudLvl.textContent = `LVL ${incomingLevel}`;
-
-            if (window.uiController && window.uiController.profileManager) {
-                window.uiController.profileManager.updateProfileUI();
-            }
-
+            if (window.GameState && typeof window.GameState.setAccountLevel === 'function') window.GameState.setAccountLevel(incomingLevel, undefined);
+            else { localStorage.setItem('lesaio_account_level', incomingLevel.toString()); if (window.GameState) window.GameState.player.accountLevel = incomingLevel; }
+            const lvlEl = document.getElementById('player-profile-level'); if (lvlEl) lvlEl.textContent = incomingLevel;
+            const modalLvl = document.getElementById('prof-modal-level-badge'); if (modalLvl) modalLvl.textContent = `LVL ${incomingLevel}`;
+            const hudLvl = document.getElementById('level-badge-text'); if (hudLvl) hudLvl.textContent = `LVL ${incomingLevel}`;
+            if (window.uiController && window.uiController.profileManager) window.uiController.profileManager.updateProfileUI();
             this.lastSeenLevel = incomingLevel;
             changed = true;
             this._reconcileDoc({ level: incomingLevel, accountLevel: incomingLevel, 'player.accountLevel': incomingLevel });
         }
 
-        // 4. Live Account XP Sync
+        // 4. Live Account XP Sync (never downgrade XP from stale lower-level doc)
         const curXp = (window.GameState && typeof window.GameState.player.accountXp === 'number')
-            ? window.GameState.player.accountXp
-            : parseInt(localStorage.getItem('lesaio_account_xp') || '0', 10);
-
+            ? window.GameState.player.accountXp : parseInt(localStorage.getItem('lesaio_account_xp') || '0', 10);
         const xpNums = [data.xp, data.accountXp, pObj && pObj.accountXp, pObj && pObj.xp]
             .map(v => parseInt(v, 10)).filter(n => Number.isFinite(n) && n >= 0);
-        const numXp = xpNums.length ? (wiped ? (parseInt(data.xp ?? 0, 10) || 0) : Math.max(...xpNums)) : undefined;
+        const numXp = xpNums.length ? (_wiped ? (parseInt(data.xp ?? 0, 10) || 0) : Math.max(...xpNums)) : undefined;
 
         let incomingXp = undefined;
+        const cloudSameOrHigherLvl = _wiped || numLevel === undefined || numLevel >= curLevel;
         if (_preferLocal) {
             if (!isNaN(curXp)) this.lastSeenXp = curXp;
         } else if (this.lastSeenXp === undefined) {
-            if (numXp !== undefined && !isNaN(numXp) && (!incomingLevel || incomingLevel >= curLevel)) incomingXp = numXp;
-        } else {
+            if (numXp !== undefined && !isNaN(numXp) && cloudSameOrHigherLvl) {
+                incomingXp = (!_wiped && numLevel === curLevel) ? Math.max(curXp, numXp) : numXp;
+            }
+        } else if (cloudSameOrHigherLvl) {
             const xpChanged = (numXp !== undefined && !isNaN(numXp) && numXp !== this.lastSeenXp);
-            if (xpChanged && (wiped || (numLevel && numLevel > curLevel) || numXp > curXp)) incomingXp = numXp;
+            if (xpChanged && (_wiped || (numLevel && numLevel > curLevel) || numXp > curXp)) incomingXp = numXp;
         }
-
-        if (numXp !== undefined && !isNaN(numXp)) this.lastSeenXp = numXp;
+        if (!_preferLocal && numXp !== undefined && !isNaN(numXp) && cloudSameOrHigherLvl) this.lastSeenXp = numXp;
 
         if (incomingXp !== undefined && !isNaN(incomingXp) && incomingXp !== curXp) {
-            if (window.GameState && typeof window.GameState.setAccountLevel === 'function') {
-                window.GameState.setAccountLevel(undefined, incomingXp);
-            } else {
-                localStorage.setItem('lesaio_account_xp', incomingXp.toString());
-                if (window.GameState) window.GameState.player.accountXp = incomingXp;
-            }
-
-            if (window.uiController && window.uiController.profileManager) {
-                window.uiController.profileManager.updateProfileUI();
-            }
-
+            if (window.GameState && typeof window.GameState.setAccountLevel === 'function') window.GameState.setAccountLevel(undefined, incomingXp);
+            else { localStorage.setItem('lesaio_account_xp', incomingXp.toString()); if (window.GameState) window.GameState.player.accountXp = incomingXp; }
+            if (window.uiController && window.uiController.profileManager) window.uiController.profileManager.updateProfileUI();
             this.lastSeenXp = incomingXp;
             changed = true;
             this._reconcileDoc({ xp: incomingXp, accountXp: incomingXp, 'player.accountXp': incomingXp });
@@ -498,14 +490,12 @@ class CloudSaveService {
         if (rawSkills && typeof rawSkills === 'object') {
             const curSkills = (window.GameState && window.GameState.player && window.GameState.player.skillLevels) || {};
             const parsedSkills = {};
+            const keepMax = _preferLocal || !_wiped;
             for (const [k, v] of Object.entries(rawSkills)) {
                 const n = parseInt(v, 10) || 1;
-                parsedSkills[k] = _preferLocal ? Math.max(curSkills[k] || 1, n) : n;
+                parsedSkills[k] = keepMax ? Math.max(curSkills[k] || 1, n) : n;
             }
-            if (_preferLocal) {
-                for (const [k, v] of Object.entries(curSkills)) parsedSkills[k] = Math.max(parsedSkills[k] || 1, parseInt(v, 10) || 1);
-            }
-
+            if (keepMax) for (const [k, v] of Object.entries(curSkills)) parsedSkills[k] = Math.max(parsedSkills[k] || 1, parseInt(v, 10) || 1);
             const strSkills = JSON.stringify(parsedSkills);
             if (this.lastSeenSkillLevels === undefined || this.lastSeenSkillLevels !== strSkills) {
                 this.lastSeenSkillLevels = strSkills;
@@ -518,12 +508,15 @@ class CloudSaveService {
                     window.uiController.skillManager.updateHUDIcon();
                 }
                 changed = true;
-                this._reconcileDoc({ skillLevels: parsedSkills, 'player.skillLevels': parsedSkills });
+                if (!_isStaleCloud) this._reconcileDoc({ skillLevels: parsedSkills, 'player.skillLevels': parsedSkills });
             }
         }
         } finally { this.isSyncingFromCloud = false; }
         if (changed && window.SaveManager && typeof window.SaveManager.saveLocalOnly === 'function') window.SaveManager.saveLocalOnly();
-        if (_preferLocal && window.SaveSerializer && window.GameState) {
+        if (changed && window.uiController && window.uiController.modalManager && typeof window.uiController.modalManager.updateGearScreen === 'function') {
+            window.uiController.modalManager.updateGearScreen();
+        }
+        if ((_preferLocal || _isStaleCloud) && window.SaveSerializer && window.GameState) {
             const p = window.SaveSerializer.serialize(window.GameState);
             if (p) setTimeout(() => this.saveToCloud(p), 400);
         } else if (isInitialSync && window.GameState && window.GameState.player && window.SaveSerializer) {
@@ -568,6 +561,12 @@ class CloudSaveService {
         }
 
         if (user.uid) {
+            const edge = (typeof window !== 'undefined' && window.edgeApi && window.edgeApi.isEnabled()) ? window.edgeApi : null;
+            if (edge) {
+                edge.get(`/player/${encodeURIComponent(user.uid)}`).then((er) => {
+                    if (er && er.ok && er.doc && this._activeListenerUid === user.uid) this.applyCloudData(er.doc);
+                }).catch(() => {});
+            }
             try { const unsubUid = this.db.collection('players').doc(user.uid).onSnapshot((doc) => {
                 if (doc.exists) this.applyCloudData(doc.data());
                 else if (!(doc.metadata && doc.metadata.fromCache) && !this.isHydratingAuth) { if (!user.email) this.seedNewPlayerDoc(user.uid); this.hasCompletedInitialSync = true; if (typeof DevGiftTransport !== 'undefined') DevGiftTransport.pullRemotePendingGifts(this, true); }

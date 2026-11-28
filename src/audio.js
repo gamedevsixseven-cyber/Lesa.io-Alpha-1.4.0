@@ -47,11 +47,12 @@ class SoundEngine {
         this.creditsMusic.preload = canWebFetch ? 'none' : 'auto';
         this.creditsMusic.volume = this.bgmMuted ? 0 : this.bgmVolume;
 
-        // Data-Driven Sound Registry Initialization
+        // Data-Driven Sound Registry Initialization (avoid 13 idle <audio> decoder pipelines on mobile HTTP)
+        const lazyMobileSfx = canWebFetch && typeof MobilePerf !== 'undefined' && MobilePerf.isMobile;
         this.sounds = {};
         for (const [key, def] of Object.entries(SOUND_REGISTRY)) {
             const snd = new Audio(def.src);
-            snd.preload = 'auto';
+            snd.preload = lazyMobileSfx ? 'none' : 'auto';
             snd.volume = this.muted ? 0 : this.masterVolume * (def.vol || 1.0);
             this.sounds[key] = { audio: snd, def };
         }
@@ -62,7 +63,7 @@ class SoundEngine {
             new Audio('Audio/DashSound2.mp3?v=2')
         ];
         this.dashSounds.forEach(s => {
-            s.preload = 'auto';
+            s.preload = lazyMobileSfx ? 'none' : 'auto';
             s.volume = this.muted ? 0 : this.masterVolume;
         });
 
@@ -232,8 +233,8 @@ class SoundEngine {
         } catch (_) {}
     }
 
-    stopMenuBGM() {
-        if (this.bgmCtrl) this.bgmCtrl.stopTrack('menu', false);
+    stopMenuBGM(purgeMobile = false) {
+        if (this.bgmCtrl) this.bgmCtrl.stopTrack('menu', !!(purgeMobile && this.bgmCtrl.isMobile()));
         try { this.menuMusic.pause(); } catch (_) {}
     }
 
@@ -300,7 +301,8 @@ class SoundEngine {
 
     playStartGame() {
         this.playSelect();
-        this.stopMenuBGM();
+        this.stopMenuBGM(true);
+        this.stopCreditsBGM();
         this.startBGM();
     }
 

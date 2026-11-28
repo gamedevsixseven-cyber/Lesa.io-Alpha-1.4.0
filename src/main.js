@@ -480,6 +480,7 @@ class UIController {
             window.soundEngine.stopBGM();
             window.soundEngine.startMenuBGM();
         }
+        if (typeof MobileCanvasGuard !== 'undefined') MobileCanvasGuard.onReturnToMenu(window.gameInstance);
         if (typeof LilXasEvent !== 'undefined') LilXasEvent.reset();
         if (typeof ApexW60Audio !== 'undefined') ApexW60Audio.resetSession();
 

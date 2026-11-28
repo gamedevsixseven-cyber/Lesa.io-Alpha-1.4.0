@@ -18,7 +18,7 @@ class EdgeApiClient {
         return Boolean(EdgeApiClient.BASE_URL);
     }
 
-    async request(method, path, body = null, timeoutMs = 5500) {
+    async request(method, path, body = null, timeoutMs = 5500, extraOpts = null) {
         if (!EdgeApiClient.BASE_URL || typeof fetch !== 'function') {
             return { ok: false, fallback: true, error: 'Fetch unavailable.' };
         }
@@ -29,11 +29,14 @@ class EdgeApiClient {
         const ctrl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
         const timer = ctrl ? setTimeout(() => ctrl.abort(), timeoutMs) : null;
         try {
+            const bodyStr = body ? JSON.stringify(body) : undefined;
+            const useKeepalive = Boolean(extraOpts && extraOpts.keepalive && bodyStr && bodyStr.length < 60000);
             const opts = {
                 method,
-                headers: body ? { 'Content-Type': 'application/json' } : undefined,
-                body: body ? JSON.stringify(body) : undefined,
-                signal: ctrl ? ctrl.signal : undefined
+                headers: bodyStr ? { 'Content-Type': 'application/json' } : undefined,
+                body: bodyStr,
+                ...(useKeepalive ? { keepalive: true } : {}),
+                signal: (!useKeepalive && ctrl) ? ctrl.signal : undefined
             };
             const res = await fetch(`${EdgeApiClient.BASE_URL}${path}`, opts);
             const text = await res.text();
@@ -60,8 +63,8 @@ class EdgeApiClient {
         return this.request('GET', path, null, timeoutMs);
     }
 
-    post(path, body = {}, timeoutMs = 6000) {
-        return this.request('POST', path, body, timeoutMs);
+    post(path, body = {}, timeoutMs = 6000, extraOpts = null) {
+        return this.request('POST', path, body, timeoutMs, extraOpts);
     }
 }
 

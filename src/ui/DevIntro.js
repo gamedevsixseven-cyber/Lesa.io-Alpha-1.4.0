@@ -41,6 +41,9 @@ class DevIntro {
             }
             setTimeout(() => {
                 this.introScreen.classList.add('hidden');
+                if (typeof MobileAssetGuard !== 'undefined') {
+                    MobileAssetGuard.dehydrateContainer(this.introScreen);
+                }
             }, 380);
         } else if (typeof this.onComplete === 'function') {
             this.onComplete();

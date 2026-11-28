@@ -94,6 +94,22 @@ class CharacterSprites {
         CharacterSprites.filteredCache[key] = entry;
         return entry;
     }
+
+    /**
+     * Mobile memory relief: releases decoded offscreen Image references that are not currently pinned.
+     */
+    static purgeIdle(keepSrcs = null) {
+        if (typeof MobilePerf === 'undefined' || !MobilePerf.isMobile) return;
+        const keep = keepSrcs ? new Set(keepSrcs) : null;
+        for (const k of Object.keys(CharacterSprites.cache)) {
+            if (keep && keep.has(k)) continue;
+            const im = CharacterSprites.cache[k];
+            if (im) {
+                try { im._mobileReadyCallbacks = null; } catch (_) {}
+            }
+            delete CharacterSprites.cache[k];
+        }
+    }
 }
 
 if (typeof window !== 'undefined') {

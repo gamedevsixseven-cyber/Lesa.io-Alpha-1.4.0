@@ -122,6 +122,8 @@ class SaveMigration {
         const heroes = Array.isArray(p.unlockedHeroes) ? p.unlockedHeroes.length : (Array.isArray(data.unlockedHeroes) ? data.unlockedHeroes.length : 1);
         const weapons = Array.isArray(p.unlockedWeapons) ? p.unlockedWeapons.length : (Array.isArray(data.unlockedWeapons) ? data.unlockedWeapons.length : 1);
         const gear = Array.isArray(p.unlockedGear) ? p.unlockedGear.length : 0;
+        const gLvls = (p.gearLevels && typeof p.gearLevels === 'object' && !Array.isArray(p.gearLevels)) ? Object.values(p.gearLevels).reduce((a, v) => a + Math.max(0, (parseInt(v, 10) || 1) - 1), 0) : 0;
+        const evoG = (Array.isArray(p.evolvedGear) ? p.evolvedGear.length : 0) + (Array.isArray(p.ascendedGear) ? p.ascendedGear.length : 0) + (Array.isArray(p.evolvedWeapons) ? p.evolvedWeapons.length : 0);
         const evoStones = Math.max(0, Number(p.evolutionStones) || 0, Number(p.olympianStarStones) || 0);
         const bpXp = (p.battlePass && Number(p.battlePass.xp)) || 0;
         const coins = Math.max(0, Number(p.coins ?? data.coins ?? data.gold ?? 0) || 0);
@@ -132,7 +134,7 @@ class SaveMigration {
         score += totalKills * 25;
         score += Math.min(50000000, highScore) * 0.02;
         score += matches * 300 + (maxWave - 1) * 150;
-        score += Math.max(0, heroes - 1) * 2000 + Math.max(0, weapons - 1) * 1200 + gear * 500 + evoStones * 100 + bpXp * 0.5;
+        score += Math.max(0, heroes - 1) * 2000 + Math.max(0, weapons - 1) * 1200 + gear * 500 + gLvls * 250 + evoG * 900 + evoStones * 100 + bpXp * 0.5;
         score += Math.min(100000, coins) * 0.01 + Math.min(10000, gems) * 0.1;
         return score;
     }
@@ -474,8 +476,11 @@ class SaveMigration {
             heroPlays: this._maxObj(ps.heroPlays, bs.heroPlays, 0)
         };
 
+        const safeEq = (payLvl === 1 && baseLvl > 1 && bp.equippedGear && Object.values(bp.equippedGear).some(Boolean) && (!pp.equippedGear || !Object.values(pp.equippedGear).some(Boolean)))
+            ? bp.equippedGear : pp.equippedGear;
         const mergedPlayer = {
             ...pp,
+            ...(safeEq ? { equippedGear: safeEq } : {}),
             accountLevel: mergedLvl,
             accountXp: mergedXp,
             unlockedHeroes: this._unionArr(pp.unlockedHeroes, bp.unlockedHeroes),
@@ -534,7 +539,8 @@ class SaveMigration {
             (numDiamonds !== undefined && numGems !== undefined && !isNaN(numDiamonds) && !isNaN(numGems) && numDiamonds !== numGems) ||
             (numGold !== undefined && numCoins !== undefined && !isNaN(numGold) && !isNaN(numCoins) && numGold !== numCoins);
 
-        const cloudTs = this._parseCloudTimestamp(data);
+        const saveTs = Math.max(this._parseTsValue(data.timestamp), this._parseTsValue(data.lastUpdated), Number(data.updatedAt) || 0);
+        const cloudTs = saveTs || this._parseCloudTimestamp(data);
         const localMutationTs = this.safeGetInt(this.KEYS.LAST_LOCAL_SAVE_AT, 0, 0);
         const localSave = this.safeGetJson(this.KEYS.MAIN_SAVE, null);
         const localTs = Math.max(localMutationTs, Number(localSave && localSave.timestamp) || 0);
@@ -546,19 +552,21 @@ class SaveMigration {
         const cloudGems = Number.isFinite(numGems) ? numGems : (Number.isFinite(numDiamonds) ? numDiamonds : 0);
         const wiped = this.wasWipedByDev(data, localTs);
 
-        const localRicherCurr = !wiped && (curCoins > cloudCoins || curGems > cloudGems) && localTs >= cloudTs - 2000;
+        const localRicherCurr = !wiped && (curCoins > cloudCoins || curGems > cloudGems) && (!saveTs || localTs >= saveTs - 2000 || localScore > cloudScore + 50);
+        const localAhead = !wiped && ((localScore > cloudScore + 50) || (localScore >= cloudScore && localTs > 0 && (!saveTs || localTs >= saveTs - 2000)));
         const preferLocalCurrencies = Boolean(
             isInitialSync &&
             this.hasEstablishedProgress() &&
             !wiped &&
-            (localRicherCurr || (!hasConsoleCurrencyDiff && cloudTs > 0 && localTs > cloudTs + 2000 && localScore >= cloudScore))
+            !hasConsoleCurrencyDiff &&
+            (localRicherCurr || localAhead)
         );
 
         if ((isInitialSync || cloudScore > localScore) && gs && typeof SaveSerializer !== 'undefined' && typeof SaveSerializer.mergeProgressOnly === 'function') {
-            SaveSerializer.mergeProgressOnly({ player: p }, gs);
+            SaveSerializer.mergeProgressOnly({ player: p }, gs, { overwriteSelections: !wiped && cloudScore > localScore + 50 });
         }
 
-        return { preferLocalCurrencies, cloudTs, localTs, cloudScore, localScore };
+        return { preferLocalCurrencies, cloudTs, localTs, cloudScore, localScore, wiped };
     }
 }
 

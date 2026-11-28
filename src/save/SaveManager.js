@@ -63,7 +63,11 @@ class SaveManager {
         const prevKills = Number(es.totalKills) || 0;
         const curHigh = Number(ss.highScore) || 0;
         const prevHigh = Number(es.highScore) || 0;
-        return curLvl < prevLvl || curKills < prevKills || curHigh < prevHigh;
+        const curGear = Array.isArray(sp.unlockedGear) ? sp.unlockedGear.length : 0;
+        const prevGear = Array.isArray(ep.unlockedGear) ? ep.unlockedGear.length : 0;
+        const curWeps = Array.isArray(sp.unlockedWeapons) ? sp.unlockedWeapons.length : 1;
+        const prevWeps = Array.isArray(ep.unlockedWeapons) ? ep.unlockedWeapons.length : 1;
+        return curLvl < prevLvl || curKills < prevKills || curHigh < prevHigh || curGear < prevGear || curWeps < prevWeps;
     }
 
     /**
@@ -123,9 +127,10 @@ class SaveManager {
             clearTimeout(this.saveDebounceTimer);
         }
 
+        const safeDelay = (typeof delayMs === 'number' && Number.isFinite(delayMs)) ? Math.max(0, delayMs) : 600;
         this.saveDebounceTimer = setTimeout(() => {
             this.saveNow();
-        }, delayMs);
+        }, safeDelay);
     }
 
     /**
@@ -193,12 +198,19 @@ class SaveManager {
      */
     initStartupSync() {
         if (!this.gameState || typeof SaveSerializer === 'undefined') return false;
-        const serialized = SaveSerializer.serialize(this.gameState);
+        let serialized = SaveSerializer.serialize(this.gameState);
         if (!serialized) return false;
         try {
+            if (typeof SaveMigration !== 'undefined') {
+                const best = SaveMigration.getBestRecoveryPayload();
+                if (best && !SaveMigration.wasWipedByDev(best) && SaveMigration._scoreSavePayload(best) > SaveMigration._scoreSavePayload(serialized) + 50) {
+                    SaveSerializer.deserialize(best, this.gameState, { overwriteSelections: true });
+                    serialized = SaveSerializer.serialize(this.gameState) || serialized;
+                }
+            }
             const hasSaved = !!localStorage.getItem('lesaio_save_v2');
             const hasProg = (typeof SaveMigration !== 'undefined') && SaveMigration.hasEstablishedProgress();
-            if (hasSaved || hasProg) {
+            if ((hasSaved || hasProg) && !this._wouldDowngradeStoredSave(serialized)) {
                 localStorage.setItem('lesaio_save_v2', JSON.stringify(serialized));
                 if (typeof SaveMigration !== 'undefined') SaveMigration.writeBackup(serialized);
             }

@@ -576,9 +576,10 @@ html, body {
 }
 
 /* Mobile-only iOS Safari GPU compositor relief: disable offscreen blur/SVG filter churn over live canvas */
-@media (pointer: coarse) {
-    .modal-overlay, #mobile-rotate-overlay { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
-    .btn-cooldown-ring, .btn-cooldown-ring circle, .mobile-action-btn, .btn-dash-img-icon, .btn-bubble-img-icon { filter: none !important; }
+@media (pointer: coarse), (any-pointer: coarse), screen and (max-height: 520px) {
+    .modal-overlay, #mobile-rotate-overlay, #endless-diff-modal.modal-overlay { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
+    .btn-cooldown-ring, .btn-cooldown-ring circle, .mobile-action-btn, .btn-dash-img-icon, .btn-bubble-img-icon, .inv-crate-glow { filter: none !important; }
+    .friends-btn-has-notif { animation: none !important; filter: none !important; }
     .btn-cooldown-ring .ring-progress { transition: none !important; }
     #game-hud { contain: layout style; }
     #friends-modal button, #coop-modal button, .pause-btn, .menu-pill-btn, .comic-btn { touch-action: manipulation; }

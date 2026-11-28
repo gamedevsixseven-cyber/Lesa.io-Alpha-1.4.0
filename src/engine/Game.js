@@ -148,11 +148,9 @@ class Game {
         if (typeof OutsidePerimeterRoads !== 'undefined') OutsidePerimeterRoads.reset();
         if (typeof LilXasEvent !== 'undefined') LilXasEvent.reset();
         if (typeof ApexW60Audio !== 'undefined') ApexW60Audio.resetSession();
-        if (this.arena && typeof this.arena.setGameMode === 'function') {
-            this.arena.setGameMode(gameMode, { isEndlessHard: isHard });
-        } else if (gameMode !== 'dungeons' && this.arena && this.arena.dungeonFloor) {
-            this.arena.resetNormalTheme();
-        }
+        if (this.arena && typeof this.arena.setGameMode === 'function') this.arena.setGameMode(gameMode, { isEndlessHard: isHard });
+        else if (gameMode !== 'dungeons' && this.arena && this.arena.dungeonFloor) this.arena.resetNormalTheme();
+        if (typeof MobileCanvasGuard !== 'undefined') MobileCanvasGuard.onStartGameplay(this);
         this.waveManager.reset(gameMode, { isEndlessHard: isHard });
         if (this.waveSkipper) this.waveSkipper.reset(this);
         if (this.cutsceneOverlay) this.cutsceneOverlay.endCutscene();
@@ -591,7 +589,9 @@ class Game {
         finally {
             if (typeof MobileCanvasGuard !== 'undefined' && MobileCanvasGuard.isEnabled()) MobileCanvasGuard.unwindSaveStack(this.ctx, baseDepth);
             else if (this.ctx) { if (this.ctx.setTransform) this.ctx.setTransform(1, 0, 0, 1, 0, 0); this.ctx.globalAlpha = 1; this.ctx.shadowBlur = 0; this.ctx.restore(); }
-            requestAnimationFrame((t) => this.loop(t));
+            if (typeof MobilePerf !== 'undefined' && MobilePerf.shouldSkipRender(this)) {
+                clearTimeout(this._mobMenuTimer); this._mobMenuTimer = setTimeout(() => requestAnimationFrame((t) => this.loop(t)), 220);
+            } else { this._mobMenuTimer = 0; requestAnimationFrame((t) => this.loop(t)); }
         }
     }
 }

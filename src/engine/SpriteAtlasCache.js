@@ -127,13 +127,13 @@ class SpriteAtlasCache {
         } else {
             isStandalone = true;
             if (isMobile) {
-                while (SpriteAtlasCache._standaloneEntries.length >= 96) {
+                while (SpriteAtlasCache._standaloneEntries.length >= 24) {
                     const old = SpriteAtlasCache._standaloneEntries.shift();
                     if (old && SpriteAtlasCache._entries.get(old.key) === old.entry) {
                         SpriteAtlasCache._entries.delete(old.key);
                     }
                     if (old && old.canvas) {
-                        if (SpriteAtlasCache._canvasPool.length < 32) {
+                        if (SpriteAtlasCache._canvasPool.length < 6) {
                             SpriteAtlasCache._canvasPool.push(old.canvas);
                         } else {
                             MobilePerf.releaseCanvas(old.canvas);
