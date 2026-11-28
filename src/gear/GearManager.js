@@ -86,9 +86,12 @@ class GearManager {
         if (this.isUnlocked(itemId)) return { success: true, alreadyUnlocked: true };
 
         const src = options && options.source;
-        const isGranted = !!(options && options.free) || src === 'chest' || src === 'admin' || src === 'tribute' || src === 'boss_zeus' || src === 'boss';
+        if (item.devOnly && src !== 'dev_gift') {
+            return { success: false, reason: 'Developer Gift Exclusive — can only be gifted by the Developer' };
+        }
+        const isGranted = !!(options && options.free) || src === 'chest' || src === 'admin' || src === 'dev_gift' || src === 'tribute' || src === 'boss_zeus' || src === 'boss';
         const isBossLocked = !!(item.bossUnlock || (item.rarity === 'mythic' && !item.chestOnly) || item.rarity === 'apex');
-        const isChestRestricted = !!(item.chestOnly || item.rarity === 'epic' || item.rarity === 'legendary' || item.rarity === 'mythic' || item.rarity === 'exclusive' || isBossLocked);
+        const isChestRestricted = !!(item.chestOnly || item.devOnly || item.rarity === 'epic' || item.rarity === 'legendary' || item.rarity === 'mythic' || item.rarity === 'apex' || item.rarity === 'exotic' || item.rarity === 'exclusive' || isBossLocked);
 
         if (isChestRestricted && !isGranted) {
             const bossMsg = item.bossUnlock === 'apex_sovereign_w30'

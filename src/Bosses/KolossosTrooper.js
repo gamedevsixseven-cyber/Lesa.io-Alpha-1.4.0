@@ -96,18 +96,149 @@ class KolossosTrooper extends EnemyBase {
         const flash = this.hitFlash > 0;
         const r = this.radius;
         const facingLeft = Math.cos(this.angle) < 0;
-        const bob = Math.sin(this.walkCycle || this.age * 0.15) * 1.8;
-        const stride = Math.sin(this.walkCycle || this.age * 0.15) * (r * 0.24);
+        const rawCycle = this.walkCycle || this.age * 0.15;
+        const bob = Math.sin(rawCycle) * 1.8;
         const outline = '#141418';
+        const batched = typeof EnemyBatchRenderer !== 'undefined' && EnemyBatchRenderer.active;
 
+        if (typeof SpriteAtlasCache !== 'undefined') {
+            if (!batched) {
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.38)';
+                ctx.beginPath();
+                ctx.ellipse(this.x, this.y + r * 0.92, r * 0.88, r * 0.34, 0, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            const rKey = Math.round(r * 2);
+            if (!flash) {
+                const ringKey = `kol_ring:${rKey}`;
+                SpriteAtlasCache.drawCachedAt(ctx, this.x, this.y + r * 0.88, ringKey, Math.ceil(r * 2.4), Math.ceil(r * 1.1), Math.ceil(r * 1.2), Math.ceil(r * 0.55), (rctx) => {
+                    rctx.strokeStyle = 'rgba(255, 71, 87, 0.55)';
+                    rctx.lineWidth = 2;
+                    rctx.beginPath();
+                    rctx.ellipse(0, 0, r * 1.02, r * 0.36, 0, 0, Math.PI * 2);
+                    rctx.stroke();
+                });
+            }
+
+            const bins = SpriteAtlasCache.getWalkBins(6);
+            const walkBin = flash ? 0 : SpriteAtlasCache.quantizePhase(rawCycle, bins);
+            const qCycle = flash ? 0 : SpriteAtlasCache.binAngle(walkBin, bins);
+            const qStride = Math.sin(qCycle) * (r * 0.24);
+            const bodyKey = `kol_t_b:${rKey}:${walkBin}:${flash ? 1 : 0}`;
+            const bw = Math.ceil(r * 1.9);
+            const bh = Math.ceil(r * 2.5);
+            const wy = this.y + bob;
+
+            SpriteAtlasCache.drawCachedAt(ctx, this.x, wy, bodyKey, bw, bh, bw * 0.5, Math.ceil(r * 1.48), (bctx) => {
+                bctx.lineJoin = 'round';
+                bctx.lineCap = 'round';
+                bctx.strokeStyle = outline;
+                bctx.lineWidth = 2.4;
+
+                bctx.fillStyle = flash ? '#ffffff' : '#9c5a25';
+                bctx.beginPath();
+                bctx.roundRect(-r * 0.56, r * 0.32 + qStride, r * 0.40, r * 0.48, 4);
+                bctx.roundRect(r * 0.16, r * 0.32 - qStride, r * 0.40, r * 0.48, 4);
+                bctx.fill();
+                bctx.stroke();
+
+                bctx.fillStyle = flash ? '#ffffff' : '#2f3542';
+                bctx.beginPath();
+                bctx.roundRect(-r * 0.72, -r * 0.42, r * 1.44, r * 0.88, 6);
+                bctx.fill();
+                bctx.stroke();
+
+                if (!flash) {
+                    bctx.fillStyle = '#cd6133';
+                    bctx.beginPath();
+                    bctx.roundRect(-r * 0.58, -r * 0.34, r * 1.16, r * 0.70, 4);
+                    bctx.fill();
+                    bctx.stroke();
+                    bctx.fillStyle = '#ff2e4c';
+                    bctx.beginPath();
+                    bctx.arc(0, 0, r * 0.24, 0, Math.PI * 2);
+                    bctx.fill();
+                    bctx.stroke();
+                    bctx.fillStyle = '#fed330';
+                    bctx.beginPath();
+                    bctx.arc(0, 0, r * 0.11, 0, Math.PI * 2);
+                    bctx.fill();
+                }
+
+                bctx.fillStyle = flash ? '#ffffff' : '#1e272e';
+                bctx.beginPath();
+                bctx.roundRect(-r * 0.48, -r * 0.94, r * 0.96, r * 0.58, 5);
+                bctx.fill();
+                bctx.stroke();
+
+                if (!flash) {
+                    bctx.fillStyle = '#ff2e4c';
+                    bctx.fillRect(-r * 0.28, -r * 0.72, r * 0.64, r * 0.16);
+                    bctx.fillStyle = '#fed330';
+                    for (let s = -1; s <= 1; s++) {
+                        const sx = s * r * 0.28;
+                        const sh = s === 0 ? r * 0.42 : r * 0.30;
+                        bctx.beginPath();
+                        bctx.moveTo(sx - r * 0.11, -r * 0.94);
+                        bctx.lineTo(sx, -r * 0.94 - sh);
+                        bctx.lineTo(sx + r * 0.11, -r * 0.94);
+                        bctx.closePath();
+                        bctx.fill();
+                        bctx.stroke();
+                    }
+                }
+            }, { flipX: facingLeft });
+
+            const gKey = `kol_t_g:${rKey}:${flash ? 1 : 0}`;
+            const drawGun = () => {
+                SpriteAtlasCache.drawCached(ctx, gKey, Math.ceil(r * 1.4), 16, 0, 8, (gctx) => {
+                    gctx.fillStyle = flash ? '#ffffff' : '#d4893b';
+                    gctx.strokeStyle = outline;
+                    gctx.lineWidth = 2.0;
+                    gctx.beginPath();
+                    gctx.roundRect(r * 0.32, -4.5, r * 0.78, 9, 3);
+                    gctx.fill();
+                    gctx.stroke();
+                    if (!flash) {
+                        gctx.fillStyle = '#ff2e4c';
+                        gctx.beginPath();
+                        gctx.arc(r * 1.08, 0, 3.2, 0, Math.PI * 2);
+                        gctx.fill();
+                    }
+                });
+            };
+            if (typeof EndlessEnemyRenderer !== 'undefined') {
+                EndlessEnemyRenderer.drawAimedLayer(ctx, this.angle, this.x, wy, drawGun, true);
+            } else {
+                ctx.save(); ctx.translate(this.x, wy); ctx.rotate(this.angle); drawGun(); ctx.restore();
+            }
+
+            if (!batched && this.hp < this.maxHp) {
+                const bwBar = 38;
+                const ratio = Math.max(0, Math.min(1, this.hp / this.maxHp));
+                ctx.fillStyle = '#1e272e';
+                ctx.fillRect(this.x - bwBar * 0.5, wy - r * 1.65, bwBar, 5);
+                ctx.fillStyle = '#ff9f43';
+                ctx.fillRect(this.x - bwBar * 0.5, wy - r * 1.65, bwBar * ratio, 5);
+                ctx.strokeStyle = '#000';
+                ctx.lineWidth = 1.4;
+                ctx.strokeRect(this.x - bwBar * 0.5, wy - r * 1.65, bwBar, 5);
+            }
+            return;
+        }
+
+        const stride = Math.sin(rawCycle) * (r * 0.24);
         ctx.save();
         ctx.translate(this.x, this.y);
 
         // Ground shadow & crimson mini-reactor ring
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.38)';
-        ctx.beginPath();
-        ctx.ellipse(0, r * 0.92, r * 0.88, r * 0.34, 0, 0, Math.PI * 2);
-        ctx.fill();
+        if (!batched) {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.38)';
+            ctx.beginPath();
+            ctx.ellipse(0, r * 0.92, r * 0.88, r * 0.34, 0, 0, Math.PI * 2);
+            ctx.fill();
+        }
 
         if (!flash) {
             ctx.strokeStyle = 'rgba(255, 71, 87, 0.55)';
@@ -204,7 +335,7 @@ class KolossosTrooper extends EnemyBase {
         ctx.restore();
 
         // 5. Compact Health Bar when damaged
-        if (this.hp < this.maxHp) {
+        if (!batched && this.hp < this.maxHp) {
             const bw = 38;
             const ratio = Math.max(0, Math.min(1, this.hp / this.maxHp));
             ctx.fillStyle = '#1e272e';

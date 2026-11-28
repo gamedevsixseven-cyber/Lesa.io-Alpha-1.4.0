@@ -197,6 +197,12 @@
     box-shadow: 0 0 12px rgba(255, 46, 76, 0.65);
 }
 
+.gear-card-icon-wrap.rarity-exotic {
+    background: linear-gradient(135deg, #062825 0%, #065f46 100%);
+    border-color: #55efc4;
+    box-shadow: 0 0 12px rgba(0, 206, 201, 0.72), 0 0 5px rgba(254, 211, 48, 0.5);
+}
+
 .gear-card-img {
     width: 38px;
     height: 38px;
@@ -432,6 +438,13 @@
     box-shadow: inset 0 0 8px rgba(255, 46, 76, 0.28);
 }
 
+.gear-passive-pill.is-exotic {
+    background: linear-gradient(135deg, #05221e, #064e3b);
+    border-color: #55efc4;
+    color: #ecfeff;
+    box-shadow: inset 0 0 10px rgba(0, 206, 201, 0.35);
+}
+
 .gear-card.rarity-epic:not(.is-locked) {
     border-color: #9b59b6;
 }
@@ -455,6 +468,18 @@
 .gear-card.rarity-apex:not(.is-locked) .gear-card-subname { color: #cbd5e1; }
 .gear-card.rarity-apex:not(.is-locked) .gear-card-stat-pill { background: rgba(255, 46, 76, 0.14); border-color: rgba(254, 211, 48, 0.35); color: #fef3c7; }
 .gear-card.rarity-apex:not(.is-locked) .gear-lvl-pill:not(.is-evolved) { background: rgba(254, 211, 48, 0.16); color: #fef08a; border-color: rgba(254, 211, 48, 0.5); }
+
+.gear-card.rarity-exotic:not(.is-locked) {
+    background: linear-gradient(160deg, #062825 0%, #0b4a3e 55%, #07191a 100%);
+    border-color: #55efc4;
+    color: #ecfeff;
+    box-shadow: 0 4px 0 #052e2b, 0 0 18px rgba(0, 206, 201, 0.65);
+}
+.gear-card.rarity-exotic:not(.is-locked) .gear-card-name { color: #fef08a; text-shadow: 0 0 8px rgba(85, 239, 196, 0.55); }
+.gear-card.rarity-exotic:not(.is-locked) .gear-card-subname { color: #a7f3d0; }
+.gear-card.rarity-exotic:not(.is-locked) .gear-stat-badge-row { background: rgba(255, 255, 255, 0.08); border-color: rgba(85, 239, 196, 0.32); color: #ecfeff; }
+.gear-card.rarity-exotic:not(.is-locked) .gear-stat-badge-label { color: #99f6e4; }
+.gear-card.rarity-exotic:not(.is-locked) .gear-stat-badge-val { color: #fef08a; }
 
 .gear-slot-emoji {
     font-size: 1.55rem;
@@ -503,6 +528,14 @@
     box-shadow: 0 0 16px rgba(255, 46, 76, 0.72), 0 0 6px rgba(254, 211, 48, 0.5) !important;
 }
 .gear-slot-card.gear-slot-apex .gear-slot-name { color: #fed330 !important; }
+
+.gear-slot-card.gear-slot-exotic {
+    background: linear-gradient(155deg, #062825 0%, #065f46 100%) !important;
+    border-color: #55efc4 !important;
+    color: #fef08a !important;
+    box-shadow: 0 0 18px rgba(0, 206, 201, 0.78), 0 0 6px rgba(254, 211, 48, 0.55) !important;
+}
+.gear-slot-card.gear-slot-exotic .gear-slot-name { color: #fef08a !important; }
 
 .gear-cost-chip.is-diamond-cost {
     background: linear-gradient(135deg, #0ea5e9 0%, #6366f1 100%) !important;

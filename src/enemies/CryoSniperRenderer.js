@@ -14,25 +14,76 @@ class CryoSniperRenderer {
         const facingLeft = Math.cos(aimAngle) < 0;
         const isBack = Math.sin(aimAngle) < -0.68;
         const gunBehind = Math.sin(aimAngle) < -0.25;
-        const bob = Math.sin(e.walkCycle || age * 0.16) * 2;
+        const aiming = (e.aimWindup || 0) > 0;
+        const rawCycle = e.walkCycle || age * 0.16;
+        const bob = Math.sin(rawCycle) * 2;
 
         this.drawLaserTelegraph(ctx, e, r);
         EndlessEnemyRenderer.drawShadow(ctx, e.x, e.y, r, 0.94, 0.36);
+
+        const ax = facingLeft ? -r * 0.22 : r * 0.22;
+
+        if (typeof SpriteAtlasCache !== 'undefined') {
+            const bins = SpriteAtlasCache.getWalkBins(6);
+            const rKey = Math.round(r * 2);
+            const walkBin = flash ? 0 : SpriteAtlasCache.quantizePhase(rawCycle, bins);
+            const qCycle = flash ? 0 : SpriteAtlasCache.binAngle(walkBin, bins);
+            const bodyKey = `cs_b:${rKey}:${walkBin}:${isBack ? 1 : 0}:${flash ? 1 : 0}`;
+            const bw = Math.ceil(r * 2.0);
+            const bh = Math.ceil(r * 2.3);
+            const wy = e.y + bob;
+            const gKey = `cs_g:${rKey}:${aiming ? 1 : 0}:${flash ? 1 : 0}`;
+            const sw = Math.ceil(r * 2.3);
+            const sh = 24;
+
+            const drawRifle = () => {
+                EndlessEnemyRenderer.drawAimedLayer(ctx, aimAngle, e.x + ax, wy + (gunBehind ? 0 : r * 0.04), () => {
+                    SpriteAtlasCache.drawCached(ctx, gKey, sw, sh, 10, 12, (gctx) => {
+                        gctx.lineWidth = 2.6;
+                        gctx.lineJoin = 'round';
+                        gctx.lineCap = 'round';
+                        gctx.strokeStyle = '#081826';
+                        this.drawCryoRailRifle(gctx, r, aiming, flash);
+                    });
+                }, true);
+            };
+
+            if (gunBehind) drawRifle();
+
+            SpriteAtlasCache.drawCachedAt(ctx, e.x, wy, bodyKey, bw, bh, bw * 0.5, Math.ceil(r * 1.25), (bctx) => {
+                bctx.lineWidth = 2.6;
+                bctx.lineJoin = 'round';
+                bctx.lineCap = 'round';
+                bctx.strokeStyle = '#081826';
+                EndlessEnemyRenderer.drawLimbs(bctx, r, qCycle, '#1e293b', '#0f172a', flash);
+                if (!isBack) this.drawNitrogenPack(bctx, r, false, flash);
+                this.drawArcticCloak(bctx, r, isBack, flash);
+                if (isBack) this.drawNitrogenPack(bctx, r, true, flash);
+                this.drawSniperHoodHead(bctx, r, isBack, flash);
+            }, { flipX: facingLeft });
+
+            if (!gunBehind) drawRifle();
+
+            if (typeof EnemyBatchRenderer === 'undefined' || !EnemyBatchRenderer.active) {
+                e.drawBubbleTrap(ctx);
+                e.drawOverheadHUD(ctx);
+            }
+            return;
+        }
 
         ctx.save();
         ctx.translate(e.x, e.y + bob);
         ctx.lineWidth = 2.6; ctx.lineJoin = 'round'; ctx.lineCap = 'round'; ctx.strokeStyle = '#081826';
 
-        const ax = facingLeft ? -r * 0.22 : r * 0.22;
         if (gunBehind) {
             EndlessEnemyRenderer.drawAimedLayer(ctx, aimAngle, ax, 0, () => {
-                this.drawCryoRailRifle(ctx, r, (e.aimWindup || 0) > 0, flash);
+                this.drawCryoRailRifle(ctx, r, aiming, flash);
             });
         }
 
         ctx.save();
         if (facingLeft) ctx.scale(-1, 1);
-        EndlessEnemyRenderer.drawLimbs(ctx, r, e.walkCycle || age * 0.16, '#1e293b', '#0f172a', flash);
+        EndlessEnemyRenderer.drawLimbs(ctx, r, rawCycle, '#1e293b', '#0f172a', flash);
         if (!isBack) this.drawNitrogenPack(ctx, r, false, flash);
         this.drawArcticCloak(ctx, r, isBack, flash);
         if (isBack) this.drawNitrogenPack(ctx, r, true, flash);
@@ -41,13 +92,15 @@ class CryoSniperRenderer {
 
         if (!gunBehind) {
             EndlessEnemyRenderer.drawAimedLayer(ctx, aimAngle, ax, r * 0.04, () => {
-                this.drawCryoRailRifle(ctx, r, (e.aimWindup || 0) > 0, flash);
+                this.drawCryoRailRifle(ctx, r, aiming, flash);
             });
         }
         ctx.restore();
 
-        e.drawBubbleTrap(ctx);
-        e.drawOverheadHUD(ctx);
+        if (typeof EnemyBatchRenderer === 'undefined' || !EnemyBatchRenderer.active) {
+            e.drawBubbleTrap(ctx);
+            e.drawOverheadHUD(ctx);
+        }
     }
 
     static drawLaserTelegraph(ctx, e, r) {

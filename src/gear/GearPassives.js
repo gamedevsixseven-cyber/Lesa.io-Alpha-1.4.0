@@ -38,7 +38,7 @@ class GearPassives {
             sonicDashHitSet: null
         };
         if (typeof GearPassiveHandlersExt !== 'undefined') GearPassiveHandlersExt.initState(player._gearPassiveState);
-        player.aegisBarrier = this.has('omega_aegis_barrier') ? 95 : (this.has('blessed_shield') ? 30 : 0);
+        player.aegisBarrier = this.has('panoplia_dab_overdrive') ? 150 : (this.has('omega_aegis_barrier') ? 95 : (this.has('blessed_shield') ? 30 : 0));
     }
 
     static _ensureState(player) {
@@ -139,17 +139,18 @@ class GearPassives {
         const hasBlessedBarrier = this.has('blessed_shield');
         const extBarrier = (typeof GearPassiveHandlersExt !== 'undefined') ? GearPassiveHandlersExt.getBarrierSpec() : null;
         if (hasOmegaBarrier || hasStormBarrier || hasBlessedBarrier || extBarrier) {
-            const barrierCap = hasOmegaBarrier ? 95 : (awakenedStorm ? 75 : (extBarrier ? extBarrier.cap : (hasStormBarrier ? 45 : 30)));
-            const barrierPeriod = hasOmegaBarrier ? 420 : (awakenedStorm ? 480 : ((hasStormBarrier || extBarrier) ? 600 : 720));
+            const extPriority = !!(extBarrier && extBarrier.priority);
+            const barrierCap = extPriority ? extBarrier.cap : (hasOmegaBarrier ? 95 : (awakenedStorm ? 75 : (extBarrier ? extBarrier.cap : (hasStormBarrier ? 45 : 30))));
+            const barrierPeriod = extPriority ? extBarrier.period : (hasOmegaBarrier ? 420 : (awakenedStorm ? 480 : ((hasStormBarrier || extBarrier) ? 600 : 720)));
             if ((player.aegisBarrier || 0) < barrierCap) {
                 s.aegisShieldTimer += dt;
                 if (s.aegisShieldTimer >= barrierPeriod) {
                     s.aegisShieldTimer = 0;
                     player.aegisBarrier = barrierCap;
                     if (effects) {
-                        const rCol = hasOmegaBarrier ? 'rgba(255, 46, 76, 0.92)' : (awakenedStorm ? 'rgba(251, 191, 36, 0.9)' : (extBarrier ? extBarrier.col : (hasStormBarrier ? 'rgba(0, 245, 255, 0.85)' : 'rgba(243, 156, 18, 0.75)')));
-                        const rRad = hasOmegaBarrier ? 106 : (awakenedStorm ? 98 : (extBarrier ? extBarrier.rad : (hasStormBarrier ? 85 : 70)));
-                        const rMsg = hasOmegaBarrier ? '♦️ OMEGA BARRIER +95!' : (awakenedStorm ? '⚡ AWAKENED BARRIER +75!' : (extBarrier ? extBarrier.msg : (hasStormBarrier ? '⚡ STORM BARRIER +45!' : '🛡️ AEGIS +30!')));
+                        const rCol = extPriority ? extBarrier.col : (hasOmegaBarrier ? 'rgba(255, 46, 76, 0.92)' : (awakenedStorm ? 'rgba(251, 191, 36, 0.9)' : (extBarrier ? extBarrier.col : (hasStormBarrier ? 'rgba(0, 245, 255, 0.85)' : 'rgba(243, 156, 18, 0.75)'))));
+                        const rRad = extPriority ? extBarrier.rad : (hasOmegaBarrier ? 106 : (awakenedStorm ? 98 : (extBarrier ? extBarrier.rad : (hasStormBarrier ? 85 : 70))));
+                        const rMsg = extPriority ? extBarrier.msg : (hasOmegaBarrier ? '♦️ OMEGA BARRIER +95!' : (awakenedStorm ? '⚡ AWAKENED BARRIER +75!' : (extBarrier ? extBarrier.msg : (hasStormBarrier ? '⚡ STORM BARRIER +45!' : '🛡️ AEGIS +30!'))));
                         effects.addShockwave(player.x, player.y, rRad, rCol);
                         effects.addComicSplash(player.x, player.y - 36, rMsg);
                         if (typeof CoopCombatFx !== 'undefined') CoopCombatFx.relayRing(player, rRad, rCol, rMsg);
@@ -328,6 +329,9 @@ class GearPassives {
 
     static tryPreventFatalHit(player, effects) {
         const s = this._ensureState(player);
+        if (typeof GearPassiveHandlersExt !== 'undefined' && typeof GearPassiveHandlersExt.tryPreventFatalHit === 'function' && GearPassiveHandlersExt.tryPreventFatalHit(player, s, effects)) {
+            return true;
+        }
         const hasOmegaSave = this.has('omega_aegis_barrier');
         if ((hasOmegaSave || this.has('blessed_shield')) && !s.aegisFatalUsed && player.hp <= 0) {
             s.aegisFatalUsed = true;

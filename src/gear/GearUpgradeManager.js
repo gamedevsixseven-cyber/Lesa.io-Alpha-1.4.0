@@ -15,7 +15,7 @@ class GearUpgradeManager {
     static STORAGE_STONES = 'lesaio_evolution_stones';
 
     static MAX_LEVEL_BY_RARITY = (typeof GearUpgradeConfig !== 'undefined') ? GearUpgradeConfig.MAX_LEVEL_BY_RARITY : {
-        common: 1, uncommon: 1, rare: 2, epic: 3, legendary: 4, mythic: 5, apex: 6, exclusive: 1
+        common: 1, uncommon: 1, rare: 2, epic: 3, legendary: 4, mythic: 5, apex: 6, exotic: 1, exclusive: 1
     };
 
     static LEVEL_STAT_MULTIPLIERS = (typeof GearUpgradeConfig !== 'undefined') ? GearUpgradeConfig.LEVEL_STAT_MULTIPLIERS : {

@@ -14,25 +14,79 @@ class BlightNecromancerRenderer {
         const facingLeft = Math.cos(aimAngle) < 0;
         const isBack = Math.sin(aimAngle) < -0.68;
         const staffBehind = Math.sin(aimAngle) < -0.25;
-        const bob = Math.sin(e.walkCycle || age * 0.14) * 2.5;
+        const casting = (e.sporeWindup || 0) > 0;
+        const rawCycle = e.walkCycle || age * 0.14;
+        const bob = Math.sin(rawCycle) * 2.5;
 
         this.drawMiasmaSpores(ctx, e, age);
         EndlessEnemyRenderer.drawShadow(ctx, e.x, e.y, r, 1.0, 0.38);
+
+        const ax = facingLeft ? -r * 0.24 : r * 0.24;
+
+        if (typeof SpriteAtlasCache !== 'undefined') {
+            const bins = SpriteAtlasCache.getWalkBins(6);
+            const rKey = Math.round(r * 2);
+            const walkBin = flash ? 0 : SpriteAtlasCache.quantizePhase(rawCycle, bins);
+            const qCycle = flash ? 0 : SpriteAtlasCache.binAngle(walkBin, bins);
+            const qAge = flash ? 0 : ((walkBin + 0.5) / bins) * (Math.PI * 2 / 0.14);
+            const bodyKey = `bn_b:${rKey}:${walkBin}:${isBack ? 1 : 0}:${flash ? 1 : 0}`;
+            const bw = Math.ceil(r * 2.1);
+            const bh = Math.ceil(r * 2.4);
+            const wy = e.y + bob;
+            const swingBin = flash ? 0 : SpriteAtlasCache.quantizePhase(age * 0.2, 4);
+            const sKey = `bn_w:${rKey}:${swingBin}:${casting ? 1 : 0}:${flash ? 1 : 0}`;
+            const sw = Math.ceil(r * 1.9);
+            const sh = 46;
+
+            const drawCenser = () => {
+                EndlessEnemyRenderer.drawAimedLayer(ctx, aimAngle, e.x + ax, wy + (staffBehind ? 0 : r * 0.04), () => {
+                    SpriteAtlasCache.drawCached(ctx, sKey, sw, sh, 8, 12, (sctx) => {
+                        sctx.lineWidth = 2.6;
+                        sctx.lineJoin = 'round';
+                        sctx.lineCap = 'round';
+                        sctx.strokeStyle = '#07140d';
+                        const qSwingAge = flash ? 0 : ((swingBin + 0.5) / 4) * (Math.PI * 2 / 0.2);
+                        this.drawPlagueCenser(sctx, r, qSwingAge, casting, flash);
+                    });
+                }, true);
+            };
+
+            if (staffBehind) drawCenser();
+
+            SpriteAtlasCache.drawCachedAt(ctx, e.x, wy, bodyKey, bw, bh, bw * 0.5, Math.ceil(r * 1.25), (bctx) => {
+                bctx.lineWidth = 2.6;
+                bctx.lineJoin = 'round';
+                bctx.lineCap = 'round';
+                bctx.strokeStyle = '#07140d';
+                EndlessEnemyRenderer.drawLimbs(bctx, r, qCycle, '#14261c', '#07140d', flash);
+                if (!isBack) this.drawBoneMutagenPack(bctx, r, qAge, false, flash);
+                this.drawPlagueRobes(bctx, r, qAge, isBack, flash);
+                if (isBack) this.drawBoneMutagenPack(bctx, r, qAge, true, flash);
+                this.drawPlagueMaskHead(bctx, r, isBack, flash);
+            }, { flipX: facingLeft });
+
+            if (!staffBehind) drawCenser();
+
+            if (typeof EnemyBatchRenderer === 'undefined' || !EnemyBatchRenderer.active) {
+                e.drawBubbleTrap(ctx);
+                e.drawOverheadHUD(ctx);
+            }
+            return;
+        }
 
         ctx.save();
         ctx.translate(e.x, e.y + bob);
         ctx.lineWidth = 2.6; ctx.lineJoin = 'round'; ctx.lineCap = 'round'; ctx.strokeStyle = '#07140d';
 
-        const ax = facingLeft ? -r * 0.24 : r * 0.24;
         if (staffBehind) {
             EndlessEnemyRenderer.drawAimedLayer(ctx, aimAngle, ax, 0, () => {
-                this.drawPlagueCenser(ctx, r, age, (e.sporeWindup || 0) > 0, flash);
+                this.drawPlagueCenser(ctx, r, age, casting, flash);
             });
         }
 
         ctx.save();
         if (facingLeft) ctx.scale(-1, 1);
-        EndlessEnemyRenderer.drawLimbs(ctx, r, e.walkCycle || age * 0.14, '#14261c', '#07140d', flash);
+        EndlessEnemyRenderer.drawLimbs(ctx, r, rawCycle, '#14261c', '#07140d', flash);
         if (!isBack) this.drawBoneMutagenPack(ctx, r, age, false, flash);
         this.drawPlagueRobes(ctx, r, age, isBack, flash);
         if (isBack) this.drawBoneMutagenPack(ctx, r, age, true, flash);
@@ -41,18 +95,60 @@ class BlightNecromancerRenderer {
 
         if (!staffBehind) {
             EndlessEnemyRenderer.drawAimedLayer(ctx, aimAngle, ax, r * 0.04, () => {
-                this.drawPlagueCenser(ctx, r, age, (e.sporeWindup || 0) > 0, flash);
+                this.drawPlagueCenser(ctx, r, age, casting, flash);
             });
         }
         ctx.restore();
 
-        e.drawBubbleTrap(ctx);
-        e.drawOverheadHUD(ctx);
+        if (typeof EnemyBatchRenderer === 'undefined' || !EnemyBatchRenderer.active) {
+            e.drawBubbleTrap(ctx);
+            e.drawOverheadHUD(ctx);
+        }
     }
 
     static drawMiasmaSpores(ctx, e, age) {
-        for (const sp of (e._spores || [])) {
+        const spores = e._spores;
+        if (!spores || spores.length === 0) return;
+        const canAtlas = typeof SpriteAtlasCache !== 'undefined';
+        const direct = canAtlas && typeof EnemyBatchRenderer !== 'undefined' && EnemyBatchRenderer.canDirectTransform;
+        for (const sp of spores) {
             const fade = Math.min(1, sp.life / 35);
+            if (canAtlas) {
+                const radKey = Math.round(sp.radius || 98);
+                const sz = radKey * 2 + 12;
+                const entry = SpriteAtlasCache.getOrBake(`bn_sp:${radKey}`, sz, sz, sz * 0.5, sz * 0.5, (sctx) => {
+                    const g = sctx.createRadialGradient(0, 0, 8, 0, 0, radKey);
+                    g.addColorStop(0, 'rgba(190, 242, 100, 0.34)');
+                    g.addColorStop(0.65, 'rgba(46, 213, 115, 0.20)');
+                    g.addColorStop(1, 'rgba(6, 78, 59, 0)');
+                    sctx.fillStyle = g;
+                    sctx.beginPath(); sctx.arc(0, 0, radKey, 0, Math.PI * 2); sctx.fill();
+                    sctx.strokeStyle = 'rgba(46, 213, 115, 0.65)';
+                    sctx.lineWidth = 2;
+                    sctx.setLineDash([8, 6]);
+                    sctx.beginPath(); sctx.arc(0, 0, radKey * 0.92, 0, Math.PI * 2); sctx.stroke();
+                }, { dpr: 0.75 });
+                if (entry && entry.canvas && entry.canvas.width > 0) {
+                    const rot = -age * 0.006;
+                    ctx.globalAlpha = fade;
+                    if (direct) {
+                        const S = EnemyBatchRenderer.camScale;
+                        const c = Math.cos(rot) * S;
+                        const s = Math.sin(rot) * S;
+                        ctx.setTransform(c, s, -s, c, EnemyBatchRenderer.camTx + S * sp.x, EnemyBatchRenderer.camTy + S * sp.y);
+                        ctx.drawImage(entry.canvas, entry.sx, entry.sy, entry.sw, entry.sh, -entry.anchorX, -entry.anchorY, entry.logicalW, entry.logicalH);
+                        ctx.setTransform(S, 0, 0, S, EnemyBatchRenderer.camTx, EnemyBatchRenderer.camTy);
+                    } else {
+                        ctx.save();
+                        ctx.translate(sp.x, sp.y);
+                        ctx.rotate(rot);
+                        ctx.drawImage(entry.canvas, entry.sx, entry.sy, entry.sw, entry.sh, -entry.anchorX, -entry.anchorY, entry.logicalW, entry.logicalH);
+                        ctx.restore();
+                    }
+                    ctx.globalAlpha = 1;
+                    continue;
+                }
+            }
             ctx.save();
             ctx.globalAlpha = fade;
             ctx.translate(sp.x, sp.y);

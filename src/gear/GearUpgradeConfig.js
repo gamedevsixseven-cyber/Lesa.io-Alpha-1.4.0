@@ -18,6 +18,7 @@ class GearUpgradeConfig {
         legendary: 4,
         mythic: 5,
         apex: 6,
+        exotic: 1,
         exclusive: 1
     };
 

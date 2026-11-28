@@ -68,6 +68,26 @@ class EnemyBatchRenderer {
                     rx = r * ((e.dashTimer || 0) > 0 ? 1.18 : 1.04); ry = r * 0.40;
                 } else if (t === 'bio_alchemist') {
                     rx = r * 1.05; ry = r * 0.40;
+                } else if (t === 'void_acolyte') {
+                    rx = r * 0.92; ry = r * 0.34;
+                } else if (t === 'crimson_wraith') {
+                    rx = r * 0.95; ry = r * 0.34;
+                } else if (t === 'storm_tempest') {
+                    rx = r * 0.96; ry = r * 0.36;
+                } else if (t === 'blight_necromancer') {
+                    rx = r * 1.0; ry = r * 0.38;
+                } else if (t === 'cryo_sniper') {
+                    rx = r * 0.94; ry = r * 0.36;
+                } else if (t === 'eclipse_harbinger') {
+                    rx = r * 1.10; ry = r * 0.38;
+                } else if (t === 'obsidian_golem') {
+                    rx = r * 1.20; ry = r * 0.44;
+                } else if (t === 'inferno_artillery') {
+                    rx = r * 1.24; ry = r * 0.46;
+                } else if (t === 'kolossos_trooper') {
+                    yOff = r * 0.92; rx = r * 0.88; ry = r * 0.34;
+                } else if (t === 'kolossos_drone') {
+                    yOff = r * 0.95; rx = r * 0.85; ry = r * 0.32;
                 }
                 const dw = rx * 2.133;
                 const dh = ry * 2.285;

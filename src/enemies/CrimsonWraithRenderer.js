@@ -21,6 +21,56 @@ class CrimsonWraithRenderer {
         this.drawTelegraphAndAfterimages(ctx, e, r, isWindup);
         EndlessEnemyRenderer.drawShadow(ctx, e.x, e.y, r, 0.95, 0.34);
 
+        if (typeof SpriteAtlasCache !== 'undefined') {
+            const bins = SpriteAtlasCache.getWalkBins(6);
+            const rKey = Math.round(r * 2);
+            const walkBin = SpriteAtlasCache.quantizePhase(age * 0.16, bins);
+            const pose = flash ? 'F' : (isLunge ? 'L' : (isWindup ? 'W' : walkBin));
+            const qAge = (pose === 'F' || pose === 'L' || pose === 'W') ? 0 : ((walkBin + 0.5) / bins) * (Math.PI * 2 / 0.16);
+            const bodyKey = `cw_b:${rKey}:${pose}:${isBack ? 1 : 0}:${flash ? 1 : 0}`;
+            const bw = Math.ceil(r * 4.5);
+            const bh = Math.ceil(r * 3.6);
+            const wy = e.y + hover;
+            const scKey = `cw_s:${rKey}:${isWindup ? 1 : 0}:${flash ? 1 : 0}`;
+            const sw = Math.ceil(r * 2.2);
+            const sh = Math.ceil(r * 2.6);
+
+            const drawScimitars = () => {
+                EndlessEnemyRenderer.drawAimedLayer(ctx, aimAngle, e.x, wy, () => {
+                    SpriteAtlasCache.drawCached(ctx, scKey, sw, sh, Math.ceil(r * 0.35), sh * 0.5, (sctx) => {
+                        sctx.lineWidth = 2.6;
+                        sctx.lineJoin = 'round';
+                        sctx.lineCap = 'round';
+                        sctx.strokeStyle = '#09040a';
+                        this.drawTwinScimitars(sctx, r, isWindup, flash);
+                    });
+                }, true);
+            };
+
+            if (e.isCloaked) ctx.globalAlpha = 0.48;
+            if (bladesBehind) drawScimitars();
+
+            SpriteAtlasCache.drawCachedAt(ctx, e.x, wy, bodyKey, bw, bh, bw * 0.5, Math.ceil(r * 2.2), (bctx) => {
+                bctx.lineWidth = 2.6;
+                bctx.lineJoin = 'round';
+                bctx.lineCap = 'round';
+                bctx.strokeStyle = '#09040a';
+                if (isLunge) bctx.rotate(0.18);
+                this.drawReaperWings(bctx, r, qAge, isLunge, isWindup, flash);
+                this.drawTatteredShroudTorso(bctx, r, qAge, isBack, flash);
+                this.drawSkullMaskHead(bctx, r, isBack, flash);
+            }, { flipX: facingLeft });
+
+            if (!bladesBehind) drawScimitars();
+            if (e.isCloaked) ctx.globalAlpha = 1.0;
+
+            if (typeof EnemyBatchRenderer === 'undefined' || !EnemyBatchRenderer.active) {
+                e.drawBubbleTrap(ctx);
+                e.drawOverheadHUD(ctx);
+            }
+            return;
+        }
+
         ctx.save();
         ctx.globalAlpha = e.isCloaked ? 0.48 : 1.0;
         ctx.translate(e.x, e.y + hover);
@@ -50,8 +100,10 @@ class CrimsonWraithRenderer {
         }
         ctx.restore();
 
-        e.drawBubbleTrap(ctx);
-        e.drawOverheadHUD(ctx);
+        if (typeof EnemyBatchRenderer === 'undefined' || !EnemyBatchRenderer.active) {
+            e.drawBubbleTrap(ctx);
+            e.drawOverheadHUD(ctx);
+        }
     }
 
     static drawTelegraphAndAfterimages(ctx, e, r, isWindup) {

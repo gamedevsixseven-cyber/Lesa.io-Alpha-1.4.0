@@ -328,7 +328,7 @@ class DevPowerToolsService {
         const gearMap = (typeof GEAR_DATA !== 'undefined' && GEAR_DATA) || window.GEAR_DATA || {};
         const levels = {}, ascended = [], evolved = [];
         for (const [id, item] of Object.entries(gearMap)) {
-            if (!item) continue;
+            if (!item || item.devOnly) continue;
             const r = String(item.rarity || 'common').toLowerCase();
             const maxL = (typeof GearUpgradeManager !== 'undefined' && GearUpgradeManager.MAX_LEVEL_BY_RARITY[r]) || 1;
             levels[id] = maxL;

@@ -113,6 +113,38 @@ const APEX_GEAR_DATA = {
             name: 'Eclipse Phase Step',
             desc: 'Slow-immune, +18% dodge & +30% dash recharge while moving; landing a dash triggers a 48 DMG Eclipse Quake (0.9s stun).'
         }
+    },
+
+    // ==========================================
+    // DEV-GIFT-ONLY EXOTIC PANOPOLY ARMOR
+    // ==========================================
+    armor_panoplia_dab: {
+        id: 'armor_panoplia_dab',
+        name: 'Panoplia DAB',
+        slot: 'armor',
+        rarity: 'exotic',
+        cost: 0,
+        excludeFromChests: true,
+        hideWhenLocked: true,
+        devOnly: true,
+        unlockLabel: 'DEV GIFT ONLY',
+        stats: {
+            maxHp: 850,
+            bulletDamage: 60,
+            fireRate: 40,
+            critDamage: 80,
+            damageReduction: 20,
+            critChance: 15
+        },
+        statSummary: '+850 Max HP, +60% Bullet DMG, +40% Fire Rate, +80% Crit DMG, +20% DEF, +15% Crit Chance',
+        icon: '👑',
+        iconImg: 'assets/Armors/PanopliaDAB.png',
+        desc: 'Supreme Developer-gifted royal panoply inlaid with sovereign obsidian plates, 24k Olympian gold, and emerald prism cores.',
+        passive: {
+            id: 'panoplia_dab_overdrive',
+            name: 'DAB Sovereign Overdrive',
+            desc: 'Every 6s gain a 150 HP DAB Barrier; hit/break unleashes a 240 DMG emerald-gold nova (1s stun) & chain bolts. +25% Boss DMG, 1x fatal save (35% HP), & 10-kill +25 HP + DAB Rush (+25% Spd/+15% RoF).'
+        }
     }
 };
 

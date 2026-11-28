@@ -14,10 +14,62 @@ class StormTempestRenderer {
         const facingLeft = Math.cos(aimAngle) < 0;
         const isBack = Math.sin(aimAngle) < -0.68;
         const gunBehind = Math.sin(aimAngle) < -0.25;
+        const charging = (e.nodeWindup || 0) > 0;
         const hover = Math.sin(age * 0.11) * 5;
 
         this.drawStormNodes(ctx, e, age);
         EndlessEnemyRenderer.drawShadow(ctx, e.x, e.y, r, 0.96, 0.36);
+
+        const ax = facingLeft ? -r * 0.24 : r * 0.24;
+
+        if (typeof SpriteAtlasCache !== 'undefined') {
+            const bins = SpriteAtlasCache.getWalkBins(6);
+            const rKey = Math.round(r * 2);
+            const animBin = flash ? 0 : SpriteAtlasCache.quantizePhase(age * 0.16, bins);
+            const qAge = flash ? 0 : ((animBin + 0.5) / bins) * (Math.PI * 2 / 0.16);
+            const bodyKey = `st_b:${rKey}:${animBin}:${isBack ? 1 : 0}:${flash ? 1 : 0}`;
+            const bw = Math.ceil(r * 2.5);
+            const bh = Math.ceil(r * 2.6);
+            const wy = e.y + hover;
+            const gKey = `st_g:${rKey}:${charging ? 1 : 0}:${flash ? 1 : 0}`;
+            const sw = Math.ceil(r * 1.8);
+            const sh = 28;
+
+            const drawCannon = () => {
+                EndlessEnemyRenderer.drawAimedLayer(ctx, aimAngle, e.x + ax, wy + (gunBehind ? 0 : r * 0.05), () => {
+                    SpriteAtlasCache.drawCached(ctx, gKey, sw, sh, 8, 14, (gctx) => {
+                        gctx.lineWidth = 2.6;
+                        gctx.lineJoin = 'round';
+                        gctx.lineCap = 'round';
+                        gctx.strokeStyle = '#081020';
+                        this.drawArcCannon(gctx, r, 0, charging, flash);
+                    });
+                }, true);
+            };
+
+            if (gunBehind) drawCannon();
+
+            SpriteAtlasCache.drawCachedAt(ctx, e.x, wy, bodyKey, bw, bh, bw * 0.5, Math.ceil(r * 1.4), (bctx) => {
+                bctx.lineWidth = 2.6;
+                bctx.lineJoin = 'round';
+                bctx.lineCap = 'round';
+                bctx.strokeStyle = '#081020';
+                this.drawWindVortexSkirt(bctx, r, qAge, flash);
+                if (!isBack) this.drawDynamoPack(bctx, r, qAge, false, flash);
+                this.drawStormArmorTorso(bctx, r, qAge, isBack, flash);
+                if (isBack) this.drawDynamoPack(bctx, r, qAge, true, flash);
+                this.drawShoulderPylons(bctx, r, qAge, flash);
+                this.drawLightningCrownHead(bctx, r, isBack, flash);
+            }, { flipX: facingLeft });
+
+            if (!gunBehind) drawCannon();
+
+            if (typeof EnemyBatchRenderer === 'undefined' || !EnemyBatchRenderer.active) {
+                e.drawBubbleTrap(ctx);
+                e.drawOverheadHUD(ctx);
+            }
+            return;
+        }
 
         ctx.save();
         ctx.translate(e.x, e.y + hover);
@@ -26,10 +78,9 @@ class StormTempestRenderer {
         ctx.lineCap = 'round';
         ctx.strokeStyle = '#081020';
 
-        const ax = facingLeft ? -r * 0.24 : r * 0.24;
         if (gunBehind) {
             EndlessEnemyRenderer.drawAimedLayer(ctx, aimAngle, ax, 0, () => {
-                this.drawArcCannon(ctx, r, age, (e.nodeWindup || 0) > 0, flash);
+                this.drawArcCannon(ctx, r, age, charging, flash);
             });
         }
 
@@ -45,13 +96,15 @@ class StormTempestRenderer {
 
         if (!gunBehind) {
             EndlessEnemyRenderer.drawAimedLayer(ctx, aimAngle, ax, r * 0.05, () => {
-                this.drawArcCannon(ctx, r, age, (e.nodeWindup || 0) > 0, flash);
+                this.drawArcCannon(ctx, r, age, charging, flash);
             });
         }
         ctx.restore();
 
-        e.drawBubbleTrap(ctx);
-        e.drawOverheadHUD(ctx);
+        if (typeof EnemyBatchRenderer === 'undefined' || !EnemyBatchRenderer.active) {
+            e.drawBubbleTrap(ctx);
+            e.drawOverheadHUD(ctx);
+        }
     }
 
     static drawStormNodes(ctx, e, age) {

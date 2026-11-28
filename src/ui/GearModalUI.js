@@ -235,7 +235,7 @@ class GearModalUI {
             const baseRarity = item.rarity || 'common';
             const isBossOnly = !!(item.bossUnlock || (baseRarity === 'mythic' && !item.chestOnly) || baseRarity === 'apex');
             const isChestOnly = !!(item.chestOnly || baseRarity === 'epic' || baseRarity === 'legendary');
-            const isExclusive = baseRarity === 'exclusive';
+            const isExclusive = baseRarity === 'exclusive' || !!item.devOnly;
             const canAfford = !isBossOnly && !isChestOnly && !isExclusive && playerCoins >= (item.cost || 0);
             const hasUpMgr = typeof GearUpgradeManager !== 'undefined';
             const rClass = hasUpMgr && typeof GearUpgradeManager.getEffectiveRarity === 'function' ? GearUpgradeManager.getEffectiveRarity(item) : baseRarity;
@@ -266,7 +266,7 @@ class GearModalUI {
                 const pDesc = isAwakenedStorm
                     ? 'Grants a 75 HP Thunder Barrier every 8s and unleashes a 105 DMG lightning shockwave (0.8s stun) when hit.'
                     : item.passive.desc;
-                const pClass = `${rClass === 'legendary' ? 'is-legendary' : (rClass === 'mythic' ? 'is-mythic' : (rClass === 'apex' ? 'is-apex' : ''))} ${isAwakenedStorm ? 'gear-evolved-passive-pill' : ''}`;
+                const pClass = `${rClass === 'legendary' ? 'is-legendary' : (rClass === 'mythic' ? 'is-mythic' : (rClass === 'apex' ? 'is-apex' : (rClass === 'exotic' ? 'is-exotic' : '')))} ${isAwakenedStorm ? 'gear-evolved-passive-pill' : ''}`;
                 passiveHtml = `<div class="gear-passive-pill ${pClass}" title="${pDesc}">${typeof UiIcons !== 'undefined' ? UiIcons.i('sparkle', 'ui-icon-sm') : '✨'} <strong>${pName}:</strong> ${pDesc}</div>`;
             }
 

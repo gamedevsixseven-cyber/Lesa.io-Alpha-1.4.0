@@ -526,7 +526,7 @@ class AdminCheatsService {
     unlockAllGear() {
         const gearMap = (typeof GEAR_DATA !== 'undefined' && GEAR_DATA) || (typeof window !== 'undefined' && window.GEAR_DATA) || null;
         if (!gearMap) return 0;
-        const ids = Object.keys(gearMap);
+        const ids = Object.keys(gearMap).filter(id => gearMap[id] && !gearMap[id].devOnly);
         for (const id of ids) if (typeof GearManager !== 'undefined' && typeof GearManager.unlock === 'function') GearManager.unlock(id, { free: true, source: 'admin' });
         if (window.uiController && window.uiController.modalManager && typeof window.uiController.modalManager.updateGearScreen === 'function') window.uiController.modalManager.updateGearScreen();
         if (window.soundEngine) window.soundEngine.playLevelUp();

@@ -12,6 +12,12 @@ class EndlessHardHazards {
     static _rainSplashes = [];
 
     static reset() {
+        const isMob = typeof MobilePerf !== 'undefined' && MobilePerf.isMobile;
+        if (isMob) {
+            for (const fr of this._frostRifts) {
+                if (fr && fr._cache) MobilePerf.releaseCanvas(fr._cache);
+            }
+        }
         this._braziers = [];
         this._frostRifts = [];
         this._vents = [];
@@ -119,11 +125,19 @@ class EndlessHardHazards {
         if (typeof EndlessHardMap !== 'undefined' && EndlessHardMap.forEachAlivePlayer) EndlessHardMap.forEachAlivePlayer(game, hitPl);
         else if (game.player) hitPl(game.player);
         if (Array.isArray(game.enemies)) {
-            for (const e of game.enemies) {
-                if (!e || e.dead || e.isDying) continue;
-                if (Math.hypot(e.x - v.x, e.y - v.y) <= v.rad + (e.radius || 20) && typeof e.takeDamage === 'function') {
+            const rad = v.rad;
+            const hitEnemy = (e) => {
+                if (!e || e.dead || e.isDying || typeof e.takeDamage !== 'function') return;
+                const hitR = rad + (e.radius || 20);
+                const dx = e.x - v.x, dy = e.y - v.y;
+                if (dx * dx + dy * dy <= hitR * hitR) {
                     e.takeDamage(110, game.effects, true, false);
                 }
+            };
+            if (typeof SpatialHashGrid !== 'undefined' && SpatialHashGrid.forEachEnemyNear) {
+                SpatialHashGrid.forEachEnemyNear(v.x, v.y, rad + 60, game.enemies, hitEnemy);
+            } else {
+                for (let i = 0; i < game.enemies.length; i++) hitEnemy(game.enemies[i]);
             }
         }
     }
@@ -144,43 +158,55 @@ class EndlessHardHazards {
             }
         }
 
-        // 2. Stage II: Layered Glacial Ice Puddles & Shattered Cryo Veins
+        // 2. Stage II: Layered Glacial Ice Puddles & Shattered Cryo Veins (cached per rift)
         if (stage === 2) {
+            const cScale = (typeof MobilePerf !== 'undefined' && MobilePerf.isMobile) ? 0.65 : 1.0;
             for (const fr of this._frostRifts) {
                 if (cam && !cam.isVisible(fr.x, fr.y, fr.rad + 28)) continue;
-                ctx.save();
-                ctx.translate(fr.x, fr.y);
-                ctx.rotate(fr.rot);
-                // Frosted stone rim halo
-                ctx.fillStyle = 'rgba(186, 230, 253, 0.14)';
-                ctx.beginPath(); ctx.ellipse(0, 0, fr.rad * 1.06, fr.rad * 0.78, 0, 0, Math.PI * 2); ctx.fill();
-                // Multi-faceted crystalline ice lake
-                const grad = ctx.createRadialGradient(0, 0, 8, 0, 0, fr.rad);
-                grad.addColorStop(0, 'rgba(224, 242, 254, 0.34)');
-                grad.addColorStop(0.65, 'rgba(56, 189, 248, 0.24)');
-                grad.addColorStop(1, 'rgba(12, 74, 110, 0.38)');
-                ctx.fillStyle = grad;
-                ctx.strokeStyle = '#7dd3fc';
-                ctx.lineWidth = 2.2;
-                ctx.beginPath();
-                for (let k = 0; k < 10; k++) {
-                    const a = (k / 10) * Math.PI * 2;
-                    const rr = fr.rad * (k % 2 === 0 ? 1.0 : 0.78);
-                    const px = Math.cos(a) * rr, py = Math.sin(a) * rr * 0.74;
-                    if (k === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+                if (!fr._cache) {
+                    const sz = Math.ceil(fr.rad * 2.28);
+                    const c = document.createElement('canvas');
+                    c.width = Math.max(16, Math.ceil(sz * cScale));
+                    c.height = c.width;
+                    const fctx = c.getContext('2d');
+                    if (fctx) {
+                        fctx.scale(cScale, cScale);
+                        fctx.translate(sz * 0.5, sz * 0.5);
+                        fctx.rotate(fr.rot);
+                        fctx.fillStyle = 'rgba(186, 230, 253, 0.14)';
+                        fctx.beginPath(); fctx.ellipse(0, 0, fr.rad * 1.06, fr.rad * 0.78, 0, 0, Math.PI * 2); fctx.fill();
+                        const grad = fctx.createRadialGradient(0, 0, 8, 0, 0, fr.rad);
+                        grad.addColorStop(0, 'rgba(224, 242, 254, 0.34)');
+                        grad.addColorStop(0.65, 'rgba(56, 189, 248, 0.24)');
+                        grad.addColorStop(1, 'rgba(12, 74, 110, 0.38)');
+                        fctx.fillStyle = grad;
+                        fctx.strokeStyle = '#7dd3fc';
+                        fctx.lineWidth = 2.2;
+                        fctx.beginPath();
+                        for (let k = 0; k < 10; k++) {
+                            const a = (k / 10) * Math.PI * 2;
+                            const rr = fr.rad * (k % 2 === 0 ? 1.0 : 0.78);
+                            const px = Math.cos(a) * rr, py = Math.sin(a) * rr * 0.74;
+                            if (k === 0) fctx.moveTo(px, py); else fctx.lineTo(px, py);
+                        }
+                        fctx.closePath(); fctx.fill(); fctx.stroke();
+                        fctx.strokeStyle = 'rgba(224, 242, 254, 0.65)'; fctx.lineWidth = 1.6;
+                        for (let k = 0; k < 4; k++) {
+                            const a = (k / 4) * Math.PI + 0.2;
+                            fctx.beginPath();
+                            fctx.moveTo(-Math.cos(a) * fr.rad * 0.65, -Math.sin(a) * fr.rad * 0.45);
+                            fctx.lineTo(0, (k % 2 === 0 ? 8 : -7));
+                            fctx.lineTo(Math.cos(a) * fr.rad * 0.65, Math.sin(a) * fr.rad * 0.45);
+                            fctx.stroke();
+                        }
+                        fr._cache = c;
+                        fr._sz = sz;
+                    }
                 }
-                ctx.closePath(); ctx.fill(); ctx.stroke();
-                // Branching frost fracture lines & specular crystal glint
-                ctx.strokeStyle = 'rgba(224, 242, 254, 0.65)'; ctx.lineWidth = 1.6;
-                for (let k = 0; k < 4; k++) {
-                    const a = (k / 4) * Math.PI + 0.2;
-                    ctx.beginPath();
-                    ctx.moveTo(-Math.cos(a) * fr.rad * 0.65, -Math.sin(a) * fr.rad * 0.45);
-                    ctx.lineTo(0, (k % 2 === 0 ? 8 : -7));
-                    ctx.lineTo(Math.cos(a) * fr.rad * 0.65, Math.sin(a) * fr.rad * 0.45);
-                    ctx.stroke();
+                if (fr._cache) {
+                    const hs = fr._sz * 0.5;
+                    ctx.drawImage(fr._cache, fr.x - hs, fr.y - hs, fr._sz, fr._sz);
                 }
-                ctx.restore();
             }
         }
 
@@ -343,53 +369,81 @@ class EndlessHardHazards {
 
     static drawAcidPuddles(ctx, cam, pools, st, age) {
         const now = age * 0.04;
+        const cScale = (typeof MobilePerf !== 'undefined' && MobilePerf.isMobile) ? 0.65 : 1.0;
+        const bubbleFill = st === 1 ? 'rgba(217, 249, 157, 0.72)' : 'rgba(224, 242, 254, 0.72)';
         for (const p of (pools || [])) {
             if (cam && !cam.isVisible(p.x, p.y, p.rx + 30)) continue;
-            ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot);
-            // Outer corroded stone halo
-            ctx.fillStyle = 'rgba(4, 18, 12, 0.45)';
-            ctx.beginPath();
-            for (let i = 0; i < 14; i++) {
-                const a = (i / 14) * Math.PI * 2;
-                const wobble = 1 + Math.sin(a * 3 + p.phase) * 0.14 + Math.cos(a * 5 - p.phase) * 0.08;
-                const px = Math.cos(a) * p.rx * wobble * 1.07, py = Math.sin(a) * p.ry * wobble * 1.07;
-                if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+            if (!p._cache || p._cacheStage !== st) {
+                const sz = Math.ceil(Math.max(p.rx, p.ry) * 2.75);
+                const c = p._cache || document.createElement('canvas');
+                c.width = Math.max(16, Math.ceil(sz * cScale));
+                c.height = c.width;
+                const pctx = c.getContext('2d');
+                if (pctx) {
+                    pctx.setTransform(1, 0, 0, 1, 0, 0);
+                    pctx.clearRect(0, 0, c.width, c.height);
+                    pctx.scale(cScale, cScale);
+                    pctx.translate(sz * 0.5, sz * 0.5);
+                    pctx.rotate(p.rot);
+                    pctx.fillStyle = 'rgba(4, 18, 12, 0.45)';
+                    pctx.beginPath();
+                    const ptsX = [], ptsY = [];
+                    for (let i = 0; i < 14; i++) {
+                        const a = (i / 14) * Math.PI * 2;
+                        const wobble = 1 + Math.sin(a * 3 + p.phase) * 0.14 + Math.cos(a * 5 - p.phase) * 0.08;
+                        const px = Math.cos(a) * p.rx * wobble, py = Math.sin(a) * p.ry * wobble;
+                        ptsX.push(px); ptsY.push(py);
+                        if (i === 0) pctx.moveTo(px * 1.07, py * 1.07); else pctx.lineTo(px * 1.07, py * 1.07);
+                    }
+                    pctx.closePath(); pctx.fill();
+                    const grad = pctx.createRadialGradient(0, 0, 8, 0, 0, p.rx);
+                    if (st === 1) {
+                        grad.addColorStop(0, 'rgba(190, 242, 100, 0.52)');
+                        grad.addColorStop(0.55, 'rgba(46, 213, 115, 0.38)');
+                        grad.addColorStop(1, 'rgba(6, 78, 59, 0.45)');
+                    } else {
+                        grad.addColorStop(0, 'rgba(224, 242, 254, 0.48)');
+                        grad.addColorStop(0.6, 'rgba(56, 189, 248, 0.34)');
+                        grad.addColorStop(1, 'rgba(12, 74, 110, 0.44)');
+                    }
+                    pctx.fillStyle = grad;
+                    pctx.strokeStyle = st === 1 ? '#2ed573' : '#7dd3fc';
+                    pctx.lineWidth = 2.2;
+                    pctx.beginPath();
+                    for (let i = 0; i < 14; i++) {
+                        if (i === 0) pctx.moveTo(ptsX[i], ptsY[i]); else pctx.lineTo(ptsX[i], ptsY[i]);
+                    }
+                    pctx.closePath(); pctx.fill(); pctx.stroke();
+                    p._cache = c;
+                    p._cacheStage = st;
+                    p._sz = sz;
+                }
+                if (!p._bubbles) {
+                    const cosR = Math.cos(p.rot), sinR = Math.sin(p.rot);
+                    p._bubbles = [];
+                    for (let b = 0; b < 3; b++) {
+                        const lx = Math.cos(p.phase + b * 2.1) * p.rx * 0.42;
+                        const ly = Math.sin(p.phase + b * 1.7) * p.ry * 0.42;
+                        p._bubbles.push({
+                            wx: cosR * lx - sinR * ly,
+                            wy: sinR * lx + cosR * ly,
+                            off: p.phase + b * 2.1
+                        });
+                    }
+                }
             }
-            ctx.closePath(); ctx.fill();
-            // Organic radiant blight slime body
-            const grad = ctx.createRadialGradient(0, 0, 8, 0, 0, p.rx);
-            if (st === 1) {
-                grad.addColorStop(0, 'rgba(190, 242, 100, 0.52)');
-                grad.addColorStop(0.55, 'rgba(46, 213, 115, 0.38)');
-                grad.addColorStop(1, 'rgba(6, 78, 59, 0.45)');
-            } else {
-                grad.addColorStop(0, 'rgba(224, 242, 254, 0.48)');
-                grad.addColorStop(0.6, 'rgba(56, 189, 248, 0.34)');
-                grad.addColorStop(1, 'rgba(12, 74, 110, 0.44)');
+            if (p._cache) {
+                const hs = p._sz * 0.5;
+                ctx.drawImage(p._cache, p.x - hs, p.y - hs, p._sz, p._sz);
             }
-            ctx.fillStyle = grad;
-            ctx.strokeStyle = st === 1 ? '#2ed573' : '#7dd3fc';
-            ctx.lineWidth = 2.2;
-            ctx.beginPath();
-            for (let i = 0; i < 14; i++) {
-                const a = (i / 14) * Math.PI * 2;
-                const wobble = 1 + Math.sin(a * 3 + p.phase) * 0.14 + Math.cos(a * 5 - p.phase) * 0.08;
-                const px = Math.cos(a) * p.rx * wobble, py = Math.sin(a) * p.ry * wobble;
-                if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
-            }
-            ctx.closePath(); ctx.fill(); ctx.stroke();
-            // Staggered popping acid/frost bubbles
-            ctx.fillStyle = st === 1 ? 'rgba(217, 249, 157, 0.72)' : 'rgba(224, 242, 254, 0.72)';
-            for (let b = 0; b < 3; b++) {
-                const ph = (now * 0.55 + p.phase + b * 2.1) % 3.2;
-                const br = (ph / 3.2) * 8.5;
-                const bx = Math.cos(p.phase + b * 2.1) * p.rx * 0.42;
-                const by = Math.sin(p.phase + b * 1.7) * p.ry * 0.42;
+            ctx.fillStyle = bubbleFill;
+            for (let b = 0; b < p._bubbles.length; b++) {
+                const bb = p._bubbles[b];
+                const ph = (now * 0.55 + bb.off) % 3.2;
                 ctx.globalAlpha = 1 - (ph / 3.2);
-                ctx.beginPath(); ctx.arc(bx, by, br, 0, Math.PI * 2); ctx.fill();
+                ctx.beginPath(); ctx.arc(p.x + bb.wx, p.y + bb.wy, (ph / 3.2) * 8.5, 0, Math.PI * 2); ctx.fill();
             }
             ctx.globalAlpha = 1;
-            ctx.restore();
         }
     }
 

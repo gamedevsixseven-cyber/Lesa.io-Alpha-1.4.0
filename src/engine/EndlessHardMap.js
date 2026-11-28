@@ -68,6 +68,11 @@ class EndlessHardMap {
         this.age = 0;
         this._stage = 0;
         this._announcedStage = -1;
+        if (typeof MobilePerf !== 'undefined' && MobilePerf.isMobile && Array.isArray(this._acidPools)) {
+            for (const pool of this._acidPools) {
+                if (pool && pool._cache) MobilePerf.releaseCanvas(pool._cache);
+            }
+        }
         this._acidPools = [];
         this._fissures = [];
         this._strikes = [];
@@ -307,19 +312,26 @@ class EndlessHardMap {
     }
 
     static _tickAcidPools(g) {
+        const hasGrid = Array.isArray(g.enemies) && typeof SpatialHashGrid !== 'undefined' && SpatialHashGrid.forEachEnemyNear;
         for (const pool of this._acidPools) {
+            const pHitR = Math.max(pool.rx, pool.ry) * 0.78;
             this.forEachAlivePlayer(g, (p) => {
-                if (p.invulnerableTimer <= 0 && Math.hypot(p.x - pool.x, p.y - pool.y) < Math.max(pool.rx, pool.ry) * 0.78) {
+                if (p.invulnerableTimer <= 0 && Math.hypot(p.x - pool.x, p.y - pool.y) < pHitR) {
                     p.takeDamage(6, g.effects, g.camera);
                 }
             });
             if (Array.isArray(g.enemies)) {
-                for (const e of g.enemies) {
-                    if (!e || e.dead || e.isDying) continue;
-                    if (Math.hypot(e.x - pool.x, e.y - pool.y) < pool.rx * 0.78 && typeof e.takeDamage === 'function') {
+                const eHitR = pool.rx * 0.78;
+                const eHitSq = eHitR * eHitR;
+                const hurtEnemy = (e) => {
+                    if (!e || e.dead || e.isDying || typeof e.takeDamage !== 'function') return;
+                    const dx = e.x - pool.x, dy = e.y - pool.y;
+                    if (dx * dx + dy * dy < eHitSq) {
                         e.takeDamage(14, g.effects, false, false);
                     }
-                }
+                };
+                if (hasGrid) SpatialHashGrid.forEachEnemyNear(pool.x, pool.y, eHitR + 40, g.enemies, hurtEnemy);
+                else for (let i = 0; i < g.enemies.length; i++) hurtEnemy(g.enemies[i]);
             }
         }
     }
@@ -337,11 +349,19 @@ class EndlessHardMap {
             }
         });
         if (Array.isArray(g.enemies)) {
-            for (const e of g.enemies) {
-                if (!e || e.dead || e.isDying) continue;
-                if (Math.hypot(e.x - s.x, e.y - s.y) <= s.radius + (e.radius || 20) && typeof e.takeDamage === 'function') {
-                    e.takeDamage(s.kind === 'meteor' ? 160 : 125, g.effects, true, false);
+            const dmg = s.kind === 'meteor' ? 160 : 125;
+            const hitEnemy = (e) => {
+                if (!e || e.dead || e.isDying || typeof e.takeDamage !== 'function') return;
+                const hitR = s.radius + (e.radius || 20);
+                const dx = e.x - s.x, dy = e.y - s.y;
+                if (dx * dx + dy * dy <= hitR * hitR) {
+                    e.takeDamage(dmg, g.effects, true, false);
                 }
+            };
+            if (typeof SpatialHashGrid !== 'undefined' && SpatialHashGrid.forEachEnemyNear) {
+                SpatialHashGrid.forEachEnemyNear(s.x, s.y, s.radius + 60, g.enemies, hitEnemy);
+            } else {
+                for (let i = 0; i < g.enemies.length; i++) hitEnemy(g.enemies[i]);
             }
         }
     }

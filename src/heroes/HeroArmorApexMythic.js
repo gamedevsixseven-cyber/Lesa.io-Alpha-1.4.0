@@ -433,6 +433,93 @@ class HeroArmorApexMythic {
         this.drawEvolvedAura(ctx, r, evolved, flash, '#22d3ee');
         ctx.restore();
     }
+
+    /* =========================================================================
+       DEV-GIFT EXOTIC PANOPOLY: PANOPLIA DAB
+       ========================================================================= */
+    static drawPanopliaDab(ctx, r, flash, isBack, evolved) {
+        ctx.save();
+        const t = Date.now() * 0.0075;
+        const wave = Math.sin(t) * r * 0.03;
+
+        // 1. Emerald-Teal Sovereign Cape Wings
+        const capeGrad = ctx.createLinearGradient(0, -r * 0.48, 0, r * 0.56);
+        capeGrad.addColorStop(0, flash ? '#ffffff' : '#10b981');
+        capeGrad.addColorStop(0.55, flash ? '#ffffff' : '#047857');
+        capeGrad.addColorStop(1, flash ? '#ffffff' : '#022c22');
+        ctx.fillStyle = capeGrad;
+        ctx.strokeStyle = flash ? '#ffffff' : '#fbbf24';
+        ctx.lineWidth = 2.0;
+        if (isBack) {
+            ctx.beginPath();
+            ctx.moveTo(-r * 0.62, -r * 0.44); ctx.lineTo(r * 0.62, -r * 0.44);
+            ctx.lineTo(r * 0.80 + wave * 0.5, r * 0.34); ctx.lineTo(r * 0.50, r * 0.54 + wave);
+            ctx.lineTo(0, r * 0.44); ctx.lineTo(-r * 0.50, r * 0.54 - wave);
+            ctx.lineTo(-r * 0.80 - wave * 0.5, r * 0.34);
+            ctx.closePath(); ctx.fill(); ctx.stroke();
+        } else {
+            for (const s of [-1, 1]) {
+                ctx.beginPath();
+                ctx.moveTo(s * r * 0.45, -r * 0.42);
+                ctx.lineTo(s * r * 0.80, r * 0.22 + s * wave * 0.4);
+                ctx.lineTo(s * r * 0.60, r * 0.46 - s * wave * 0.4);
+                ctx.lineTo(s * r * 0.44, r * 0.36);
+                ctx.closePath(); ctx.fill(); ctx.stroke();
+            }
+        }
+
+        // 2. Sculpted Obsidian & Royal Emerald Breastplate
+        const armorGrad = ctx.createLinearGradient(0, -r * 0.46, 0, r * 0.42);
+        armorGrad.addColorStop(0, flash ? '#ffffff' : '#10b981');
+        armorGrad.addColorStop(0.45, flash ? '#ffffff' : '#065f46');
+        armorGrad.addColorStop(1, flash ? '#ffffff' : '#0f172a');
+        ctx.fillStyle = armorGrad;
+        ctx.strokeStyle = flash ? '#ffffff' : '#090d12';
+        ctx.lineWidth = 2.2;
+        this.traceCuirassBody(ctx, r, r * 0.56, r * 0.52, -r * 0.46, r * 0.42, -r * 0.24, isBack);
+        ctx.fill(); ctx.stroke();
+
+        // 3. Spiked Imperial Emerald & 24k Gold Pauldrons
+        for (const s of [-1, 1]) {
+            ctx.fillStyle = flash ? '#ffffff' : this.drawGoldGrad(ctx, r, -r * 0.56, -r * 0.28);
+            ctx.strokeStyle = flash ? '#ffffff' : '#090d12';
+            ctx.lineWidth = 1.6;
+            ctx.beginPath();
+            ctx.moveTo(s * r * 0.56, -r * 0.36);
+            ctx.lineTo(s * r * 0.86, -r * 0.54);
+            ctx.lineTo(s * r * 0.68, -r * 0.26);
+            ctx.closePath(); ctx.fill(); ctx.stroke();
+
+            ctx.fillStyle = flash ? '#ffffff' : '#1e293b';
+            ctx.strokeStyle = flash ? '#ffffff' : '#fbbf24';
+            ctx.lineWidth = 1.8;
+            ctx.beginPath();
+            ctx.ellipse(s * r * 0.54, -r * 0.35, r * 0.21, r * 0.125, s * 0.32, 0, Math.PI * 2);
+            ctx.fill(); ctx.stroke();
+        }
+
+        if (flash) { ctx.restore(); return; }
+
+        // 4. Golden Belt & Hexagonal Cyan-Emerald Prism Core
+        ctx.fillStyle = this.drawGoldGrad(ctx, r, r * 0.18, r * 0.34);
+        ctx.strokeStyle = '#090d12'; ctx.lineWidth = 1.5;
+        ctx.beginPath(); ctx.roundRect(-r * 0.49, r * 0.20, r * 0.98, r * 0.13, 3); ctx.fill(); ctx.stroke();
+
+        const pulse = 0.78 + 0.22 * Math.sin(t * 2);
+        const cy = isBack ? -r * 0.04 : -r * 0.12;
+        ctx.fillStyle = `rgba(85, 239, 196, ${0.42 * pulse})`;
+        ctx.beginPath(); ctx.arc(0, cy, r * 0.22, 0, Math.PI * 2); ctx.fill();
+
+        ctx.fillStyle = '#55efc4'; ctx.strokeStyle = '#fbbf24'; ctx.lineWidth = 2.0;
+        ctx.beginPath();
+        ctx.moveTo(0, cy - r * 0.16); ctx.lineTo(r * 0.14, cy - r * 0.05);
+        ctx.lineTo(r * 0.14, cy + r * 0.09); ctx.lineTo(0, cy + r * 0.17);
+        ctx.lineTo(-r * 0.14, cy + r * 0.09); ctx.lineTo(-r * 0.14, cy - r * 0.05);
+        ctx.closePath(); ctx.fill(); ctx.stroke();
+
+        this.drawEvolvedAura(ctx, r, true, flash, '#55efc4');
+        ctx.restore();
+    }
 }
 
 if (typeof window !== 'undefined') window.HeroArmorApexMythic = HeroArmorApexMythic;

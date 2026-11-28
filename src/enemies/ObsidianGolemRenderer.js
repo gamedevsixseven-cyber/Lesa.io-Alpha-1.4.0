@@ -21,6 +21,63 @@ class ObsidianGolemRenderer {
         if (isSlam) this.drawSlamLaneTelegraph(ctx, e, r);
         EndlessEnemyRenderer.drawShadow(ctx, e.x, e.y, r, 1.20, 0.44);
 
+        const aimOff = isSlam ? Math.sin(age * 0.65) * 0.14 : 0;
+
+        if (typeof SpriteAtlasCache !== 'undefined') {
+            const bins = SpriteAtlasCache.getWalkBins(6);
+            const rKey = Math.round(r * 2);
+            const rawPhase = e.walkCycle || age * 0.15;
+            const walkBin = SpriteAtlasCache.quantizePhase(rawPhase, bins);
+            const pose = flash ? 'F' : (isSlam ? 'S' : walkBin);
+            const qAge = (pose === 'F' || pose === 'S') ? 0 : ((walkBin + 0.5) / bins) * (Math.PI * 2 / 0.15);
+            const qCycle = (pose === 'F' || pose === 'S') ? 0 : SpriteAtlasCache.binAngle(walkBin, bins);
+            const bodyKey = `og_b:${rKey}:${pose}:${isBack ? 1 : 0}:${enraged ? 1 : 0}:${flash ? 1 : 0}`;
+            const bw = Math.ceil(r * 2.6);
+            const bh = Math.ceil(r * 2.7);
+            const wy = e.y + bob;
+
+            const hasShield = !enraged && e.frontShieldHp > 0;
+            const hpQ = hasShield ? Math.min(3, Math.floor((e.frontShieldHp / (e.frontShieldMax || 1)) * 4)) : 0;
+            const shKey = `og_sh:${rKey}:${hasShield ? 's' + hpQ : 'f'}:${flash ? 1 : 0}`;
+            const sw = Math.ceil(r * 1.9);
+            const sh = Math.ceil(r * 2.3);
+
+            const drawShieldLayer = () => {
+                EndlessEnemyRenderer.drawAimedLayer(ctx, aimAngle + aimOff, e.x, wy, () => {
+                    SpriteAtlasCache.drawCached(ctx, shKey, sw, sh, 4, sh * 0.5, (sctx) => {
+                        sctx.lineWidth = 3;
+                        sctx.lineJoin = 'round';
+                        sctx.lineCap = 'round';
+                        sctx.strokeStyle = '#0c0d14';
+                        this.drawFrontShieldOrFist(sctx, r, e, enraged, flash);
+                    });
+                }, true);
+            };
+
+            if (shieldBehind) drawShieldLayer();
+
+            SpriteAtlasCache.drawCachedAt(ctx, e.x, wy, bodyKey, bw, bh, bw * 0.5, Math.ceil(r * 1.55), (bctx) => {
+                bctx.lineWidth = 3;
+                bctx.lineJoin = 'round';
+                bctx.lineCap = 'round';
+                bctx.strokeStyle = '#0c0d14';
+                if (!isBack) this.drawFurnacePack(bctx, r, false, enraged, flash);
+                this.drawVolcanicLegs(bctx, r, qCycle, enraged, flash);
+                this.drawOffhandGauntlet(bctx, r, qAge, isSlam, enraged, flash);
+                this.drawBasaltArmorTorso(bctx, r, qAge, isBack, enraged, flash);
+                if (isBack) this.drawFurnacePack(bctx, r, true, enraged, flash);
+                this.drawTitanHornedHead(bctx, r, isBack, enraged, flash);
+            }, { flipX: facingLeft });
+
+            if (!shieldBehind) drawShieldLayer();
+
+            if (typeof EnemyBatchRenderer === 'undefined' || !EnemyBatchRenderer.active) {
+                e.drawBubbleTrap(ctx);
+                e.drawOverheadHUD(ctx);
+            }
+            return;
+        }
+
         ctx.save();
         ctx.translate(e.x, e.y + bob);
         ctx.lineWidth = 3;
@@ -28,7 +85,6 @@ class ObsidianGolemRenderer {
         ctx.lineCap = 'round';
         ctx.strokeStyle = '#0c0d14';
 
-        const aimOff = isSlam ? Math.sin(age * 0.65) * 0.14 : 0;
         if (shieldBehind) {
             EndlessEnemyRenderer.drawAimedLayer(ctx, aimAngle + aimOff, 0, 0, () => {
                 this.drawFrontShieldOrFist(ctx, r, e, enraged, flash);
@@ -52,8 +108,10 @@ class ObsidianGolemRenderer {
         }
         ctx.restore();
 
-        e.drawBubbleTrap(ctx);
-        e.drawOverheadHUD(ctx);
+        if (typeof EnemyBatchRenderer === 'undefined' || !EnemyBatchRenderer.active) {
+            e.drawBubbleTrap(ctx);
+            e.drawOverheadHUD(ctx);
+        }
     }
 
     static drawSlamLaneTelegraph(ctx, e, r) {

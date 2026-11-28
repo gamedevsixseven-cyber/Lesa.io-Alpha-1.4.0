@@ -19,7 +19,8 @@ class HeroArmorRenderer {
         zeus_aegis_cuirass: { sleeveColor: '#1e3a8a', sleevePanelColor: '#fbbf24', sleeveStripeColor: '#7dd3fc', cuffColor: '#f59e0b', cuffStripeColor: '#00f5ff' },
         apex_omega_mantle: { sleeveColor: '#1b1d26', sleevePanelColor: '#7f1d1d', sleeveStripeColor: '#fde047', cuffColor: '#f59e0b', cuffStripeColor: '#ff2e4c' },
         mythic_chronos_cuirass: { sleeveColor: '#1e293b', sleevePanelColor: '#991b1b', sleeveStripeColor: '#f59e0b', cuffColor: '#f59e0b', cuffStripeColor: '#38bdf8' },
-        mythic_poseidon_plate: { sleeveColor: '#0369a1', sleevePanelColor: '#0f766e', sleeveStripeColor: '#fde047', cuffColor: '#f59e0b', cuffStripeColor: '#22d3ee' }
+        mythic_poseidon_plate: { sleeveColor: '#0369a1', sleevePanelColor: '#0f766e', sleeveStripeColor: '#fde047', cuffColor: '#f59e0b', cuffStripeColor: '#22d3ee' },
+        armor_panoplia_dab: { sleeveColor: '#064e3b', sleevePanelColor: '#1e293b', sleeveStripeColor: '#fde047', cuffColor: '#f59e0b', cuffStripeColor: '#55efc4' }
     };
 
     static getEquippedArmorId(player) {

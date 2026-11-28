@@ -97,13 +97,80 @@ class KolossosDrone extends EnemyBase {
     draw(ctx) {
         const flash = this.hitFlash > 0;
         const r = this.radius;
-        ctx.save();
-        ctx.translate(this.x, this.y + Math.sin(this.age * 0.14) * 3);
+        const wy = this.y + Math.sin(this.age * 0.14) * 3;
+        const batched = typeof EnemyBatchRenderer !== 'undefined' && EnemyBatchRenderer.active;
 
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
-        ctx.beginPath();
-        ctx.ellipse(0, r * 0.95, r * 0.85, r * 0.32, 0, 0, Math.PI * 2);
-        ctx.fill();
+        if (typeof SpriteAtlasCache !== 'undefined') {
+            if (!batched) {
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
+                ctx.beginPath();
+                ctx.ellipse(this.x, wy + r * 0.95, r * 0.85, r * 0.32, 0, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            const rKey = Math.round(r * 2);
+            const hullKey = `kol_d_b:${rKey}:${flash ? 1 : 0}`;
+            const bw = Math.ceil(r * 2.2);
+            const bh = Math.ceil(r * 2.0);
+            const drawHull = () => {
+                SpriteAtlasCache.drawCached(ctx, hullKey, bw, bh, Math.ceil(r * 1.0), bh * 0.5, (dctx) => {
+                    dctx.fillStyle = flash ? '#ffffff' : '#2f3542';
+                    dctx.strokeStyle = '#141418';
+                    dctx.lineWidth = 2.6;
+                    dctx.beginPath();
+                    dctx.moveTo(r * 1.05, 0);
+                    dctx.lineTo(r * 0.35, -r * 0.82);
+                    dctx.lineTo(-r * 0.85, -r * 0.56);
+                    dctx.lineTo(-r * 0.85, r * 0.56);
+                    dctx.lineTo(r * 0.35, r * 0.82);
+                    dctx.closePath();
+                    dctx.fill();
+                    dctx.stroke();
+
+                    if (!flash) {
+                        dctx.fillStyle = '#cd6133';
+                        dctx.fillRect(-r * 0.35, -r * 0.42, r * 0.72, r * 0.84);
+                        dctx.strokeRect(-r * 0.35, -r * 0.42, r * 0.72, r * 0.84);
+                        dctx.fillStyle = '#ff2e4c';
+                        dctx.beginPath();
+                        dctx.arc(r * 0.25, 0, r * 0.32, 0, Math.PI * 2);
+                        dctx.fill();
+                        dctx.fillStyle = '#fed330';
+                        dctx.beginPath();
+                        dctx.arc(r * 0.32, 0, r * 0.13, 0, Math.PI * 2);
+                        dctx.fill();
+                    }
+                });
+            };
+            if (typeof EndlessEnemyRenderer !== 'undefined') {
+                EndlessEnemyRenderer.drawAimedLayer(ctx, this.angle, this.x, wy, drawHull, true);
+            } else {
+                ctx.save(); ctx.translate(this.x, wy); ctx.rotate(this.angle); drawHull(); ctx.restore();
+            }
+
+            if (!batched && this.hp < this.maxHp) {
+                const bwBar = 38;
+                const ratio = Math.max(0, Math.min(1, this.hp / this.maxHp));
+                ctx.fillStyle = '#1e272e';
+                ctx.fillRect(this.x - bwBar * 0.5, this.y - r - 12, bwBar, 5);
+                ctx.fillStyle = '#ff4757';
+                ctx.fillRect(this.x - bwBar * 0.5, this.y - r - 12, bwBar * ratio, 5);
+                ctx.strokeStyle = '#000';
+                ctx.lineWidth = 1.5;
+                ctx.strokeRect(this.x - bwBar * 0.5, this.y - r - 12, bwBar, 5);
+            }
+            return;
+        }
+
+        ctx.save();
+        ctx.translate(this.x, wy);
+
+        if (!batched) {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
+            ctx.beginPath();
+            ctx.ellipse(0, r * 0.95, r * 0.85, r * 0.32, 0, 0, Math.PI * 2);
+            ctx.fill();
+        }
 
         ctx.rotate(this.angle);
         ctx.fillStyle = flash ? '#ffffff' : '#2f3542';
@@ -135,7 +202,7 @@ class KolossosDrone extends EnemyBase {
         ctx.restore();
 
         // Compact Drone Health Bar
-        if (this.hp < this.maxHp) {
+        if (!batched && this.hp < this.maxHp) {
             const bw = 38;
             const ratio = Math.max(0, Math.min(1, this.hp / this.maxHp));
             ctx.save();

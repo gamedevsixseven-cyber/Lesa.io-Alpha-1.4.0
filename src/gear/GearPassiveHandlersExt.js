@@ -16,6 +16,8 @@ class GearPassiveHandlersExt {
         s.valkyrieHitCount = 0;
         s.valkyrieSpeedTimer = 0;
         s.aresKillCount = 0;
+        s.dabRushTimer = 0;
+        s.dabKillCount = 0;
     }
 
     static updateTimers(dt, s) {
@@ -24,6 +26,7 @@ class GearPassiveHandlersExt {
         if (s.phoenixBuffTimer > 0) s.phoenixBuffTimer = Math.max(0, s.phoenixBuffTimer - dt);
         if (s.hermesBuffTimer > 0) s.hermesBuffTimer = Math.max(0, s.hermesBuffTimer - dt);
         if (s.valkyrieSpeedTimer > 0) s.valkyrieSpeedTimer = Math.max(0, s.valkyrieSpeedTimer - dt);
+        if (s.dabRushTimer > 0) s.dabRushTimer = Math.max(0, s.dabRushTimer - dt);
     }
 
     static getSpeedBonusMult(player) {
@@ -33,12 +36,16 @@ class GearPassiveHandlersExt {
         if (s.oracleSpeedTimer > 0) m *= 1.12;
         if (s.hermesBuffTimer > 0) m *= 1.18;
         if (s.valkyrieSpeedTimer > 0) m *= 1.16;
+        if (s.dabRushTimer > 0) m *= 1.25;
         return m;
     }
 
     static getFireRateBonusMult(player) {
         const s = player && player._gearPassiveState;
-        return (s && s.hermesBuffTimer > 0) ? 1.12 : 1.0;
+        if (!s) return 1.0;
+        let m = s.hermesBuffTimer > 0 ? 1.12 : 1.0;
+        if (s.dabRushTimer > 0) m *= 1.15;
+        return m;
     }
 
     static getCritBonus(player) {
@@ -52,6 +59,7 @@ class GearPassiveHandlersExt {
         if (s && s.phoenixBuffTimer > 0) m *= 1.18;
         if (isCrit && isBossOrElite && this.has('oracle_foreshadow')) m *= 1.28;
         if (targetEnemy && (targetEnemy.isBoss || targetEnemy.isMiniBoss) && this.has('abyssal_surge')) m *= 1.14;
+        if (targetEnemy && (targetEnemy.isBoss || targetEnemy.isMiniBoss || targetEnemy.isEndlessBoss) && this.has('panoplia_dab_overdrive')) m *= 1.25;
         return m;
     }
 
@@ -73,10 +81,28 @@ class GearPassiveHandlersExt {
     }
 
     static getBarrierSpec() {
+        if (this.has('panoplia_dab_overdrive')) {
+            return { priority: true, cap: 150, period: 360, rad: 120, col: 'rgba(16, 185, 129, 0.92)', msg: '👑 DAB BARRIER +150!' };
+        }
         if (this.has('chronos_bulwark')) {
             return { cap: 50, period: 600, rad: 92, col: 'rgba(192, 132, 252, 0.88)', msg: '⏳ CHRONOS BARRIER +50!' };
         }
         return null;
+    }
+
+    static tryPreventFatalHit(player, s, effects) {
+        if (this.has('panoplia_dab_overdrive') && !s.aegisFatalUsed && player.hp <= 0) {
+            s.aegisFatalUsed = true;
+            player.hp = Math.max(1, Math.round((player.maxHp || 100) * 0.35));
+            player.invulnerableTimer = 150;
+            const g = typeof window !== 'undefined' ? window.gameInstance : null;
+            if (typeof GearPassives !== 'undefined') {
+                GearPassives._triggerRadialStomp(player, g ? g.enemies : [], effects, 260, 260 * (player.damageMultiplier || 1), 65, '👑 DAB REVIVE!', '#10b981');
+            }
+            if (effects) effects.addSparks(player.x, player.y, '#fed330', 16);
+            return true;
+        }
+        return false;
     }
 
     static onDash(player, s, effects) {
@@ -153,6 +179,25 @@ class GearPassiveHandlersExt {
         if (this.has('abyssal_surge') && typeof GearPassives !== 'undefined') {
             GearPassives._triggerRadialStomp(player, enemies, effects, 175, 58 * (player.damageMultiplier || 1), 36, '🔱 ABYSSAL RIPTIDE!', '#00f5ff');
         }
+        if (this.has('panoplia_dab_overdrive') && typeof GearPassives !== 'undefined') {
+            const novaDmg = 240 * (player.damageMultiplier || 1);
+            GearPassives._triggerRadialStomp(player, enemies, effects, 250, novaDmg, 60, '👑 DAB SOVEREIGN NOVA!', '#10b981');
+            let first = null, bestSq = 280 * 280;
+            const pick = (e) => {
+                if (!e || e.dead || e.isDying || e.isAirborneImmune) return;
+                const dSq = (e.x - player.x) ** 2 + (e.y - player.y) ** 2;
+                if (dSq < bestSq) { bestSq = dSq; first = e; }
+            };
+            if (typeof SpatialHashGrid !== 'undefined') SpatialHashGrid.forEachEnemyNear(player.x, player.y, 280, enemies, pick);
+            else for (let i = 0; i < enemies.length; i++) pick(enemies[i]);
+            if (first) {
+                const boltDmg = Math.max(25, Math.round(95 * (player.damageMultiplier || 1)));
+                if (typeof first.takeDamage === 'function') first.takeDamage(boltDmg, effects, false);
+                if (game && game.isCoopGuest) first.dead = false;
+                if (effects) effects.addLightningChain(player.x, player.y - 10, first.x, first.y, '#55efc4');
+                GearPassives._arcChainLightning({ shooter: player }, first, boltDmg, '#fed330', '⚡ DAB OVERDRIVE!', enemies, effects, game);
+            }
+        }
     }
 
     static onBulletHit(bullet, targetEnemy, damageDealt, enemies, player, s, effects, game) {
@@ -187,7 +232,16 @@ class GearPassiveHandlersExt {
     }
 
     static onEnemyKilled(player, s, game) {
-        if (!this.has('warlord_frenzy') || !player || !s) return;
+        if (!player || !s) return;
+        if (this.has('panoplia_dab_overdrive')) {
+            s.dabKillCount = (s.dabKillCount || 0) + 1;
+            if (s.dabKillCount % 10 === 0 && typeof GearPassives !== 'undefined') {
+                player.heal(25);
+                s.dabRushTimer = 180;
+                GearPassives._triggerRadialStomp(player, game ? game.enemies : [], game ? game.effects : null, 195, 110 * (player.damageMultiplier || 1), 30, '👑 DAB RUSH +25 HP!', '#10b981');
+            }
+        }
+        if (!this.has('warlord_frenzy')) return;
         s.aresKillCount = (s.aresKillCount || 0) + 1;
         if (s.aresKillCount % 18 === 0 && typeof GearPassives !== 'undefined') {
             player.heal(5);

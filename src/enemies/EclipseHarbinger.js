@@ -36,16 +36,20 @@ class EclipseHarbinger extends EnemyBase {
         if (this.updateFear(dt, player, effects)) { this.applyArenaBounds(arena); return; }
         if (!player || player.hp <= 0) return;
 
-        // Passive War Banner Rally: haste nearby Hard allies subtly
+        // Passive War Banner Rally: haste nearby Hard allies subtly (spatial grid O(1) lookup)
         const rSq = this.auraRadius * this.auraRadius;
-        for (let i = 0; i < enemies.length; i++) {
-            const ally = enemies[i];
-            if (!ally || ally === this || ally.dead) continue;
+        const hasteAlly = (ally) => {
+            if (!ally || ally === this || ally.dead) return;
             const adx = ally.x - this.x, ady = ally.y - this.y;
             if (adx * adx + ady * ady <= rSq) {
                 ally.x += (ally.vx || 0) * 0.16;
                 ally.y += (ally.vy || 0) * 0.16;
             }
+        };
+        if (typeof SpatialHashGrid !== 'undefined' && SpatialHashGrid.forEachEnemyNear) {
+            SpatialHashGrid.forEachEnemyNear(this.x, this.y, this.auraRadius, enemies, hasteAlly);
+        } else {
+            for (let i = 0; i < enemies.length; i++) hasteAlly(enemies[i]);
         }
 
         const dx = player.x - this.x, dy = player.y - this.y;

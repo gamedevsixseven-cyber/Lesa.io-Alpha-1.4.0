@@ -20,6 +20,58 @@ class EclipseHarbingerRenderer {
         this.drawWarBannerAndTelegraph(ctx, e, r, age, charging);
         EndlessEnemyRenderer.drawShadow(ctx, e.x, e.y, r, 1.10, 0.38);
 
+        if (typeof SpriteAtlasCache !== 'undefined') {
+            const bins = SpriteAtlasCache.getWalkBins(6);
+            const rKey = Math.round(r * 2);
+            const rawPhase = e.walkCycle || age * 0.14;
+            const walkBin = SpriteAtlasCache.quantizePhase(rawPhase, bins);
+            const pose = flash ? 'F' : (charging ? 'C' : walkBin);
+            const qAge = (pose === 'F' || pose === 'C') ? 0 : ((walkBin + 0.5) / bins) * (Math.PI * 2 / 0.14);
+            const qCycle = (pose === 'F' || pose === 'C') ? 0 : SpriteAtlasCache.binAngle(walkBin, bins);
+            const bodyKey = `eh_b:${rKey}:${pose}:${isBack ? 1 : 0}:${flash ? 1 : 0}`;
+            const bw = Math.ceil(r * 4.3);
+            const bh = Math.ceil(r * 2.9);
+            const wy = e.y + hover;
+            const glaiveSpin = charging ? age * 0.22 : aimAngle;
+
+            const drawGlaive = () => {
+                EndlessEnemyRenderer.drawAimedLayer(ctx, glaiveSpin, e.x, wy + (glaiveBehind ? 0 : r * 0.04), () => {
+                    const gKey = `eh_w:${rKey}:${charging ? 1 : 0}:${flash ? 1 : 0}`;
+                    const gw = Math.ceil(r * 2.3);
+                    const gh = 54;
+                    SpriteAtlasCache.drawCached(ctx, gKey, gw, gh, Math.ceil(r * 0.55), 27, (gctx) => {
+                        gctx.lineWidth = 2.8;
+                        gctx.lineJoin = 'round';
+                        gctx.lineCap = 'round';
+                        gctx.strokeStyle = '#12060a';
+                        this.drawEclipseGlaive(gctx, r, charging, flash);
+                    });
+                }, true);
+            };
+
+            if (glaiveBehind) drawGlaive();
+
+            SpriteAtlasCache.drawCachedAt(ctx, e.x, wy, bodyKey, bw, bh, bw * 0.5, Math.ceil(r * 1.8), (bctx) => {
+                bctx.lineWidth = 2.8;
+                bctx.lineJoin = 'round';
+                bctx.lineCap = 'round';
+                bctx.strokeStyle = '#12060a';
+                this.drawSolarEclipseHalo(bctx, r, qAge, flash);
+                this.drawPlumedSeraphWings(bctx, r, qAge, charging, flash);
+                EndlessEnemyRenderer.drawLimbs(bctx, r, qCycle, '#1e1b24', '#450a0a', flash);
+                this.drawCrusaderArmor(bctx, r, isBack, flash);
+                this.drawPlumedWarHelm(bctx, r, isBack, flash);
+            }, { flipX: facingLeft });
+
+            if (!glaiveBehind) drawGlaive();
+
+            if (typeof EnemyBatchRenderer === 'undefined' || !EnemyBatchRenderer.active) {
+                e.drawBubbleTrap(ctx);
+                e.drawOverheadHUD(ctx);
+            }
+            return;
+        }
+
         ctx.save();
         ctx.translate(e.x, e.y + hover);
         ctx.lineWidth = 2.8;
@@ -50,27 +102,61 @@ class EclipseHarbingerRenderer {
         }
         ctx.restore();
 
-        e.drawBubbleTrap(ctx);
-        e.drawOverheadHUD(ctx);
+        if (typeof EnemyBatchRenderer === 'undefined' || !EnemyBatchRenderer.active) {
+            e.drawBubbleTrap(ctx);
+            e.drawOverheadHUD(ctx);
+        }
     }
 
     static drawWarBannerAndTelegraph(ctx, e, r, age, charging) {
-        ctx.save();
-        ctx.strokeStyle = 'rgba(254, 211, 48, 0.24)';
-        ctx.lineWidth = 2.2;
-        ctx.setLineDash([12, 10]);
-        ctx.lineDashOffset = -age * 0.8;
-        ctx.beginPath(); ctx.arc(e.x, e.y, e.auraRadius || 230, 0, Math.PI * 2); ctx.stroke();
-        ctx.setLineDash([]);
+        const auraR = Math.round(e.auraRadius || 230);
+        if (typeof SpriteAtlasCache !== 'undefined') {
+            const sz = auraR * 2 + 12;
+            const entry = SpriteAtlasCache.getOrBake(`eh_aura:${auraR}`, sz, sz, sz * 0.5, sz * 0.5, (actx) => {
+                actx.strokeStyle = 'rgba(254, 211, 48, 0.24)';
+                actx.lineWidth = 2.2;
+                actx.setLineDash([12, 10]);
+                actx.beginPath();
+                actx.arc(0, 0, auraR, 0, Math.PI * 2);
+                actx.stroke();
+            }, { dpr: 0.75 });
+            if (entry && entry.canvas && entry.canvas.width > 0) {
+                const rot = -(age * 0.8) / auraR;
+                if (typeof EnemyBatchRenderer !== 'undefined' && EnemyBatchRenderer.canDirectTransform) {
+                    const S = EnemyBatchRenderer.camScale;
+                    const c = Math.cos(rot) * S;
+                    const s = Math.sin(rot) * S;
+                    ctx.setTransform(c, s, -s, c, EnemyBatchRenderer.camTx + S * e.x, EnemyBatchRenderer.camTy + S * e.y);
+                    ctx.drawImage(entry.canvas, entry.sx, entry.sy, entry.sw, entry.sh, -entry.anchorX, -entry.anchorY, entry.logicalW, entry.logicalH);
+                    ctx.setTransform(S, 0, 0, S, EnemyBatchRenderer.camTx, EnemyBatchRenderer.camTy);
+                } else {
+                    ctx.save();
+                    ctx.translate(e.x, e.y);
+                    ctx.rotate(rot);
+                    ctx.drawImage(entry.canvas, entry.sx, entry.sy, entry.sw, entry.sh, -entry.anchorX, -entry.anchorY, entry.logicalW, entry.logicalH);
+                    ctx.restore();
+                }
+            }
+        } else {
+            ctx.save();
+            ctx.strokeStyle = 'rgba(254, 211, 48, 0.24)';
+            ctx.lineWidth = 2.2;
+            ctx.setLineDash([12, 10]);
+            ctx.lineDashOffset = -age * 0.8;
+            ctx.beginPath(); ctx.arc(e.x, e.y, auraR, 0, Math.PI * 2); ctx.stroke();
+            ctx.setLineDash([]);
+            ctx.restore();
+        }
 
         if (charging) {
+            ctx.save();
             const p = 1 - Math.max(0, e.novaWindup / (e.novaWindupMax || 34));
             ctx.fillStyle = `rgba(255, 46, 76, ${0.12 + p * 0.22})`;
             ctx.strokeStyle = '#fed330'; ctx.lineWidth = 3;
             ctx.beginPath(); ctx.arc(e.x, e.y, 175, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
             ctx.beginPath(); ctx.arc(e.x, e.y, 175 * Math.max(0.12, p), 0, Math.PI * 2); ctx.stroke();
+            ctx.restore();
         }
-        ctx.restore();
     }
 
     static drawSolarEclipseHalo(ctx, r, age, flash) {

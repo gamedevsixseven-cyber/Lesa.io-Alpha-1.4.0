@@ -162,6 +162,9 @@
 }
 .pub-gear-card.rarity-apex .pub-gear-img { filter: drop-shadow(0 0 8px rgba(255, 46, 76, 0.7)) drop-shadow(0 0 4px rgba(254, 211, 48, 0.55)); }
 .pub-gear-card.rarity-apex .pub-slot-tag { background: rgba(255, 46, 76, 0.28); color: #fef08a; border: 1px solid rgba(254, 211, 48, 0.45); }
+.pub-gear-card.rarity-exotic { border-color: #00cec9; background: linear-gradient(145deg, #062825 0%, #0b4a3e 60%, #07191a 100%); color: #ecfeff; box-shadow: 0 2px 0 #07191a, 0 0 14px rgba(0, 206, 201, 0.65); }
+.pub-gear-card.rarity-exotic .pub-gear-img { filter: drop-shadow(0 0 7px rgba(85, 239, 196, 0.75)) drop-shadow(0 0 4px rgba(254, 211, 48, 0.5)); }
+.pub-gear-card.rarity-exotic .pub-slot-tag { background: rgba(0, 206, 201, 0.25); color: #fef08a; border: 1px solid rgba(85, 239, 196, 0.5); }
 .pub-gear-card.rarity-exclusive { border-color: #e84393; background: linear-gradient(180deg, #fff 0%, #fdecf5 100%); }
 
 .pub-slot-top { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 3px; }

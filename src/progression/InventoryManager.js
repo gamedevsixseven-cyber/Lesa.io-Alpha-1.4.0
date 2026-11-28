@@ -333,7 +333,7 @@ class InventoryManager {
         const allowLeg = ((def.gearOdds && def.gearOdds.legendary) || 0) > 0 || (def.guaranteedLegendary || 0) > 0;
         const eligibleGear = rawGear.filter(g => {
             const r = g.rarity || 'common';
-            if (r === 'exclusive' || g.excludeFromChests) return false;
+            if (r === 'exclusive' || r === 'apex' || r === 'exotic' || g.excludeFromChests || g.bossUnlock || g.devOnly) return false;
             if (r === 'epic' && !allowEpic) return false;
             if (r === 'legendary' && !allowLeg) return false;
             return true;

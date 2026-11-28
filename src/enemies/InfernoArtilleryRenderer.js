@@ -14,16 +14,57 @@ class InfernoArtilleryRenderer {
         const facingLeft = Math.cos(aimAngle) < 0;
         const isBack = Math.sin(aimAngle) < -0.68;
         const firing = (e.siegeWindup || 0) > 0;
-        const bob = firing ? 1.5 : Math.sin(e.walkCycle || age * 0.16) * 2.2;
+        const rawCycle = e.walkCycle || age * 0.16;
+        const bob = firing ? 1.5 : Math.sin(rawCycle) * 2.2;
 
         this.drawMortarTargets(ctx, e);
         EndlessEnemyRenderer.drawShadow(ctx, e.x, e.y, r, 1.24, 0.46);
+
+        if (typeof SpriteAtlasCache !== 'undefined') {
+            const bins = SpriteAtlasCache.getWalkBins(6);
+            const rKey = Math.round(r * 2);
+            const walkBin = flash ? 0 : SpriteAtlasCache.quantizePhase(rawCycle, bins);
+            const qCycle = flash ? 0 : SpriteAtlasCache.binAngle(walkBin, bins);
+            const qAge = flash ? 0 : ((walkBin + 0.5) / bins) * (Math.PI * 2 / 0.16);
+            const bodyKey = `ia_b:${rKey}:${walkBin}:${isBack ? 1 : 0}:${flash ? 1 : 0}`;
+            const bw = Math.ceil(r * 2.9);
+            const bh = Math.ceil(r * 2.0);
+            const wy = e.y + bob;
+
+            SpriteAtlasCache.drawCachedAt(ctx, e.x, wy, bodyKey, bw, bh, bw * 0.5, Math.ceil(bh * 0.45), (bctx) => {
+                bctx.lineWidth = 2.8;
+                bctx.lineJoin = 'round';
+                bctx.lineCap = 'round';
+                bctx.strokeStyle = '#0e0b10';
+                this.drawSpiderLegs(bctx, r, qCycle, flash);
+                this.drawBoilerHull(bctx, r, qAge, isBack, flash);
+            });
+
+            const gKey = `ia_g:${rKey}:${firing ? 1 : 0}:${flash ? 1 : 0}`;
+            const sw = Math.ceil(r * 1.6);
+            const sh = 40;
+            EndlessEnemyRenderer.drawAimedLayer(ctx, aimAngle, e.x, wy - r * 0.25, () => {
+                SpriteAtlasCache.drawCached(ctx, gKey, sw, sh, 14, 20, (gctx) => {
+                    gctx.lineWidth = 2.8;
+                    gctx.lineJoin = 'round';
+                    gctx.lineCap = 'round';
+                    gctx.strokeStyle = '#0e0b10';
+                    this.drawMortarCannon(gctx, r, firing, flash);
+                });
+            }, true);
+
+            if (typeof EnemyBatchRenderer === 'undefined' || !EnemyBatchRenderer.active) {
+                e.drawBubbleTrap(ctx);
+                e.drawOverheadHUD(ctx);
+            }
+            return;
+        }
 
         ctx.save();
         ctx.translate(e.x, e.y + bob);
         ctx.lineWidth = 2.8; ctx.lineJoin = 'round'; ctx.lineCap = 'round'; ctx.strokeStyle = '#0e0b10';
 
-        this.drawSpiderLegs(ctx, r, e.walkCycle || age * 0.16, flash);
+        this.drawSpiderLegs(ctx, r, rawCycle, flash);
 
         ctx.save();
         if (facingLeft) ctx.scale(-1, 1);
@@ -35,8 +76,10 @@ class InfernoArtilleryRenderer {
         });
         ctx.restore();
 
-        e.drawBubbleTrap(ctx);
-        e.drawOverheadHUD(ctx);
+        if (typeof EnemyBatchRenderer === 'undefined' || !EnemyBatchRenderer.active) {
+            e.drawBubbleTrap(ctx);
+            e.drawOverheadHUD(ctx);
+        }
     }
 
     static drawMortarTargets(ctx, e) {

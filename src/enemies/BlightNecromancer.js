@@ -50,7 +50,21 @@ class BlightNecromancer extends EnemyBase {
             this.vx = 0; this.vy = 0;
             if (this.sporeWindup <= 0) {
                 let tx = this.x + Math.cos(this.angle) * 90, ty = this.y + Math.sin(this.angle) * 90;
-                const hurt = enemies.find(ally => ally && ally !== this && !ally.dead && ally.hp < ally.maxHp && Math.hypot(ally.x - this.x, ally.y - this.y) < 340);
+                let hurt = null;
+                let bestSq = 340 * 340;
+                const findHurt = (ally) => {
+                    if (!ally || ally === this || ally.dead || ally.hp >= ally.maxHp) return;
+                    const dSq = (ally.x - this.x) * (ally.x - this.x) + (ally.y - this.y) * (ally.y - this.y);
+                    if (dSq < bestSq) {
+                        bestSq = dSq;
+                        hurt = ally;
+                    }
+                };
+                if (typeof SpatialHashGrid !== 'undefined' && SpatialHashGrid.forEachEnemyNear) {
+                    SpatialHashGrid.forEachEnemyNear(this.x, this.y, 340, enemies, findHurt);
+                } else {
+                    for (let j = 0; j < enemies.length; j++) findHurt(enemies[j]);
+                }
                 if (hurt) { tx = hurt.x; ty = hurt.y; }
                 this._spores.push({ x: tx, y: ty, radius: 98, life: 240, tickCd: 10 });
                 if (effects) effects.addShockwave(tx, ty, 98, 'rgba(46, 213, 115, 0.78)');
@@ -100,11 +114,18 @@ class BlightNecromancer extends EnemyBase {
                 if (player && Math.hypot(player.x - sp.x, player.y - sp.y) <= sp.radius && player.invulnerableTimer <= 0) {
                     player.takeDamage(Math.max(8, Math.round(this.damage * 0.42)), effects);
                 }
-                for (const ally of enemies) {
-                    if (!ally || ally.dead || ally.isEndlessBoss) continue;
-                    if (Math.hypot(ally.x - sp.x, ally.y - sp.y) <= sp.radius && ally.hp < ally.maxHp) {
+                const healSq = sp.radius * sp.radius;
+                const healAlly = (ally) => {
+                    if (!ally || ally.dead || ally.isEndlessBoss || ally.hp >= ally.maxHp) return;
+                    const adx = ally.x - sp.x, ady = ally.y - sp.y;
+                    if (adx * adx + ady * ady <= healSq) {
                         ally.hp = Math.min(ally.maxHp, ally.hp + Math.max(8, Math.round(ally.maxHp * 0.03)));
                     }
+                };
+                if (typeof SpatialHashGrid !== 'undefined' && SpatialHashGrid.forEachEnemyNear) {
+                    SpatialHashGrid.forEachEnemyNear(sp.x, sp.y, sp.radius, enemies, healAlly);
+                } else {
+                    for (let j = 0; j < enemies.length; j++) healAlly(enemies[j]);
                 }
             }
             if (sp.life <= 0) this._spores.splice(i, 1);

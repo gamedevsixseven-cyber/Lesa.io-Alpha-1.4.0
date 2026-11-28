@@ -26,6 +26,21 @@ class DevGiftManager {
         }));
     }
 
+    static getGearOptions() {
+        const reg = (typeof GEAR_DATA !== 'undefined' && GEAR_DATA) ? GEAR_DATA : (typeof window !== 'undefined' && window.GEAR_DATA ? window.GEAR_DATA : {});
+        return Object.values(reg)
+            .filter(g => g && g.id)
+            .sort((a, b) => (b.devOnly ? 1 : 0) - (a.devOnly ? 1 : 0))
+            .map(g => ({
+                id: g.id,
+                name: g.name || g.id,
+                slot: g.slot || 'armor',
+                rarity: g.rarity || 'common',
+                devOnly: !!g.devOnly,
+                image: g.iconImg || 'assets/GearUIIcons/ARMOR.png'
+            }));
+    }
+
     static _retryTimer = null;
     static _bootWaitTimer = null;
     static _activeTarget = null;
@@ -86,10 +101,14 @@ class DevGiftManager {
         const weapons = Array.isArray(raw.weapons)
             ? Array.from(new Set(raw.weapons.map(w => String(w || '').trim()).filter(w => validWeaponIds.has(w))))
             : [];
+        const validGearIds = new Set(this.getGearOptions().map(g => g.id));
+        const gear = Array.isArray(raw.gear)
+            ? Array.from(new Set(raw.gear.map(g => String(g || '').trim()).filter(g => validGearIds.has(g))))
+            : [];
 
         const hasChests = Object.keys(chests).length > 0;
-        const isEmpty = gems <= 0 && coins <= 0 && !hasChests && !battlePass && !exclusiveBanner && weapons.length === 0;
-        return { gems, coins, chests, battlePass, exclusiveBanner, weapons, note, isEmpty };
+        const isEmpty = gems <= 0 && coins <= 0 && !hasChests && !battlePass && !exclusiveBanner && weapons.length === 0 && gear.length === 0;
+        return { gems, coins, chests, battlePass, exclusiveBanner, weapons, gear, note, isEmpty };
     }
 
     static formatGiftSummary(spec) {
@@ -104,6 +123,10 @@ class DevGiftManager {
         if (Array.isArray(spec.weapons) && spec.weapons.length > 0) {
             const wMap = new Map(this.getWeaponOptions().map(w => [w.id, w.name]));
             parts.push(`🔫 ${spec.weapons.map(id => wMap.get(id) || id).join(', ')}`);
+        }
+        if (Array.isArray(spec.gear) && spec.gear.length > 0) {
+            const gMap = new Map(this.getGearOptions().map(g => [g.id, g.name]));
+            parts.push(`🛡️ ${spec.gear.map(id => gMap.get(id) || id).join(', ')}`);
         }
         if (spec.battlePass) parts.push('👑 Battle Pass VIP');
         if (spec.exclusiveBanner === 'banner_vf185_apex') parts.push('🏍️ SYM VF 185 Kolones Banner');
@@ -124,6 +147,7 @@ class DevGiftManager {
             coins: clean.coins,
             chests: clean.chests,
             weapons: clean.weapons || [],
+            gear: clean.gear || [],
             battlePass: clean.battlePass,
             exclusiveBanner: clean.exclusiveBanner || '',
             note: clean.note,
@@ -168,6 +192,7 @@ class DevGiftManager {
             : '<span style="color:#a4b0be;">Free Pass</span>';
 
         const weaponChecksHtml = this.getWeaponOptions().map(w => `<label class="admin-dev-vip-toggle" style="display:inline-flex;align-items:center;gap:6px;padding:4px 8px;background:rgba(15,23,42,0.75);border:1.5px solid #334155;border-radius:8px;cursor:pointer;font-size:0.74rem;"><input type="checkbox" data-gift-weapon="${this._escHtml(w.id)}"><img src="${this._escHtml(w.image)}" style="width:20px;height:20px;object-fit:contain;" alt=""><span>${this._escHtml(w.name)}</span></label>`).join('');
+        const gearChecksHtml = this.getGearOptions().map(g => `<label class="admin-dev-vip-toggle" style="display:inline-flex;align-items:center;gap:6px;padding:4px 8px;background:${g.devOnly ? 'rgba(6,78,59,0.72)' : 'rgba(15,23,42,0.75)'};border:1.5px solid ${g.devOnly ? '#55efc4' : '#334155'};border-radius:8px;cursor:pointer;font-size:0.74rem;"><input type="checkbox" data-gift-gear="${this._escHtml(g.id)}"><img src="${this._escHtml(g.image)}" style="width:20px;height:20px;object-fit:contain;" alt=""><span>${g.devOnly ? '👑 ' : ''}${this._escHtml(g.name)}</span></label>`).join('');
 
         container.innerHTML = `
             <div class="admin-dev-gift-header">
@@ -213,7 +238,11 @@ class DevGiftManager {
             </div>
             <div class="admin-dev-gift-field" style="margin-top:10px;">
                 <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px;"><label>🔫 Gift Weapons (Unlock Any Weapons for Player)</label><div style="display:flex;gap:6px;"><button type="button" id="admin-gift-all-weapons-btn" class="admin-gift-chip">Select All</button><button type="button" id="admin-gift-clear-weapons-btn" class="admin-gift-chip is-clear">Clear Weapons</button></div></div>
-                <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(165px,1fr));gap:6px;max-height:165px;overflow-y:auto;padding:4px;">${weaponChecksHtml}</div>
+                <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(165px,1fr));gap:6px;max-height:140px;overflow-y:auto;padding:4px;">${weaponChecksHtml}</div>
+            </div>
+            <div class="admin-dev-gift-field" style="margin-top:10px;">
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px;"><label>🛡️ Gift Armor &amp; Gear (Includes Dev-Exclusive)</label><button type="button" id="admin-gift-clear-gear-btn" class="admin-gift-chip is-clear">Clear Gear</button></div>
+                <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(175px,1fr));gap:6px;max-height:140px;overflow-y:auto;padding:4px;">${gearChecksHtml}</div>
             </div>
             <div class="admin-dev-gift-footer"><button type="button" id="admin-gift-send-btn" class="admin-control-btn btn-success">SEND DEV GIFT 🎁</button></div>
         `;
@@ -222,6 +251,7 @@ class DevGiftManager {
         container.querySelector('#admin-gift-clear-chests-btn')?.addEventListener('click', () => container.querySelectorAll('input[data-chest-type]').forEach(inp => { inp.value = '0'; }));
         container.querySelector('#admin-gift-all-weapons-btn')?.addEventListener('click', () => container.querySelectorAll('input[data-gift-weapon]').forEach(cb => { cb.checked = true; }));
         container.querySelector('#admin-gift-clear-weapons-btn')?.addEventListener('click', () => container.querySelectorAll('input[data-gift-weapon]').forEach(cb => { cb.checked = false; }));
+        container.querySelector('#admin-gift-clear-gear-btn')?.addEventListener('click', () => container.querySelectorAll('input[data-gift-gear]').forEach(cb => { cb.checked = false; }));
         container.querySelectorAll('.admin-gift-chip[data-target]').forEach(btn => {
             btn.addEventListener('click', () => {
                 const input = document.getElementById(btn.getAttribute('data-target'));
@@ -248,10 +278,15 @@ class DevGiftManager {
                 const wid = cb.getAttribute('data-gift-weapon');
                 if (wid) weapons.push(wid);
             });
+            const gear = [];
+            container.querySelectorAll('input[data-gift-gear]:checked').forEach(cb => {
+                const gid = cb.getAttribute('data-gift-gear');
+                if (gid) gear.push(gid);
+            });
             const clean = this.sanitizeGiftSpec({
                 gems: document.getElementById('admin-gift-gems-input')?.value,
                 coins: document.getElementById('admin-gift-coins-input')?.value,
-                chests, weapons,
+                chests, weapons, gear,
                 battlePass: Boolean(document.getElementById('admin-gift-bp-check')?.checked),
                 vf185Banner: Boolean(document.getElementById('admin-gift-vf185-check')?.checked),
                 note: document.getElementById('admin-gift-note-input')?.value
@@ -314,19 +349,10 @@ class DevGiftManager {
         } else if (gs && typeof gs.addCurrency === 'function') {
             gs.addCurrency(totalCoins, totalGems);
         } else if (typeof localStorage !== 'undefined') {
-            if (totalCoins > 0) {
-                const nextC = (parseInt(localStorage.getItem('lesaio_coins') || '0', 10) || 0) + totalCoins;
-                localStorage.setItem('lesaio_coins', String(nextC));
-            }
-            if (totalGems > 0) {
-                const nextG = (parseInt(localStorage.getItem('lesaio_gems') || '0', 10) || 0) + totalGems;
-                localStorage.setItem('lesaio_gems', String(nextG));
-            }
+            if (totalCoins > 0) localStorage.setItem('lesaio_coins', String((parseInt(localStorage.getItem('lesaio_coins') || '0', 10) || 0) + totalCoins));
+            if (totalGems > 0) localStorage.setItem('lesaio_gems', String((parseInt(localStorage.getItem('lesaio_gems') || '0', 10) || 0) + totalGems));
         }
-        if (cloudSave && gs && gs.player) {
-            cloudSave.lastSavedCoins = gs.player.coins;
-            cloudSave.lastSavedGems = gs.player.gems;
-        }
+        if (cloudSave && gs && gs.player) { cloudSave.lastSavedCoins = gs.player.coins; cloudSave.lastSavedGems = gs.player.gems; }
     }
 
     static _grantChests(chestTotals) {
@@ -334,19 +360,15 @@ class DevGiftManager {
         if (entries.length === 0) return;
         const cm = typeof window !== 'undefined' ? window.chestManager : null;
         const im = typeof window !== 'undefined' ? window.inventoryManager : null;
-
         for (const [type, qty] of entries) {
-            if (cm && typeof cm.addChest === 'function') {
-                for (let i = 0; i < qty; i++) cm.addChest(type, { ready: true });
-            } else if (im && typeof im.addChestToInventory === 'function') {
-                im.addChestToInventory(type, qty, { freeOpen: true });
-            } else if (typeof localStorage !== 'undefined') {
+            if (cm && typeof cm.addChest === 'function') { for (let i = 0; i < qty; i++) cm.addChest(type, { ready: true }); }
+            else if (im && typeof im.addChestToInventory === 'function') { im.addChestToInventory(type, qty, { freeOpen: true }); }
+            else if (typeof localStorage !== 'undefined') {
                 try {
                     const inv = JSON.parse(localStorage.getItem('lesaio_inventory') || '{}') || {};
-                    if (!inv.chests || typeof inv.chests !== 'object') inv.chests = {};
-                    if (!inv.freeChests || typeof inv.freeChests !== 'object') inv.freeChests = {};
-                    inv.chests[type] = (inv.chests[type] || 0) + qty;
-                    inv.freeChests[type] = (inv.freeChests[type] || 0) + qty;
+                    inv.chests = (inv.chests && typeof inv.chests === 'object') ? inv.chests : {};
+                    inv.freeChests = (inv.freeChests && typeof inv.freeChests === 'object') ? inv.freeChests : {};
+                    inv.chests[type] = (inv.chests[type] || 0) + qty; inv.freeChests[type] = (inv.freeChests[type] || 0) + qty;
                     localStorage.setItem('lesaio_inventory', JSON.stringify(inv));
                 } catch (_) { }
             }
@@ -356,33 +378,25 @@ class DevGiftManager {
     static _grantBattlePassVip() {
         const bp = typeof window !== 'undefined' ? window.battlePassManager : null;
         if (bp) {
-            if (!bp.hasPremium) {
-                bp.hasPremium = true;
-                bp.save();
-            }
+            if (!bp.hasPremium) { bp.hasPremium = true; bp.save(); }
         } else if (typeof localStorage !== 'undefined') {
             try {
                 const cur = JSON.parse(localStorage.getItem('lesaio_battle_pass_s1') || '{}') || {};
-                cur.season = cur.season || 'season_1';
-                cur.hasPremium = true;
+                cur.season = cur.season || 'season_1'; cur.hasPremium = true;
                 localStorage.setItem('lesaio_battle_pass_s1', JSON.stringify(cur));
-                if (typeof window !== 'undefined' && window.GameState && window.GameState.player) {
-                    window.GameState.player.battlePass = cur;
-                }
+                if (typeof window !== 'undefined' && window.GameState && window.GameState.player) window.GameState.player.battlePass = cur;
             } catch (_) { }
         }
         if (typeof window !== 'undefined') {
-            if (window.battlePassModalUI && typeof window.battlePassModalUI.render === 'function') window.battlePassModalUI.render();
-            if (window.friendService && typeof window.friendService.syncMyProfile === 'function') window.friendService.syncMyProfile(true);
-            if (typeof ProfileCosmeticsUI !== 'undefined' && typeof ProfileCosmeticsUI.refreshHeaderPreview === 'function') ProfileCosmeticsUI.refreshHeaderPreview();
+            window.battlePassModalUI?.render?.();
+            window.friendService?.syncMyProfile?.(true);
+            if (typeof ProfileCosmeticsUI !== 'undefined') ProfileCosmeticsUI.refreshHeaderPreview?.();
         }
     }
 
     static _grantWeapons(weaponIds) {
         if (!Array.isArray(weaponIds) || weaponIds.length === 0) return;
-        for (const id of weaponIds) {
-            if (typeof WeaponSystem !== 'undefined' && typeof WeaponSystem.unlockWeapon === 'function') WeaponSystem.unlockWeapon(id, { silent: true });
-        }
+        for (const id of weaponIds) { if (typeof WeaponSystem !== 'undefined') WeaponSystem.unlockWeapon?.(id, { silent: true }); }
         if (typeof localStorage !== 'undefined') {
             try {
                 const cur = JSON.parse(localStorage.getItem('lesaio_unlocked_weapons') || '["pea"]') || ['pea'];
@@ -391,9 +405,13 @@ class DevGiftManager {
                 if (typeof window !== 'undefined' && window.GameState && window.GameState.player) window.GameState.player.unlockedWeapons = merged;
             } catch (_) {}
         }
-        if (typeof window !== 'undefined' && window.uiController && window.uiController.modalManager && typeof window.uiController.modalManager.updateWeaponsModal === 'function') {
-            window.uiController.modalManager.updateWeaponsModal();
-        }
+        window?.uiController?.modalManager?.updateWeaponsModal?.();
+    }
+
+    static _grantGear(gearIds) {
+        if (!Array.isArray(gearIds) || gearIds.length === 0) return;
+        for (const id of gearIds) { if (typeof GearManager !== 'undefined') GearManager.unlock?.(id, { free: true, source: 'dev_gift' }); }
+        window?.uiController?.modalManager?.updateGearScreen?.();
     }
 
     static _isBootOverlayActive() {
@@ -407,13 +425,14 @@ class DevGiftManager {
 
     static _aggregateGifts(gifts) {
         let totalCoins = 0, totalGems = 0, grantVip = false, exclusiveBanner = '';
-        const chestTotals = {}, notes = [], weaponSet = new Set();
+        const chestTotals = {}, notes = [], weaponSet = new Set(), gearSet = new Set();
         for (const gift of gifts) {
             totalCoins += Math.max(0, Math.floor(Number(gift.coins) || 0));
             totalGems += Math.max(0, Math.floor(Number(gift.gems) || 0));
             if (gift.battlePass) grantVip = true;
             if (gift.exclusiveBanner === 'banner_vf185_apex') exclusiveBanner = 'banner_vf185_apex';
             if (Array.isArray(gift.weapons)) gift.weapons.forEach(w => { if (w) weaponSet.add(String(w)); });
+            if (Array.isArray(gift.gear)) gift.gear.forEach(g => { if (g) gearSet.add(String(g)); });
             if (gift.chests && typeof gift.chests === 'object') {
                 for (const [k, v] of Object.entries(gift.chests)) {
                     const qty = Math.min(99, Math.max(0, Math.floor(Number(v) || 0)));
@@ -422,7 +441,7 @@ class DevGiftManager {
             }
             if (gift.note && String(gift.note).trim()) notes.push(String(gift.note).trim());
         }
-        return { totalCoins, totalGems, chestTotals, weapons: Array.from(weaponSet), grantVip, exclusiveBanner, notes };
+        return { totalCoins, totalGems, chestTotals, weapons: Array.from(weaponSet), gear: Array.from(gearSet), grantVip, exclusiveBanner, notes };
     }
 
     static claimPendingGifts(cloudData, cloudSave) {
@@ -473,7 +492,7 @@ class DevGiftManager {
             document.body.appendChild(modal);
         }
 
-        const { totalCoins, totalGems, chestTotals, weapons, grantVip, exclusiveBanner, notes } = this._aggregateGifts(pendingGifts);
+        const { totalCoins, totalGems, chestTotals, weapons, gear, grantVip, exclusiveBanner, notes } = this._aggregateGifts(pendingGifts);
         const cards = [];
         if (totalGems > 0) cards.push(`<div class="dev-gift-reward-card is-gems"><img src="assets/ui-icons/gem.svg" class="dev-gift-reward-icon" alt="Diamonds"><div class="dev-gift-reward-amount">+${totalGems.toLocaleString()}</div><div class="dev-gift-reward-label">DIAMONDS</div></div>`);
         if (totalCoins > 0) cards.push(`<div class="dev-gift-reward-card is-coins"><img src="assets/ui-icons/coin.svg" class="dev-gift-reward-icon" alt="Gold"><div class="dev-gift-reward-amount">+${totalCoins.toLocaleString()}</div><div class="dev-gift-reward-label">GOLD COINS</div></div>`);
@@ -489,6 +508,13 @@ class DevGiftManager {
             for (const wid of weapons) {
                 const wDef = wReg[wid] || { name: wid, image: 'assets/WeaponIcons/PeaSlingshot.png' };
                 cards.push(`<div class="dev-gift-reward-card is-vip"><img src="${this._escHtml(wDef.image || 'assets/WeaponIcons/PeaSlingshot.png')}" class="dev-gift-reward-icon is-chest-img" alt="${this._escHtml(wDef.name)}"><div class="dev-gift-reward-amount" style="font-size:0.78rem;">${this._escHtml(wDef.name)}</div><div class="dev-gift-reward-label">UNLOCKED WEAPON</div></div>`);
+            }
+        }
+        if (Array.isArray(gear) && gear.length > 0) {
+            const gReg = (typeof GEAR_DATA !== 'undefined' && GEAR_DATA) ? GEAR_DATA : (typeof window !== 'undefined' && window.GEAR_DATA ? window.GEAR_DATA : {});
+            for (const gid of gear) {
+                const gDef = gReg[gid] || { name: gid, iconImg: 'assets/GearUIIcons/ARMOR.png' };
+                cards.push(`<div class="dev-gift-reward-card is-vip"><img src="${this._escHtml(gDef.iconImg || 'assets/GearUIIcons/ARMOR.png')}" class="dev-gift-reward-icon is-chest-img" alt="${this._escHtml(gDef.name)}"><div class="dev-gift-reward-amount" style="font-size:0.78rem;">${this._escHtml(gDef.name)}</div><div class="dev-gift-reward-label">${gDef.devOnly ? '👑 DEV EXCLUSIVE GEAR' : 'UNLOCKED GEAR'}</div></div>`);
             }
         }
         if (grantVip) cards.push(`<div class="dev-gift-reward-card is-vip"><div class="dev-gift-vip-crown">👑</div><div class="dev-gift-reward-amount">VIP PASS</div><div class="dev-gift-reward-label">SEASON BATTLE PASS</div></div>`);
@@ -517,17 +543,18 @@ class DevGiftManager {
         if (pending.length === 0) return false;
 
         this._markClaimedIds(pending.map(g => g.id));
-        const { totalCoins, totalGems, chestTotals, weapons, grantVip, exclusiveBanner } = this._aggregateGifts(pending);
+        const { totalCoins, totalGems, chestTotals, weapons, gear, grantVip, exclusiveBanner } = this._aggregateGifts(pending);
 
         this._grantCurrencies(totalCoins, totalGems, cloudSave);
         this._grantChests(chestTotals);
         this._grantWeapons(weapons);
+        this._grantGear(gear);
         if (grantVip) this._grantBattlePassVip();
         if (exclusiveBanner && typeof CosmeticManager !== 'undefined' && typeof CosmeticManager.unlockDevExclusiveBanner === 'function') {
             CosmeticManager.unlockDevExclusiveBanner(exclusiveBanner, true);
         }
 
-        const summary = this.formatGiftSummary({ gems: totalGems, coins: totalCoins, chests: chestTotals, weapons, battlePass: grantVip, exclusiveBanner });
+        const summary = this.formatGiftSummary({ gems: totalGems, coins: totalCoins, chests: chestTotals, weapons, gear, battlePass: grantVip, exclusiveBanner });
 
         if (typeof window !== 'undefined') {
             if (window.soundEngine) {

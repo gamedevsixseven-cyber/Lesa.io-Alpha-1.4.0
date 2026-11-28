@@ -15,6 +15,7 @@ class HeroArmorEndgame {
             case 'apex_omega_mantle': return typeof HeroArmorApexMythic !== 'undefined' && (HeroArmorApexMythic.drawApexOmegaMantle(ctx, r, flash, isBack, evolved), true);
             case 'mythic_chronos_cuirass': return typeof HeroArmorApexMythic !== 'undefined' && (HeroArmorApexMythic.drawChronosBrigandine(ctx, r, flash, isBack, evolved), true);
             case 'mythic_poseidon_plate': return typeof HeroArmorApexMythic !== 'undefined' && (HeroArmorApexMythic.drawPoseidonPlate(ctx, r, flash, isBack, evolved), true);
+            case 'armor_panoplia_dab': return typeof HeroArmorApexMythic !== 'undefined' && (HeroArmorApexMythic.drawPanopliaDab(ctx, r, flash, isBack, evolved), true);
             default: return false;
         }
     }
