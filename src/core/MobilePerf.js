@@ -51,12 +51,12 @@ class MobilePerf {
             maxComic: 4, maxDamage: 8, cacheMaxEntries: 56, snowCap: 42, fogCap: 10, emberCap: 12
         },
         high: {
-            pixelBudget: 1650000, minDpr: 1.35, maxDpr: 1.85, smoothing: 'high',
-            groundScale: 0.85, tileSupScale: 1.5,
-            atlas: { pageSize: 1024, maxPages: 6, dprCap: 1.5 },
-            glows: true, ambientLighting: true, treeSize: 340,
+            pixelBudget: 2800000, minDpr: 1.75, maxDpr: 2.5, smoothing: 'high',
+            groundScale: 1.0, tileSupScale: 2.0,
+            atlas: { pageSize: 1024, maxPages: 8, dprCap: 2.0 },
+            glows: true, ambientLighting: true, treeSize: 460,
             maxParticles: 56, maxPopups: 18, maxMuzzles: 24, maxSplats: 28, maxPoofs: 24,
-            maxComic: 6, maxDamage: 14, cacheMaxEntries: 80, snowCap: 999, fogCap: 24, emberCap: 30
+            maxComic: 6, maxDamage: 14, cacheMaxEntries: 120, snowCap: 999, fogCap: 24, emberCap: 30
         }
     };
 
@@ -133,7 +133,8 @@ class MobilePerf {
         const raw = (typeof window !== 'undefined' && window.devicePixelRatio) || 1;
         if (!this.isMobile) return Math.min(raw, 2);
         const preset = this.getPreset();
-        const maxDpr = this.isIOS ? Math.min(preset.maxDpr, 1.35) : preset.maxDpr;
+        const isHigh = this.getGraphicsQuality() === 'high';
+        const maxDpr = this.isIOS ? Math.min(preset.maxDpr, isHigh ? 2.1 : 1.35) : preset.maxDpr;
         const vl = (typeof VirtualLandscape !== 'undefined' && VirtualLandscape.active) ? VirtualLandscape.getViewportSize() : null;
         const w = cssW || (vl && vl.width) || (typeof window !== 'undefined' && window.innerWidth) || 844;
         const h = cssH || (vl && vl.height) || (typeof window !== 'undefined' && window.innerHeight) || 390;
@@ -148,7 +149,8 @@ class MobilePerf {
     static getAtlasConfig() {
         if (!this.isMobile) return { pageSize: 2048, maxPages: 8, dprCap: 2.0 };
         const a = this.getPreset().atlas;
-        return this.isIOS ? { pageSize: Math.min(a.pageSize, 1024), maxPages: Math.min(a.maxPages, 4), dprCap: Math.min(a.dprCap, 1.25) } : a;
+        const isHigh = this.getGraphicsQuality() === 'high';
+        return this.isIOS ? { pageSize: Math.min(a.pageSize, 1024), maxPages: Math.min(a.maxPages, isHigh ? 6 : 4), dprCap: Math.min(a.dprCap, isHigh ? 1.85 : 1.25) } : a;
     }
 
     static createContext(canvas) {
